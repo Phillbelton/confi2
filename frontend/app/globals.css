@@ -177,88 +177,64 @@
   }
 }
 
-/* Premium animations */
-@layer utilities {
-  /* Smooth transitions */
-  .transition-premium {
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
+/* Premium animations - using standard CSS */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
   }
-
-  /* Hover scale effect for cards */
-  .hover-scale {
-    @apply transition-premium;
-  }
-
-  .hover-scale:hover {
-    transform: scale(1.02);
-  }
-
-  /* Shimmer loading effect */
-  @keyframes shimmer {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
-    }
-  }
-
-  .shimmer {
-    animation: shimmer 2s infinite linear;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      rgba(255, 255, 255, 0.3) 50%,
-      transparent 100%
-    );
-    background-size: 1000px 100%;
-  }
-
-  /* Pulse animation for badges */
-  @keyframes pulse-scale {
-    0%, 100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.05);
-      opacity: 0.9;
-    }
-  }
-
-  .pulse-badge {
-    animation: pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  /* Fly to cart animation */
-  @keyframes fly-to-cart {
-    0% {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translateY(-50px) scale(0.5);
-      opacity: 0.8;
-    }
-    100% {
-      transform: translateY(-100px) translateX(100px) scale(0);
-      opacity: 0;
-    }
-  }
-
-  .fly-to-cart {
-    animation: fly-to-cart 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  100% {
+    background-position: 1000px 0;
   }
 }
 
-/* Touch-friendly sizing */
-@layer utilities {
-  .touch-target {
-    min-width: 44px;
-    min-height: 44px;
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes fly-to-cart {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-50px) scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100px) translateX(100px) scale(0);
+    opacity: 0;
+  }
+}
+
+.shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 1000px 100%;
+}
+
+.pulse-badge {
+  animation: pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.fly-to-cart {
+  animation: fly-to-cart 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
 }
 
 /* Reduce motion for accessibility */
