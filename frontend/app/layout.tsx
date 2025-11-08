@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 // Uncomment below when deploying to production:
 // import { DM_Sans, Comfortaa } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/lib/providers";
 
 // const dmSans = DM_Sans({
 //   subsets: ["latin"],
@@ -31,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="font-sans antialiased">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
