@@ -15,10 +15,10 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, useProductVariants } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
-import type { ProductFilters as Filters, ProductSort } from '@/types';
+import type { ProductFilters as Filters, ProductSort, ProductParent } from '@/types';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -29,6 +29,14 @@ const sortOptions = [
   { value: 'name:asc', label: 'Nombre: A-Z' },
   { value: 'views:desc', label: 'Más vistos' },
 ];
+
+// Component wrapper to fetch variants for each product
+function ProductCardWithVariants({ product }: { product: ProductParent }) {
+  const { data: variantsData } = useProductVariants(product._id);
+  const variants = variantsData?.data || [];
+
+  return <ProductCard product={product} variants={variants} />;
+}
 
 function ProductsContent() {
   const router = useRouter();
@@ -193,12 +201,7 @@ function ProductsContent() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => (
-                <ProductCard
-                  key={product._id}
-                  product={product}
-                  // TODO: Fetch variants for each product
-                  variants={[]}
-                />
+                <ProductCardWithVariants key={product._id} product={product} />
               ))}
             </div>
           )}
