@@ -7,6 +7,7 @@
     "test": "node scripts/test-all.js",
     "test:report": "node scripts/test-report.js",
     "test:all": "./scripts/run-all-tests.sh",
+    "check": "./scripts/check-services.sh",
     "create-admin": "node scripts/create-admin.js",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
