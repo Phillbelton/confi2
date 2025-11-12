@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -249,6 +250,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Page Content */}
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
+
+      {/* Toast Notifications */}
+      <Toaster />
     </div>
   );
 }
