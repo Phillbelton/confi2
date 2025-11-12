@@ -16,6 +16,25 @@ export interface WhatsAppMessagePayload {
   orderId: string;
 }
 
+export interface GetOrdersParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PaginatedOrdersResponse {
+  orders: Order[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 export const orderService = {
   // Create order (public - for checkout)
   create: async (payload: CreateOrderPayload) => {
@@ -43,6 +62,43 @@ export const orderService = {
   // Get my orders (authenticated customer)
   getMyOrders: async () => {
     const { data } = await api.get<ApiResponse<Order[]>>('/orders/my-orders');
+    return data;
+  },
+
+  // Get all orders (admin - with pagination and filters)
+  getOrders: async (params?: GetOrdersParams) => {
+    const { data } = await api.get<ApiResponse<PaginatedOrdersResponse>>('/orders', {
+      params,
+    });
+    return data;
+  },
+
+  // Get order by ID (admin)
+  getById: async (id: string) => {
+    const { data } = await api.get<ApiResponse<Order>>(`/orders/${id}`);
+    return data;
+  },
+
+  // Update order status (admin)
+  updateStatus: async (id: string, status: string, adminNotes?: string) => {
+    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/status`, {
+      status,
+      adminNotes,
+    });
+    return data;
+  },
+
+  // Mark WhatsApp as sent (admin)
+  markWhatsAppSent: async (id: string) => {
+    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/whatsapp-sent`);
+    return data;
+  },
+
+  // Cancel order
+  cancelOrder: async (id: string, cancellationReason: string) => {
+    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/cancel`, {
+      cancellationReason,
+    });
     return data;
   },
 };
