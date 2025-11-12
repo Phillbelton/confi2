@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, Search, Menu } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useCartStore } from '@/store/useCartStore';
+import { CartSheet } from '@/components/cart/CartSheet';
 import { useState } from 'react';
 
 const navigation = [
@@ -17,7 +16,6 @@ const navigation = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const itemCount = useCartStore((state) => state.itemCount);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -57,25 +55,8 @@ export function Header() {
             <Search className="h-5 w-5" />
           </Button>
 
-          {/* Cart Button */}
-          <Link href="/carrito">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 touch-target relative"
-              aria-label="Ver carrito"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              {itemCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs flex items-center justify-center pulse-badge"
-                >
-                  {itemCount > 99 ? '99+' : itemCount}
-                </Badge>
-              )}
-            </Button>
-          </Link>
+          {/* Cart Sheet */}
+          <CartSheet />
 
           {/* Mobile Menu */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
