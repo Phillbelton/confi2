@@ -276,15 +276,86 @@ sudo certbot --nginx -d tudominio.com
 
 ## 🔍 Testing
 
+### Scripts de Testing Automatizado
+
+El proyecto incluye scripts automatizados de testing completo:
+
 ```bash
-# Backend
-cd backend
+# Ejecutar todos los tests con reporte visual
+npm run test:all
+
+# Solo ejecutar tests en consola
 npm test
 
-# Frontend
-cd frontend
-npm test
+# Generar reporte HTML
+npm run test:report
+
+# Crear usuario admin para testing
+npm run create-admin
 ```
+
+### Tests Incluidos
+
+**✅ Service Health Checks**
+- Backend running (http://localhost:5000)
+- Frontend running (http://localhost:3000)
+- MongoDB connection
+
+**✅ API Endpoints**
+- Categories (GET /api/categories)
+- Brands (GET /api/brands)
+- Products (GET /api/products/parents)
+- Orders (GET /api/orders/*)
+- Auth (POST /api/auth/login)
+
+**✅ Frontend Pages**
+- Home page (/)
+- Products catalog (/productos)
+- Checkout (/checkout)
+- Admin panel (/admin/*)
+
+**✅ Integration Tests**
+- Product variants fetching
+- Category filtering
+- Full order flow
+
+### Preparar Testing
+
+```bash
+# 1. Instalar dependencias en ambos proyectos
+npm run install:all
+
+# 2. Iniciar servicios (en terminales separadas)
+npm run dev:backend    # Terminal 1
+npm run dev:frontend   # Terminal 2
+
+# 3. Crear usuario admin
+npm run create-admin
+# Luego cambiar rol a "admin" en MongoDB
+
+# 4. Ejecutar tests
+npm run test:all
+```
+
+### Ver Resultados
+
+Los tests generan:
+- **Consola**: Resultados coloridos en tiempo real
+- **test-report.html**: Reporte visual completo
+
+El reporte HTML se abre automáticamente e incluye:
+- Dashboard con estadísticas
+- Tests agrupados por categoría
+- Tiempos de ejecución
+- Mensajes de error detallados
+
+### Documentación Completa
+
+Ver [scripts/README-TESTING.md](./scripts/README-TESTING.md) para:
+- Guía completa de uso
+- Agregar nuevos tests
+- Troubleshooting
+- Integración continua (CI/CD)
 
 ## 📊 Monitoreo (PM2)
 

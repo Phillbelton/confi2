@@ -1,0 +1,27 @@
+{
+  "name": "confiteria-quelita",
+  "version": "1.0.0",
+  "description": "E-commerce platform for Confitería Quelita with tiered discount system",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/test-all.js",
+    "test:report": "node scripts/test-report.js",
+    "test:all": "./scripts/run-all-tests.sh",
+    "create-admin": "node scripts/create-admin.js",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": [
+    "ecommerce",
+    "nextjs",
+    "express",
+    "mongodb",
+    "confectionery"
+  ],
+  "author": "Confitería Quelita",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
