@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useCartStore } from '@/store/useCartStore';
+import { getSafeImageUrl } from '@/lib/image-utils';
 import { toast } from 'sonner';
 import type { ProductParent, ProductVariant } from '@/types';
 import { cn } from '@/lib/utils';
@@ -51,8 +52,8 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
   // Check if out of stock
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
 
-  // Get first image
-  const mainImage = product.images?.[0] || '/placeholder-product.svg';
+  // Get first image (with safe URL validation)
+  const mainImage = getSafeImageUrl(product.images?.[0]);
 
   // Calculate if has discount
   const hasActiveDiscount = product.tieredDiscounts?.some(

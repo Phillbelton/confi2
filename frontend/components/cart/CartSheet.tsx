@@ -16,6 +16,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCartStore } from '@/store/useCartStore';
+import { getSafeImageUrl } from '@/lib/image-utils';
 import type { CartItem } from '@/types';
 
 interface CartSheetProps {
@@ -70,10 +71,10 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                 {items.map((item) => {
                   const product = item.productParent;
                   const variant = item.variant;
-                  const image =
+                  const rawImage =
                     variant.images?.[0] ||
-                    (typeof product !== 'string' ? product.images?.[0] : null) ||
-                    '/placeholder-product.svg';
+                    (typeof product !== 'string' ? product.images?.[0] : null);
+                  const image = getSafeImageUrl(rawImage);
 
                   return (
                     <div key={item.variantId} className="flex gap-4">
