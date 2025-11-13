@@ -126,7 +126,7 @@ export default function ProductDetailPage() {
     ...(selectedVariant?.images || []),
   ].filter(Boolean);
 
-  const mainImage = allImages[mainImageIndex] || '/placeholder-product.jpg';
+  const mainImage = allImages[mainImageIndex] || '/placeholder-product.svg';
 
   // Get active discount for selected variant
   const hasActiveDiscount = product.tieredDiscounts?.some(

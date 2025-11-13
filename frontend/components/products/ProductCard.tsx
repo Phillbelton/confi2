@@ -52,7 +52,7 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
 
   // Get first image
-  const mainImage = product.images?.[0] || '/placeholder-product.jpg';
+  const mainImage = product.images?.[0] || '/placeholder-product.svg';
 
   // Calculate if has discount
   const hasActiveDiscount = product.tieredDiscounts?.some(
