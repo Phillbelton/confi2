@@ -4,14 +4,17 @@ import type { Category, ApiResponse } from '@/types';
 export const categoryService = {
   // Get all categories
   getAll: async () => {
-    const { data } = await api.get<ApiResponse<Category[]>>('/categories');
-    return data;
+    const { data } = await api.get<ApiResponse<{ categories: Category[] }>>('/categories');
+    // Backend returns { success: true, data: { categories: [...] } }
+    // We need to unwrap to return just the categories array
+    return (data.data as any)?.categories || [];
   },
 
   // Get main categories (no parent)
   getMainCategories: async () => {
-    const { data } = await api.get<ApiResponse<Category[]>>('/categories/main');
-    return data;
+    const { data } = await api.get<ApiResponse<{ categories: Category[] }>>('/categories/main');
+    // Backend returns { success: true, data: { categories: [...] } }
+    return (data.data as any)?.categories || [];
   },
 
   // Get category by ID
@@ -30,10 +33,11 @@ export const categoryService = {
 
   // Get subcategories
   getSubcategories: async (parentId: string) => {
-    const { data } = await api.get<ApiResponse<Category[]>>(
+    const { data } = await api.get<ApiResponse<{ subcategories: Category[] }>>(
       `/categories/${parentId}/subcategories`
     );
-    return data;
+    // Backend returns { success: true, data: { subcategories: [...] } }
+    return (data.data as any)?.subcategories || [];
   },
 };
 
