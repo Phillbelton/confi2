@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ProductCard } from '@/components/products/ProductCard';
+import { ProductCardWithVariants } from '@/components/products/ProductCardWithVariants';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -193,11 +193,9 @@ function ProductsContent() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => (
-                <ProductCard
+                <ProductCardWithVariants
                   key={product._id}
                   product={product}
-                  // TODO: Fetch variants for each product
-                  variants={[]}
                 />
               ))}
             </div>
