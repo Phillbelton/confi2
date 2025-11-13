@@ -56,7 +56,9 @@ export default function ProductDetailPage() {
     categories: firstCategoryId ? [firstCategoryId] : undefined,
     limit: 4,
   });
-  const relatedProducts = relatedData?.data.filter((p) => p._id !== product?._id) || [];
+  const relatedProducts = Array.isArray(relatedData?.data)
+    ? relatedData.data.filter((p) => p._id !== product?._id)
+    : [];
 
   // State
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
