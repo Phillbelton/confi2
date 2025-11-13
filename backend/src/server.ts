@@ -26,10 +26,26 @@ if (process.env.NODE_ENV !== 'test') {
 // Middlewares de seguridad
 app.use(helmet());
 
-// CORS
+// CORS - Allow multiple origins for development
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  ENV.FRONTEND_URL, // IP de red local (ej: http://192.168.5.2:3000)
+];
+
 app.use(
   cors({
-    origin: ENV.FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
