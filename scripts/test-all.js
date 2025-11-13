@@ -116,8 +116,13 @@ async function testEndpoint(name, url, options = {}) {
   try {
     const res = await request(url, options);
     const expectedStatus = options.expectedStatus || 200;
-    const passed = res.status === expectedStatus;
-    logTest(name, passed, passed ? '' : `Expected ${expectedStatus}, got ${res.status}`);
+
+    // Handle both single status code and array of status codes
+    const expectedStatuses = Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus];
+    const passed = expectedStatuses.includes(res.status);
+
+    const expectedStr = Array.isArray(expectedStatus) ? expectedStatus.join(' or ') : expectedStatus;
+    logTest(name, passed, passed ? '' : `Expected ${expectedStr}, got ${res.status}`);
     return { passed, response: res };
   } catch (error) {
     logTest(name, false, error.message);
