@@ -19,8 +19,9 @@ export interface WhatsAppMessagePayload {
 export const orderService = {
   // Create order (public - for checkout)
   create: async (payload: CreateOrderPayload) => {
-    const { data } = await api.post<ApiResponse<Order>>('/orders', payload);
-    return data;
+    const { data } = await api.post<ApiResponse<{ order: Order; whatsappURL: string }>>('/orders', payload);
+    // Backend returns { success: true, data: { order: {...}, whatsappURL: '...' } }
+    return data.data as any;
   },
 
   // Generate WhatsApp message
@@ -29,21 +30,24 @@ export const orderService = {
       '/orders/whatsapp',
       { orderId }
     );
-    return data;
+    // Backend returns { success: true, data: { message: '...', url: '...' } }
+    return data.data as any;
   },
 
   // Get order by order number (public - for tracking)
   getByOrderNumber: async (orderNumber: string) => {
-    const { data } = await api.get<ApiResponse<Order>>(
+    const { data } = await api.get<ApiResponse<{ order: Order }>>(
       `/orders/number/${orderNumber}`
     );
-    return data;
+    // Backend returns { success: true, data: { order: {...} } }
+    return (data.data as any)?.order;
   },
 
   // Get my orders (authenticated customer)
   getMyOrders: async () => {
-    const { data } = await api.get<ApiResponse<Order[]>>('/orders/my-orders');
-    return data;
+    const { data } = await api.get<ApiResponse<{ data: Order[]; pagination: any }>>('/orders/my-orders');
+    // Backend returns { success: true, data: { data: [...], pagination: {...} } }
+    return data.data as any;
   },
 };
 
