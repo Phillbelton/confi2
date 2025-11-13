@@ -10,10 +10,9 @@ interface ProductCardWithVariantsProps {
 }
 
 export function ProductCardWithVariants({ product, className }: ProductCardWithVariantsProps) {
-  // Solo cargar variantes si el producto las tiene
-  const { data: variantsData } = useProductVariants(
-    product.hasVariants ? product._id : ''
-  );
+  // Siempre cargar variantes (todos los productos deben tener al menos 1)
+  // hasVariants solo controla si se muestra el selector, no si se cargan
+  const { data: variantsData } = useProductVariants(product._id);
 
   const variants = variantsData?.data || [];
 

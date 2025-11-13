@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useCartStore } from '@/store/useCartStore';
+import { CartSheet } from '@/components/cart/CartSheet';
 import { useState } from 'react';
 
 const navigation = [
@@ -17,6 +18,7 @@ const navigation = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const itemCount = useCartStore((state) => state.itemCount);
 
   return (
@@ -58,24 +60,23 @@ export function Header() {
           </Button>
 
           {/* Cart Button */}
-          <Link href="/carrito">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 touch-target relative"
-              aria-label="Ver carrito"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              {itemCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs flex items-center justify-center pulse-badge"
-                >
-                  {itemCount > 99 ? '99+' : itemCount}
-                </Badge>
-              )}
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 touch-target relative"
+            aria-label="Ver carrito"
+            onClick={() => setCartOpen(true)}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {itemCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs flex items-center justify-center pulse-badge"
+              >
+                {itemCount > 99 ? '99+' : itemCount}
+              </Badge>
+            )}
+          </Button>
 
           {/* Mobile Menu */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -106,6 +107,9 @@ export function Header() {
           </Sheet>
         </div>
       </div>
+
+      {/* Cart Sheet */}
+      <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </header>
   );
 }
