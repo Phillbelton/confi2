@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Allow local network access for development
+  experimental: {
+    allowedDevOrigins: ['192.168.5.2:3000'],
+  },
 };
 
 export default nextConfig;

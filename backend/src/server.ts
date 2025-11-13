@@ -101,12 +101,14 @@ app.use(errorHandler);
 
 // Iniciar servidor (solo en desarrollo/producción, no en tests)
 const PORT = ENV.PORT;
+const HOST = '0.0.0.0'; // Listen on all network interfaces
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, HOST, () => {
     logger.info('═══════════════════════════════════════════════════════════');
     logger.info(`🚀 Servidor corriendo en puerto ${PORT}`);
-    logger.info(`📍 URL: http://localhost:${PORT}`);
+    logger.info(`📍 URL Local: http://localhost:${PORT}`);
+    logger.info(`📡 URL Red: http://0.0.0.0:${PORT} (accesible desde red local)`);
     logger.info(`🌍 Entorno: ${ENV.NODE_ENV}`);
     logger.info(`🎯 Frontend URL: ${ENV.FRONTEND_URL}`);
     logger.info('═══════════════════════════════════════════════════════════');
