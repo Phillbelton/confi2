@@ -97,9 +97,10 @@ const productVariantSchema = new Schema<IProductVariant>(
       type: [String],
       validate: {
         validator: function (v: string[]) {
-          return v.length >= 1 && v.length <= 5;
+          // Permitir 0 imágenes o entre 1 y 5 imágenes
+          return v.length === 0 || (v.length >= 1 && v.length <= 5);
         },
-        message: 'La variante debe tener entre 1 y 5 imágenes',
+        message: 'La variante debe tener entre 0 y 5 imágenes',
       },
       default: [],
     },
