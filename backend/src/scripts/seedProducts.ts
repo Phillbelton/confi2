@@ -773,7 +773,17 @@ async function seedProducts() {
         const isMultiDimensional = !!productData.variantAttributes;
 
         // Construir variantAttributes
-        let variantAttributes;
+        let variantAttributes: Array<{
+          name: string;
+          displayName: string;
+          order: number;
+          values: {
+            value: string;
+            displayValue: string;
+            order: number;
+          }[];
+        }>;
+
         if (isSingleVariant) {
           // Producto sin variantes: crear atributo vacío
           variantAttributes = [];
