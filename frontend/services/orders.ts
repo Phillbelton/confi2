@@ -1,8 +1,19 @@
 import { api } from '@/lib/axios';
-import type { Order, ApiResponse, CheckoutFormData } from '@/types';
+import type { Order, ApiResponse } from '@/types';
 
 export interface CreateOrderPayload {
-  customer: CheckoutFormData;
+  customer: {
+    name: string;
+    email?: string;
+    phone: string;
+    address?: {
+      street: string;
+      number: string;
+      city: string;
+      neighborhood?: string;
+      reference?: string;
+    };
+  };
   items: {
     variantId: string;
     quantity: number;
