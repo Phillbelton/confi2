@@ -25,8 +25,9 @@ export const createOrderSchema = z.object({
         .trim(),
 
       email: z.string()
-        .email('Email inválido')
         .trim()
+        .transform(val => val === '' ? undefined : val)
+        .pipe(z.string().email('Email inválido').optional())
         .optional(),
 
       phone: z.string()

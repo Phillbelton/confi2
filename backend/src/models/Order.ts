@@ -116,7 +116,7 @@ const orderItemSchema = new Schema<IOrderItem>(
       },
       image: {
         type: String,
-        required: true,
+        default: '',
       },
     },
     quantity: {
