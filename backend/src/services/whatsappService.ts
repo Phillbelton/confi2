@@ -89,7 +89,15 @@ export function generateOrderMessage(order: IOrder): string {
       lines.push(`   SKU: ${item.variantSnapshot.sku}`);
 
       // Mostrar atributos de la variante (ej: tamaño, sabor, etc.)
-      const attributes = Object.entries(item.variantSnapshot.attributes);
+      // Convert Mongoose Map to plain object
+      const attributesMap = item.variantSnapshot.attributes;
+      const attributesObj = attributesMap instanceof Map
+        ? Object.fromEntries(attributesMap.entries())
+        : (typeof attributesMap === 'object' && attributesMap !== null
+           ? attributesMap
+           : {});
+
+      const attributes = Object.entries(attributesObj);
       if (attributes.length > 0) {
         const attrString = attributes
           .map(([key, value]) => `${key}: ${value}`)
@@ -183,7 +191,15 @@ export function formatProductList(order: IOrder): string {
       let line = `${index + 1}. ${item.variantSnapshot.name}`;
 
       // Agregar atributos si existen
-      const attributes = Object.entries(item.variantSnapshot.attributes);
+      // Convert Mongoose Map to plain object
+      const attributesMap = item.variantSnapshot.attributes;
+      const attributesObj = attributesMap instanceof Map
+        ? Object.fromEntries(attributesMap.entries())
+        : (typeof attributesMap === 'object' && attributesMap !== null
+           ? attributesMap
+           : {});
+
+      const attributes = Object.entries(attributesObj);
       if (attributes.length > 0) {
         const attrString = attributes.map(([_, value]) => value).join(' ');
         line += ` (${attrString})`;
