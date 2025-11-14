@@ -15,11 +15,13 @@ import type {
 export const productService = {
   // Get all products with filters and pagination
   getProducts: async (params?: ProductQueryParams) => {
-    const { data } = await api.get<ApiPaginatedResponse<ProductParent[]>>(
+    const { data } = await api.get<ApiResponse<{ data: ProductParent[], pagination: any }>>(
       '/products/parents',
       { params }
     );
-    return data;
+    // Backend returns { success: true, data: { data: [...], pagination: {...} } }
+    // We need to unwrap to return just { data: [...], pagination: {...} }
+    return data.data as any;
   },
 
   // Get featured products

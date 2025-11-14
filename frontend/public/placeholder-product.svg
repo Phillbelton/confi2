@@ -1,0 +1,14 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" fill="#f3f4f6"/>
+  <g transform="translate(200, 200)">
+    <!-- Package icon -->
+    <path d="M -60 -80 L 0 -100 L 60 -80 L 60 20 L 0 40 L -60 20 Z"
+          fill="none" stroke="#9ca3af" stroke-width="3"/>
+    <path d="M -60 -80 L 0 -60 L 60 -80"
+          fill="none" stroke="#9ca3af" stroke-width="3"/>
+    <path d="M 0 -60 L 0 40"
+          fill="none" stroke="#9ca3af" stroke-width="3"/>
+    <text x="0" y="80" font-family="Arial, sans-serif" font-size="18"
+          fill="#6b7280" text-anchor="middle">Sin imagen</text>
+  </g>
+</svg>

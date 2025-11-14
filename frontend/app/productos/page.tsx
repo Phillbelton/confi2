@@ -11,23 +11,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ProductCard } from '@/components/products/ProductCard';
+import { ProductCardWithVariants } from '@/components/products/ProductCardWithVariants';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
-import type { ProductFilters as Filters, ProductSort } from '@/types';
+import type { ProductFilters as Filters, ProductSort, ProductParent } from '@/types';
 
 const ITEMS_PER_PAGE = 20;
 
 const sortOptions = [
-  { value: 'createdAt:desc', label: 'Más recientes' },
-  { value: 'price:asc', label: 'Precio: menor a mayor' },
-  { value: 'price:desc', label: 'Precio: mayor a menor' },
-  { value: 'name:asc', label: 'Nombre: A-Z' },
-  { value: 'views:desc', label: 'Más vistos' },
+  { value: 'newest', label: 'Más recientes' },
+  { value: 'price_asc', label: 'Precio: menor a mayor' },
+  { value: 'price_desc', label: 'Precio: mayor a menor' },
+  { value: 'name_asc', label: 'Nombre: A-Z' },
+  { value: 'name_desc', label: 'Nombre: Z-A' },
+  { value: 'oldest', label: 'Más antiguos' },
 ];
 
 function ProductsContent() {
@@ -51,7 +52,7 @@ function ProductsContent() {
   );
 
   const [sortBy, setSortBy] = useState(
-    searchParams.get('sort') || 'createdAt:desc'
+    searchParams.get('sort') || 'newest'
   );
 
   // Fetch data
@@ -78,7 +79,7 @@ function ProductsContent() {
     if (filters.featured) params.set('featured', 'true');
     if (filters.onSale) params.set('onSale', 'true');
     if (currentPage > 1) params.set('page', String(currentPage));
-    if (sortBy !== 'createdAt:desc') params.set('sort', sortBy);
+    if (sortBy !== 'newest') params.set('sort', sortBy);
 
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     router.replace(newUrl, { scroll: false });
@@ -192,12 +193,10 @@ function ProductsContent() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <ProductCard
+              {products.map((product: ProductParent) => (
+                <ProductCardWithVariants
                   key={product._id}
                   product={product}
-                  // TODO: Fetch variants for each product
-                  variants={[]}
                 />
               ))}
             </div>

@@ -26,10 +26,26 @@ if (process.env.NODE_ENV !== 'test') {
 // Middlewares de seguridad
 app.use(helmet());
 
-// CORS
+// CORS - Allow multiple origins for development
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  ENV.FRONTEND_URL, // IP de red local (ej: http://192.168.5.2:3000)
+];
+
 app.use(
   cors({
-    origin: ENV.FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -101,12 +117,14 @@ app.use(errorHandler);
 
 // Iniciar servidor (solo en desarrollo/producción, no en tests)
 const PORT = ENV.PORT;
+const HOST = '0.0.0.0'; // Listen on all network interfaces
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, HOST, () => {
     logger.info('═══════════════════════════════════════════════════════════');
     logger.info(`🚀 Servidor corriendo en puerto ${PORT}`);
-    logger.info(`📍 URL: http://localhost:${PORT}`);
+    logger.info(`📍 URL Local: http://localhost:${PORT}`);
+    logger.info(`📡 URL Red: http://0.0.0.0:${PORT} (accesible desde red local)`);
     logger.info(`🌍 Entorno: ${ENV.NODE_ENV}`);
     logger.info(`🎯 Frontend URL: ${ENV.FRONTEND_URL}`);
     logger.info('═══════════════════════════════════════════════════════════');

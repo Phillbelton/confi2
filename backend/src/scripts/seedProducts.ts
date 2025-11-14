@@ -14,13 +14,19 @@ interface ProductSeed {
   brandName: string;
   tags?: string[];
   featured?: boolean;
+  // Para productos SIN variantes (unitarios)
+  singleVariant?: {
+    sku: string;
+    price: number;
+    stock: number;
+  };
   // Para productos de una sola dimensión de variante
   variantAttributeName?: string; // ej: "tamaño", "sabor", "peso"
   variantAttributeDisplayName?: string; // ej: "Tamaño", "Sabor", "Peso"
   variants?: {
     value: string; // ej: "350ml", "500ml"
     displayValue: string; // ej: "350ml (Lata)", "500ml (Botella)"
-    price: number; // Precio en CLP
+    price: number;
     stock: number;
     order: number;
   }[];
@@ -37,7 +43,7 @@ interface ProductSeed {
   }[];
   // Variantes multi-dimensionales: combinaciones de los atributos
   multiVariants?: {
-    attributeCombination: { [attributeName: string]: string }; // ej: { sabor: "vainilla", tamaño: "500ml" }
+    attributeCombination: { [attributeName: string]: string };
     sku: string;
     price: number;
     stock: number;
@@ -49,13 +55,13 @@ const productsToSeed: ProductSeed[] = [
   // CATEGORIA 1: BEBIDAS
   // ===================================================================
 
-  // Subcategoría: Gaseosas
+  // Subcategoría: Gaseosas (CON variantes)
   {
-    name: 'Producto-1-001',
-    description: 'Bebida gaseosa sabor cola para pruebas de sistema',
+    name: 'Coca Cola',
+    description: 'La auténtica Coca Cola, refrescante bebida gaseosa sabor cola',
     categoryNames: ['Categoria-1-Bebidas', 'Subcat-1A-Gaseosas'],
     brandName: 'Marca-A',
-    tags: ['gaseosa', 'bebida', 'cola'],
+    tags: ['gaseosa', 'bebida', 'cola', 'refrescante'],
     featured: true,
     variantAttributeName: 'tamaño',
     variantAttributeDisplayName: 'Tamaño',
@@ -63,111 +69,86 @@ const productsToSeed: ProductSeed[] = [
       { value: '350ml', displayValue: '350ml (Lata)', price: 990, stock: 150, order: 1 },
       { value: '500ml', displayValue: '500ml (Botella)', price: 1490, stock: 120, order: 2 },
       { value: '1.5L', displayValue: '1.5L (Botella)', price: 2490, stock: 80, order: 3 },
-      { value: '3L', displayValue: '3L (Botella Familiar)', price: 3990, stock: 50, order: 4 },
+      { value: '2L', displayValue: '2L (Botella)', price: 2990, stock: 70, order: 4 },
+      { value: '3L', displayValue: '3L (Botella Familiar)', price: 3990, stock: 50, order: 5 },
     ],
   },
   {
-    name: 'Producto-1-002',
-    description: 'Bebida gaseosa sabor naranja para pruebas de sistema',
+    name: 'Fanta Naranja',
+    description: 'Fanta sabor naranja, la clásica bebida gaseosa con sabor frutal',
     categoryNames: ['Categoria-1-Bebidas', 'Subcat-1A-Gaseosas'],
     brandName: 'Marca-A',
-    tags: ['gaseosa', 'bebida', 'naranja'],
+    tags: ['gaseosa', 'bebida', 'naranja', 'frutal'],
     variantAttributeName: 'tamaño',
     variantAttributeDisplayName: 'Tamaño',
     variants: [
       { value: '350ml', displayValue: '350ml (Lata)', price: 990, stock: 140, order: 1 },
       { value: '500ml', displayValue: '500ml (Botella)', price: 1490, stock: 110, order: 2 },
       { value: '1.5L', displayValue: '1.5L (Botella)', price: 2490, stock: 75, order: 3 },
+      { value: '2L', displayValue: '2L (Botella)', price: 2990, stock: 65, order: 4 },
     ],
   },
   {
-    name: 'Producto-1-003',
-    description: 'Bebida gaseosa sabor limón para pruebas de sistema',
+    name: 'Sprite',
+    description: 'Sprite lima-limón, refrescante y sin colorantes',
     categoryNames: ['Categoria-1-Bebidas', 'Subcat-1A-Gaseosas'],
-    brandName: 'Marca-B',
-    tags: ['gaseosa', 'bebida', 'limón'],
+    brandName: 'Marca-A',
+    tags: ['gaseosa', 'bebida', 'limón', 'lima', 'refrescante'],
     variantAttributeName: 'tamaño',
     variantAttributeDisplayName: 'Tamaño',
     variants: [
-      { value: '350ml', displayValue: '350ml (Lata)', price: 1090, stock: 130, order: 1 },
-      { value: '500ml', displayValue: '500ml (Botella)', price: 1590, stock: 100, order: 2 },
-      { value: '2L', displayValue: '2L (Botella)', price: 2990, stock: 60, order: 3 },
+      { value: '350ml', displayValue: '350ml (Lata)', price: 990, stock: 130, order: 1 },
+      { value: '500ml', displayValue: '500ml (Botella)', price: 1490, stock: 100, order: 2 },
+      { value: '1.5L', displayValue: '1.5L (Botella)', price: 2490, stock: 70, order: 3 },
     ],
   },
   {
-    name: 'Producto-1-004',
-    description: 'Bebida gaseosa sabor uva para pruebas de sistema',
+    name: 'Pepsi',
+    description: 'Pepsi cola, sabor intenso y refrescante',
     categoryNames: ['Categoria-1-Bebidas', 'Subcat-1A-Gaseosas'],
     brandName: 'Marca-B',
-    tags: ['gaseosa', 'bebida', 'uva'],
+    tags: ['gaseosa', 'bebida', 'cola'],
     variantAttributeName: 'tamaño',
     variantAttributeDisplayName: 'Tamaño',
     variants: [
-      { value: '350ml', displayValue: '350ml (Lata)', price: 1090, stock: 125, order: 1 },
-      { value: '1.5L', displayValue: '1.5L (Botella)', price: 2690, stock: 70, order: 2 },
+      { value: '350ml', displayValue: '350ml (Lata)', price: 950, stock: 125, order: 1 },
+      { value: '500ml', displayValue: '500ml (Botella)', price: 1390, stock: 95, order: 2 },
+      { value: '1.5L', displayValue: '1.5L (Botella)', price: 2390, stock: 65, order: 3 },
     ],
   },
 
   // Subcategoría: Jugos
   {
-    name: 'Producto-1-005',
-    description: 'Jugo de frutas sabor durazno para pruebas de sistema',
+    name: 'Jugo Jumex Durazno',
+    description: 'Jugo de durazno Jumex, sabor natural',
     categoryNames: ['Categoria-1-Bebidas', 'Subcat-1B-Jugos'],
     brandName: 'Marca-C',
-    tags: ['jugo', 'bebida', 'durazno'],
+    tags: ['jugo', 'bebida', 'durazno', 'frutal'],
     variantAttributeName: 'tamaño',
     variantAttributeDisplayName: 'Tamaño',
     variants: [
       { value: '200ml', displayValue: '200ml (Caja)', price: 690, stock: 200, order: 1 },
       { value: '1L', displayValue: '1L (Tetra Pak)', price: 1890, stock: 90, order: 2 },
-      { value: '1.5L', displayValue: '1.5L (Tetra Pak)', price: 2590, stock: 70, order: 3 },
     ],
   },
   {
-    name: 'Producto-1-006',
-    description: 'Jugo de frutas sabor manzana para pruebas de sistema',
+    name: 'Jugo Ades Manzana',
+    description: 'Bebida a base de soja sabor manzana',
     categoryNames: ['Categoria-1-Bebidas', 'Subcat-1B-Jugos'],
     brandName: 'Marca-C',
-    tags: ['jugo', 'bebida', 'manzana'],
+    tags: ['jugo', 'bebida', 'manzana', 'soja'],
     variantAttributeName: 'tamaño',
     variantAttributeDisplayName: 'Tamaño',
     variants: [
-      { value: '200ml', displayValue: '200ml (Caja)', price: 690, stock: 190, order: 1 },
-      { value: '1L', displayValue: '1L (Tetra Pak)', price: 1890, stock: 85, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-1-007',
-    description: 'Jugo de frutas sabor naranja para pruebas de sistema',
-    categoryNames: ['Categoria-1-Bebidas', 'Subcat-1B-Jugos'],
-    brandName: 'Marca-D',
-    tags: ['jugo', 'bebida', 'naranja', 'citrico'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '200ml', displayValue: '200ml (Caja)', price: 790, stock: 180, order: 1 },
-      { value: '1L', displayValue: '1L (Tetra Pak)', price: 1990, stock: 95, order: 2 },
-      { value: '1.5L', displayValue: '1.5L (Tetra Pak)', price: 2790, stock: 65, order: 3 },
-    ],
-  },
-  {
-    name: 'Producto-1-008',
-    description: 'Jugo de frutas sabor piña para pruebas de sistema',
-    categoryNames: ['Categoria-1-Bebidas', 'Subcat-1B-Jugos'],
-    brandName: 'Marca-D',
-    tags: ['jugo', 'bebida', 'piña', 'tropical'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '200ml', displayValue: '200ml (Caja)', price: 790, stock: 175, order: 1 },
-      { value: '1L', displayValue: '1L (Tetra Pak)', price: 1990, stock: 88, order: 2 },
+      { value: '200ml', displayValue: '200ml (Caja)', price: 790, stock: 190, order: 1 },
+      { value: '1L', displayValue: '1L (Tetra Pak)', price: 1990, stock: 85, order: 2 },
     ],
   },
 
   // Subcategoría: Aguas
   {
-    name: 'Producto-1-009',
-    description: 'Agua mineral natural sin gas para pruebas de sistema',
+    name: 'Agua Mineral Villavicencio',
+    description: 'Agua mineral natural sin gas',
     categoryNames: ['Categoria-1-Bebidas', 'Subcat-1C-Aguas'],
     brandName: 'Marca-E',
     tags: ['agua', 'mineral', 'sin-gas'],
@@ -179,133 +160,89 @@ const productsToSeed: ProductSeed[] = [
       { value: '6L', displayValue: '6L (Bidón)', price: 3490, stock: 60, order: 3 },
     ],
   },
-  {
-    name: 'Producto-1-010',
-    description: 'Agua mineral con gas para pruebas de sistema',
-    categoryNames: ['Categoria-1-Bebidas', 'Subcat-1C-Aguas'],
-    brandName: 'Marca-E',
-    tags: ['agua', 'mineral', 'con-gas'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '500ml', displayValue: '500ml (Botella)', price: 990, stock: 180, order: 1 },
-      { value: '1.5L', displayValue: '1.5L (Botella)', price: 1690, stock: 130, order: 2 },
-    ],
-  },
 
   // ===================================================================
   // CATEGORIA 2: SNACKS
   // ===================================================================
 
-  // Subcategoría: Salados
+  // Subcategoría: Salados (CON variantes)
   {
-    name: 'Producto-2-001',
-    description: 'Papas fritas sabor natural para pruebas de sistema',
+    name: 'Papas Lays Clásicas',
+    description: 'Papas fritas Lays sabor natural, las clásicas de siempre',
     categoryNames: ['Categoria-2-Snacks', 'Subcat-2A-Salados'],
     brandName: 'Marca-F',
-    tags: ['snack', 'papas', 'salado'],
+    tags: ['snack', 'papas', 'salado', 'clasico'],
     featured: true,
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
     variants: [
-      { value: '50g', displayValue: '50g (Individual)', price: 890, stock: 200, order: 1 },
-      { value: '150g', displayValue: '150g (Mediano)', price: 1990, stock: 120, order: 2 },
-      { value: '300g', displayValue: '300g (Familiar)', price: 3490, stock: 80, order: 3 },
+      { value: '42g', displayValue: '42g (Individual)', price: 890, stock: 200, order: 1 },
+      { value: '140g', displayValue: '140g (Mediano)', price: 1990, stock: 120, order: 2 },
+      { value: '280g', displayValue: '280g (Familiar)', price: 3490, stock: 80, order: 3 },
     ],
   },
   {
-    name: 'Producto-2-002',
-    description: 'Papas fritas sabor queso para pruebas de sistema',
+    name: 'Doritos Nacho',
+    description: 'Doritos sabor queso nacho, intenso y crujiente',
     categoryNames: ['Categoria-2-Snacks', 'Subcat-2A-Salados'],
     brandName: 'Marca-F',
-    tags: ['snack', 'papas', 'salado', 'queso'],
+    tags: ['snack', 'doritos', 'salado', 'queso'],
+    featured: true,
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
     variants: [
-      { value: '50g', displayValue: '50g (Individual)', price: 890, stock: 190, order: 1 },
-      { value: '150g', displayValue: '150g (Mediano)', price: 1990, stock: 115, order: 2 },
-      { value: '300g', displayValue: '300g (Familiar)', price: 3490, stock: 75, order: 3 },
+      { value: '48g', displayValue: '48g (Individual)', price: 990, stock: 180, order: 1 },
+      { value: '150g', displayValue: '150g (Mediano)', price: 2190, stock: 110, order: 2 },
+      { value: '300g', displayValue: '300g (Familiar)', price: 3990, stock: 70, order: 3 },
     ],
   },
   {
-    name: 'Producto-2-003',
-    description: 'Nachos sabor natural para pruebas de sistema',
+    name: 'Cheetos',
+    description: 'Cheetos sabor queso, el snack que te deja los dedos naranjas',
     categoryNames: ['Categoria-2-Snacks', 'Subcat-2A-Salados'],
-    brandName: 'Marca-G',
-    tags: ['snack', 'nachos', 'salado', 'maiz'],
+    brandName: 'Marca-F',
+    tags: ['snack', 'cheetos', 'salado', 'queso'],
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
     variants: [
-      { value: '100g', displayValue: '100g (Individual)', price: 1190, stock: 150, order: 1 },
-      { value: '250g', displayValue: '250g (Familiar)', price: 2490, stock: 90, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-2-004',
-    description: 'Nachos sabor picante para pruebas de sistema',
-    categoryNames: ['Categoria-2-Snacks', 'Subcat-2A-Salados'],
-    brandName: 'Marca-G',
-    tags: ['snack', 'nachos', 'salado', 'picante'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '100g', displayValue: '100g (Individual)', price: 1190, stock: 145, order: 1 },
-      { value: '250g', displayValue: '250g (Familiar)', price: 2490, stock: 85, order: 2 },
+      { value: '40g', displayValue: '40g (Individual)', price: 850, stock: 190, order: 1 },
+      { value: '150g', displayValue: '150g (Mediano)', price: 2090, stock: 115, order: 2 },
     ],
   },
 
-  // ============ PRODUCTO CON VARIANTES MULTI-DIMENSIONALES ============
-  // Este producto tiene MÚLTIPLES atributos de variante: sabor Y tamaño
+  // Subcategoría: Salados (SIN variantes - productos unitarios)
   {
-    name: 'Producto-2-004-MD',
-    description: 'Papas fritas premium con múltiples sabores y tamaños para pruebas de sistema',
+    name: 'Pringles Original 124g',
+    description: 'Pringles sabor original en su clásico tubo, 124g',
     categoryNames: ['Categoria-2-Snacks', 'Subcat-2A-Salados'],
-    brandName: 'Marca-F',
-    tags: ['snack', 'papas', 'salado', 'premium', 'multi-variante'],
-    featured: true,
-    // Definir los atributos de variante (múltiples dimensiones)
-    variantAttributes: [
-      {
-        name: 'sabor',
-        displayName: 'Sabor',
-        order: 1,
-        values: [
-          { value: 'natural', displayValue: 'Natural', order: 1 },
-          { value: 'queso', displayValue: 'Queso', order: 2 },
-          { value: 'bbq', displayValue: 'BBQ', order: 3 },
-        ],
-      },
-      {
-        name: 'tamaño',
-        displayName: 'Tamaño',
-        order: 2,
-        values: [
-          { value: '50g', displayValue: '50g (Individual)', order: 1 },
-          { value: '150g', displayValue: '150g (Mediano)', order: 2 },
-        ],
-      },
-    ],
-    // Combinaciones de variantes (todas las combinaciones posibles)
-    multiVariants: [
-      // Natural
-      { attributeCombination: { sabor: 'natural', tamaño: '50g' }, sku: 'PROD-2-004-MD-NAT-50G', price: 990, stock: 100 },
-      { attributeCombination: { sabor: 'natural', tamaño: '150g' }, sku: 'PROD-2-004-MD-NAT-150G', price: 2190, stock: 80 },
-      // Queso
-      { attributeCombination: { sabor: 'queso', tamaño: '50g' }, sku: 'PROD-2-004-MD-QUE-50G', price: 1090, stock: 95 },
-      { attributeCombination: { sabor: 'queso', tamaño: '150g' }, sku: 'PROD-2-004-MD-QUE-150G', price: 2290, stock: 75 },
-      // BBQ
-      { attributeCombination: { sabor: 'bbq', tamaño: '50g' }, sku: 'PROD-2-004-MD-BBQ-50G', price: 1090, stock: 90 },
-      { attributeCombination: { sabor: 'bbq', tamaño: '150g' }, sku: 'PROD-2-004-MD-BBQ-150G', price: 2290, stock: 70 },
-    ],
+    brandName: 'Marca-G',
+    tags: ['snack', 'pringles', 'salado', 'unitario'],
+    singleVariant: {
+      sku: 'PRINGLES-ORIGINAL-124G',
+      price: 2990,
+      stock: 85,
+    },
+  },
+  {
+    name: 'Pringles Crema y Cebolla 124g',
+    description: 'Pringles sabor crema y cebolla, 124g',
+    categoryNames: ['Categoria-2-Snacks', 'Subcat-2A-Salados'],
+    brandName: 'Marca-G',
+    tags: ['snack', 'pringles', 'salado', 'unitario'],
+    singleVariant: {
+      sku: 'PRINGLES-CREMA-CEBOLLA-124G',
+      price: 2990,
+      stock: 75,
+    },
   },
 
   // Subcategoría: Dulces
   {
-    name: 'Producto-2-005',
-    description: 'Snack dulce de maíz acaramelado para pruebas de sistema',
+    name: 'Popcorn Caramelo',
+    description: 'Palomitas de maíz acaramelado, dulce y crujiente',
     categoryNames: ['Categoria-2-Snacks', 'Subcat-2B-Dulces'],
     brandName: 'Marca-H',
-    tags: ['snack', 'dulce', 'maiz'],
+    tags: ['snack', 'dulce', 'palomitas', 'caramelo'],
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
     variants: [
@@ -313,27 +250,14 @@ const productsToSeed: ProductSeed[] = [
       { value: '200g', displayValue: '200g (Familiar)', price: 2290, stock: 100, order: 2 },
     ],
   },
-  {
-    name: 'Producto-2-006',
-    description: 'Snack dulce de arroz inflado para pruebas de sistema',
-    categoryNames: ['Categoria-2-Snacks', 'Subcat-2B-Dulces'],
-    brandName: 'Marca-H',
-    tags: ['snack', 'dulce', 'arroz'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '80g', displayValue: '80g (Individual)', price: 990, stock: 155, order: 1 },
-      { value: '200g', displayValue: '200g (Familiar)', price: 2290, stock: 95, order: 2 },
-    ],
-  },
 
   // Subcategoría: Frutos Secos
   {
-    name: 'Producto-2-007',
-    description: 'Maní salado para pruebas de sistema',
+    name: 'Maní Salado',
+    description: 'Maní tostado y salado, perfecto para compartir',
     categoryNames: ['Categoria-2-Snacks', 'Subcat-2C-Frutos-Secos'],
     brandName: 'Marca-I',
-    tags: ['snack', 'frutos-secos', 'mani'],
+    tags: ['snack', 'frutos-secos', 'mani', 'salado'],
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
     variants: [
@@ -342,11 +266,11 @@ const productsToSeed: ProductSeed[] = [
     ],
   },
   {
-    name: 'Producto-2-008',
-    description: 'Mix de frutos secos para pruebas de sistema',
+    name: 'Mix Frutos Secos Premium',
+    description: 'Mezcla de nueces, almendras, maní y pasas',
     categoryNames: ['Categoria-2-Snacks', 'Subcat-2C-Frutos-Secos'],
     brandName: 'Marca-I',
-    tags: ['snack', 'frutos-secos', 'mix'],
+    tags: ['snack', 'frutos-secos', 'mix', 'premium'],
     featured: true,
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
@@ -360,164 +284,126 @@ const productsToSeed: ProductSeed[] = [
   // CATEGORIA 3: CHOCOLATES
   // ===================================================================
 
-  // Subcategoría: Barras
+  // Subcategoría: Barras (SIN variantes - productos unitarios)
   {
-    name: 'Producto-3-001',
-    description: 'Barra de chocolate con leche para pruebas de sistema',
+    name: 'Snickers 50g',
+    description: 'Barra de chocolate Snickers con maní y caramelo, 50g',
     categoryNames: ['Categoria-3-Chocolates', 'Subcat-3A-Barras'],
     brandName: 'Marca-J',
-    tags: ['chocolate', 'barra', 'leche'],
+    tags: ['chocolate', 'barra', 'snickers', 'maní', 'caramelo'],
     featured: true,
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '30g', displayValue: '30g (Mini)', price: 690, stock: 200, order: 1 },
-      { value: '50g', displayValue: '50g (Estándar)', price: 990, stock: 180, order: 2 },
-      { value: '100g', displayValue: '100g (Grande)', price: 1790, stock: 120, order: 3 },
-    ],
+    singleVariant: {
+      sku: 'SNICKERS-50G',
+      price: 890,
+      stock: 200,
+    },
   },
   {
-    name: 'Producto-3-002',
-    description: 'Barra de chocolate negro para pruebas de sistema',
+    name: 'Kit Kat 45g',
+    description: 'Kit Kat wafer cubierto de chocolate con leche, 45g',
     categoryNames: ['Categoria-3-Chocolates', 'Subcat-3A-Barras'],
     brandName: 'Marca-J',
-    tags: ['chocolate', 'barra', 'negro', 'amargo'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '30g', displayValue: '30g (Mini)', price: 790, stock: 170, order: 1 },
-      { value: '50g', displayValue: '50g (Estándar)', price: 1090, stock: 150, order: 2 },
-      { value: '100g', displayValue: '100g (Grande)', price: 1990, stock: 100, order: 3 },
-    ],
+    tags: ['chocolate', 'barra', 'kitkat', 'wafer'],
+    featured: true,
+    singleVariant: {
+      sku: 'KITKAT-45G',
+      price: 850,
+      stock: 190,
+    },
   },
   {
-    name: 'Producto-3-003',
-    description: 'Barra de chocolate blanco para pruebas de sistema',
+    name: 'Milky Way 52g',
+    description: 'Barra Milky Way con caramelo y nougat cubierto de chocolate, 52g',
     categoryNames: ['Categoria-3-Chocolates', 'Subcat-3A-Barras'],
-    brandName: 'Marca-K',
-    tags: ['chocolate', 'barra', 'blanco'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '30g', displayValue: '30g (Mini)', price: 790, stock: 165, order: 1 },
-      { value: '50g', displayValue: '50g (Estándar)', price: 1090, stock: 145, order: 2 },
-    ],
+    brandName: 'Marca-J',
+    tags: ['chocolate', 'barra', 'milkyway', 'caramelo'],
+    singleVariant: {
+      sku: 'MILKYWAY-52G',
+      price: 870,
+      stock: 180,
+    },
   },
   {
-    name: 'Producto-3-004',
-    description: 'Barra de chocolate con almendras para pruebas de sistema',
+    name: 'Twix 50g',
+    description: 'Twix galleta con caramelo cubierta de chocolate, 50g',
+    categoryNames: ['Categoria-3-Chocolates', 'Subcat-3A-Barras'],
+    brandName: 'Marca-J',
+    tags: ['chocolate', 'barra', 'twix', 'caramelo', 'galleta'],
+    singleVariant: {
+      sku: 'TWIX-50G',
+      price: 890,
+      stock: 175,
+    },
+  },
+  {
+    name: 'Snickers 50g',
+    description: 'Barra de chocolate Snickers con maní y caramelo, 50g',
+    categoryNames: ['Categoria-3-Chocolates', 'Subcat-3A-Barras'],
+    brandName: 'Marca-J',
+    tags: ['chocolate', 'barra', 'snickers', 'maní', 'caramelo'],
+    singleVariant: {
+      sku: 'M&MS-45G',
+      price: 890,
+      stock: 185,
+    },
+  },
+  {
+    name: 'Hersheys 43g',
+    description: 'Chocolate Hersheys con leche, el clásico americano, 43g',
     categoryNames: ['Categoria-3-Chocolates', 'Subcat-3A-Barras'],
     brandName: 'Marca-K',
-    tags: ['chocolate', 'barra', 'almendras', 'frutos-secos'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '40g', displayValue: '40g (Estándar)', price: 1190, stock: 140, order: 1 },
-      { value: '80g', displayValue: '80g (Grande)', price: 2090, stock: 90, order: 2 },
-    ],
+    tags: ['chocolate', 'barra', 'hersheys', 'leche'],
+    singleVariant: {
+      sku: 'HERSHEYS-43G',
+      price: 790,
+      stock: 170,
+    },
   },
 
-  // ============ PRODUCTO CON VARIANTES MULTI-DIMENSIONALES ============
-  // Este producto tiene MÚLTIPLES atributos: tipo de chocolate Y tamaño
+  // Subcategoría: Barras (CON variantes)
   {
-    name: 'Producto-3-004-MD',
-    description: 'Barra de chocolate premium con múltiples tipos y tamaños para pruebas de sistema',
+    name: 'Toblerone',
+    description: 'Toblerone chocolate suizo con miel y almendras',
     categoryNames: ['Categoria-3-Chocolates', 'Subcat-3A-Barras'],
     brandName: 'Marca-K',
-    tags: ['chocolate', 'barra', 'premium', 'multi-variante'],
+    tags: ['chocolate', 'barra', 'toblerone', 'almendras', 'premium'],
     featured: true,
-    // Definir los atributos de variante (múltiples dimensiones)
-    variantAttributes: [
-      {
-        name: 'tipo',
-        displayName: 'Tipo de Chocolate',
-        order: 1,
-        values: [
-          { value: 'leche', displayValue: 'Con Leche', order: 1 },
-          { value: 'negro', displayValue: 'Negro 70%', order: 2 },
-          { value: 'blanco', displayValue: 'Blanco', order: 3 },
-        ],
-      },
-      {
-        name: 'tamaño',
-        displayName: 'Tamaño',
-        order: 2,
-        values: [
-          { value: '50g', displayValue: '50g (Estándar)', order: 1 },
-          { value: '100g', displayValue: '100g (Grande)', order: 2 },
-        ],
-      },
-    ],
-    // Combinaciones de variantes
-    multiVariants: [
-      // Con Leche
-      { attributeCombination: { tipo: 'leche', tamaño: '50g' }, sku: 'PROD-3-004-MD-LEC-50G', price: 1190, stock: 120 },
-      { attributeCombination: { tipo: 'leche', tamaño: '100g' }, sku: 'PROD-3-004-MD-LEC-100G', price: 2090, stock: 90 },
-      // Negro
-      { attributeCombination: { tipo: 'negro', tamaño: '50g' }, sku: 'PROD-3-004-MD-NEG-50G', price: 1390, stock: 110 },
-      { attributeCombination: { tipo: 'negro', tamaño: '100g' }, sku: 'PROD-3-004-MD-NEG-100G', price: 2390, stock: 85 },
-      // Blanco
-      { attributeCombination: { tipo: 'blanco', tamaño: '50g' }, sku: 'PROD-3-004-MD-BLA-50G', price: 1290, stock: 115 },
-      { attributeCombination: { tipo: 'blanco', tamaño: '100g' }, sku: 'PROD-3-004-MD-BLA-100G', price: 2190, stock: 80 },
+    variantAttributeName: 'peso',
+    variantAttributeDisplayName: 'Peso',
+    variants: [
+      { value: '50g', displayValue: '50g (Mini)', price: 1190, stock: 140, order: 1 },
+      { value: '100g', displayValue: '100g (Estándar)', price: 2190, stock: 100, order: 2 },
+      { value: '200g', displayValue: '200g (Grande)', price: 3990, stock: 70, order: 3 },
     ],
   },
 
   // Subcategoría: Bombones
   {
-    name: 'Producto-3-005',
-    description: 'Bombones surtidos para pruebas de sistema',
+    name: 'Ferrero Rocher',
+    description: 'Bombones Ferrero Rocher con avellana y chocolate',
     categoryNames: ['Categoria-3-Chocolates', 'Subcat-3B-Bombones'],
     brandName: 'Marca-L',
-    tags: ['chocolate', 'bombones', 'surtido'],
+    tags: ['chocolate', 'bombones', 'ferrero', 'avellana', 'premium'],
     featured: true,
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
+    variantAttributeName: 'cantidad',
+    variantAttributeDisplayName: 'Presentación',
     variants: [
-      { value: '100g', displayValue: '100g (Caja)', price: 2490, stock: 100, order: 1 },
-      { value: '200g', displayValue: '200g (Caja)', price: 4490, stock: 70, order: 2 },
-      { value: '300g', displayValue: '300g (Caja Premium)', price: 6490, stock: 50, order: 3 },
+      { value: '3-unidades', displayValue: '3 unidades (37.5g)', price: 2490, stock: 100, order: 1 },
+      { value: '8-unidades', displayValue: '8 unidades (100g)', price: 5490, stock: 70, order: 2 },
+      { value: '16-unidades', displayValue: '16 unidades (200g)', price: 9990, stock: 50, order: 3 },
     ],
   },
   {
-    name: 'Producto-3-006',
-    description: 'Bombones rellenos de licor para pruebas de sistema',
+    name: 'Bon o Bon',
+    description: 'Bombones Bon o Bon con maní cubiertos de chocolate',
     categoryNames: ['Categoria-3-Chocolates', 'Subcat-3B-Bombones'],
     brandName: 'Marca-L',
-    tags: ['chocolate', 'bombones', 'licor', 'adulto'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
+    tags: ['chocolate', 'bombones', 'bon-o-bon', 'maní'],
+    variantAttributeName: 'cantidad',
+    variantAttributeDisplayName: 'Presentación',
     variants: [
-      { value: '150g', displayValue: '150g (Caja)', price: 3490, stock: 80, order: 1 },
-      { value: '250g', displayValue: '250g (Caja)', price: 5490, stock: 55, order: 2 },
-    ],
-  },
-
-  // Subcategoría: Premium
-  {
-    name: 'Producto-3-007',
-    description: 'Chocolate premium artesanal para pruebas de sistema',
-    categoryNames: ['Categoria-3-Chocolates', 'Subcat-3C-Premium'],
-    brandName: 'Marca-M',
-    tags: ['chocolate', 'premium', 'artesanal'],
-    featured: true,
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '100g', displayValue: '100g (Tableta)', price: 3990, stock: 60, order: 1 },
-      { value: '200g', displayValue: '200g (Tableta)', price: 7490, stock: 40, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-3-008',
-    description: 'Chocolate premium relleno de frutos del bosque para pruebas de sistema',
-    categoryNames: ['Categoria-3-Chocolates', 'Subcat-3C-Premium'],
-    brandName: 'Marca-M',
-    tags: ['chocolate', 'premium', 'artesanal', 'frutos-del-bosque'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '100g', displayValue: '100g (Tableta)', price: 4490, stock: 55, order: 1 },
-      { value: '200g', displayValue: '200g (Tableta)', price: 8490, stock: 35, order: 2 },
+      { value: '15g-unidad', displayValue: 'Unidad 15g', price: 290, stock: 250, order: 1 },
+      { value: '270g-caja', displayValue: 'Caja 270g (18 unidades)', price: 4490, stock: 60, order: 2 },
     ],
   },
 
@@ -527,39 +413,39 @@ const productsToSeed: ProductSeed[] = [
 
   // Subcategoría: Duros
   {
-    name: 'Producto-4-001',
-    description: 'Caramelos duros sabor frutas para pruebas de sistema',
+    name: 'Caramelos Menthoplus',
+    description: 'Caramelos duros sabor menta, refrescantes',
     categoryNames: ['Categoria-4-Caramelos', 'Subcat-4A-Duros'],
     brandName: 'Marca-N',
-    tags: ['caramelo', 'duro', 'frutas'],
+    tags: ['caramelo', 'duro', 'menta', 'refrescante'],
     variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
+    variantAttributeDisplayName: 'Presentación',
     variants: [
       { value: '100g', displayValue: '100g (Bolsa)', price: 890, stock: 180, order: 1 },
       { value: '250g', displayValue: '250g (Bolsa)', price: 1990, stock: 120, order: 2 },
     ],
   },
   {
-    name: 'Producto-4-002',
-    description: 'Lollipops surtidos para pruebas de sistema',
+    name: 'Chupetín Pico Dulce',
+    description: 'Chupetín clásico sabores surtidos',
     categoryNames: ['Categoria-4-Caramelos', 'Subcat-4A-Duros'],
     brandName: 'Marca-N',
-    tags: ['caramelo', 'lollipop', 'surtido'],
+    tags: ['caramelo', 'chupetín', 'lollipop', 'surtido'],
     variantAttributeName: 'cantidad',
     variantAttributeDisplayName: 'Cantidad',
     variants: [
-      { value: '6-unidades', displayValue: '6 unidades', price: 990, stock: 150, order: 1 },
+      { value: '1-unidad', displayValue: '1 unidad', price: 190, stock: 300, order: 1 },
       { value: '12-unidades', displayValue: '12 unidades', price: 1790, stock: 100, order: 2 },
     ],
   },
 
   // Subcategoría: Gomitas
   {
-    name: 'Producto-4-003',
-    description: 'Gomitas sabor frutas para pruebas de sistema',
+    name: 'Gomitas Mogul',
+    description: 'Gomitas Mogul sabor frutas',
     categoryNames: ['Categoria-4-Caramelos', 'Subcat-4B-Gomitas'],
     brandName: 'Marca-O',
-    tags: ['caramelo', 'gomita', 'frutas'],
+    tags: ['caramelo', 'gomita', 'frutas', 'mogul'],
     featured: true,
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
@@ -569,11 +455,11 @@ const productsToSeed: ProductSeed[] = [
     ],
   },
   {
-    name: 'Producto-4-004',
-    description: 'Gomitas ácidas para pruebas de sistema',
+    name: 'Gomitas Bananita',
+    description: 'Gomitas Bananita dulce de leche',
     categoryNames: ['Categoria-4-Caramelos', 'Subcat-4B-Gomitas'],
     brandName: 'Marca-O',
-    tags: ['caramelo', 'gomita', 'acido'],
+    tags: ['caramelo', 'gomita', 'bananita', 'dulce-de-leche'],
     variantAttributeName: 'peso',
     variantAttributeDisplayName: 'Peso',
     variants: [
@@ -582,32 +468,42 @@ const productsToSeed: ProductSeed[] = [
     ],
   },
 
-  // Subcategoría: Chicles
+  // Subcategoría: Chicles (SIN variantes)
   {
-    name: 'Producto-4-005',
-    description: 'Chicles sabor menta para pruebas de sistema',
+    name: 'Chicle Beldent Menta',
+    description: 'Chicle Beldent sabor menta, 10 pastillas',
     categoryNames: ['Categoria-4-Caramelos', 'Subcat-4C-Chicles'],
     brandName: 'Marca-P',
-    tags: ['chicle', 'menta'],
-    variantAttributeName: 'cantidad',
-    variantAttributeDisplayName: 'Cantidad',
-    variants: [
-      { value: '10-unidades', displayValue: '10 unidades (Blister)', price: 690, stock: 200, order: 1 },
-      { value: '30-unidades', displayValue: '30 unidades (Caja)', price: 1890, stock: 120, order: 2 },
-    ],
+    tags: ['chicle', 'menta', 'beldent'],
+    singleVariant: {
+      sku: 'BELDENT-MENTA-10U',
+      price: 690,
+      stock: 200,
+    },
   },
   {
-    name: 'Producto-4-006',
-    description: 'Chicles sabor frutas para pruebas de sistema',
+    name: 'Chicle Beldent Tutti Frutti',
+    description: 'Chicle Beldent sabor tutti frutti, 10 pastillas',
     categoryNames: ['Categoria-4-Caramelos', 'Subcat-4C-Chicles'],
     brandName: 'Marca-P',
-    tags: ['chicle', 'frutas'],
-    variantAttributeName: 'cantidad',
-    variantAttributeDisplayName: 'Cantidad',
-    variants: [
-      { value: '10-unidades', displayValue: '10 unidades (Blister)', price: 690, stock: 195, order: 1 },
-      { value: '30-unidades', displayValue: '30 unidades (Caja)', price: 1890, stock: 115, order: 2 },
-    ],
+    tags: ['chicle', 'frutas', 'beldent'],
+    singleVariant: {
+      sku: 'BELDENT-TUTTI-10U',
+      price: 690,
+      stock: 195,
+    },
+  },
+  {
+    name: 'Chicle Topline Menta',
+    description: 'Chicle Topline sabor menta fuerte, blister 5 unidades',
+    categoryNames: ['Categoria-4-Caramelos', 'Subcat-4C-Chicles'],
+    brandName: 'Marca-P',
+    tags: ['chicle', 'menta', 'topline'],
+    singleVariant: {
+      sku: 'TOPLINE-MENTA-5U',
+      price: 590,
+      stock: 185,
+    },
   },
 
   // ===================================================================
@@ -616,102 +512,124 @@ const productsToSeed: ProductSeed[] = [
 
   // Subcategoría: Galletas
   {
-    name: 'Producto-5-001',
-    description: 'Galletas de chocolate para pruebas de sistema',
+    name: 'Oreo Original',
+    description: 'Galletas Oreo clásicas con crema de vainilla',
     categoryNames: ['Categoria-5-Reposteria', 'Subcat-5A-Galletas'],
     brandName: 'Marca-Q',
-    tags: ['galleta', 'chocolate', 'dulce'],
+    tags: ['galleta', 'oreo', 'chocolate', 'crema'],
     featured: true,
     variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
+    variantAttributeDisplayName: 'Tamaño',
     variants: [
-      { value: '100g', displayValue: '100g (Paquete)', price: 1190, stock: 150, order: 1 },
-      { value: '250g', displayValue: '250g (Paquete)', price: 2690, stock: 100, order: 2 },
-      { value: '500g', displayValue: '500g (Familia)', price: 4490, stock: 70, order: 3 },
+      { value: '54g', displayValue: '54g (6 galletas)', price: 790, stock: 150, order: 1 },
+      { value: '117g', displayValue: '117g (Paquete)', price: 1490, stock: 120, order: 2 },
+      { value: '432g', displayValue: '432g (Familia)', price: 4490, stock: 70, order: 3 },
     ],
   },
   {
-    name: 'Producto-5-002',
-    description: 'Galletas de vainilla para pruebas de sistema',
+    name: 'Chips Ahoy',
+    description: 'Galletas Chips Ahoy con chispas de chocolate',
     categoryNames: ['Categoria-5-Reposteria', 'Subcat-5A-Galletas'],
     brandName: 'Marca-Q',
-    tags: ['galleta', 'vainilla', 'dulce'],
+    tags: ['galleta', 'chips-ahoy', 'chocolate', 'dulce'],
     variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
+    variantAttributeDisplayName: 'Tamaño',
     variants: [
-      { value: '100g', displayValue: '100g (Paquete)', price: 1090, stock: 145, order: 1 },
-      { value: '250g', displayValue: '250g (Paquete)', price: 2490, stock: 95, order: 2 },
+      { value: '100g', displayValue: '100g (Paquete)', price: 1190, stock: 145, order: 1 },
+      { value: '250g', displayValue: '250g (Paquete)', price: 2690, stock: 95, order: 2 },
     ],
   },
   {
-    name: 'Producto-5-003',
-    description: 'Galletas saladas crackers para pruebas de sistema',
+    name: 'Galletas Ritz',
+    description: 'Galletas saladas Ritz, crackers clásicas',
     categoryNames: ['Categoria-5-Reposteria', 'Subcat-5A-Galletas'],
     brandName: 'Marca-R',
-    tags: ['galleta', 'salada', 'cracker'],
+    tags: ['galleta', 'salada', 'ritz', 'cracker'],
     variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
+    variantAttributeDisplayName: 'Tamaño',
     variants: [
-      { value: '150g', displayValue: '150g (Paquete)', price: 1390, stock: 130, order: 1 },
-      { value: '300g', displayValue: '300g (Familia)', price: 2590, stock: 85, order: 2 },
+      { value: '100g', displayValue: '100g (Paquete)', price: 1390, stock: 130, order: 1 },
+      { value: '300g', displayValue: '300g (Familia)', price: 2990, stock: 85, order: 2 },
     ],
   },
 
-  // Subcategoría: Alfajores
+  // Subcategoría: Alfajores (SIN variantes)
   {
-    name: 'Producto-5-004',
-    description: 'Alfajores rellenos de dulce de leche para pruebas de sistema',
+    name: 'Alfajor Jorgito Chocolate',
+    description: 'Alfajor Jorgito triple de chocolate con dulce de leche, 60g',
     categoryNames: ['Categoria-5-Reposteria', 'Subcat-5B-Alfajores'],
     brandName: 'Marca-S',
-    tags: ['alfajor', 'dulce-de-leche', 'relleno'],
+    tags: ['alfajor', 'jorgito', 'chocolate', 'dulce-de-leche'],
     featured: true,
-    variantAttributeName: 'cantidad',
-    variantAttributeDisplayName: 'Cantidad',
-    variants: [
-      { value: '1-unidad', displayValue: '1 unidad (40g)', price: 690, stock: 200, order: 1 },
-      { value: '6-unidades', displayValue: '6 unidades (Caja)', price: 3690, stock: 90, order: 2 },
-      { value: '12-unidades', displayValue: '12 unidades (Caja)', price: 6990, stock: 60, order: 3 },
-    ],
+    singleVariant: {
+      sku: 'JORGITO-CHOCOLATE-60G',
+      price: 690,
+      stock: 200,
+    },
   },
   {
-    name: 'Producto-5-005',
-    description: 'Alfajores de chocolate para pruebas de sistema',
+    name: 'Alfajor Havanna Blanco',
+    description: 'Alfajor Havanna cubierto de chocolate blanco, 70g',
     categoryNames: ['Categoria-5-Reposteria', 'Subcat-5B-Alfajores'],
     brandName: 'Marca-S',
-    tags: ['alfajor', 'chocolate', 'relleno'],
-    variantAttributeName: 'cantidad',
-    variantAttributeDisplayName: 'Cantidad',
-    variants: [
-      { value: '1-unidad', displayValue: '1 unidad (40g)', price: 790, stock: 190, order: 1 },
-      { value: '6-unidades', displayValue: '6 unidades (Caja)', price: 4190, stock: 85, order: 2 },
-    ],
+    tags: ['alfajor', 'havanna', 'chocolate-blanco', 'premium'],
+    featured: true,
+    singleVariant: {
+      sku: 'HAVANNA-BLANCO-70G',
+      price: 1290,
+      stock: 150,
+    },
+  },
+  {
+    name: 'Alfajor Havanna Negro',
+    description: 'Alfajor Havanna cubierto de chocolate negro, 70g',
+    categoryNames: ['Categoria-5-Reposteria', 'Subcat-5B-Alfajores'],
+    brandName: 'Marca-S',
+    tags: ['alfajor', 'havanna', 'chocolate-negro', 'premium'],
+    featured: true,
+    singleVariant: {
+      sku: 'HAVANNA-NEGRO-70G',
+      price: 1290,
+      stock: 145,
+    },
+  },
+  {
+    name: 'Alfajor Capitán del Espacio',
+    description: 'Alfajor clásico Capitán del Espacio triple, 60g',
+    categoryNames: ['Categoria-5-Reposteria', 'Subcat-5B-Alfajores'],
+    brandName: 'Marca-S',
+    tags: ['alfajor', 'capitan-espacio', 'clasico'],
+    singleVariant: {
+      sku: 'CAPITAN-ESPACIO-60G',
+      price: 590,
+      stock: 180,
+    },
+  },
+  {
+    name: 'Alfajor Oreo',
+    description: 'Alfajor Oreo con crema de vainilla, 55g',
+    categoryNames: ['Categoria-5-Reposteria', 'Subcat-5B-Alfajores'],
+    brandName: 'Marca-S',
+    tags: ['alfajor', 'oreo', 'vainilla'],
+    singleVariant: {
+      sku: 'ALFAJOR-OREO-55G',
+      price: 790,
+      stock: 170,
+    },
   },
 
   // Subcategoría: Obleas
   {
-    name: 'Producto-5-006',
-    description: 'Obleas rellenas de crema de vainilla para pruebas de sistema',
+    name: 'Oblea Bon o Bon',
+    description: 'Oblea Bon o Bon rellena de crema de maní',
     categoryNames: ['Categoria-5-Reposteria', 'Subcat-5C-Obleas'],
     brandName: 'Marca-T',
-    tags: ['oblea', 'vainilla', 'relleno'],
+    tags: ['oblea', 'bon-o-bon', 'maní'],
     variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
+    variantAttributeDisplayName: 'Tamaño',
     variants: [
       { value: '100g', displayValue: '100g (Paquete)', price: 1290, stock: 140, order: 1 },
       { value: '250g', displayValue: '250g (Paquete)', price: 2890, stock: 90, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-5-007',
-    description: 'Obleas rellenas de dulce de leche para pruebas de sistema',
-    categoryNames: ['Categoria-5-Reposteria', 'Subcat-5C-Obleas'],
-    brandName: 'Marca-T',
-    tags: ['oblea', 'dulce-de-leche', 'relleno'],
-    variantAttributeName: 'peso',
-    variantAttributeDisplayName: 'Peso',
-    variants: [
-      { value: '100g', displayValue: '100g (Paquete)', price: 1290, stock: 135, order: 1 },
-      { value: '250g', displayValue: '250g (Paquete)', price: 2890, stock: 85, order: 2 },
     ],
   },
 
@@ -719,187 +637,38 @@ const productsToSeed: ProductSeed[] = [
   // CATEGORIA 6: HELADOS
   // ===================================================================
 
-  // Subcategoría: Paletas de Agua
-  {
-    name: 'Producto-6-001',
-    description: 'Paleta de agua sabor frutilla para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6A-Paletas-Agua'],
-    brandName: 'Marca-A',
-    tags: ['helado', 'paleta', 'agua', 'frutilla'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '80ml', displayValue: '80ml (Individual)', price: 890, stock: 200, order: 1 },
-      { value: '120ml', displayValue: '120ml (Grande)', price: 1290, stock: 150, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-6-002',
-    description: 'Paleta de agua sabor limón para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6A-Paletas-Agua'],
-    brandName: 'Marca-A',
-    tags: ['helado', 'paleta', 'agua', 'limon'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '80ml', displayValue: '80ml (Individual)', price: 890, stock: 195, order: 1 },
-      { value: '120ml', displayValue: '120ml (Grande)', price: 1290, stock: 145, order: 2 },
-    ],
-  },
-
   // Subcategoría: Paletas de Crema
   {
-    name: 'Producto-6-003',
-    description: 'Paleta de crema sabor vainilla para pruebas de sistema',
+    name: 'Paleta Magnum Classic',
+    description: 'Paleta Magnum helado de vainilla con cobertura de chocolate belga',
     categoryNames: ['Categoria-6-Helados', 'Subcat-6B-Paletas-Crema'],
     brandName: 'Marca-B',
-    tags: ['helado', 'paleta', 'crema', 'vainilla'],
+    tags: ['helado', 'paleta', 'magnum', 'vainilla', 'chocolate'],
     featured: true,
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '90ml', displayValue: '90ml (Individual)', price: 1490, stock: 180, order: 1 },
-      { value: '130ml', displayValue: '130ml (Grande)', price: 1990, stock: 130, order: 2 },
-    ],
+    singleVariant: {
+      sku: 'MAGNUM-CLASSIC-110ML',
+      price: 2490,
+      stock: 80,
+    },
   },
   {
-    name: 'Producto-6-004',
-    description: 'Paleta de crema sabor chocolate para pruebas de sistema',
+    name: 'Paleta Magnum Almendras',
+    description: 'Paleta Magnum helado de vainilla con chocolate y almendras',
     categoryNames: ['Categoria-6-Helados', 'Subcat-6B-Paletas-Crema'],
     brandName: 'Marca-B',
-    tags: ['helado', 'paleta', 'crema', 'chocolate'],
+    tags: ['helado', 'paleta', 'magnum', 'almendras'],
     featured: true,
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '90ml', displayValue: '90ml (Individual)', price: 1490, stock: 175, order: 1 },
-      { value: '130ml', displayValue: '130ml (Grande)', price: 1990, stock: 125, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-6-005',
-    description: 'Paleta de crema sabor lúcuma para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6B-Paletas-Crema'],
-    brandName: 'Marca-B',
-    tags: ['helado', 'paleta', 'crema', 'lucuma'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '90ml', displayValue: '90ml (Individual)', price: 1490, stock: 170, order: 1 },
-      { value: '130ml', displayValue: '130ml (Grande)', price: 1990, stock: 120, order: 2 },
-    ],
-  },
-
-  // ============ PRODUCTO CON VARIANTES MULTI-DIMENSIONALES ============
-  // Este producto tiene MÚLTIPLES atributos: sabor Y tamaño
-  {
-    name: 'Producto-6-005-MD',
-    description: 'Paleta de crema premium con múltiples sabores y tamaños para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6B-Paletas-Crema'],
-    brandName: 'Marca-B',
-    tags: ['helado', 'paleta', 'crema', 'premium', 'multi-variante'],
-    featured: true,
-    // Definir los atributos de variante (múltiples dimensiones)
-    variantAttributes: [
-      {
-        name: 'sabor',
-        displayName: 'Sabor',
-        order: 1,
-        values: [
-          { value: 'vainilla', displayValue: 'Vainilla', order: 1 },
-          { value: 'chocolate', displayValue: 'Chocolate', order: 2 },
-          { value: 'frutilla', displayValue: 'Frutilla', order: 3 },
-          { value: 'lucuma', displayValue: 'Lúcuma', order: 4 },
-        ],
-      },
-      {
-        name: 'tamaño',
-        displayName: 'Tamaño',
-        order: 2,
-        values: [
-          { value: '90ml', displayValue: '90ml (Individual)', order: 1 },
-          { value: '130ml', displayValue: '130ml (Grande)', order: 2 },
-        ],
-      },
-    ],
-    // Combinaciones de variantes
-    multiVariants: [
-      // Vainilla
-      { attributeCombination: { sabor: 'vainilla', tamaño: '90ml' }, sku: 'PROD-6-005-MD-VAN-90ML', price: 1590, stock: 150 },
-      { attributeCombination: { sabor: 'vainilla', tamaño: '130ml' }, sku: 'PROD-6-005-MD-VAN-130ML', price: 2090, stock: 110 },
-      // Chocolate
-      { attributeCombination: { sabor: 'chocolate', tamaño: '90ml' }, sku: 'PROD-6-005-MD-CHO-90ML', price: 1590, stock: 145 },
-      { attributeCombination: { sabor: 'chocolate', tamaño: '130ml' }, sku: 'PROD-6-005-MD-CHO-130ML', price: 2090, stock: 105 },
-      // Frutilla
-      { attributeCombination: { sabor: 'frutilla', tamaño: '90ml' }, sku: 'PROD-6-005-MD-FRU-90ML', price: 1590, stock: 140 },
-      { attributeCombination: { sabor: 'frutilla', tamaño: '130ml' }, sku: 'PROD-6-005-MD-FRU-130ML', price: 2090, stock: 100 },
-      // Lúcuma
-      { attributeCombination: { sabor: 'lucuma', tamaño: '90ml' }, sku: 'PROD-6-005-MD-LUC-90ML', price: 1690, stock: 135 },
-      { attributeCombination: { sabor: 'lucuma', tamaño: '130ml' }, sku: 'PROD-6-005-MD-LUC-130ML', price: 2190, stock: 95 },
-    ],
-  },
-
-  // Subcategoría: Paletas Aguacrema
-  {
-    name: 'Producto-6-006',
-    description: 'Paleta aguacrema sabor chirimoya para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6C-Paletas-Aguacrema'],
-    brandName: 'Marca-C',
-    tags: ['helado', 'paleta', 'aguacrema', 'chirimoya'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '100ml', displayValue: '100ml (Individual)', price: 1190, stock: 160, order: 1 },
-      { value: '140ml', displayValue: '140ml (Grande)', price: 1690, stock: 110, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-6-007',
-    description: 'Paleta aguacrema sabor coco para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6C-Paletas-Aguacrema'],
-    brandName: 'Marca-C',
-    tags: ['helado', 'paleta', 'aguacrema', 'coco'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '100ml', displayValue: '100ml (Individual)', price: 1190, stock: 155, order: 1 },
-      { value: '140ml', displayValue: '140ml (Grande)', price: 1690, stock: 105, order: 2 },
-    ],
-  },
-
-  // Subcategoría: Cassatas
-  {
-    name: 'Producto-6-008',
-    description: 'Cassata neopolitana 3 sabores para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6D-Cassatas'],
-    brandName: 'Marca-D',
-    tags: ['helado', 'cassata', 'neopolitana', 'familiar'],
-    featured: true,
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '1L', displayValue: '1L (Cassata)', price: 5490, stock: 70, order: 1 },
-      { value: '2L', displayValue: '2L (Cassata Familiar)', price: 9990, stock: 50, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-6-009',
-    description: 'Cassata sabor chocolate para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6D-Cassatas'],
-    brandName: 'Marca-D',
-    tags: ['helado', 'cassata', 'chocolate'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '1L', displayValue: '1L (Cassata)', price: 5490, stock: 65, order: 1 },
-      { value: '2L', displayValue: '2L (Cassata Familiar)', price: 9990, stock: 45, order: 2 },
-    ],
+    singleVariant: {
+      sku: 'MAGNUM-ALMENDRAS-110ML',
+      price: 2690,
+      stock: 75,
+    },
   },
 
   // Subcategoría: Conos
   {
-    name: 'Producto-6-010',
-    description: 'Cono de helado sabor vainilla con cobertura de chocolate para pruebas de sistema',
+    name: 'Cono Helado Vainilla',
+    description: 'Cono de helado de vainilla con cobertura de chocolate',
     categoryNames: ['Categoria-6-Helados', 'Subcat-6E-Conos'],
     brandName: 'Marca-E',
     tags: ['helado', 'cono', 'vainilla', 'chocolate'],
@@ -911,30 +680,20 @@ const productsToSeed: ProductSeed[] = [
       { value: '150ml', displayValue: '150ml (Grande)', price: 2490, stock: 100, order: 2 },
     ],
   },
+
+  // Subcategoría: Cassatas
   {
-    name: 'Producto-6-011',
-    description: 'Cono de helado sabor frutilla con trozos de frutilla para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6E-Conos'],
-    brandName: 'Marca-E',
-    tags: ['helado', 'cono', 'frutilla'],
+    name: 'Cassata Neopolitana',
+    description: 'Cassata 3 sabores: chocolate, frutilla y vainilla',
+    categoryNames: ['Categoria-6-Helados', 'Subcat-6D-Cassatas'],
+    brandName: 'Marca-D',
+    tags: ['helado', 'cassata', 'neopolitana', 'familiar'],
+    featured: true,
     variantAttributeName: 'tamaño',
     variantAttributeDisplayName: 'Tamaño',
     variants: [
-      { value: '100ml', displayValue: '100ml (Individual)', price: 1890, stock: 135, order: 1 },
-      { value: '150ml', displayValue: '150ml (Grande)', price: 2490, stock: 95, order: 2 },
-    ],
-  },
-  {
-    name: 'Producto-6-012',
-    description: 'Cono de helado sabor chocolate intenso para pruebas de sistema',
-    categoryNames: ['Categoria-6-Helados', 'Subcat-6E-Conos'],
-    brandName: 'Marca-E',
-    tags: ['helado', 'cono', 'chocolate', 'intenso'],
-    variantAttributeName: 'tamaño',
-    variantAttributeDisplayName: 'Tamaño',
-    variants: [
-      { value: '100ml', displayValue: '100ml (Individual)', price: 1890, stock: 130, order: 1 },
-      { value: '150ml', displayValue: '150ml (Grande)', price: 2490, stock: 90, order: 2 },
+      { value: '1L', displayValue: '1L (Cassata)', price: 5490, stock: 70, order: 1 },
+      { value: '2L', displayValue: '2L (Cassata Familiar)', price: 9990, stock: 50, order: 2 },
     ],
   },
 ];
@@ -950,7 +709,7 @@ async function seedProducts() {
     }
 
     await mongoose.connect(uri);
-    console.log('✅ Conectado a MongoDB Atlas\n');
+    console.log('✅ Conectado a MongoDB\n');
 
     // Preguntar si limpiar productos existentes
     const readline = require('readline').createInterface({
@@ -1009,12 +768,26 @@ async function seedProducts() {
         // Verificar si el producto padre ya existe
         let parentProduct = await ProductParent.findOne({ name: productData.name });
 
-        // Determinar si es producto multi-dimensional o simple
+        // Determinar el tipo de producto
+        const isSingleVariant = !!productData.singleVariant;
         const isMultiDimensional = !!productData.variantAttributes;
 
-        // Construir variantAttributes según el tipo
-        let variantAttributes;
-        if (isMultiDimensional) {
+        // Construir variantAttributes
+        let variantAttributes: Array<{
+          name: string;
+          displayName: string;
+          order: number;
+          values: {
+            value: string;
+            displayValue: string;
+            order: number;
+          }[];
+        }>;
+
+        if (isSingleVariant) {
+          // Producto sin variantes: crear atributo vacío
+          variantAttributes = [];
+        } else if (isMultiDimensional) {
           // Producto con múltiples dimensiones
           variantAttributes = productData.variantAttributes!;
         } else {
@@ -1062,7 +835,39 @@ async function seedProducts() {
         }
 
         // Crear/Actualizar variantes según el tipo de producto
-        if (isMultiDimensional) {
+        if (isSingleVariant) {
+          // Producto unitario: crear una sola variante
+          const variantData = productData.singleVariant!;
+          let variant = await ProductVariant.findOne({ sku: variantData.sku });
+
+          if (variant) {
+            // Actualizar variante existente
+            variant.name = productData.name;
+            variant.attributes = {};
+            variant.price = variantData.price;
+            variant.stock = variantData.stock;
+            variant.parentProduct = parentProduct._id;
+            await variant.save();
+            updatedVariants++;
+          } else {
+            // Crear nueva variante
+            await ProductVariant.create({
+              parentProduct: parentProduct._id,
+              sku: variantData.sku,
+              attributes: {},
+              name: productData.name,
+              price: variantData.price,
+              stock: variantData.stock,
+              trackStock: true,
+              allowBackorder: false,
+              lowStockThreshold: 10,
+              active: true,
+              order: 1,
+              views: 0,
+            });
+            createdVariants++;
+          }
+        } else if (isMultiDimensional) {
           // Producto multi-dimensional: usar multiVariants
           let order = 1;
           for (const variantData of productData.multiVariants!) {
@@ -1105,7 +910,6 @@ async function seedProducts() {
                 active: true,
                 order: order,
                 views: 0,
-                images: ['https://via.placeholder.com/400x400?text=Producto'], // Imagen placeholder
               });
               createdVariants++;
             }
@@ -1114,7 +918,7 @@ async function seedProducts() {
         } else {
           // Producto simple: usar variants
           for (const variantData of productData.variants!) {
-            const sku = `${productData.name.toUpperCase().replace(/-/g, '')}-${variantData.value.toUpperCase().replace(/[^A-Z0-9]/g, '')}`;
+            const sku = `${productData.name.toUpperCase().replace(/\s+/g, '-').replace(/[^A-Z0-9-]/g, '')}-${variantData.value.toUpperCase().replace(/[^A-Z0-9]/g, '')}`;
             const variantName = `${productData.name} ${variantData.displayValue}`;
 
             let variant = await ProductVariant.findOne({ sku });
@@ -1144,7 +948,6 @@ async function seedProducts() {
                 active: true,
                 order: variantData.order,
                 views: 0,
-                images: ['https://via.placeholder.com/400x400?text=Producto'], // Imagen placeholder
               });
               createdVariants++;
             }
@@ -1169,31 +972,16 @@ async function seedProducts() {
     console.log(`📦 Total productos procesados: ${productsToSeed.length}`);
     console.log('═'.repeat(70) + '\n');
 
-    // Estadísticas por categoría
-    console.log('═'.repeat(90));
-    console.log('📊 PRODUCTOS POR CATEGORÍA');
-    console.log('═'.repeat(90));
-    console.log('');
+    // Contar productos con y sin variantes
+    const productsWithVariants = productsToSeed.filter(p => !p.singleVariant).length;
+    const productsWithoutVariants = productsToSeed.filter(p => p.singleVariant).length;
 
-    const mainCats = await Category.find({ parent: null, active: true }).sort({ order: 1 });
-
-    for (const mainCat of mainCats) {
-      const productCount = await ProductParent.countDocuments({
-        categories: mainCat._id,
-        active: true,
-      });
-
-      const variantCount = await ProductVariant.countDocuments({
-        parentProduct: {
-          $in: (await ProductParent.find({ categories: mainCat._id, active: true })).map(p => p._id),
-        },
-        active: true,
-      });
-
-      console.log(`📁 ${mainCat.name}: ${productCount} productos, ${variantCount} variantes`);
-    }
-
-    console.log('\n' + '═'.repeat(90) + '\n');
+    console.log('═'.repeat(70));
+    console.log('📊 TIPOS DE PRODUCTOS');
+    console.log('═'.repeat(70));
+    console.log(`🔀 Productos con variantes: ${productsWithVariants}`);
+    console.log(`📦 Productos sin variantes (unitarios): ${productsWithoutVariants}`);
+    console.log('═'.repeat(70) + '\n');
 
   } catch (error: any) {
     console.error('❌ Error fatal en seed:', error.message);
