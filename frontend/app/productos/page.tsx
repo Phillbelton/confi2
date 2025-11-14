@@ -18,7 +18,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
-import type { ProductFilters as Filters, ProductSort } from '@/types';
+import type { ProductFilters as Filters, ProductSort, ProductParent } from '@/types';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -193,7 +193,7 @@ function ProductsContent() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {products.map((product: ProductParent) => (
                 <ProductCardWithVariants
                   key={product._id}
                   product={product}
