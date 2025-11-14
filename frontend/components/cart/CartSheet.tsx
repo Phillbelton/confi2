@@ -82,7 +82,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border">
                         <Image
                           src={image}
-                          alt={variant.name}
+                          alt={typeof product !== 'string' ? product.name : 'Producto'}
                           fill
                           className="object-cover"
                           sizes="80px"
@@ -96,7 +96,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                         </h4>
                         {typeof product !== 'string' && product.hasVariants && (
                           <p className="text-xs text-muted-foreground line-clamp-1">
-                            {variant.displayName || variant.name}
+                            {variant.displayName}
                           </p>
                         )}
 
