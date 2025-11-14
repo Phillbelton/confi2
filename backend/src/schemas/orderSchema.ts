@@ -17,34 +17,60 @@ export const orderItemSchema = z.object({
 
 // Schema para crear orden
 export const createOrderSchema = z.object({
-  items: z.array(orderItemSchema)
-    .min(1, 'La orden debe tener al menos 1 producto')
-    .max(50, 'Máximo 50 productos por orden'),
+  body: z.object({
+    // Customer data (requerido para usuarios no autenticados)
+    customer: z.object({
+      name: z.string()
+        .min(2, 'El nombre debe tener al menos 2 caracteres')
+        .trim(),
 
-  deliveryMethod: z.enum(['pickup', 'delivery'], {
-    message: 'Método debe ser "pickup" o "delivery"'
-  }),
+      email: z.string()
+        .email('Email inválido')
+        .trim()
+        .optional(),
 
-  paymentMethod: z.enum(['cash', 'transfer'], {
-    message: 'Método de pago debe ser "cash" o "transfer"'
-  }),
+      phone: z.string()
+        .min(6, 'El teléfono debe tener al menos 6 caracteres')
+        .trim(),
 
-  // ID de dirección guardada a usar (opcional)
-  useAddressId: z.string()
-    .length(24, 'ID de dirección inválido')
-    .optional(),
+      address: z.object({
+        street: z.string().trim(),
+        number: z.string().trim(),
+        city: z.string().trim(),
+        neighborhood: z.string().trim().optional(),
+        reference: z.string().trim().optional(),
+      }).optional(),
+    }).optional(),
 
-  // Notas especiales de entrega (opcional)
-  deliveryNotes: z.string()
-    .max(500, 'Las notas no pueden exceder 500 caracteres')
-    .trim()
-    .optional(),
+    items: z.array(orderItemSchema)
+      .min(1, 'La orden debe tener al menos 1 producto')
+      .max(50, 'Máximo 50 productos por orden'),
 
-  // Notas del cliente (opcional)
-  customerNotes: z.string()
-    .max(500, 'Las notas no pueden exceder 500 caracteres')
-    .trim()
-    .optional()
+    deliveryMethod: z.enum(['pickup', 'delivery'], {
+      message: 'Método debe ser "pickup" o "delivery"'
+    }),
+
+    paymentMethod: z.enum(['cash', 'transfer'], {
+      message: 'Método de pago debe ser "cash" o "transfer"'
+    }),
+
+    // ID de dirección guardada a usar (opcional)
+    useAddressId: z.string()
+      .length(24, 'ID de dirección inválido')
+      .optional(),
+
+    // Notas especiales de entrega (opcional)
+    deliveryNotes: z.string()
+      .max(500, 'Las notas no pueden exceder 500 caracteres')
+      .trim()
+      .optional(),
+
+    // Notas del cliente (opcional)
+    customerNotes: z.string()
+      .max(500, 'Las notas no pueden exceder 500 caracteres')
+      .trim()
+      .optional()
+  })
 });
 
 // Schema para confirmar orden (funcionario)
