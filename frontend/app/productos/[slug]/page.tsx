@@ -54,7 +54,7 @@ export default function ProductDetailPage() {
   // FIX: Correct access to the nested data structure
   // relatedData.data is ApiPaginatedResponse which has { data, pagination }
   // So we need relatedData.data.data to get the array
-  const relatedProducts = relatedData?.data?.data?.filter((p) => p._id !== product?._id) || [];
+  const relatedProducts = relatedData?.data?.data?.filter((p: ProductParent) => p._id !== product?._id) || [];
 
   // State
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
