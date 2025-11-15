@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
         hostname: '127.0.0.1',
       },
       {
+        protocol: 'http',
+        hostname: '192.168.5.2', // Your local network IP
+        port: '5000',
+      },
+      {
         protocol: 'https',
         hostname: '*.cloudinary.com',
       },
