@@ -34,6 +34,7 @@ export function useAdminAuth() {
     if (error && !isLoginPage && !isLoading) {
       // Only clear if we're not loading and there's an actual auth error
       const timer = setTimeout(() => {
+        localStorage.removeItem('admin-token');
         clearStore();
         queryClient.clear();
       }, 500); // Wait 500ms before clearing to avoid race conditions
@@ -51,6 +52,11 @@ export function useAdminAuth() {
       if (data.user.role !== 'admin' && data.user.role !== 'funcionario') {
         toast.error('Acceso denegado. Solo administradores pueden ingresar.');
         return;
+      }
+
+      // Store token in localStorage for development (cookies don't work cross-port)
+      if (data.token) {
+        localStorage.setItem('admin-token', data.token);
       }
 
       // Set user in store and cache BEFORE redirecting
@@ -72,6 +78,8 @@ export function useAdminAuth() {
   const logoutMutation = useMutation({
     mutationFn: adminAuthService.logout,
     onSuccess: () => {
+      // Clear token from localStorage
+      localStorage.removeItem('admin-token');
       clearStore();
       queryClient.clear();
       toast.success('Sesión cerrada exitosamente');
@@ -79,6 +87,7 @@ export function useAdminAuth() {
     },
     onError: (error: any) => {
       // Even if logout fails on server, clear client state
+      localStorage.removeItem('admin-token');
       clearStore();
       queryClient.clear();
       router.push('/admin/login');

@@ -22,19 +22,27 @@ const generateRefreshToken = (payload: TokenPayload): string => {
 
 // Set token en cookie
 const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: ENV.NODE_ENV === 'production',
-    sameSite: (ENV.NODE_ENV === 'production' ? 'strict' : 'lax') as 'strict' | 'lax',
-    domain: ENV.NODE_ENV === 'production' ? undefined : 'localhost', // localhost for dev cross-port
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
-  };
+  // For development cross-port cookies to work, we need SameSite=None with Secure
+  // But Secure requires HTTPS. Since we're on HTTP (localhost), browsers may reject.
+  // Solution: Don't use httpOnly cookies in dev, return token in response instead
+  const isProduction = ENV.NODE_ENV === 'production';
 
-  res.cookie('token', token, cookieOptions);
-  res.cookie('refreshToken', refreshToken, {
-    ...cookieOptions,
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
-  });
+  if (isProduction) {
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict' as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+    };
+
+    res.cookie('token', token, cookieOptions);
+    res.cookie('refreshToken', refreshToken, {
+      ...cookieOptions,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+    });
+  }
+  // In development, cookies don't work cross-port on localhost
+  // Token is already in response body for frontend to store
 };
 
 // @desc    Registrar nuevo usuario
