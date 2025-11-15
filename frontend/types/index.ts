@@ -61,6 +61,7 @@ export interface ProductVariant {
   _id: string;
   parent: string | ProductParent;
   sku: string;
+  name: string;
   price: number;
   compareAtPrice?: number;
   stock: number;
