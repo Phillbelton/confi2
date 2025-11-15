@@ -11,7 +11,17 @@ export function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // Check for authentication token in cookies
+    // In development, skip server-side token check
+    // The ProtectedRoute component will handle authentication on the client
+    // This is necessary because we use localStorage (not cookies) in development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (isDevelopment) {
+      // Let client-side ProtectedRoute handle auth
+      return NextResponse.next();
+    }
+
+    // In production, check for authentication token in cookies
     const token = request.cookies.get('token');
 
     // If no token, redirect to login
