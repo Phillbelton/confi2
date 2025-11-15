@@ -27,8 +27,8 @@ const productFormSchema = z.object({
   tags: z.array(z.string()).optional(),
   seoTitle: z.string().max(70, 'El título SEO no puede exceder 70 caracteres').optional(),
   seoDescription: z.string().max(160, 'La descripción SEO no puede exceder 160 caracteres').optional(),
-  featured: z.boolean().default(false),
-  active: z.boolean().default(true),
+  featured: z.boolean().optional(),
+  active: z.boolean().optional(),
   variantAttributes: z.array(z.any()).optional(),
 });
 
@@ -84,6 +84,8 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
   const handleFormSubmit = (values: ProductFormValues) => {
     onSubmit({
       ...values,
+      featured: values.featured ?? false,
+      active: values.active ?? true,
       variantAttributes,
     } as CreateProductParentInput);
   };
