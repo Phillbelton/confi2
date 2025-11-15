@@ -89,10 +89,10 @@ export function VariantsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {variants.map((variant) => {
+              {variants.map((variant: ProductVariant) => {
                 const isEditing = editingId === variant._id;
                 const attributesText = Object.entries(variant.attributes)
-                  .map(([key, value]) => `${key}: ${value}`)
+                  .map(([key, value]: [string, string]) => `${key}: ${value}`)
                   .join(', ');
 
                 return (

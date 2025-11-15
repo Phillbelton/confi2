@@ -205,7 +205,7 @@ export default function InventarioPage() {
                             <p className="font-medium">{variant.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {Object.entries(variant.attributes)
-                                .map(([key, value]) => `${key}: ${value}`)
+                                .map(([key, value]: [string, string]) => `${key}: ${value}`)
                                 .join(', ')}
                             </p>
                           </div>
