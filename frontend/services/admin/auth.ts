@@ -27,7 +27,7 @@ export const adminAuthService = {
    * Get current admin profile
    */
   getProfile: async (): Promise<AdminUser> => {
-    const { data } = await api.get<ApiResponse<AdminUser>>('/auth/profile');
+    const { data } = await api.get<ApiResponse<AdminUser>>('/auth/me');
     return data.data;
   },
 
@@ -35,7 +35,7 @@ export const adminAuthService = {
    * Refresh token
    */
   refreshToken: async (): Promise<{ token: string }> => {
-    const { data } = await api.post<ApiResponse<{ token: string }>>('/auth/refresh-token');
+    const { data } = await api.post<ApiResponse<{ token: string }>>('/auth/refresh');
     return data.data;
   },
 };

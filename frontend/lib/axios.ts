@@ -15,11 +15,13 @@ export const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // You can add auth tokens here if needed (besides cookies)
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // In development, send token in Authorization header (cookies don't work cross-port)
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('admin-token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
     return config;
   },
   (error) => {
