@@ -24,7 +24,11 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Middlewares de seguridad
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow images to load from different origins
+  })
+);
 
 // CORS - Allow multiple origins for development
 const allowedOrigins = [
@@ -92,8 +96,12 @@ app.use(requestLogger);
 // Compresión
 app.use(compression());
 
-// Servir archivos estáticos (uploads)
-app.use('/uploads', express.static(ENV.UPLOAD_DIR));
+// Servir archivos estáticos (uploads) con headers CORS explícitos
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins for static files
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(ENV.UPLOAD_DIR));
 
 // Health check
 app.get('/health', (req, res) => {
