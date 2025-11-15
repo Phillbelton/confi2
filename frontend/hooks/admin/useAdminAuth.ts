@@ -15,6 +15,9 @@ export function useAdminAuth() {
   // Don't fetch profile on login page to avoid unnecessary 401 errors
   const isLoginPage = pathname === '/admin/login';
 
+  // Check if we have a token to determine if we should fetch profile
+  const hasToken = typeof window !== 'undefined' ? !!localStorage.getItem('admin-token') : false;
+
   // Get profile query
   const {
     data: user,
@@ -25,7 +28,7 @@ export function useAdminAuth() {
     queryFn: adminAuthService.getProfile,
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled: !isLoginPage, // Only fetch when not on login page
+    enabled: hasToken && !isLoginPage, // Only fetch when we have token and not on login page
   });
 
   // Clear store if profile query fails (invalid/expired token)
@@ -63,11 +66,13 @@ export function useAdminAuth() {
       setUser(data.user);
       queryClient.setQueryData(['admin-profile'], data.user);
 
-      // Wait a bit to ensure state is set before redirect
+      // Show success message
+      toast.success(`Bienvenido, ${data.user.name}!`);
+
+      // Use window.location for hard navigation (router.push wasn't working)
       setTimeout(() => {
-        toast.success(`Bienvenido, ${data.user.name}!`);
-        router.push('/admin');
-      }, 100);
+        window.location.href = '/admin';
+      }, 500);
     },
     onError: (error: any) => {
       toast.error(error.message || 'Error al iniciar sesión');
