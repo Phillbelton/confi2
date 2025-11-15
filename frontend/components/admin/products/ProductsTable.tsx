@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { ProductParent, Category, Brand } from '@/types';
+import { getImageUrl } from '@/lib/images';
 
 interface ProductsTableProps {
   products: ProductParent[];
@@ -113,7 +114,7 @@ export function ProductsTable({
                     <div className="w-16 h-16 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
                       {primaryImage ? (
                         <img
-                          src={primaryImage}
+                          src={getImageUrl(primaryImage)}
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />

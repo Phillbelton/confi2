@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { TopProduct } from '@/types/admin';
+import { getImageUrl } from '@/lib/images';
 
 interface TopProductsProps {
   products: TopProduct[];
@@ -36,7 +37,7 @@ export function TopProducts({ products }: TopProductsProps) {
                 {/* Product Image */}
                 {product.image ? (
                   <img
-                    src={product.image}
+                    src={getImageUrl(product.image)}
                     alt={product.name}
                     className="w-10 h-10 rounded-md object-cover"
                   />

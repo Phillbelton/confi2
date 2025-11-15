@@ -27,7 +27,12 @@ export function useAdminAuth() {
     queryKey: ['admin-profile'],
     queryFn: adminAuthService.getProfile,
     retry: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes - data considered fresh
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+    refetchInterval: 1000 * 60 * 3, // Auto-revalidate every 3 minutes (detects expired sessions)
+    refetchOnWindowFocus: false, // Prevent refetching when window regains focus (avoids rate limit)
+    refetchOnMount: false, // Prevent refetching on component mount if data exists (avoids rate limit)
+    refetchOnReconnect: false, // Prevent refetching on network reconnection (avoids rate limit)
     enabled: hasToken && !isLoginPage, // Only fetch when we have token and not on login page
   });
 
