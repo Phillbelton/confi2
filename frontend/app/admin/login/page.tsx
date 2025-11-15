@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import { LoginForm } from '@/components/admin/auth/LoginForm';
+import { LoginFormSimple } from '@/components/admin/auth/LoginFormSimple';
 import { useAdminStore } from '@/store/useAdminStore';
 
 export default function AdminLoginPage() {
@@ -37,7 +38,7 @@ export default function AdminLoginPage() {
           </div>
 
           {/* Login Form */}
-          <LoginForm />
+          <LoginFormSimple />
 
           {/* Footer */}
           <div className="text-center text-xs text-gray-500 dark:text-gray-400">
