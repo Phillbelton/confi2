@@ -1,13 +1,19 @@
 import api from '@/lib/axios';
 import type { AdminLoginCredentials, AdminLoginResponse, AdminUser } from '@/types/admin';
 
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
+
 export const adminAuthService = {
   /**
    * Login admin user
    */
   login: async (credentials: AdminLoginCredentials): Promise<AdminLoginResponse> => {
-    const { data } = await api.post<AdminLoginResponse>('/auth/login', credentials);
-    return data;
+    const { data } = await api.post<ApiResponse<AdminLoginResponse>>('/auth/login', credentials);
+    return data.data;
   },
 
   /**
@@ -21,15 +27,15 @@ export const adminAuthService = {
    * Get current admin profile
    */
   getProfile: async (): Promise<AdminUser> => {
-    const { data } = await api.get<AdminUser>('/auth/profile');
-    return data;
+    const { data } = await api.get<ApiResponse<AdminUser>>('/auth/profile');
+    return data.data;
   },
 
   /**
    * Refresh token
    */
   refreshToken: async (): Promise<{ token: string }> => {
-    const { data } = await api.post<{ token: string }>('/auth/refresh-token');
-    return data;
+    const { data } = await api.post<ApiResponse<{ token: string }>>('/auth/refresh-token');
+    return data.data;
   },
 };
