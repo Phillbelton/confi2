@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { adminAuthService } from '@/services/admin/auth';
 import { useAdminStore } from '@/store/useAdminStore';
@@ -7,8 +7,12 @@ import type { AdminLoginCredentials } from '@/types/admin';
 
 export function useAdminAuth() {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { setUser, logout: clearStore, setLoading } = useAdminStore();
+
+  // Don't fetch profile on login page to avoid unnecessary 401 errors
+  const isLoginPage = pathname === '/admin/login';
 
   // Get profile query
   const {
@@ -20,6 +24,7 @@ export function useAdminAuth() {
     queryFn: adminAuthService.getProfile,
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !isLoginPage, // Only fetch when not on login page
   });
 
   // Login mutation
