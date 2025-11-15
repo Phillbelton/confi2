@@ -12,8 +12,8 @@ export function getSafeImageUrl(url: string | undefined | null): string {
 
   if (!absoluteUrl) return '/placeholder-product.svg';
 
-  // If it's a local path (placeholder), return as-is
-  if (absoluteUrl.startsWith('/')) return absoluteUrl;
+  // If it's a placeholder SVG, return as-is
+  if (absoluteUrl.startsWith('/placeholder')) return absoluteUrl;
 
   // Lista de dominios permitidos (configurados en next.config.ts)
   const allowedDomains = [
