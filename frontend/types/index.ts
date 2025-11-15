@@ -61,6 +61,7 @@ export interface ProductVariant {
   _id: string;
   parent: string | ProductParent;
   sku: string;
+  name?: string; // Optional name field (returned by some API endpoints like low-stock)
   price: number;
   compareAtPrice?: number;
   stock: number;
