@@ -1,9 +1,15 @@
 import { Request, Response } from 'express';
-import Order from '../models/Order';
-import ProductVariant from '../models/ProductVariant';
-import ProductParent from '../models/ProductParent';
-import User from '../models/User';
-import asyncHandler from '../middleware/asyncHandler';
+import { Order } from '../models/Order';
+import { ProductVariant } from '../models/ProductVariant';
+import { ProductParent } from '../models/ProductParent';
+import { User } from '../models/User';
+import { asyncHandler } from '../middleware/asyncHandler';
+
+interface SalesDataItem {
+  date: string;
+  sales: number;
+  orders: number;
+}
 
 /**
  * @desc    Get dashboard statistics
@@ -167,9 +173,11 @@ export const getSalesChart = asyncHandler(
     ]);
 
     // Fill in missing days with zero values
-    const result = [];
+    const result: SalesDataItem[] = [];
     const currentDate = new Date(startDate);
-    const salesMap = new Map(salesData.map((item) => [item.date, item]));
+    const salesMap = new Map<string, SalesDataItem>(
+      salesData.map((item: any) => [item.date, item])
+    );
 
     for (let i = 0; i < days; i++) {
       const dateStr = currentDate.toISOString().split('T')[0];
