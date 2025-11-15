@@ -26,6 +26,7 @@ const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
     httpOnly: true,
     secure: ENV.NODE_ENV === 'production',
     sameSite: (ENV.NODE_ENV === 'production' ? 'strict' : 'lax') as 'strict' | 'lax',
+    domain: ENV.NODE_ENV === 'production' ? undefined : 'localhost', // localhost for dev cross-port
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
   };
 
