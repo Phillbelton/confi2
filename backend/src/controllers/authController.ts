@@ -25,7 +25,7 @@ const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
   const cookieOptions = {
     httpOnly: true,
     secure: ENV.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: (ENV.NODE_ENV === 'production' ? 'strict' : 'lax') as 'strict' | 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
   };
 
