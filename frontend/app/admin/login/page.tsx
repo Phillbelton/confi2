@@ -1,22 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import { LoginFormWorking } from '@/components/admin/auth/LoginFormWorking';
-import { useAdminStore } from '@/store/useAdminStore';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const { isAuthenticated } = useAdminStore();
-
-  useEffect(() => {
-    // If already authenticated, redirect to dashboard
-    if (isAuthenticated) {
-      router.push('/admin');
-    }
-  }, [isAuthenticated, router]);
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4">
       <div className="w-full max-w-md">

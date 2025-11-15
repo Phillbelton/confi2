@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { adminAuthService } from '@/services/admin/auth';
 import { useAdminStore } from '@/store/useAdminStore';
@@ -26,6 +27,14 @@ export function useAdminAuth() {
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !isLoginPage, // Only fetch when not on login page
   });
+
+  // Clear store if profile query fails (invalid/expired token)
+  useEffect(() => {
+    if (error && !isLoginPage) {
+      clearStore();
+      queryClient.clear();
+    }
+  }, [error, isLoginPage, clearStore, queryClient]);
 
   // Login mutation
   const loginMutation = useMutation({
