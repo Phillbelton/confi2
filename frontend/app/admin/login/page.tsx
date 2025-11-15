@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
                 <ShieldCheck className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Panel de Administración
             </h1>
             <p className="text-sm text-muted-foreground">
