@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { categoryService } from '@/services/categories';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Category } from '@/types';
 
 interface CategorySelectorProps {
   selectedIds: string[];
@@ -46,7 +47,7 @@ export function CategorySelector({
     }
   };
 
-  const selectedCategories = categories?.filter(cat => selectedIds.includes(cat._id)) || [];
+  const selectedCategories = categories?.filter((cat: Category) => selectedIds.includes(cat._id)) || [];
 
   if (isLoading) {
     return <Skeleton className="h-10 w-full" />;

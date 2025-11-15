@@ -19,6 +19,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { brandService } from '@/services/brands';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Brand } from '@/types';
 
 interface BrandSelectorProps {
   selectedId?: string;
@@ -37,7 +38,7 @@ export function BrandSelector({
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const selectedBrand = brands?.find(brand => brand._id === selectedId);
+  const selectedBrand = brands?.find((brand: Brand) => brand._id === selectedId);
 
   if (isLoading) {
     return <Skeleton className="h-10 w-full" />;
