@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Order } from '../models/Order';
-import { ProductVariant } from '../models/ProductVariant';
-import { ProductParent } from '../models/ProductParent';
+import ProductVariant from '../models/ProductVariant';
+import ProductParent from '../models/ProductParent';
 import { User } from '../models/User';
 import { asyncHandler } from '../middleware/asyncHandler';
 
