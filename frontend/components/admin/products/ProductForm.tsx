@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { CategorySelector } from './CategorySelector';
 import { BrandSelector } from './BrandSelector';
+import { TagSelector } from './TagSelector';
 import { VariantAttributesManager } from './VariantAttributesManager';
 import type { ProductParent, VariantAttribute } from '@/types';
 import type { CreateProductParentInput } from '@/services/admin/products';
@@ -43,7 +44,6 @@ interface ProductFormProps {
 
 export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFormProps) {
   const router = useRouter();
-  const [tagsInput, setTagsInput] = useState('');
   const [variantAttributes, setVariantAttributes] = useState<VariantAttribute[]>(
     product?.variantAttributes || []
   );
@@ -63,23 +63,6 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
       variantAttributes: product?.variantAttributes || [],
     },
   });
-
-  // Update tags input when product changes
-  useEffect(() => {
-    if (product?.tags) {
-      setTagsInput(product.tags.join(', '));
-    }
-  }, [product]);
-
-  const handleTagsChange = (value: string) => {
-    setTagsInput(value);
-    // Convert comma-separated string to array
-    const tagsArray = value
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
-    form.setValue('tags', tagsArray);
-  };
 
   const handleFormSubmit = (values: ProductFormValues) => {
     onSubmit({
@@ -197,19 +180,11 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
             />
 
             {/* Tags */}
-            <div>
-              <Label htmlFor="tags">Etiquetas</Label>
-              <Input
-                id="tags"
-                value={tagsInput}
-                onChange={(e) => handleTagsChange(e.target.value)}
-                placeholder="Sin azúcar, Vegano, Artesanal (separadas por comas)"
-                disabled={isSubmitting}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Separa las etiquetas con comas
-              </p>
-            </div>
+            <TagSelector
+              selectedIds={form.watch('tags') || []}
+              onChange={(ids) => form.setValue('tags', ids)}
+              disabled={isSubmitting}
+            />
           </CardContent>
         </Card>
 
