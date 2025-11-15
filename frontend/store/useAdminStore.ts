@@ -7,6 +7,7 @@ interface AdminState {
   isAuthenticated: boolean;
   isLoading: boolean;
   sidebarOpen: boolean;
+  _hasHydrated: boolean;
 }
 
 interface AdminActions {
@@ -16,6 +17,7 @@ interface AdminActions {
   logout: () => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
 }
 
 type AdminStore = AdminState & AdminActions;
@@ -28,6 +30,7 @@ export const useAdminStore = create<AdminStore>()(
       isAuthenticated: false,
       isLoading: true,
       sidebarOpen: true,
+      _hasHydrated: false,
 
       // Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -36,6 +39,7 @@ export const useAdminStore = create<AdminStore>()(
       logout: () => set({ user: null, isAuthenticated: false }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),
     }),
     {
       name: 'admin-storage',
@@ -45,6 +49,9 @@ export const useAdminStore = create<AdminStore>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

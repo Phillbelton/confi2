@@ -27,8 +27,8 @@ export const adminAuthService = {
    * Get current admin profile
    */
   getProfile: async (): Promise<AdminUser> => {
-    const { data } = await api.get<ApiResponse<AdminUser>>('/auth/me');
-    return data.data;
+    const { data } = await api.get<ApiResponse<{ user: AdminUser }>>('/auth/me');
+    return data.data.user;
   },
 
   /**

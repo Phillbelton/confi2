@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/admin/useAdminAuth';
@@ -9,7 +9,13 @@ import { useAdminStore } from '@/store/useAdminStore';
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isLoading } = useAdminAuth();
-  const { setUser } = useAdminStore();
+  const { setUser, _hasHydrated } = useAdminStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Wait for hydration to complete
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -19,13 +25,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, [user, setUser]);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && _hasHydrated && isMounted) {
       router.push('/admin/login');
     }
-  }, [isLoading, user, router]);
+  }, [isLoading, user, router, _hasHydrated, isMounted]);
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state during hydration or auth check
+  if (!isMounted || !_hasHydrated || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">

@@ -1,14 +1,15 @@
 // Admin-specific TypeScript types
 
 export interface AdminUser {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   role: 'admin' | 'funcionario' | 'cliente';
   phone?: string;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
+  addresses?: any[];
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AdminLoginCredentials {
