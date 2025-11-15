@@ -21,6 +21,7 @@ export function getSafeImageUrl(url: string | undefined | null): string {
     'amazonaws.com',
     'localhost',
     '127.0.0.1',
+    '192.168.5.2', // Local network IP
   ];
 
   try {
