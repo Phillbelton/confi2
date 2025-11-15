@@ -29,12 +29,18 @@ export function useAdminAuth() {
   });
 
   // Clear store if profile query fails (invalid/expired token)
+  // But don't clear immediately - give it time after login
   useEffect(() => {
-    if (error && !isLoginPage) {
-      clearStore();
-      queryClient.clear();
+    if (error && !isLoginPage && !isLoading) {
+      // Only clear if we're not loading and there's an actual auth error
+      const timer = setTimeout(() => {
+        clearStore();
+        queryClient.clear();
+      }, 500); // Wait 500ms before clearing to avoid race conditions
+
+      return () => clearTimeout(timer);
     }
-  }, [error, isLoginPage, clearStore, queryClient]);
+  }, [error, isLoginPage, isLoading, clearStore, queryClient]);
 
   // Login mutation
   const loginMutation = useMutation({
@@ -47,10 +53,15 @@ export function useAdminAuth() {
         return;
       }
 
+      // Set user in store and cache BEFORE redirecting
       setUser(data.user);
       queryClient.setQueryData(['admin-profile'], data.user);
-      toast.success(`Bienvenido, ${data.user.name}!`);
-      router.push('/admin');
+
+      // Wait a bit to ensure state is set before redirect
+      setTimeout(() => {
+        toast.success(`Bienvenido, ${data.user.name}!`);
+        router.push('/admin');
+      }, 100);
     },
     onError: (error: any) => {
       toast.error(error.message || 'Error al iniciar sesión');
