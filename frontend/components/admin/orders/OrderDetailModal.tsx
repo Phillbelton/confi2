@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import { UpdateOrderStatus } from './UpdateOrderStatus';
 import type { Order, OrderItem } from '@/types/order';
+import { getImageUrl } from '@/lib/images';
 
 interface OrderDetailModalProps {
   order: Order;
@@ -140,7 +141,7 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
                 >
                   {item.variantSnapshot.image && (
                     <img
-                      src={item.variantSnapshot.image}
+                      src={getImageUrl(item.variantSnapshot.image)}
                       alt={item.variantSnapshot.name}
                       className="w-16 h-16 rounded-md object-cover"
                     />

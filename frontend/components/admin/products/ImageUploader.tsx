@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { getImageUrl } from '@/lib/images';
 
 interface ImageUploaderProps {
   images: string[];
@@ -149,7 +150,7 @@ export function ImageUploader({
                   className="relative group aspect-square rounded-lg border overflow-hidden bg-muted"
                 >
                   <img
-                    src={imageUrl}
+                    src={getImageUrl(imageUrl)}
                     alt={`Producto ${index + 1}`}
                     className="w-full h-full object-cover"
                   />

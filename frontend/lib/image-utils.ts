@@ -1,3 +1,5 @@
+import { getImageUrl } from './images';
+
 /**
  * Valida y limpia URLs de imágenes para Next.js Image
  * Filtra URLs externas no configuradas en next.config
@@ -5,8 +7,13 @@
 export function getSafeImageUrl(url: string | undefined | null): string {
   if (!url) return '/placeholder-product.svg';
 
-  // Si es una ruta local, usarla directamente
-  if (url.startsWith('/')) return url;
+  // Convert relative URL to absolute backend URL
+  const absoluteUrl = getImageUrl(url);
+
+  if (!absoluteUrl) return '/placeholder-product.svg';
+
+  // If it's a local path (placeholder), return as-is
+  if (absoluteUrl.startsWith('/')) return absoluteUrl;
 
   // Lista de dominios permitidos (configurados en next.config.ts)
   const allowedDomains = [
@@ -17,11 +24,11 @@ export function getSafeImageUrl(url: string | undefined | null): string {
   ];
 
   try {
-    const urlObj = new URL(url);
+    const urlObj = new URL(absoluteUrl);
     const isAllowed = allowedDomains.some((domain) =>
       urlObj.hostname.includes(domain)
     );
-    return isAllowed ? url : '/placeholder-product.svg';
+    return isAllowed ? absoluteUrl : '/placeholder-product.svg';
   } catch {
     // Si no es una URL válida, usar placeholder
     return '/placeholder-product.svg';
