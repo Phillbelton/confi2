@@ -13,7 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import type { ProductParent } from '@/types';
+import { CategorySelector } from './CategorySelector';
+import { BrandSelector } from './BrandSelector';
+import { VariantAttributesManager } from './VariantAttributesManager';
+import type { ProductParent, VariantAttribute } from '@/types';
 import type { CreateProductParentInput } from '@/services/admin/products';
 
 const productFormSchema = z.object({
@@ -26,6 +29,7 @@ const productFormSchema = z.object({
   seoDescription: z.string().max(160, 'La descripción SEO no puede exceder 160 caracteres').optional(),
   featured: z.boolean().default(false),
   active: z.boolean().default(true),
+  variantAttributes: z.array(z.any()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -40,6 +44,9 @@ interface ProductFormProps {
 export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFormProps) {
   const router = useRouter();
   const [tagsInput, setTagsInput] = useState('');
+  const [variantAttributes, setVariantAttributes] = useState<VariantAttribute[]>(
+    product?.variantAttributes || []
+  );
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -53,6 +60,7 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
       seoDescription: product?.seoDescription || '',
       featured: product?.featured || false,
       active: product?.active ?? true,
+      variantAttributes: product?.variantAttributes || [],
     },
   });
 
@@ -74,7 +82,15 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
   };
 
   const handleFormSubmit = (values: ProductFormValues) => {
-    onSubmit(values as CreateProductParentInput);
+    onSubmit({
+      ...values,
+      variantAttributes,
+    } as CreateProductParentInput);
+  };
+
+  const handleVariantAttributesChange = (attributes: VariantAttribute[]) => {
+    setVariantAttributes(attributes);
+    form.setValue('variantAttributes', attributes);
   };
 
   return (
@@ -159,6 +175,25 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
               )}
             </div>
 
+            {/* Categories */}
+            <CategorySelector
+              selectedIds={form.watch('categories') || []}
+              onChange={(ids) => form.setValue('categories', ids)}
+              disabled={isSubmitting}
+            />
+            {form.formState.errors.categories && (
+              <p className="text-sm text-red-600 mt-1">
+                {form.formState.errors.categories.message}
+              </p>
+            )}
+
+            {/* Brand */}
+            <BrandSelector
+              selectedId={form.watch('brand')}
+              onChange={(id) => form.setValue('brand', id)}
+              disabled={isSubmitting}
+            />
+
             {/* Tags */}
             <div>
               <Label htmlFor="tags">Etiquetas</Label>
@@ -175,6 +210,13 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
             </div>
           </CardContent>
         </Card>
+
+        {/* Variant Attributes */}
+        <VariantAttributesManager
+          attributes={variantAttributes}
+          onChange={handleVariantAttributesChange}
+          disabled={isSubmitting}
+        />
 
         {/* SEO */}
         <Card>
@@ -255,15 +297,16 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
           </CardContent>
         </Card>
 
-        {/* Note about categories and images */}
-        <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-          <CardContent className="pt-6">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
-              <strong>Nota:</strong> Las categorías, marca, imágenes y atributos de variantes
-              se configurarán en el siguiente paso después de crear el producto.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Note about images */}
+        {mode === 'create' && (
+          <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <CardContent className="pt-6">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                <strong>Nota:</strong> Podrás agregar imágenes y crear variantes después de guardar el producto.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </form>
     </div>
   );
