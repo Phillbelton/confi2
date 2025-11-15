@@ -9,6 +9,7 @@ import stockRoutes from './stockRoutes';
 import userRoutes from './userRoutes';
 import addressRoutes from './addressRoutes';
 import auditRoutes from './auditRoutes';
+import dashboardRoutes from './dashboardRoutes';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ const router = Router();
  * - /api/users - User management (admin only)
  * - /api/users/me/addresses - Address management (authenticated users)
  * - /api/audit-logs - Audit trail (admin only)
+ * - /api/admin/dashboard - Admin dashboard statistics and analytics
  */
 
 router.use('/auth', authRoutes);
@@ -38,6 +40,7 @@ router.use('/stock-movements', stockRoutes);
 router.use('/users', userRoutes);
 router.use('/users/me/addresses', addressRoutes);
 router.use('/audit-logs', auditRoutes);
+router.use('/admin/dashboard', dashboardRoutes);
 
 // Health check
 router.get('/health', (req, res) => {
