@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { categoryService } from '@/services/categories';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Category } from '@/types';
 
 interface CategorySelectorProps {
   selectedIds: string[];
@@ -46,7 +47,7 @@ export function CategorySelector({
     }
   };
 
-  const selectedCategories = categories?.filter(cat => selectedIds.includes(cat._id)) || [];
+  const selectedCategories = categories?.filter((cat: Category) => selectedIds.includes(cat._id)) || [];
 
   if (isLoading) {
     return <Skeleton className="h-10 w-full" />;
@@ -78,7 +79,7 @@ export function CategorySelector({
             <CommandInput placeholder="Buscar categoría..." />
             <CommandEmpty>No se encontraron categorías.</CommandEmpty>
             <CommandGroup className="max-h-64 overflow-auto">
-              {categories?.map((category) => (
+              {categories?.map((category: Category) => (
                 <CommandItem
                   key={category._id}
                   value={category.name}
@@ -101,7 +102,7 @@ export function CategorySelector({
       {/* Selected Categories */}
       {selectedCategories.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selectedCategories.map((category) => (
+          {selectedCategories.map((category: Category) => (
             <Badge key={category._id} variant="secondary">
               {category.name}
               <button

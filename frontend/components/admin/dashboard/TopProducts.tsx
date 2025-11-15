@@ -21,9 +21,9 @@ export function TopProducts({ products }: TopProductsProps) {
               No hay datos de productos
             </p>
           ) : (
-            products.map((product, index) => (
+            products.map((product: TopProduct, index: number) => (
               <div
-                key={product._id}
+                key={product._id || `product-${index}`}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent transition-colors"
               >
                 {/* Ranking */}

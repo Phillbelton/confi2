@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import { UpdateOrderStatus } from './UpdateOrderStatus';
-import type { Order } from '@/types/order';
+import type { Order, OrderItem } from '@/types/order';
 
 interface OrderDetailModalProps {
   order: Order;
@@ -133,7 +133,7 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
           <div>
             <h3 className="font-semibold text-lg mb-3">Productos</h3>
             <div className="space-y-3">
-              {order.items.map((item, index) => (
+              {order.items.map((item: OrderItem, index: number) => (
                 <div
                   key={index}
                   className="flex items-center gap-3 p-3 rounded-lg border"
@@ -153,7 +153,7 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
                     {Object.keys(item.variantSnapshot.attributes).length > 0 && (
                       <p className="text-xs text-muted-foreground">
                         {Object.entries(item.variantSnapshot.attributes)
-                          .map(([key, value]) => `${key}: ${value}`)
+                          .map(([key, value]: [string, string]) => `${key}: ${value}`)
                           .join(', ')}
                       </p>
                     )}
