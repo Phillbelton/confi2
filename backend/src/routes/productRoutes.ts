@@ -5,6 +5,7 @@ import * as uploadController from '../controllers/uploadController';
 import { authenticate, authorize } from '../middleware/auth';
 import { uploadMultiple, uploadSingle, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
+import { parseProductFormData } from '../middleware/parseFormData';
 import {
   createProductParentSchema,
   updateProductParentSchema,
@@ -42,6 +43,7 @@ router.post(
   authorize('admin', 'funcionario'),
   uploadMultiple, // Soporte opcional para archivos
   handleMulterError,
+  parseProductFormData, // Parsear FormData a tipos correctos
   validate(createProductParentSchema),
   productParentController.createProductParent
 );
