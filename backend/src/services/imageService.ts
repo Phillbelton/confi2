@@ -254,18 +254,25 @@ class LocalImageService implements IImageService {
  * Returns the appropriate service based on configuration
  */
 class ImageServiceFactory {
-  private static instance: IImageService;
+  private static instance: IImageService | null = null;
 
   static getService(): IImageService {
     if (!this.instance) {
-      const cloudinaryService = new CloudinaryImageService();
+      try {
+        const cloudinaryService = new CloudinaryImageService();
 
-      if (cloudinaryService.isEnabled()) {
-        this.instance = cloudinaryService;
-        logger.info('🎨 Using Cloudinary for image storage');
-      } else {
+        if (cloudinaryService.isEnabled()) {
+          this.instance = cloudinaryService;
+          logger.info('🎨 Using Cloudinary for image storage');
+        } else {
+          this.instance = new LocalImageService();
+          logger.info('💾 Using local storage for images');
+        }
+      } catch (error: any) {
+        logger.error('❌ Failed to initialize image service, falling back to local storage', {
+          error: error.message,
+        });
         this.instance = new LocalImageService();
-        logger.info('💾 Using local storage for images');
       }
     }
 
@@ -274,6 +281,28 @@ class ImageServiceFactory {
 }
 
 /**
- * Export singleton instance
+ * Export factory method instead of singleton instance
+ * This allows lazy initialization and better error handling
  */
-export const imageService = ImageServiceFactory.getService();
+let cachedService: IImageService | null = null;
+
+export const imageService = {
+  uploadImage: async (filePath: string, options: ImageUploadOptions): Promise<ImageUploadResult> => {
+    if (!cachedService) {
+      cachedService = ImageServiceFactory.getService();
+    }
+    return cachedService.uploadImage(filePath, options);
+  },
+  deleteImage: async (imageUrl: string): Promise<void> => {
+    if (!cachedService) {
+      cachedService = ImageServiceFactory.getService();
+    }
+    return cachedService.deleteImage(imageUrl);
+  },
+  isEnabled: (): boolean => {
+    if (!cachedService) {
+      cachedService = ImageServiceFactory.getService();
+    }
+    return cachedService.isEnabled();
+  },
+};
