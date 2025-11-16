@@ -4,12 +4,8 @@ import ProductParent from '../models/ProductParent';
 import ProductVariant from '../models/ProductVariant';
 import { Category } from '../models/Category';
 import { Brand } from '../models/Brand';
-import {
-  processImage,
-  deleteImageVariants,
-  validateImageDimensions,
-} from '../utils/imageProcessor';
-import { getFileUrl, getFilePath, deleteFile } from '../middleware/upload';
+import { imageService } from '../services/imageService';
+import { deleteFile } from '../middleware/upload';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
@@ -54,40 +50,32 @@ export const uploadProductParentImages = asyncHandler(
       );
     }
 
-    // Procesar cada imagen
+    // Procesar cada imagen con el servicio de imágenes
     const imageUrls: string[] = [];
     for (const file of files) {
       try {
-        // Validar dimensiones
-        const validation = await validateImageDimensions(file.path, 200, 200, 2000, 2000);
-        if (!validation.valid) {
-          logger.warn('Imagen rechazada', { filename: file.filename, reason: validation.message });
-          await deleteFile(file.path);
-          continue;
-        }
-
-        // Procesar imagen (optimizar y redimensionar)
-        const processedPath = file.path.replace(path.extname(file.path), '-processed.webp');
-        await processImage(file.path, processedPath, {
+        // Usar imageService para procesar y subir la imagen
+        const result = await imageService.uploadImage(file.path, {
+          folder: 'products',
           width: 800,
           height: 800,
           quality: 85,
           format: 'webp',
-          fit: 'cover',
+          validateDimensions: {
+            minWidth: 200,
+            minHeight: 200,
+            maxWidth: 2000,
+            maxHeight: 2000,
+          },
         });
 
-        // Eliminar original, usar procesada
-        await deleteFile(file.path);
-
-        // Obtener URL relativa
-        const imageUrl = getFileUrl(path.basename(processedPath), 'products');
-        imageUrls.push(imageUrl);
+        imageUrls.push(result.url);
       } catch (error: any) {
         logger.error('Error procesando imagen individual', {
           filename: file.filename,
           error: error.message,
         });
-        await deleteFile(file.path);
+        // El imageService ya maneja la limpieza de archivos
       }
     }
 
@@ -131,17 +119,17 @@ export const deleteProductParentImage = asyncHandler(
     }
 
     // Buscar la imagen en el array
-    const imageUrl = `/uploads/products/${filename}`;
-    const imageIndex = product.images?.indexOf(imageUrl) ?? -1;
+    const imageUrl = product.images?.find((img) => img.includes(filename));
 
-    if (imageIndex === -1) {
+    if (!imageUrl) {
       throw new AppError(404, 'Imagen no encontrada en el producto');
     }
 
-    // Eliminar archivo físico
-    const filePath = getFilePath(filename, 'products');
+    const imageIndex = product.images?.indexOf(imageUrl) ?? -1;
+
+    // Eliminar usando imageService (maneja tanto Cloudinary como local)
     try {
-      await deleteFile(filePath);
+      await imageService.deleteImage(imageUrl);
     } catch (error: any) {
       logger.warn('No se pudo eliminar archivo físico', { filename, error: error.message });
     }
@@ -200,31 +188,28 @@ export const uploadProductVariantImages = asyncHandler(
     const imageUrls: string[] = [];
     for (const file of files) {
       try {
-        const validation = await validateImageDimensions(file.path, 200, 200, 2000, 2000);
-        if (!validation.valid) {
-          logger.warn('Imagen rechazada', { filename: file.filename, reason: validation.message });
-          await deleteFile(file.path);
-          continue;
-        }
-
-        const processedPath = file.path.replace(path.extname(file.path), '-processed.webp');
-        await processImage(file.path, processedPath, {
+        // Usar imageService para procesar y subir la imagen
+        const result = await imageService.uploadImage(file.path, {
+          folder: 'products',
           width: 800,
           height: 800,
           quality: 85,
           format: 'webp',
-          fit: 'cover',
+          validateDimensions: {
+            minWidth: 200,
+            minHeight: 200,
+            maxWidth: 2000,
+            maxHeight: 2000,
+          },
         });
 
-        await deleteFile(file.path);
-        const imageUrl = getFileUrl(path.basename(processedPath), 'products');
-        imageUrls.push(imageUrl);
+        imageUrls.push(result.url);
       } catch (error: any) {
         logger.error('Error procesando imagen individual', {
           filename: file.filename,
           error: error.message,
         });
-        await deleteFile(file.path);
+        // El imageService ya maneja la limpieza de archivos
       }
     }
 
@@ -263,16 +248,17 @@ export const deleteProductVariantImage = asyncHandler(
       throw new AppError(404, 'Variante no encontrada');
     }
 
-    const imageUrl = `/uploads/products/${filename}`;
-    const imageIndex = variant.images?.indexOf(imageUrl) ?? -1;
+    const imageUrl = variant.images?.find((img) => img.includes(filename));
 
-    if (imageIndex === -1) {
+    if (!imageUrl) {
       throw new AppError(404, 'Imagen no encontrada en la variante');
     }
 
-    const filePath = getFilePath(filename, 'products');
+    const imageIndex = variant.images?.indexOf(imageUrl) ?? -1;
+
+    // Eliminar usando imageService (maneja tanto Cloudinary como local)
     try {
-      await deleteFile(filePath);
+      await imageService.deleteImage(imageUrl);
     } catch (error: any) {
       logger.warn('No se pudo eliminar archivo físico', { filename, error: error.message });
     }
@@ -316,10 +302,8 @@ export const uploadCategoryImage = asyncHandler(
 
     // Eliminar imagen anterior si existe
     if (category.image) {
-      const oldFilename = path.basename(category.image);
-      const oldFilePath = getFilePath(oldFilename, 'categories');
       try {
-        await deleteFile(oldFilePath);
+        await imageService.deleteImage(category.image);
       } catch (error: any) {
         logger.warn('No se pudo eliminar imagen anterior de categoría', {
           error: error.message,
@@ -327,18 +311,16 @@ export const uploadCategoryImage = asyncHandler(
       }
     }
 
-    // Procesar nueva imagen
-    const processedPath = file.path.replace(path.extname(file.path), '-processed.webp');
-    await processImage(file.path, processedPath, {
+    // Subir nueva imagen usando imageService
+    const result = await imageService.uploadImage(file.path, {
+      folder: 'categories',
       width: 400,
       height: 400,
       quality: 85,
       format: 'webp',
-      fit: 'cover',
     });
 
-    await deleteFile(file.path);
-    const imageUrl = getFileUrl(path.basename(processedPath), 'categories');
+    const imageUrl = result.url;
 
     category.image = imageUrl;
     await category.save();
@@ -378,10 +360,8 @@ export const uploadBrandLogo = asyncHandler(
 
     // Eliminar logo anterior si existe
     if (brand.logo) {
-      const oldFilename = path.basename(brand.logo);
-      const oldFilePath = getFilePath(oldFilename, 'brands');
       try {
-        await deleteFile(oldFilePath);
+        await imageService.deleteImage(brand.logo);
       } catch (error: any) {
         logger.warn('No se pudo eliminar logo anterior de marca', {
           error: error.message,
@@ -389,18 +369,16 @@ export const uploadBrandLogo = asyncHandler(
       }
     }
 
-    // Procesar nuevo logo
-    const processedPath = file.path.replace(path.extname(file.path), '-processed.webp');
-    await processImage(file.path, processedPath, {
+    // Subir nuevo logo usando imageService
+    const result = await imageService.uploadImage(file.path, {
+      folder: 'brands',
       width: 300,
       height: 300,
       quality: 90,
       format: 'webp',
-      fit: 'contain', // Mantener aspecto para logos
     });
 
-    await deleteFile(file.path);
-    const logoUrl = getFileUrl(path.basename(processedPath), 'brands');
+    const logoUrl = result.url;
 
     brand.logo = logoUrl;
     await brand.save();
