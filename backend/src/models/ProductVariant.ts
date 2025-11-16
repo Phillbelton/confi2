@@ -56,7 +56,7 @@ const productVariantSchema = new Schema<IProductVariant>(
     },
     sku: {
       type: String,
-      required: [true, 'El SKU es requerido'],
+      required: false, // Auto-generated in pre-save hook (see line 320)
       unique: true,
       uppercase: true,
       trim: true,
@@ -68,7 +68,7 @@ const productVariantSchema = new Schema<IProductVariant>(
     },
     name: {
       type: String,
-      required: [true, 'El nombre de la variante es requerido'],
+      required: false, // Auto-generated in pre-save hook (see line 211)
       trim: true,
     },
     slug: {
@@ -241,9 +241,12 @@ productVariantSchema.pre('save', async function (next) {
         this.slug = `${this.slug}-${Date.now()}`;
       }
 
-      // Validación estricta: garantizar que el slug SIEMPRE exista
+      // Validación estricta: garantizar que el slug y name SIEMPRE existan
       if (!this.slug) {
         return next(new Error('CRITICAL: No se pudo generar el slug para la variante'));
+      }
+      if (!this.name) {
+        return next(new Error('CRITICAL: No se pudo generar el nombre para la variante'));
       }
     } catch (error) {
       return next(error as Error);
@@ -349,6 +352,11 @@ productVariantSchema.pre('save', async function (next) {
         // Agregar timestamp corto para unicidad
         const timestamp = Date.now().toString().slice(-6);
         this.sku = `${this.sku}-${timestamp}`;
+      }
+
+      // Validación estricta: garantizar que el SKU SIEMPRE exista
+      if (!this.sku) {
+        return next(new Error('CRITICAL: No se pudo generar el SKU para la variante'));
       }
     } catch (error) {
       return next(error as Error);
