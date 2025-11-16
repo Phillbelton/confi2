@@ -69,7 +69,7 @@ export default function NuevoProductoPage() {
 
       // Make API request
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/parents`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -158,7 +158,7 @@ export default function NuevoProductoPage() {
 
       // Make API request
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/parents`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -245,7 +245,7 @@ export default function NuevoProductoPage() {
 
       // Create parent
       const token = localStorage.getItem('token');
-      const parentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/parents`, {
+      const parentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -270,7 +270,7 @@ export default function NuevoProductoPage() {
       }));
 
       const variantsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/products/parents/${parentId}/variants/batch`,
+        `${process.env.NEXT_PUBLIC_API_URL}/products/parents/${parentId}/variants/batch`,
         {
           method: 'POST',
           headers: {
@@ -361,7 +361,7 @@ export default function NuevoProductoPage() {
 
       // Create parent
       const token = localStorage.getItem('token');
-      const parentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/parents`, {
+      const parentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -386,7 +386,7 @@ export default function NuevoProductoPage() {
       }));
 
       const variantsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/products/parents/${parentId}/variants/batch`,
+        `${process.env.NEXT_PUBLIC_API_URL}/products/parents/${parentId}/variants/batch`,
         {
           method: 'POST',
           headers: {
