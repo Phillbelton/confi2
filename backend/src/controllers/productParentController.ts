@@ -14,9 +14,12 @@ import { AppError, asyncHandler } from '../middleware/errorHandler';
  * Crear ProductParent (con o sin variantes)
  * POST /api/products/parents
  * Role: admin, funcionario
+ *
+ * Para productos simples, enviar defaultVariant: { price, stock }
+ * Esto creará automáticamente una variante default sin atributos
  */
 export const createProductParent = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<IProductParent>>) => {
+  async (req: AuthRequest, res: Response<ApiResponse<IProductParent & { defaultVariant?: any }>>) => {
     const {
       name,
       description,
@@ -29,6 +32,7 @@ export const createProductParent = asyncHandler(
       variantAttributes,
       tieredDiscounts,
       featured,
+      defaultVariant, // NUEVO: { price, stock, sku? }
     } = req.body;
 
     // Crear el ProductParent
@@ -45,12 +49,33 @@ export const createProductParent = asyncHandler(
       tieredDiscounts: tieredDiscounts || [],
       featured: featured || false,
       active: true,
+      createdBy: req.user?.id,
     });
+
+    // Si es producto simple (sin variantAttributes), crear variante default
+    let createdVariant = null;
+    if (defaultVariant && (!variantAttributes || variantAttributes.length === 0)) {
+      createdVariant = await ProductVariant.create({
+        parentProduct: productParent._id,
+        price: defaultVariant.price,
+        stock: defaultVariant.stock || 0,
+        sku: defaultVariant.sku, // Si el usuario provee SKU, usarlo (será validado)
+        attributes: {}, // Sin atributos para producto simple
+        trackStock: defaultVariant.trackStock !== false, // Default true
+        allowBackorder: defaultVariant.allowBackorder !== false, // Default true
+        lowStockThreshold: defaultVariant.lowStockThreshold || 5,
+        active: true,
+        createdBy: req.user?.id,
+      });
+    }
 
     return res.status(201).json({
       success: true,
-      message: 'Producto padre creado exitosamente',
-      data: productParent,
+      message: 'Producto creado exitosamente',
+      data: {
+        ...productParent.toObject(),
+        defaultVariant: createdVariant || undefined,
+      },
     });
   }
 );
