@@ -36,7 +36,15 @@ router.get('/parents/slug/:slug', validate(getProductBySlugSchema), productParen
 router.get('/parents/:id/variants', validate(getProductVariantsSchema), productParentController.getProductParentVariants);
 
 // Protected routes (admin, funcionario)
-router.post('/parents', authenticate, authorize('admin', 'funcionario'), validate(createProductParentSchema), productParentController.createProductParent);
+router.post(
+  '/parents',
+  authenticate,
+  authorize('admin', 'funcionario'),
+  uploadMultiple, // Soporte opcional para archivos
+  handleMulterError,
+  validate(createProductParentSchema),
+  productParentController.createProductParent
+);
 router.put('/parents/:id', authenticate, authorize('admin', 'funcionario'), validate(updateProductParentSchema), productParentController.updateProductParent);
 router.delete('/parents/:id', authenticate, authorize('admin', 'funcionario'), validate(deleteProductSchema), productParentController.deleteProductParent);
 

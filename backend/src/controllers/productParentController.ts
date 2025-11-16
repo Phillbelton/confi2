@@ -5,6 +5,8 @@ import { AuthRequest, ApiResponse, PaginatedResponse } from '../types';
 import { getVisibleTierPreviews } from '../services/discountService';
 import mongoose from 'mongoose';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { uploadImagesHybrid } from '../utils/imageUploadHelper';
+import logger from '../config/logger';
 
 /**
  * Controller para ProductParent
@@ -15,11 +17,15 @@ import { AppError, asyncHandler } from '../middleware/errorHandler';
  * POST /api/products/parents
  * Role: admin, funcionario
  *
+ * Soporta dos modos:
+ * 1. JSON puro: enviar datos en body
+ * 2. Multipart/form-data: enviar datos en body + archivos en req.files
+ *
  * Para productos simples, enviar defaultVariant: { price, stock }
  * Esto creará automáticamente una variante default sin atributos
  */
 export const createProductParent = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<IProductParent & { defaultVariant?: any }>>) => {
+  async (req: AuthRequest, res: Response<ApiResponse<IProductParent & { defaultVariant?: any; imageUpload?: any }>>) => {
     const {
       name,
       description,
@@ -35,13 +41,35 @@ export const createProductParent = asyncHandler(
       defaultVariant, // NUEVO: { price, stock, sku? }
     } = req.body;
 
+    // Procesar archivos de imagen si existen (enfoque híbrido)
+    const files = req.files as Express.Multer.File[] | undefined;
+    let imageUploadResult = null;
+
+    if (files && files.length > 0) {
+      logger.info('Procesando imágenes durante creación de producto', {
+        productName: name,
+        fileCount: files.length,
+      });
+
+      imageUploadResult = await uploadImagesHybrid(files, {
+        folder: 'products',
+        maxImages: 5,
+      });
+    }
+
+    // Combinar imágenes del body (si las hay) con las subidas
+    const allImages = [
+      ...(images || []),
+      ...(imageUploadResult?.uploaded || []),
+    ];
+
     // Crear el ProductParent
     const productParent = await ProductParent.create({
       name,
       description,
       categories,
       brand,
-      images: images || [],
+      images: allImages,
       tags: tags || [],
       seoTitle,
       seoDescription,
@@ -69,12 +97,25 @@ export const createProductParent = asyncHandler(
       });
     }
 
+    // Mensaje de respuesta adaptado
+    let message = 'Producto creado exitosamente';
+    if (imageUploadResult) {
+      const uploaded = imageUploadResult.uploaded.length;
+      const failed = imageUploadResult.failed.length;
+      if (uploaded > 0 && failed > 0) {
+        message = `Producto creado. ${uploaded}/${uploaded + failed} imágenes subidas`;
+      } else if (uploaded > 0) {
+        message = `Producto creado con ${uploaded} imagen(es)`;
+      }
+    }
+
     return res.status(201).json({
       success: true,
-      message: 'Producto creado exitosamente',
+      message,
       data: {
         ...productParent.toObject(),
         defaultVariant: createdVariant || undefined,
+        imageUpload: imageUploadResult || undefined,
       },
     });
   }
