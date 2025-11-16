@@ -67,6 +67,7 @@ router.get('/variants/:id/discount-preview', validate(getDiscountPreviewSchema),
 
 // Protected routes (admin, funcionario)
 router.post('/variants', authenticate, authorize('admin', 'funcionario'), validate(createProductVariantSchema), productVariantController.createProductVariant);
+router.post('/parents/:id/variants/batch', authenticate, authorize('admin', 'funcionario'), productVariantController.createVariantsBatch);
 router.put('/variants/:id', authenticate, authorize('admin', 'funcionario'), validate(updateProductVariantSchema), productVariantController.updateProductVariant);
 router.patch('/variants/:id/stock', authenticate, authorize('admin', 'funcionario'), validate(updateStockSchema), productVariantController.updateVariantStock);
 router.delete('/variants/:id', authenticate, authorize('admin', 'funcionario'), validate(deleteProductSchema), productVariantController.deleteProductVariant);
