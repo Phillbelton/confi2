@@ -85,9 +85,10 @@ export const createProductParent = asyncHandler(
     if (defaultVariant && (!variantAttributes || variantAttributes.length === 0)) {
       createdVariant = await ProductVariant.create({
         parentProduct: productParent._id,
+        name: defaultVariant.sku || name, // Placeholder, será reemplazado por pre-save hook
         price: defaultVariant.price,
         stock: defaultVariant.stock || 0,
-        sku: defaultVariant.sku, // Si el usuario provee SKU, usarlo (será validado)
+        sku: defaultVariant.sku || 'temp', // Placeholder, será reemplazado por pre-save hook
         attributes: {}, // Sin atributos para producto simple
         trackStock: defaultVariant.trackStock !== false, // Default true
         allowBackorder: defaultVariant.allowBackorder !== false, // Default true
