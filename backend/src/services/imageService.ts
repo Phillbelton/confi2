@@ -20,7 +20,7 @@ export interface ImageUploadOptions {
   width?: number;
   height?: number;
   quality?: number;
-  format?: 'webp' | 'jpg' | 'png';
+  format?: 'webp' | 'jpeg' | 'png';
   validateDimensions?: {
     minWidth: number;
     minHeight: number;
