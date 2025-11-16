@@ -25,7 +25,7 @@ import logger from '../config/logger';
  * Esto creará automáticamente una variante default sin atributos
  */
 export const createProductParent = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<IProductParent & { defaultVariant?: any; imageUpload?: any }>>) => {
+  async (req: AuthRequest, res: Response<ApiResponse<{ productParent: any; defaultVariant?: any; imageUploadResult?: any }>>) => {
     const {
       name,
       description,
