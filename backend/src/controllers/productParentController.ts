@@ -113,9 +113,9 @@ export const createProductParent = asyncHandler(
       success: true,
       message,
       data: {
-        ...productParent.toObject(),
-        defaultVariant: createdVariant || undefined,
-        imageUpload: imageUploadResult || undefined,
+        productParent: productParent.toObject(),
+        defaultVariant: createdVariant?.toObject() || undefined,
+        imageUploadResult: imageUploadResult || undefined,
       },
     });
   }
