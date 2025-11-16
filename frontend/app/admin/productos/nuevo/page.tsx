@@ -68,7 +68,7 @@ export default function NuevoProductoPage() {
       });
 
       // Make API request
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
@@ -157,7 +157,7 @@ export default function NuevoProductoPage() {
       });
 
       // Make API request
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
@@ -244,7 +244,7 @@ export default function NuevoProductoPage() {
       });
 
       // Create parent
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const parentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
@@ -360,7 +360,7 @@ export default function NuevoProductoPage() {
       });
 
       // Create parent
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const parentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/parents`, {
         method: 'POST',
         headers: {
