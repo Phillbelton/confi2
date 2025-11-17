@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../../app';
+import app from '../../server';
 import { createTestUser, generateAuthToken, createTestCategory, createTestBrand } from '../setup/testUtils';
 import ProductParent from '../../models/ProductParent';
 import ProductVariant from '../../models/ProductVariant';
