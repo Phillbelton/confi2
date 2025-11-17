@@ -64,7 +64,7 @@ export const createProductParentSchema = z.object({
 
     brand: objectIdSchema.optional(),
 
-    images: z.array(z.string().url()).optional(),
+    images: z.array(z.string()).optional(), // Acepta paths o URLs
 
     tags: z.array(objectIdSchema).optional(),
 
@@ -105,7 +105,7 @@ export const updateProductParentSchema = z.object({
 
     brand: objectIdSchema.optional(),
 
-    images: z.array(z.string().url()).optional(),
+    images: z.array(z.string()).optional(), // Acepta paths o URLs
 
     tags: z.array(objectIdSchema).optional(),
 
@@ -171,9 +171,9 @@ export const createProductVariantSchema = z.object({
       .default(0),
 
     images: z
-      .array(z.string().url())
+      .array(z.string())
       .max(5, 'No puede tener más de 5 imágenes')
-      .optional(), // 0 imágenes es válido según el modelo
+      .optional(), // 0 imágenes es válido según el modelo, acepta paths o URLs
 
     trackStock: z.boolean().optional(),
 
@@ -221,10 +221,9 @@ export const updateProductVariantSchema = z.object({
       .optional(),
 
     images: z
-      .array(z.string().url())
-      .min(1, 'Debe proporcionar al menos una imagen')
+      .array(z.string())
       .max(5, 'No puede tener más de 5 imágenes')
-      .optional(),
+      .optional(), // Acepta paths o URLs
 
     trackStock: z.boolean().optional(),
 
