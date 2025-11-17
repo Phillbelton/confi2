@@ -235,8 +235,18 @@ export default function NuevoProductoPage() {
       parentFormData.append('featured', String(data.featured || false));
       parentFormData.append('active', String(data.active !== undefined ? data.active : true));
 
-      // Add variant attributes
-      parentFormData.append('variantAttributes', JSON.stringify(variantAttributes));
+      // Add variant attributes - transform to expected format
+      const transformedAttributes = variantAttributes.map((attr, attrIndex) => ({
+        name: attr.name,
+        displayName: attr.name, // Use the same value for displayName
+        order: attrIndex,
+        values: attr.values.map((val: string, valIndex: number) => ({
+          value: val,
+          displayValue: val, // Use the same value for displayValue
+          order: valIndex,
+        })),
+      }));
+      parentFormData.append('variantAttributes', JSON.stringify(transformedAttributes));
 
       // Add parent images
       parentImages.forEach((image) => {
@@ -351,8 +361,18 @@ export default function NuevoProductoPage() {
       parentFormData.append('featured', String(data.featured || false));
       parentFormData.append('active', String(data.active !== undefined ? data.active : true));
 
-      // Add variant attributes
-      parentFormData.append('variantAttributes', JSON.stringify(variantAttributes));
+      // Add variant attributes - transform to expected format
+      const transformedAttributes = variantAttributes.map((attr, attrIndex) => ({
+        name: attr.name,
+        displayName: attr.name, // Use the same value for displayName
+        order: attrIndex,
+        values: attr.values.map((val: string, valIndex: number) => ({
+          value: val,
+          displayValue: val, // Use the same value for displayValue
+          order: valIndex,
+        })),
+      }));
+      parentFormData.append('variantAttributes', JSON.stringify(transformedAttributes));
 
       // Add parent images
       parentImages.forEach((image) => {
