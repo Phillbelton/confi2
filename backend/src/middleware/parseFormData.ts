@@ -9,11 +9,6 @@ import { Request, Response, NextFunction } from 'express';
  */
 export const parseProductFormData = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Solo procesar si es multipart (tiene archivos)
-    if (!req.files) {
-      return next();
-    }
-
     // Parsear categories (JSON array)
     if (req.body.categories && typeof req.body.categories === 'string') {
       try {
