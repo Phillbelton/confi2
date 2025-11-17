@@ -433,3 +433,93 @@ export const getOutOfStockVariants = asyncHandler(
     });
   }
 );
+
+/**
+ * Crear variantes en batch (múltiples a la vez)
+ * POST /api/products/parents/:id/variants/batch
+ * Role: admin, funcionario
+ *
+ * Body: {
+ *   variants: [
+ *     { attributes: {...}, price: 5000, stock: 10, sku?: "...", images?: [...] },
+ *     { attributes: {...}, price: 3000, stock: 20, sku?: "...", images?: [...] },
+ *     ...
+ *   ]
+ * }
+ *
+ * Returns: {
+ *   created: [...],  // Variantes creadas exitosamente
+ *   failed: [...],   // Variantes que fallaron con error
+ * }
+ */
+export const createVariantsBatch = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse<{
+    created: IProductVariant[];
+    failed: Array<{ index: number; data: any; error: string }>;
+  }>>) => {
+    const { id: parentProductId } = req.params;
+    const { variants } = req.body;
+
+    // Validaciones básicas
+    if (!variants || !Array.isArray(variants) || variants.length === 0) {
+      throw new AppError(400, 'Debe proporcionar un array de variantes');
+    }
+
+    // Verificar que el producto padre existe
+    const parent = await ProductParent.findById(parentProductId);
+    if (!parent) {
+      throw new AppError(404, 'Producto padre no encontrado');
+    }
+
+    const created: IProductVariant[] = [];
+    const failed: Array<{ index: number; data: any; error: string }> = [];
+
+    // Procesar cada variante (enfoque híbrido: best effort)
+    for (let i = 0; i < variants.length; i++) {
+      const variantData = variants[i];
+
+      try {
+        // Validar campos requeridos
+        if (variantData.price === undefined || variantData.stock === undefined) {
+          throw new Error('Faltan campos requeridos (price, stock)');
+        }
+
+        // Crear la variante
+        const variant = await ProductVariant.create({
+          parentProduct: parentProductId,
+          sku: variantData.sku, // Opcional, se auto-genera si no se provee
+          attributes: variantData.attributes || {},
+          description: variantData.description,
+          price: variantData.price,
+          stock: variantData.stock,
+          images: variantData.images || [],
+          trackStock: variantData.trackStock !== false,
+          allowBackorder: variantData.allowBackorder !== false,
+          lowStockThreshold: variantData.lowStockThreshold || 5,
+          fixedDiscount: variantData.fixedDiscount,
+          order: variantData.order || i,
+          active: true,
+          createdBy: req.user?.id,
+        });
+
+        created.push(variant);
+      } catch (error: any) {
+        // Si una variante falla, continuar con las demás
+        failed.push({
+          index: i,
+          data: variantData,
+          error: error.message || 'Error desconocido',
+        });
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `${created.length}/${variants.length} variantes creadas exitosamente`,
+      data: {
+        created,
+        failed,
+      },
+    });
+  }
+);

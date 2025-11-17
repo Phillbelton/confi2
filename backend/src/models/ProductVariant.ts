@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import slugify from 'slugify';
+import { generateSimpleProductSKU, generateVariantSKU } from '../utils/skuGenerator';
 
 // Interfaces
 export interface IFixedDiscount {
@@ -55,7 +56,7 @@ const productVariantSchema = new Schema<IProductVariant>(
     },
     sku: {
       type: String,
-      required: [true, 'El SKU es requerido'],
+      required: false, // Auto-generated in pre-save hook (see line 320)
       unique: true,
       uppercase: true,
       trim: true,
@@ -67,7 +68,7 @@ const productVariantSchema = new Schema<IProductVariant>(
     },
     name: {
       type: String,
-      required: [true, 'El nombre de la variante es requerido'],
+      required: false, // Auto-generated in pre-save hook (see line 211)
       trim: true,
     },
     slug: {
@@ -240,9 +241,12 @@ productVariantSchema.pre('save', async function (next) {
         this.slug = `${this.slug}-${Date.now()}`;
       }
 
-      // Validación estricta: garantizar que el slug SIEMPRE exista
+      // Validación estricta: garantizar que el slug y name SIEMPRE existan
       if (!this.slug) {
         return next(new Error('CRITICAL: No se pudo generar el slug para la variante'));
+      }
+      if (!this.name) {
+        return next(new Error('CRITICAL: No se pudo generar el nombre para la variante'));
       }
     } catch (error) {
       return next(error as Error);
@@ -324,17 +328,19 @@ productVariantSchema.pre('save', async function (next) {
         return next(new Error('Producto padre no encontrado'));
       }
 
-      // Generar SKU: BEBIDA-350-ORIG
-      const baseSlug = parent.slug.substring(0, 6).toUpperCase();
+      // Generar SKU descriptivo usando la nueva función
       const attributesMap = this.attributes as any;
-      const attrValuesArray = attributesMap instanceof Map
-        ? Array.from(attributesMap.values())
-        : Object.values(this.attributes);
-      const attrValues = attrValuesArray
-        .map((val: string) => val.substring(0, 4).toUpperCase())
-        .join('-');
+      const attributesObj: Record<string, string> = attributesMap instanceof Map
+        ? Object.fromEntries(attributesMap)
+        : this.attributes;
 
-      this.sku = attrValues ? `${baseSlug}-${attrValues}` : `${baseSlug}-DEFAULT`;
+      // Si tiene atributos, generar SKU con variantes
+      // Si no tiene atributos, generar SKU simple
+      if (Object.keys(attributesObj).length > 0) {
+        this.sku = generateVariantSKU(parent.name, attributesObj);
+      } else {
+        this.sku = generateSimpleProductSKU(parent.name);
+      }
 
       // Asegurar unicidad
       const existingSku = await mongoose.models.ProductVariant.findOne({
@@ -343,7 +349,14 @@ productVariantSchema.pre('save', async function (next) {
       });
 
       if (existingSku) {
-        this.sku = `${this.sku}-${Date.now()}`;
+        // Agregar timestamp corto para unicidad
+        const timestamp = Date.now().toString().slice(-6);
+        this.sku = `${this.sku}-${timestamp}`;
+      }
+
+      // Validación estricta: garantizar que el SKU SIEMPRE exista
+      if (!this.sku) {
+        return next(new Error('CRITICAL: No se pudo generar el SKU para la variante'));
       }
     } catch (error) {
       return next(error as Error);

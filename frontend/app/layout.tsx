@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 // import { DM_Sans, Comfortaa } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
+import { Toaster } from "@/components/ui/toaster";
 
 // const dmSans = DM_Sans({
 //   subsets: ["latin"],
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <Providers>
           {children}
+          <Toaster />
         </Providers>
       </body>
     </html>

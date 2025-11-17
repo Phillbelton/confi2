@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, Package, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -44,8 +44,12 @@ export default function ProductosPage() {
     ...filters,
   });
 
-  const handleCreateProduct = () => {
-    router.push('/admin/productos/nuevo');
+  const handleCreateSimpleProduct = () => {
+    router.push('/admin/productos/nuevo?tipo=simple');
+  };
+
+  const handleCreateVariantProduct = () => {
+    router.push('/admin/productos/nuevo?tipo=variantes');
   };
 
   const handleEditProduct = (id: string) => {
@@ -67,9 +71,13 @@ export default function ProductosPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
-          <Button onClick={handleCreateProduct}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Producto
+          <Button onClick={handleCreateSimpleProduct} variant="default">
+            <Package className="mr-2 h-4 w-4" />
+            Producto Simple
+          </Button>
+          <Button onClick={handleCreateVariantProduct} variant="outline">
+            <Layers className="mr-2 h-4 w-4" />
+            Con Variantes
           </Button>
         </div>
       </div>

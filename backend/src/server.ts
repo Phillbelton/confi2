@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import { connectDatabase } from './config/database';
 import { ENV, validateEnv } from './config/env';
@@ -11,6 +10,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { xssSanitize } from './middleware/xssSanitize';
 import logger from './config/logger';
 import { requestLogger } from './middleware/requestLogger';
+import { apiRateLimiter } from './middleware/rateLimiter';
 
 // Crear app Express
 const app = express();
@@ -56,15 +56,9 @@ app.use(
   })
 );
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: ENV.RATE_LIMIT_WINDOW_MS,
-  max: ENV.RATE_LIMIT_MAX_REQUESTS,
-  message: 'Demasiadas peticiones desde esta IP, intenta de nuevo más tarde',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api', limiter);
+// Rate limiting - Diferenciado por rol (debe ir DESPUÉS de autenticación)
+// NOTA: El rate limiter se aplica después de que las rutas identifiquen al usuario
+// Por eso se mueve al final, justo antes de las rutas de API
 
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
@@ -112,6 +106,9 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Rate limiting - Aplicar ANTES de las rutas
+app.use('/api', apiRateLimiter);
 
 // Routes
 import apiRoutes from './routes';

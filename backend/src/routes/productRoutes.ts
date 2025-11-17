@@ -5,6 +5,7 @@ import * as uploadController from '../controllers/uploadController';
 import { authenticate, authorize } from '../middleware/auth';
 import { uploadMultiple, uploadSingle, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
+import { parseProductFormData } from '../middleware/parseFormData';
 import {
   createProductParentSchema,
   updateProductParentSchema,
@@ -36,7 +37,16 @@ router.get('/parents/slug/:slug', validate(getProductBySlugSchema), productParen
 router.get('/parents/:id/variants', validate(getProductVariantsSchema), productParentController.getProductParentVariants);
 
 // Protected routes (admin, funcionario)
-router.post('/parents', authenticate, authorize('admin', 'funcionario'), validate(createProductParentSchema), productParentController.createProductParent);
+router.post(
+  '/parents',
+  authenticate,
+  authorize('admin', 'funcionario'),
+  uploadMultiple, // Soporte opcional para archivos
+  handleMulterError,
+  parseProductFormData, // Parsear FormData a tipos correctos
+  validate(createProductParentSchema),
+  productParentController.createProductParent
+);
 router.put('/parents/:id', authenticate, authorize('admin', 'funcionario'), validate(updateProductParentSchema), productParentController.updateProductParent);
 router.delete('/parents/:id', authenticate, authorize('admin', 'funcionario'), validate(deleteProductSchema), productParentController.deleteProductParent);
 
@@ -67,6 +77,7 @@ router.get('/variants/:id/discount-preview', validate(getDiscountPreviewSchema),
 
 // Protected routes (admin, funcionario)
 router.post('/variants', authenticate, authorize('admin', 'funcionario'), validate(createProductVariantSchema), productVariantController.createProductVariant);
+router.post('/parents/:id/variants/batch', authenticate, authorize('admin', 'funcionario'), productVariantController.createVariantsBatch);
 router.put('/variants/:id', authenticate, authorize('admin', 'funcionario'), validate(updateProductVariantSchema), productVariantController.updateProductVariant);
 router.patch('/variants/:id/stock', authenticate, authorize('admin', 'funcionario'), validate(updateStockSchema), productVariantController.updateVariantStock);
 router.delete('/variants/:id', authenticate, authorize('admin', 'funcionario'), validate(deleteProductSchema), productVariantController.deleteProductVariant);

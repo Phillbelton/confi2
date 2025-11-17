@@ -4,7 +4,7 @@
   "description": "Backend API para Confitería Quelita - Sistema de ecommerce",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "nodemon src/server.ts",
+    "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate": "ts-node -r tsconfig-paths/register src/scripts/migrateProducts.ts",
