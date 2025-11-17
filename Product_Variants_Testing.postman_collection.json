@@ -1,0 +1,615 @@
+{
+  "info": {
+    "name": "Product Variants Testing",
+    "description": "Colección para probar productos con variantes y productos simples",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "brand_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "simple_product_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "simple_variant_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "variant_product_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "variant_id_1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "variant_id_2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "variant_sku",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', jsonData.data.token);",
+                  "    console.log('Token guardado:', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@quelita.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Setup - Categories & Brands",
+      "item": [
+        {
+          "name": "Create Category - Chocolates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('category_id', jsonData.data._id);",
+                  "    console.log('Category ID guardado:', jsonData.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chocolates Artesanales\",\n  \"description\": \"Chocolates premium hechos a mano con ingredientes de primera calidad\",\n  \"color\": \"#8B4513\",\n  \"order\": 1,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Create Brand - Cacao Noble",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('brand_id', jsonData.data._id);",
+                  "    console.log('Brand ID guardado:', jsonData.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cacao Noble\",\n  \"logo\": \"/uploads/brands/cacao-noble.jpg\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/brands",
+              "host": ["{{base_url}}"],
+              "path": ["api", "brands"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Simple Products (sin variantes)",
+      "item": [
+        {
+          "name": "Create Simple Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('simple_product_id', jsonData.data.productParent._id);",
+                  "    console.log('Simple Product ID:', jsonData.data.productParent._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bombón de Chocolate Negro\",\n  \"description\": \"Delicioso bombón relleno de ganache de chocolate negro 70% cacao. Producto artesanal elaborado a mano.\",\n  \"categories\": [\"{{category_id}}\"],\n  \"brand\": \"{{brand_id}}\",\n  \"images\": [\"/uploads/chocolates/bombon-negro.jpg\"],\n  \"tags\": [],\n  \"featured\": true,\n  \"variantAttributes\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/parents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "parents"]
+            }
+          }
+        },
+        {
+          "name": "Create Default Variant for Simple Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('simple_variant_id', jsonData.data._id);",
+                  "    console.log('Simple Variant ID:', jsonData.data._id);",
+                  "    console.log('SKU:', jsonData.data.sku);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentProduct\": \"{{simple_product_id}}\",\n  \"attributes\": {},\n  \"price\": 2500,\n  \"stock\": 150,\n  \"images\": [\"/uploads/chocolates/bombon-negro.jpg\"],\n  \"lowStockThreshold\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants"]
+            }
+          }
+        },
+        {
+          "name": "Update Simple Variant Stock",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stock\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants/{{simple_variant_id}}/stock",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants", "{{simple_variant_id}}", "stock"]
+            }
+          }
+        },
+        {
+          "name": "Apply Discount to Simple Variant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fixedDiscount\": {\n    \"enabled\": true,\n    \"type\": \"percentage\",\n    \"value\": 15,\n    \"badge\": \"15% OFF\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants/{{simple_variant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants", "{{simple_variant_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Discount Preview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/variants/{{simple_variant_id}}/discount-preview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants", "{{simple_variant_id}}", "discount-preview"]
+            }
+          }
+        },
+        {
+          "name": "Get Simple Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/parents/{{simple_product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "parents", "{{simple_product_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Products with Variants (con variantes)",
+      "item": [
+        {
+          "name": "Create Product with Variant Attributes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('variant_product_id', jsonData.data.productParent._id);",
+                  "    console.log('Variant Product ID:', jsonData.data.productParent._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chocolate Bitter Premium\",\n  \"description\": \"El mejor chocolate bitter artesanal con alto contenido de cacao\",\n  \"categories\": [\"{{category_id}}\"],\n  \"brand\": \"{{brand_id}}\",\n  \"images\": [\"/uploads/chocolates/bitter-premium.jpg\"],\n  \"variantAttributes\": [\n    {\n      \"name\": \"peso\",\n      \"displayName\": \"Peso\",\n      \"order\": 1,\n      \"values\": [\n        { \"value\": \"100g\", \"displayValue\": \"100 gramos\", \"order\": 1 },\n        { \"value\": \"200g\", \"displayValue\": \"200 gramos\", \"order\": 2 },\n        { \"value\": \"500g\", \"displayValue\": \"500 gramos\", \"order\": 3 }\n      ]\n    },\n    {\n      \"name\": \"cacao\",\n      \"displayName\": \"% Cacao\",\n      \"order\": 2,\n      \"values\": [\n        { \"value\": \"70%\", \"displayValue\": \"70% Cacao\", \"order\": 1 },\n        { \"value\": \"85%\", \"displayValue\": \"85% Cacao\", \"order\": 2 },\n        { \"value\": \"90%\", \"displayValue\": \"90% Cacao\", \"order\": 3 }\n      ]\n    }\n  ],\n  \"featured\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/parents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "parents"]
+            }
+          }
+        },
+        {
+          "name": "Create Variant: 100g - 70% cacao",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('variant_id_1', jsonData.data._id);",
+                  "    pm.collectionVariables.set('variant_sku', jsonData.data.sku);",
+                  "    console.log('Variant 1 ID:', jsonData.data._id);",
+                  "    console.log('SKU:', jsonData.data.sku);",
+                  "    console.log('Name:', jsonData.data.name);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentProduct\": \"{{variant_product_id}}\",\n  \"attributes\": {\n    \"peso\": \"100g\",\n    \"cacao\": \"70%\"\n  },\n  \"price\": 5000,\n  \"stock\": 100,\n  \"images\": [\"/uploads/chocolates/bitter-100g-70.jpg\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants"]
+            }
+          }
+        },
+        {
+          "name": "Create Variant: 200g - 85% cacao",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('variant_id_2', jsonData.data._id);",
+                  "    console.log('Variant 2 ID:', jsonData.data._id);",
+                  "    console.log('SKU:', jsonData.data.sku);",
+                  "    console.log('Name:', jsonData.data.name);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentProduct\": \"{{variant_product_id}}\",\n  \"attributes\": {\n    \"peso\": \"200g\",\n    \"cacao\": \"85%\"\n  },\n  \"price\": 9500,\n  \"stock\": 80,\n  \"images\": [\"/uploads/chocolates/bitter-200g-85.jpg\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants"]
+            }
+          }
+        },
+        {
+          "name": "Create Variant: 500g - 90% cacao",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentProduct\": \"{{variant_product_id}}\",\n  \"attributes\": {\n    \"peso\": \"500g\",\n    \"cacao\": \"90%\"\n  },\n  \"price\": 22000,\n  \"stock\": 50,\n  \"images\": [\"/uploads/chocolates/bitter-500g-90.jpg\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants"]
+            }
+          }
+        },
+        {
+          "name": "Get All Variants of Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/parents/{{variant_product_id}}/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "parents", "{{variant_product_id}}", "variants"]
+            }
+          }
+        },
+        {
+          "name": "Get Variant by SKU",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/variants/sku/{{variant_sku}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants", "sku", "{{variant_sku}}"]
+            }
+          }
+        },
+        {
+          "name": "❌ FAIL: Invalid Attribute Value",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentProduct\": \"{{variant_product_id}}\",\n  \"attributes\": {\n    \"peso\": \"100g\",\n    \"cacao\": \"95%\"\n  },\n  \"price\": 5000,\n  \"stock\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants"]
+            }
+          }
+        },
+        {
+          "name": "❌ FAIL: Extra Attribute",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentProduct\": \"{{variant_product_id}}\",\n  \"attributes\": {\n    \"peso\": \"100g\",\n    \"cacao\": \"70%\",\n    \"sabor\": \"naranja\"\n  },\n  \"price\": 5000,\n  \"stock\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants"]
+            }
+          }
+        },
+        {
+          "name": "✅ SUCCESS: Partial Attributes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentProduct\": \"{{variant_product_id}}\",\n  \"attributes\": {\n    \"peso\": \"100g\"\n  },\n  \"price\": 4500,\n  \"stock\": 120\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/variants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Queries & Filters",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/parents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "parents"]
+            }
+          }
+        },
+        {
+          "name": "Get Featured Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/parents/featured",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "parents", "featured"]
+            }
+          }
+        },
+        {
+          "name": "Get Low Stock Variants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/variants/stock/low",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants", "stock", "low"]
+            }
+          }
+        },
+        {
+          "name": "Get Out of Stock Variants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/products/variants/stock/out",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "variants", "stock", "out"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

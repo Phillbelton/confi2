@@ -404,16 +404,34 @@ export const updateProductParent = asyncHandler(
     // Actualizar campos
     if (name !== undefined) productParent.name = name;
     if (description !== undefined) productParent.description = description;
+
     if (categories !== undefined) {
-      productParent.categories = categories.map(
-        (c: string) => new mongoose.Types.ObjectId(c)
-      );
+      // Si es null o undefined, no actualizar. Si es array, convertir a ObjectIds
+      if (categories && Array.isArray(categories)) {
+        productParent.categories = categories.map(
+          (c: string) => new mongoose.Types.ObjectId(c)
+        );
+      }
     }
+
     if (brand !== undefined) {
-      productParent.brand = new mongoose.Types.ObjectId(brand);
+      // Si es null, undefined, o string vacío, asignar undefined (remover brand)
+      if (!brand || brand === '') {
+        productParent.brand = undefined as any;
+      } else {
+        productParent.brand = new mongoose.Types.ObjectId(brand);
+      }
     }
+
     if (images !== undefined) productParent.images = images;
-    if (tags !== undefined) productParent.tags = tags;
+
+    if (tags !== undefined) {
+      // Si es null o undefined, no actualizar. Si es array, mantener como está (ya son ObjectIds)
+      if (tags && Array.isArray(tags)) {
+        productParent.tags = tags;
+      }
+    }
+
     if (seoTitle !== undefined) productParent.seoTitle = seoTitle;
     if (seoDescription !== undefined)
       productParent.seoDescription = seoDescription;

@@ -268,6 +268,39 @@ export const getVariantDiscountPreview = asyncHandler(
     const { id } = req.params;
     const { quantity } = req.query as any;
 
+    // Obtener la variante para acceder a su fixedDiscount
+    const variant = await ProductVariant.findById(id);
+    if (!variant) {
+      throw new AppError(404, 'Variante no encontrada');
+    }
+
+    // Información de fixed discount
+    const originalPrice = variant.price;
+    let hasDiscount = false;
+    let discountedPrice = originalPrice;
+    let discountType: 'percentage' | 'amount' | null = null;
+    let discountValue: number | null = null;
+    let badge: string | null = null;
+
+    if (variant.fixedDiscount?.enabled) {
+      const now = new Date();
+      const startValid = !variant.fixedDiscount.startDate || variant.fixedDiscount.startDate <= now;
+      const endValid = !variant.fixedDiscount.endDate || variant.fixedDiscount.endDate >= now;
+
+      if (startValid && endValid) {
+        hasDiscount = true;
+        discountType = variant.fixedDiscount.type;
+        discountValue = variant.fixedDiscount.value;
+        badge = variant.fixedDiscount.badge || null;
+
+        if (discountType === 'percentage') {
+          discountedPrice = originalPrice - (originalPrice * discountValue / 100);
+        } else {
+          discountedPrice = originalPrice - discountValue;
+        }
+      }
+    }
+
     // Obtener tier previews (badges para mostrar en UI)
     const tierPreviews = await getVisibleTierPreviews(id);
 
@@ -283,6 +316,12 @@ export const getVariantDiscountPreview = asyncHandler(
     return res.status(200).json({
       success: true,
       data: {
+        originalPrice,
+        discountedPrice,
+        hasDiscount,
+        discountType,
+        discountValue,
+        badge,
         tierPreviews,
         priceCalculation,
       },

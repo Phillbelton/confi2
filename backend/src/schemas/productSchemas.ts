@@ -12,6 +12,32 @@ const objectIdSchema = z
     message: 'ID inválido',
   });
 
+// Helper para validar ObjectId opcional (acepta null, undefined, o string vacío)
+const optionalObjectIdSchema = z
+  .string()
+  .nullish()
+  .refine(
+    (val) => {
+      // Si es null, undefined, o string vacío, es válido (campo opcional)
+      if (!val || val === '') return true;
+      // Si tiene valor, debe ser un ObjectId válido
+      return mongoose.Types.ObjectId.isValid(val);
+    },
+    {
+      message: 'ID inválido',
+    }
+  );
+
+// Helper para arrays opcionales de ObjectIds
+const optionalObjectIdArraySchema = z
+  .array(objectIdSchema)
+  .nullish()
+  .transform((val) => {
+    // Si es null o undefined, retornar undefined (campo opcional)
+    if (!val) return undefined;
+    return val;
+  });
+
 // Schema para tiered discounts (completo según el modelo)
 const tieredDiscountSchema = z.object({
   attribute: z.string(),
@@ -64,7 +90,7 @@ export const createProductParentSchema = z.object({
 
     brand: objectIdSchema.optional(),
 
-    images: z.array(z.string().url()).optional(),
+    images: z.array(z.string()).optional(), // Acepta paths o URLs
 
     tags: z.array(objectIdSchema).optional(),
 
@@ -101,13 +127,13 @@ export const updateProductParentSchema = z.object({
       .trim()
       .optional(),
 
-    categories: z.array(objectIdSchema).optional(),
+    categories: optionalObjectIdArraySchema, // Acepta null, undefined, o array de IDs
 
-    brand: objectIdSchema.optional(),
+    brand: optionalObjectIdSchema, // Acepta null, undefined, o string vacío
 
-    images: z.array(z.string().url()).optional(),
+    images: z.array(z.string()).optional(), // Acepta paths o URLs
 
-    tags: z.array(objectIdSchema).optional(),
+    tags: optionalObjectIdArraySchema, // Acepta null, undefined, o array de IDs
 
     seoTitle: z.string().max(200).optional(),
 
@@ -142,17 +168,16 @@ export const createProductVariantSchema = z.object({
     parentProduct: objectIdSchema,
 
     sku: z
-      .string({
-        required_error: 'El SKU es requerido',
-      })
+      .string()
       .min(3, 'El SKU debe tener al menos 3 caracteres')
       .max(50, 'El SKU no puede exceder 50 caracteres')
       .trim()
-      .toUpperCase(),
+      .toUpperCase()
+      .optional(), // El SKU es opcional porque se autogenera en el modelo
 
     attributes: attributesSchema,
 
-    name: z.string().optional(), // Opcional, si no se proporciona se usa el SKU
+    name: z.string().optional(), // Opcional, si no se proporciona se autogenera
 
     description: z.string().max(1000).optional(),
 
@@ -172,10 +197,9 @@ export const createProductVariantSchema = z.object({
       .default(0),
 
     images: z
-      .array(z.string().url())
-      .min(1, 'Debe proporcionar al menos una imagen')
+      .array(z.string())
       .max(5, 'No puede tener más de 5 imágenes')
-      .optional(),
+      .optional(), // 0 imágenes es válido según el modelo, acepta paths o URLs
 
     trackStock: z.boolean().optional(),
 
@@ -223,10 +247,9 @@ export const updateProductVariantSchema = z.object({
       .optional(),
 
     images: z
-      .array(z.string().url())
-      .min(1, 'Debe proporcionar al menos una imagen')
+      .array(z.string())
       .max(5, 'No puede tener más de 5 imágenes')
-      .optional(),
+      .optional(), // Acepta paths o URLs
 
     trackStock: z.boolean().optional(),
 
