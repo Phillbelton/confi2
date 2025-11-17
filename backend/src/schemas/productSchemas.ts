@@ -12,6 +12,32 @@ const objectIdSchema = z
     message: 'ID inválido',
   });
 
+// Helper para validar ObjectId opcional (acepta null, undefined, o string vacío)
+const optionalObjectIdSchema = z
+  .string()
+  .nullish()
+  .refine(
+    (val) => {
+      // Si es null, undefined, o string vacío, es válido (campo opcional)
+      if (!val || val === '') return true;
+      // Si tiene valor, debe ser un ObjectId válido
+      return mongoose.Types.ObjectId.isValid(val);
+    },
+    {
+      message: 'ID inválido',
+    }
+  );
+
+// Helper para arrays opcionales de ObjectIds
+const optionalObjectIdArraySchema = z
+  .array(objectIdSchema)
+  .nullish()
+  .transform((val) => {
+    // Si es null o undefined, retornar undefined (campo opcional)
+    if (!val) return undefined;
+    return val;
+  });
+
 // Schema para tiered discounts (completo según el modelo)
 const tieredDiscountSchema = z.object({
   attribute: z.string(),
@@ -101,13 +127,13 @@ export const updateProductParentSchema = z.object({
       .trim()
       .optional(),
 
-    categories: z.array(objectIdSchema).optional(),
+    categories: optionalObjectIdArraySchema, // Acepta null, undefined, o array de IDs
 
-    brand: objectIdSchema.optional(),
+    brand: optionalObjectIdSchema, // Acepta null, undefined, o string vacío
 
     images: z.array(z.string()).optional(), // Acepta paths o URLs
 
-    tags: z.array(objectIdSchema).optional(),
+    tags: optionalObjectIdArraySchema, // Acepta null, undefined, o array de IDs
 
     seoTitle: z.string().max(200).optional(),
 
