@@ -271,7 +271,7 @@ export const getVariantDiscountPreview = asyncHandler(
     // Obtener la variante para acceder a su fixedDiscount
     const variant = await ProductVariant.findById(id);
     if (!variant) {
-      throw new AppError('Variante no encontrada', 404);
+      throw new AppError(404, 'Variante no encontrada');
     }
 
     // Información de fixed discount
