@@ -121,6 +121,18 @@ class CloudinaryImageService implements IImageService {
         folder: options.folder,
       });
 
+      // Delete local temporary file after successful upload
+      try {
+        await deleteFile(filePath);
+        logger.info('🗑️  Temporary file deleted after Cloudinary upload', { filePath });
+      } catch (deleteError: any) {
+        logger.warn('⚠️  Failed to delete temporary file', {
+          filePath,
+          error: deleteError.message,
+        });
+        // Don't throw - upload was successful, deletion failure is not critical
+      }
+
       return {
         url: result.secure_url,
         publicId: result.public_id,
