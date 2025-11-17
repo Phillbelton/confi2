@@ -14,6 +14,7 @@
     "seed:brands": "ts-node -r tsconfig-paths/register src/scripts/seedBrands.ts",
     "seed:tags": "ts-node -r tsconfig-paths/register src/scripts/seedTags.ts",
     "seed:products": "ts-node -r tsconfig-paths/register src/scripts/seedProducts.ts",
+    "seed:simple-products": "ts-node -r tsconfig-paths/register src/scripts/seedSimpleProducts.ts",
     "seed:all": "npm run seed:categories && npm run seed:brands && npm run seed:tags && npm run seed:products",
     "backup": "ts-node -r tsconfig-paths/register src/scripts/backup.ts",
     "restore": "ts-node -r tsconfig-paths/register src/scripts/restore.ts",
