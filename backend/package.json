@@ -18,6 +18,7 @@
     "seed:all": "npm run seed:categories && npm run seed:brands && npm run seed:tags && npm run seed:products",
     "backup": "ts-node -r tsconfig-paths/register src/scripts/backup.ts",
     "restore": "ts-node -r tsconfig-paths/register src/scripts/restore.ts",
+    "debug:cloudinary": "ts-node -r tsconfig-paths/register src/scripts/debugCloudinary.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "cross-env NODE_ENV=test jest --runInBand",
