@@ -96,16 +96,16 @@ describe('Chocolate Products - Variant Creation', () => {
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('_id');
-      expect(response.body.data.name).toBe('Chocolate Bitter Premium');
-      expect(response.body.data.variantAttributes).toHaveLength(2);
-      expect(response.body.data.variantAttributes[0].name).toBe('peso');
-      expect(response.body.data.variantAttributes[0].values).toHaveLength(3);
-      expect(response.body.data.variantAttributes[1].name).toBe('cacao');
-      expect(response.body.data.variantAttributes[1].values).toHaveLength(3);
+      expect(response.body.data.productParent).toHaveProperty('_id');
+      expect(response.body.data.productParent.name).toBe('Chocolate Bitter Premium');
+      expect(response.body.data.productParent.variantAttributes).toHaveLength(2);
+      expect(response.body.data.productParent.variantAttributes[0].name).toBe('peso');
+      expect(response.body.data.productParent.variantAttributes[0].values).toHaveLength(3);
+      expect(response.body.data.productParent.variantAttributes[1].name).toBe('cacao');
+      expect(response.body.data.productParent.variantAttributes[1].values).toHaveLength(3);
 
       // Verificar en base de datos
-      const parent = await ProductParent.findById(response.body.data._id);
+      const parent = await ProductParent.findById(response.body.data.productParent._id);
       expect(parent).toBeTruthy();
       expect(parent?.variantAttributes).toHaveLength(2);
     });
@@ -137,9 +137,9 @@ describe('Chocolate Products - Variant Creation', () => {
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.variantAttributes).toHaveLength(1);
-      expect(response.body.data.variantAttributes[0].name).toBe('tipo');
-      expect(response.body.data.variantAttributes[0].values).toHaveLength(5);
+      expect(response.body.data.productParent.variantAttributes).toHaveLength(1);
+      expect(response.body.data.productParent.variantAttributes[0].name).toBe('tipo');
+      expect(response.body.data.productParent.variantAttributes[0].values).toHaveLength(5);
     });
 
     it('should reject chocolate parent with less than 2 values per attribute', async () => {
@@ -207,7 +207,7 @@ describe('Chocolate Products - Variant Creation', () => {
           ],
         });
 
-      chocolateParent = parentResponse.body.data;
+      chocolateParent = parentResponse.body.data.productParent;
     });
 
     it('should create chocolate variant with peso 100g and 70% cacao', async () => {
@@ -432,7 +432,7 @@ describe('Chocolate Products - Variant Creation', () => {
           ],
         });
 
-      chocolateTypeParent = parentResponse.body.data;
+      chocolateTypeParent = parentResponse.body.data.productParent;
     });
 
     it('should create bitter chocolate variant', async () => {
@@ -541,7 +541,7 @@ describe('Chocolate Products - Variant Creation', () => {
           ],
         });
 
-      chocolateParent = parentResponse.body.data;
+      chocolateParent = parentResponse.body.data.productParent;
 
       // Crear variantes
       await request(app)
@@ -639,7 +639,7 @@ describe('Chocolate Products - Variant Creation', () => {
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          parentProduct: parentResponse.body.data._id,
+          parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '100g' },
           price: 5000,
           stock: 100,
@@ -742,7 +742,7 @@ describe('Chocolate Products - Variant Creation', () => {
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          parentProduct: parentResponse.body.data._id,
+          parentProduct: parentResponse.body.data.productParent._id,
           attributes: { tipo: 'bitter' },
           price: 10000,
           stock: 100,
@@ -862,7 +862,7 @@ describe('Chocolate Products - Variant Creation', () => {
           ],
         });
 
-      const parent = parentResponse.body.data;
+      const parent = parentResponse.body.data.productParent;
 
       // Crear variante con todos los atributos
       const response = await request(app)
@@ -912,7 +912,7 @@ describe('Chocolate Products - Variant Creation', () => {
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          parentProduct: parentResponse.body.data._id,
+          parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '100g' },
           price: 5000,
           stock: 100,
@@ -923,7 +923,7 @@ describe('Chocolate Products - Variant Creation', () => {
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          parentProduct: parentResponse.body.data._id,
+          parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '200g' },
           price: 9000,
           stock: 100,
@@ -960,7 +960,7 @@ describe('Chocolate Products - Variant Creation', () => {
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          parentProduct: parentResponse.body.data._id,
+          parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '100g' },
           price: 5000,
           stock: 100,
@@ -971,7 +971,7 @@ describe('Chocolate Products - Variant Creation', () => {
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          parentProduct: parentResponse.body.data._id,
+          parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '200g' },
           price: 9000,
           stock: 100,
