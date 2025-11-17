@@ -55,7 +55,7 @@ export const adminDashboardService = {
    * Get low stock products
    */
   getLowStockVariants: async (): Promise<LowStockVariant[]> => {
-    const { data } = await api.get<LowStockVariant[]>('/products/variants/stock/low');
-    return data;
+    const { data } = await api.get<ApiResponse<LowStockVariant[]>>('/products/variants/stock/low');
+    return data.data;
   },
 };
