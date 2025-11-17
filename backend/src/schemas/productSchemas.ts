@@ -142,17 +142,16 @@ export const createProductVariantSchema = z.object({
     parentProduct: objectIdSchema,
 
     sku: z
-      .string({
-        required_error: 'El SKU es requerido',
-      })
+      .string()
       .min(3, 'El SKU debe tener al menos 3 caracteres')
       .max(50, 'El SKU no puede exceder 50 caracteres')
       .trim()
-      .toUpperCase(),
+      .toUpperCase()
+      .optional(), // El SKU es opcional porque se autogenera en el modelo
 
     attributes: attributesSchema,
 
-    name: z.string().optional(), // Opcional, si no se proporciona se usa el SKU
+    name: z.string().optional(), // Opcional, si no se proporciona se autogenera
 
     description: z.string().max(1000).optional(),
 
@@ -173,9 +172,8 @@ export const createProductVariantSchema = z.object({
 
     images: z
       .array(z.string().url())
-      .min(1, 'Debe proporcionar al menos una imagen')
       .max(5, 'No puede tener más de 5 imágenes')
-      .optional(),
+      .optional(), // 0 imágenes es válido según el modelo
 
     trackStock: z.boolean().optional(),
 
