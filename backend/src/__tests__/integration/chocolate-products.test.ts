@@ -36,13 +36,11 @@ describe('Chocolate Products - Variant Creation', () => {
     // Crear categoría de chocolates
     chocolateCategory = await createTestCategory({
       name: 'Chocolates Artesanales',
-      description: 'Chocolates premium hechos a mano',
     });
 
     // Crear marca de chocolates
     chocolateBrand = await createTestBrand({
       name: 'Cacao Noble',
-      description: 'Chocolates artesanales de origen único',
     });
   });
 
@@ -246,8 +244,9 @@ describe('Chocolate Products - Variant Creation', () => {
       // Verificar en base de datos
       const variant = await ProductVariant.findById(response.body.data._id);
       expect(variant).toBeTruthy();
-      expect(variant?.attributes.get('peso')).toBe('100g');
-      expect(variant?.attributes.get('cacao')).toBe('70%');
+      const attributes = variant?.attributes as any;
+      expect(attributes.peso || attributes.get?.('peso')).toBe('100g');
+      expect(attributes.cacao || attributes.get?.('cacao')).toBe('70%');
     });
 
     it('should create chocolate variant with peso 200g and 85% cacao', async () => {
