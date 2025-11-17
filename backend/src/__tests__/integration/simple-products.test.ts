@@ -218,9 +218,9 @@ describe('Simple Products - Products without variants', () => {
       expect(response.body.data.slug).toContain('barra-de-chocolate-blanco-con-fresas');
     });
 
-    it('should only allow ONE variant for simple products', async () => {
+    it('should allow multiple variants for simple products with empty attributes', async () => {
       // Crear primera variante
-      await request(app)
+      const variant1 = await request(app)
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
@@ -231,8 +231,8 @@ describe('Simple Products - Products without variants', () => {
         })
         .expect(201);
 
-      // Intentar crear segunda variante - debería fallar porque el producto es simple
-      const response = await request(app)
+      // Crear segunda variante - esto es permitido (aunque no es común en productos simples)
+      const variant2 = await request(app)
         .post('/api/products/variants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
@@ -241,10 +241,17 @@ describe('Simple Products - Products without variants', () => {
           price: 8000,
           stock: 50,
         })
-        .expect(500);
+        .expect(201);
 
-      expect(response.body.success).toBe(false);
-      // El producto simple solo permite una variante
+      expect(variant1.body.success).toBe(true);
+      expect(variant2.body.success).toBe(true);
+      expect(variant1.body.data._id).not.toBe(variant2.body.data._id);
+
+      // Verificar que ambas variantes existen
+      const variantCount = await ProductVariant.countDocuments({
+        parentProduct: simpleProductParent._id,
+      });
+      expect(variantCount).toBe(2);
     });
   });
 
@@ -339,7 +346,32 @@ describe('Simple Products - Products without variants', () => {
       expect(response.body.data.sku).toBe(simpleVariant.sku);
     });
 
-    it('should delete simple product variant', async () => {
+    it('should not delete the only active variant of a product', async () => {
+      // Intentar eliminar la única variante - debería fallar
+      const response = await request(app)
+        .delete(`/api/products/variants/${simpleVariant._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('única variante activa');
+    });
+
+    it('should soft delete variant when there are multiple variants', async () => {
+      // Crear segunda variante
+      const variant2Response = await request(app)
+        .post('/api/products/variants')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          parentProduct: simpleProduct._id,
+          attributes: {},
+          price: 7000,
+          stock: 50,
+        });
+
+      const variant2 = variant2Response.body.data;
+
+      // Ahora podemos eliminar la primera variante
       const response = await request(app)
         .delete(`/api/products/variants/${simpleVariant._id}`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -347,12 +379,13 @@ describe('Simple Products - Products without variants', () => {
 
       expect(response.body.success).toBe(true);
 
-      // Verificar que fue eliminado
+      // Verificar que fue soft deleted (active: false)
       const variant = await ProductVariant.findById(simpleVariant._id);
-      expect(variant).toBeNull();
+      expect(variant).toBeTruthy();
+      expect(variant?.active).toBe(false);
     });
 
-    it('should delete simple product parent', async () => {
+    it('should soft delete simple product parent', async () => {
       const response = await request(app)
         .delete(`/api/products/parents/${simpleProduct._id}`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -360,9 +393,16 @@ describe('Simple Products - Products without variants', () => {
 
       expect(response.body.success).toBe(true);
 
-      // Verificar que fue eliminado
+      // Verificar que fue soft deleted (active: false)
       const parent = await ProductParent.findById(simpleProduct._id);
-      expect(parent).toBeNull();
+      expect(parent).toBeTruthy();
+      expect(parent?.active).toBe(false);
+
+      // Verificar que las variantes también fueron desactivadas
+      const variants = await ProductVariant.find({ parentProduct: simpleProduct._id });
+      variants.forEach((variant) => {
+        expect(variant.active).toBe(false);
+      });
     });
   });
 
