@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import slugify from 'slugify';
 import { generateSimpleProductSKU, generateVariantSKU } from '../utils/skuGenerator';
+import { normalizeVariantValue } from '../utils/normalizeVariantValue';
 
 // Interfaces
 export interface IFixedDiscount {
@@ -389,6 +390,30 @@ productVariantSchema.pre('save', async function (next) {
       }
     } catch (error) {
       return next(error as Error);
+    }
+  }
+  next();
+});
+
+// Pre-save: normalizar valores de atributos para consistencia
+productVariantSchema.pre('save', function (next) {
+  if (this.isNew || this.isModified('attributes')) {
+    const attributesMap = this.attributes as any;
+
+    if (attributesMap instanceof Map) {
+      // Normalizar cada valor del Map
+      const normalizedMap = new Map();
+      for (const [key, value] of attributesMap.entries()) {
+        normalizedMap.set(key, normalizeVariantValue(value));
+      }
+      this.attributes = normalizedMap as any;
+    } else if (this.attributes) {
+      // Normalizar cada valor del objeto
+      const normalizedObj: Record<string, string> = {};
+      for (const [key, value] of Object.entries(this.attributes)) {
+        normalizedObj[key] = normalizeVariantValue(value);
+      }
+      this.attributes = normalizedObj as any;
     }
   }
   next();
