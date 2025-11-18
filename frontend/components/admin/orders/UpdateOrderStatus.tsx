@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Info } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InlineHelp } from '@/components/ui/inline-help';
 import { useAdminOrders } from '@/hooks/admin/useAdminOrders';
 import type { OrderStatus } from '@/types/order';
 
@@ -81,12 +84,32 @@ export function UpdateOrderStatus({ orderId, currentStatus }: UpdateOrderStatusP
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <InlineHelp variant="info">
+          <strong>Flujo de estados:</strong> Pendiente WhatsApp → Confirmada → En Preparación → Enviada → Completada
+        </InlineHelp>
+
         <FormField
           control={form.control}
           name="status"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Actualizar Estado</FormLabel>
+              <div className="flex items-center gap-2">
+                <FormLabel>Actualizar Estado</FormLabel>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <div className="text-xs space-y-1">
+                      <p><strong>Pendiente WhatsApp:</strong> Esperando confirmación del cliente</p>
+                      <p><strong>Confirmada:</strong> Cliente confirmó, listo para preparar</p>
+                      <p><strong>En Preparación:</strong> Empacando el pedido</p>
+                      <p><strong>Enviada:</strong> En camino al cliente</p>
+                      <p><strong>Completada:</strong> Entregada y finalizada</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -112,7 +135,19 @@ export function UpdateOrderStatus({ orderId, currentStatus }: UpdateOrderStatusP
             name="adminNotes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Notas (opcional)</FormLabel>
+                <div className="flex items-center gap-2">
+                  <FormLabel>Notas (opcional)</FormLabel>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">
+                        Notas internas visibles solo para administradores. Útil para registrar cambios, problemas o información adicional sobre el pedido.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <FormControl>
                   <Textarea
                     {...field}
