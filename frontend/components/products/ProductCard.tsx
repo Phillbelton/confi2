@@ -338,23 +338,31 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
 
             {/* Tier Discount Badges */}
             {(hasVariantTieredDiscount || hasParentTieredDiscount) && discountTiers && discountTiers.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {discountTiers.slice(0, 3).map((tier, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="text-[10px] px-1.5 py-0.5 bg-accent/10 text-accent-foreground border-accent/20"
-                  >
-                    {tier.range}: {tier.price}
-                  </Badge>
-                ))}
+              <div className="flex flex-wrap gap-1.5">
+                {discountTiers.slice(0, 3).map((tier, index) => {
+                  // Extract min quantity from range (e.g., "2-5 un" -> "2", "6+ un" -> "6")
+                  const minQty = tier.range.split('-')[0].split('+')[0].trim();
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center justify-center px-2 py-1 rounded-md border border-accent/20 bg-accent/10 min-w-[60px]"
+                    >
+                      <span className="text-[9px] text-accent-foreground/70 font-medium leading-tight">
+                        desde {minQty}
+                      </span>
+                      <span className="text-[11px] text-accent-foreground font-bold leading-tight">
+                        {tier.price}
+                      </span>
+                    </div>
+                  );
+                })}
                 {discountTiers.length > 3 && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground"
-                  >
-                    +{discountTiers.length - 3} más
-                  </Badge>
+                  <div className="flex items-center justify-center px-2 py-1 rounded-md border border-muted bg-muted/50 min-w-[50px]">
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      +{discountTiers.length - 3}
+                    </span>
+                  </div>
                 )}
               </div>
             )}
