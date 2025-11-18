@@ -151,22 +151,24 @@ export default function ProductDetailPage() {
     if (!selectedVariant) return null;
 
     let totalDiscount = 0;
+    let currentPrice = selectedVariant.price; // Track current price as discounts are applied
     const discountDetails: string[] = [];
 
     // 1. Apply fixed discount
     if (hasFixedDiscount) {
       let fixedDiscountAmount = 0;
       if (selectedVariant.fixedDiscount!.type === 'percentage') {
-        fixedDiscountAmount = (selectedVariant.price * selectedVariant.fixedDiscount!.value) / 100;
+        fixedDiscountAmount = (currentPrice * selectedVariant.fixedDiscount!.value) / 100;
         discountDetails.push(`-${selectedVariant.fixedDiscount!.value}% fijo`);
       } else {
         fixedDiscountAmount = selectedVariant.fixedDiscount!.value;
         discountDetails.push(`-$${fixedDiscountAmount.toLocaleString()} fijo`);
       }
       totalDiscount += fixedDiscountAmount;
+      currentPrice -= fixedDiscountAmount; // Update price after fixed discount
     }
 
-    // 2. Apply variant tiered discount
+    // 2. Apply variant tiered discount ON THE DISCOUNTED PRICE
     if (hasVariantTieredDiscount) {
       const applicableTier = [...selectedVariant.tieredDiscount!.tiers]
         .sort((a, b) => b.minQuantity - a.minQuantity)
@@ -179,18 +181,20 @@ export default function ProductDetailPage() {
       if (applicableTier) {
         let tierDiscountAmount = 0;
         if (applicableTier.type === 'percentage') {
-          tierDiscountAmount = (selectedVariant.price * applicableTier.value) / 100;
+          // Apply percentage on current price (after fixed discount)
+          tierDiscountAmount = (currentPrice * applicableTier.value) / 100;
           discountDetails.push(`-${applicableTier.value}% por cantidad`);
         } else {
           tierDiscountAmount = applicableTier.value;
           discountDetails.push(`-$${tierDiscountAmount.toLocaleString()} por cantidad`);
         }
         totalDiscount += tierDiscountAmount;
+        currentPrice -= tierDiscountAmount; // Update price after tiered discount
       }
     }
 
     // 3. Apply parent tiered discount (legacy, only if no other discounts)
-    if (!totalDiscount && hasParentTieredDiscount) {
+    if (totalDiscount === 0 && hasParentTieredDiscount) {
       const discount = product.tieredDiscounts.find((d) => d.active);
       if (discount) {
         const applicableTier = [...discount.tiers]
@@ -433,13 +437,24 @@ export default function ProductDetailPage() {
                   </p>
                   <div className="space-y-1">
                     {selectedVariant.tieredDiscount!.tiers.map((tier, index) => {
+                      // Calculate base price after fixed discount (if any)
+                      let basePrice = selectedVariant.price;
+                      if (hasFixedDiscount) {
+                        if (selectedVariant.fixedDiscount!.type === 'percentage') {
+                          basePrice -= (basePrice * selectedVariant.fixedDiscount!.value) / 100;
+                        } else {
+                          basePrice -= selectedVariant.fixedDiscount!.value;
+                        }
+                      }
+
+                      // Apply tiered discount on the base price (after fixed discount)
                       let discountAmount = 0;
                       if (tier.type === 'percentage') {
-                        discountAmount = (selectedVariant.price * tier.value) / 100;
+                        discountAmount = (basePrice * tier.value) / 100;
                       } else {
                         discountAmount = tier.value;
                       }
-                      const finalPrice = selectedVariant.price - discountAmount;
+                      const finalPrice = basePrice - discountAmount;
 
                       return (
                         <div

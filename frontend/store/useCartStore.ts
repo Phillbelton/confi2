@@ -30,7 +30,7 @@ interface CartStore extends Cart {
 
 /**
  * Calculate discount for a specific variant based on quantity
- * Priority: 1) Variant fixed discount, 2) Variant tiered discount, 3) Parent tiered discount
+ * Priority: 1) Variant fixed discount, 2) Variant tiered discount (on discounted price), 3) Parent tiered discount
  */
 function calculateVariantDiscount(
   productParent: ProductParent,
@@ -39,6 +39,7 @@ function calculateVariantDiscount(
   allItems: CartItem[]
 ): number {
   let totalDiscount = 0;
+  let currentPrice = variant.price; // Track the current price as discounts are applied
   const now = new Date();
 
   // 1. Apply variant fixed discount (if enabled and valid)
@@ -47,27 +48,32 @@ function calculateVariantDiscount(
     const endValid = !variant.fixedDiscount.endDate || new Date(variant.fixedDiscount.endDate) >= now;
 
     if (startValid && endValid) {
+      let fixedDiscount = 0;
       if (variant.fixedDiscount.type === 'percentage') {
-        totalDiscount += (variant.price * variant.fixedDiscount.value) / 100;
+        fixedDiscount = (currentPrice * variant.fixedDiscount.value) / 100;
       } else {
-        totalDiscount += variant.fixedDiscount.value;
+        fixedDiscount = variant.fixedDiscount.value;
       }
+      totalDiscount += fixedDiscount;
+      currentPrice -= fixedDiscount; // Update current price after fixed discount
     }
   }
 
-  // 2. Apply variant tiered discount (if active and valid)
+  // 2. Apply variant tiered discount (if active and valid) - ON THE DISCOUNTED PRICE
   if (variant.tieredDiscount?.active && variant.tieredDiscount.tiers.length > 0) {
     const startValid = !variant.tieredDiscount.startDate || new Date(variant.tieredDiscount.startDate) <= now;
     const endValid = !variant.tieredDiscount.endDate || new Date(variant.tieredDiscount.endDate) >= now;
 
     if (startValid && endValid) {
-      const tierDiscount = calculateTierDiscount(variant.price, quantity, variant.tieredDiscount.tiers);
+      // Apply tiered discount on the current price (after fixed discount)
+      const tierDiscount = calculateTierDiscount(currentPrice, quantity, variant.tieredDiscount.tiers);
       totalDiscount += tierDiscount;
+      currentPrice -= tierDiscount; // Update current price after tiered discount
     }
   }
 
-  // 3. Apply parent tiered discount (legacy support)
-  if (!totalDiscount && productParent.tieredDiscounts && productParent.tieredDiscounts.length > 0) {
+  // 3. Apply parent tiered discount (legacy support) - only if no other discounts applied
+  if (totalDiscount === 0 && productParent.tieredDiscounts && productParent.tieredDiscounts.length > 0) {
     for (const tieredDiscount of productParent.tieredDiscounts) {
       if (!tieredDiscount.active) continue;
 

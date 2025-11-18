@@ -75,33 +75,39 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
 
   const hasAnyDiscount = hasFixedDiscount || hasVariantTieredDiscount || hasParentTieredDiscount;
 
-  // Calculate discounted price for display
+  // Calculate discounted price for display (with first tier if tiered discount exists)
   const getDiscountedPrice = () => {
     if (!selectedVariant) return null;
 
-    let price = selectedVariant.price;
-    let discount = 0;
+    let currentPrice = selectedVariant.price;
+    let totalDiscount = 0;
 
-    // Apply fixed discount
+    // 1. Apply fixed discount
     if (hasFixedDiscount) {
+      let fixedDiscount = 0;
       if (selectedVariant.fixedDiscount!.type === 'percentage') {
-        discount += (price * selectedVariant.fixedDiscount!.value) / 100;
+        fixedDiscount = (currentPrice * selectedVariant.fixedDiscount!.value) / 100;
       } else {
-        discount += selectedVariant.fixedDiscount!.value;
+        fixedDiscount = selectedVariant.fixedDiscount!.value;
       }
+      totalDiscount += fixedDiscount;
+      currentPrice -= fixedDiscount; // Update price after fixed discount
     }
 
-    // Apply variant tiered discount (min tier)
+    // 2. Apply variant tiered discount (min tier) on the discounted price
     if (hasVariantTieredDiscount) {
       const minTier = selectedVariant.tieredDiscount!.tiers[0];
+      let tierDiscount = 0;
       if (minTier.type === 'percentage') {
-        discount += (price * minTier.value) / 100;
+        tierDiscount = (currentPrice * minTier.value) / 100;
       } else {
-        discount += minTier.value;
+        tierDiscount = minTier.value;
       }
+      totalDiscount += tierDiscount;
+      currentPrice -= tierDiscount;
     }
 
-    return discount > 0 ? price - discount : null;
+    return totalDiscount > 0 ? selectedVariant.price - totalDiscount : null;
   };
 
   // Get discount badge text
@@ -138,20 +144,30 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
     return null;
   };
 
-  // Get discount tiers for tooltip
+  // Get discount tiers for tooltip and badges
   const getDiscountTiers = () => {
     if (!selectedVariant) return null;
 
-    // Show variant tiered discount tiers
+    // Calculate base price after fixed discount (if any)
+    let basePrice = selectedVariant.price;
+    if (hasFixedDiscount) {
+      if (selectedVariant.fixedDiscount!.type === 'percentage') {
+        basePrice -= (basePrice * selectedVariant.fixedDiscount!.value) / 100;
+      } else {
+        basePrice -= selectedVariant.fixedDiscount!.value;
+      }
+    }
+
+    // Show variant tiered discount tiers (applied on price after fixed discount)
     if (hasVariantTieredDiscount) {
       return selectedVariant.tieredDiscount!.tiers.map((tier) => {
         let discountAmount = 0;
         if (tier.type === 'percentage') {
-          discountAmount = (selectedVariant.price * tier.value) / 100;
+          discountAmount = (basePrice * tier.value) / 100;
         } else {
           discountAmount = tier.value;
         }
-        const finalPrice = selectedVariant.price - discountAmount;
+        const finalPrice = basePrice - discountAmount;
 
         return {
           range: tier.maxQuantity
@@ -163,7 +179,7 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
       });
     }
 
-    // Show parent tiered discount tiers (legacy)
+    // Show parent tiered discount tiers (legacy - only if no fixed discount)
     if (hasParentTieredDiscount) {
       const discount = product.tieredDiscounts.find((d) => d.active);
       if (discount?.tiers.length) {
