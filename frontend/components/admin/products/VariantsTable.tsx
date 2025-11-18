@@ -219,6 +219,12 @@ export function VariantsTable({
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Gestionar Descuentos</DialogTitle>
+                              <DialogDescription>
+                                Configure descuentos fijos y escalonados para esta variante
+                              </DialogDescription>
+                            </DialogHeader>
                             <VariantDiscountManager
                               variant={variant}
                               onSave={(data) => onUpdateDiscounts(variant._id, data)}

@@ -181,6 +181,7 @@ export const updateProductVariant = asyncHandler(
       allowBackorder,
       lowStockThreshold,
       fixedDiscount,
+      tieredDiscount,
       active,
       order,
     } = req.body;
@@ -205,6 +206,7 @@ export const updateProductVariant = asyncHandler(
     if (lowStockThreshold !== undefined)
       variant.lowStockThreshold = lowStockThreshold;
     if (fixedDiscount !== undefined) variant.fixedDiscount = fixedDiscount;
+    if (tieredDiscount !== undefined) variant.tieredDiscount = tieredDiscount;
     if (active !== undefined) variant.active = active;
     if (order !== undefined) variant.order = order;
 
