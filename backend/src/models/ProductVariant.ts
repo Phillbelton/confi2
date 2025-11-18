@@ -207,6 +207,15 @@ productVariantSchema.virtual('hasActiveDiscount').get(function () {
   return startValid && endValid;
 });
 
+// Virtual displayName: solo muestra los valores de los atributos (ej: "350ml Original")
+productVariantSchema.virtual('displayName').get(function () {
+  const attributesMap = this.attributes as any;
+  if (attributesMap instanceof Map) {
+    return Array.from(attributesMap.values()).join(' ') || 'Variante única';
+  }
+  return Object.values(this.attributes).join(' ') || 'Variante única';
+});
+
 // Pre-save: generar nombre y slug si no existen
 productVariantSchema.pre('save', async function (next) {
   if (this.isNew || this.isModified('attributes') || !this.name) {
