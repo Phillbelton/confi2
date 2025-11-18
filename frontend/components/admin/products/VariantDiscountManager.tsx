@@ -18,6 +18,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FormFieldWithHelp } from '@/components/ui/form-field-with-help';
+import { InlineHelp } from '@/components/ui/inline-help';
 import type { ProductVariant, FixedDiscount, TieredDiscountVariant, TieredDiscountTier } from '@/types';
 
 interface VariantDiscountManagerProps {
@@ -227,6 +229,10 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <InlineHelp variant="info">
+            <strong>Descuento Fijo:</strong> Reduce el precio base del producto. Ideal para liquidaciones, promociones especiales o productos en oferta.
+          </InlineHelp>
+
           {/* Enable Toggle */}
           <div className="flex items-center justify-between">
             <Label htmlFor="fixed-enabled" className="text-base">
@@ -244,32 +250,39 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
               <Separator />
 
               {/* Type Selection */}
-              <div className="space-y-2">
-                <Label>Tipo de descuento</Label>
+              <FormFieldWithHelp
+                label="Tipo de descuento"
+                tooltip="Porcentaje: descuenta un % del precio (ej: 20%). Monto fijo: descuenta una cantidad exacta (ej: 5000 Gs)."
+              >
                 <RadioGroup value={fixedType} onValueChange={(v) => setFixedType(v as 'percentage' | 'amount')}>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="percentage" id="fixed-percentage" />
                     <Label htmlFor="fixed-percentage" className="font-normal">
-                      Porcentaje
+                      Porcentaje (%)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="amount" id="fixed-amount" />
                     <Label htmlFor="fixed-amount" className="font-normal">
-                      Monto fijo
+                      Monto fijo (Gs)
                     </Label>
                   </div>
                 </RadioGroup>
-              </div>
+              </FormFieldWithHelp>
 
               {/* Value Input */}
-              <div className="space-y-2">
-                <Label htmlFor="fixed-value">Valor del descuento</Label>
+              <FormFieldWithHelp
+                label="Valor del descuento"
+                htmlFor="fixed-value"
+                tooltip={fixedType === 'percentage' ? 'Ingresa el porcentaje a descontar (0-100)' : 'Ingresa el monto exacto a descontar en Guaraníes'}
+                required
+              >
                 <div className="flex items-center gap-2">
                   <Input
                     id="fixed-value"
                     type="number"
                     min="0"
+                    max={fixedType === 'percentage' ? '100' : undefined}
                     step={fixedType === 'percentage' ? '1' : '100'}
                     value={fixedValue}
                     onChange={(e) => setFixedValue(e.target.value)}
@@ -279,7 +292,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                     {fixedType === 'percentage' ? '%' : 'Gs.'}
                   </span>
                 </div>
-              </div>
+              </FormFieldWithHelp>
 
               {/* Preview */}
               {fixedPreview && (
@@ -308,29 +321,38 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
 
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fixed-start">Vigencia desde (opcional)</Label>
+                <FormFieldWithHelp
+                  label="Vigencia desde"
+                  htmlFor="fixed-start"
+                  tooltip="Opcional. Fecha desde la cual el descuento estará activo. Deja vacío para que empiece inmediatamente."
+                >
                   <Input
                     id="fixed-start"
                     type="date"
                     value={fixedStartDate}
                     onChange={(e) => setFixedStartDate(e.target.value)}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fixed-end">Vigencia hasta (opcional)</Label>
+                </FormFieldWithHelp>
+                <FormFieldWithHelp
+                  label="Vigencia hasta"
+                  htmlFor="fixed-end"
+                  tooltip="Opcional. Fecha hasta la cual el descuento estará activo. Deja vacío para descuento permanente."
+                >
                   <Input
                     id="fixed-end"
                     type="date"
                     value={fixedEndDate}
                     onChange={(e) => setFixedEndDate(e.target.value)}
                   />
-                </div>
+                </FormFieldWithHelp>
               </div>
 
               {/* Badge */}
-              <div className="space-y-2">
-                <Label htmlFor="fixed-badge">Badge personalizado (opcional)</Label>
+              <FormFieldWithHelp
+                label="Etiqueta personalizada"
+                htmlFor="fixed-badge"
+                tooltip='Texto que verán los clientes en la tarjeta del producto. Ej: "¡OFERTA!", "LIQUIDACIÓN", "BLACK FRIDAY". Máximo 20 caracteres.'
+              >
                 <Input
                   id="fixed-badge"
                   type="text"
@@ -339,10 +361,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                   onChange={(e) => setFixedBadge(e.target.value)}
                   placeholder="ej: LIQUIDACIÓN, BLACK FRIDAY"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Mostrar en tarjetas de producto
-                </p>
-              </div>
+              </FormFieldWithHelp>
             </>
           )}
         </CardContent>
@@ -362,6 +381,11 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <InlineHelp variant="info">
+            <strong>Descuentos Escalonados:</strong> Ofrece mejores precios a mayor cantidad comprada. Ej: 10-19 un: 5%, 20+ un: 10%.
+            <strong className="block mt-1">¡IMPORTANTE:</strong> Se aplican DESPUÉS del descuento fijo (si existe).
+          </InlineHelp>
+
           {/* Enable Toggle */}
           <div className="flex items-center justify-between">
             <Label htmlFor="tiered-enabled" className="text-base">
@@ -379,8 +403,11 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
               <Separator />
 
               {/* Badge */}
-              <div className="space-y-2">
-                <Label htmlFor="tiered-badge">Badge personalizado (opcional)</Label>
+              <FormFieldWithHelp
+                label="Etiqueta personalizada"
+                htmlFor="tiered-badge"
+                tooltip='Texto visible para los clientes. Ej: "PACK AHORRO", "PRECIO MAYORISTA". Máximo 20 caracteres.'
+              >
                 <Input
                   id="tiered-badge"
                   type="text"
@@ -389,33 +416,41 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                   onChange={(e) => setTieredBadge(e.target.value)}
                   placeholder="ej: PACK AHORRO, MAYORISTA"
                 />
-              </div>
+              </FormFieldWithHelp>
 
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tiered-start">Vigencia desde (opcional)</Label>
+                <FormFieldWithHelp
+                  label="Vigencia desde"
+                  htmlFor="tiered-start"
+                  tooltip="Opcional. Fecha de inicio del descuento. Deja vacío para que empiece inmediatamente."
+                >
                   <Input
                     id="tiered-start"
                     type="date"
                     value={tieredStartDate}
                     onChange={(e) => setTieredStartDate(e.target.value)}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tiered-end">Vigencia hasta (opcional)</Label>
+                </FormFieldWithHelp>
+                <FormFieldWithHelp
+                  label="Vigencia hasta"
+                  htmlFor="tiered-end"
+                  tooltip="Opcional. Fecha de fin del descuento. Deja vacío para descuento permanente."
+                >
                   <Input
                     id="tiered-end"
                     type="date"
                     value={tieredEndDate}
                     onChange={(e) => setTieredEndDate(e.target.value)}
                   />
-                </div>
+                </FormFieldWithHelp>
               </div>
 
               {/* Tiers Table */}
-              <div className="space-y-2">
-                <Label>Niveles de descuento</Label>
+              <FormFieldWithHelp
+                label="Niveles de descuento"
+                tooltip="Define rangos de cantidad con descuentos crecientes. Ej: 10-19 unidades = 5%, 20+ unidades = 10%. Deja 'Max Cant' vacío para indicar 'infinito'."
+              >
                 {tiers.length > 0 ? (
                   <div className="rounded-md border">
                     <Table>
@@ -510,7 +545,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                   <Plus className="h-4 w-4 mr-2" />
                   Agregar nivel
                 </Button>
-              </div>
+              </FormFieldWithHelp>
 
               {/* Combined Preview */}
               {(fixedPreview || tiers.length > 0) && (
@@ -548,12 +583,16 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
       </Card>
 
       {/* Info Alert */}
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Los descuentos se aplican en conjunto: primero el descuento fijo, luego el escalonado según cantidad.
-        </AlertDescription>
-      </Alert>
+      <InlineHelp variant="warning">
+        <strong>Orden de aplicación:</strong> Los descuentos se combinan en este orden:
+        <ol className="list-decimal ml-4 mt-1 space-y-1">
+          <li>Primero se aplica el <strong>descuento fijo</strong> al precio base</li>
+          <li>Luego se aplica el <strong>descuento escalonado</strong> sobre el precio ya descontado</li>
+        </ol>
+        <p className="mt-2">Ejemplo: Precio $10.000, Fijo -20%, Escalonado 10un -10%<br/>
+        → Paso 1: $10.000 - 20% = $8.000<br/>
+        → Paso 2: $8.000 - 10% = $7.200 (precio final)</p>
+      </InlineHelp>
 
       {/* Actions */}
       <div className="flex justify-end gap-2">

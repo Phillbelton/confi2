@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { FormFieldWithHelp } from '@/components/ui/form-field-with-help';
+import { InlineHelp } from '@/components/ui/inline-help';
 import { CategorySelector } from './CategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { TagSelector } from './TagSelector';
@@ -211,8 +213,12 @@ export function SimpleProductForm({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="price">Precio (Gs) *</Label>
+              <FormFieldWithHelp
+                label="Precio (Gs)"
+                htmlFor="price"
+                tooltip="Precio base del producto en Guaraníes. Los descuentos se configuran por separado en la sección de descuentos."
+                required
+              >
                 <Input
                   id="price"
                   type="number"
@@ -225,10 +231,14 @@ export function SimpleProductForm({
                     {form.formState.errors.price.message}
                   </p>
                 )}
-              </div>
+              </FormFieldWithHelp>
 
-              <div>
-                <Label htmlFor="stock">Stock (unidades) *</Label>
+              <FormFieldWithHelp
+                label="Stock (unidades)"
+                htmlFor="stock"
+                tooltip="Cantidad disponible del producto. Se descuenta automáticamente cuando se realizan ventas."
+                required
+              >
                 <Input
                   id="stock"
                   type="number"
@@ -241,22 +251,20 @@ export function SimpleProductForm({
                     {form.formState.errors.stock.message}
                   </p>
                 )}
-              </div>
+              </FormFieldWithHelp>
 
-              <div>
-                <Label htmlFor="sku">
-                  SKU (opcional)
-                  <span className="text-xs text-muted-foreground ml-2">
-                    Se genera automático
-                  </span>
-                </Label>
+              <FormFieldWithHelp
+                label="Código único (SKU)"
+                htmlFor="sku"
+                tooltip="Código único del producto. Se genera automáticamente a partir del nombre si no lo ingresas. Útil para sistemas de inventario externos."
+              >
                 <Input
                   id="sku"
                   {...form.register('sku')}
                   placeholder="CHOCOLATE-PREMIUM-250G"
                   disabled={isSubmitting}
                 />
-              </div>
+              </FormFieldWithHelp>
             </div>
           </CardContent>
         </Card>
@@ -266,7 +274,10 @@ export function SimpleProductForm({
           <CardHeader>
             <CardTitle>Imágenes (opcional)</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <InlineHelp variant="info">
+              <strong>Imágenes del producto:</strong> Puedes subir hasta 5 imágenes. La <strong>primera imagen</strong> se mostrará en el catálogo. Arrastra para reordenar. Tamaños recomendados: mínimo 800x800px. Formatos: JPG, PNG, WEBP.
+            </InlineHelp>
             <ImageUploaderWithPreview
               images={images}
               onChange={setImages}

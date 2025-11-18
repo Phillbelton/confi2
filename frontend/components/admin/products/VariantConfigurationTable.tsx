@@ -22,6 +22,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { FormFieldWithHelp } from '@/components/ui/form-field-with-help';
+import { InlineHelp } from '@/components/ui/inline-help';
 import { VariantImageUploader, VariantImageFile } from './VariantImageUploader';
 
 export interface VariantCombination {
@@ -128,11 +130,18 @@ export function VariantConfigurationTable({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <InlineHelp variant="info">
+          <strong>Combinaciones de variantes:</strong> Cada fila representa una variante única con sus propios precio, stock e imágenes. Puedes aplicar valores masivos para agilizar la configuración.
+        </InlineHelp>
+
         {/* Bulk Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Label htmlFor="bulkPrice" className="text-xs">Precio para todas</Label>
+          <FormFieldWithHelp
+            label="Aplicar precio a todas"
+            htmlFor="bulkPrice"
+            tooltip="Aplica el mismo precio a todas las variantes de una vez. Útil cuando todas tienen el mismo precio base."
+          >
+            <div className="flex gap-2">
               <Input
                 id="bulkPrice"
                 type="number"
@@ -142,45 +151,48 @@ export function VariantConfigurationTable({
                 disabled={disabled}
                 min="0"
                 step="0.01"
+                className="flex-1"
               />
-            </div>
-            <Button
-              onClick={handleApplyBulkPrice}
-              disabled={disabled || !bulkPrice}
-              className="self-end"
-              variant="outline"
-              size="sm"
-            >
-              <DollarSign className="h-4 w-4 mr-1" />
-              Aplicar
-            </Button>
-          </div>
+                <Button
+                  onClick={handleApplyBulkPrice}
+                  disabled={disabled || !bulkPrice}
+                  variant="outline"
+                  size="sm"
+                >
+                  <DollarSign className="h-4 w-4 mr-1" />
+                  Aplicar
+                </Button>
+              </div>
+            </FormFieldWithHelp>
 
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Label htmlFor="bulkStock" className="text-xs">Stock para todas</Label>
-              <Input
-                id="bulkStock"
-                type="number"
-                placeholder="Ej: 100"
-                value={bulkStock}
-                onChange={(e) => setBulkStock(e.target.value)}
-                disabled={disabled}
-                min="0"
-              />
-            </div>
-            <Button
-              onClick={handleApplyBulkStock}
-              disabled={disabled || !bulkStock}
-              className="self-end"
-              variant="outline"
-              size="sm"
+            <FormFieldWithHelp
+              label="Aplicar stock a todas"
+              htmlFor="bulkStock"
+              tooltip="Aplica la misma cantidad de stock a todas las variantes. Útil cuando todas tienen la misma disponibilidad inicial."
             >
-              <Package className="h-4 w-4 mr-1" />
-              Aplicar
-            </Button>
+              <div className="flex gap-2">
+                <Input
+                  id="bulkStock"
+                  type="number"
+                  placeholder="Ej: 100"
+                  value={bulkStock}
+                  onChange={(e) => setBulkStock(e.target.value)}
+                  disabled={disabled}
+                  min="0"
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleApplyBulkStock}
+                  disabled={disabled || !bulkStock}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Package className="h-4 w-4 mr-1" />
+                  Aplicar
+                </Button>
+              </div>
+            </FormFieldWithHelp>
           </div>
-        </div>
 
         {/* Variants Table */}
         <div className="rounded-md border">
