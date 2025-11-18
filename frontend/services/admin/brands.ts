@@ -19,42 +19,48 @@ export const adminBrandService = {
    */
   async getAll(includeInactive?: boolean): Promise<ApiResponse<{ brands: Brand[] }>> {
     const params = includeInactive ? '?includeInactive=true' : '';
-    return api.get(`/brands${params}`);
+    const { data } = await api.get(`/brands${params}`);
+    return data;
   },
 
   /**
    * Get brand by ID
    */
   async getById(id: string): Promise<ApiResponse<Brand>> {
-    return api.get(`/brands/${id}`);
+    const { data } = await api.get(`/brands/${id}`);
+    return data;
   },
 
   /**
    * Get brand by slug
    */
   async getBySlug(slug: string): Promise<ApiResponse<Brand>> {
-    return api.get(`/brands/slug/${slug}`);
+    const { data } = await api.get(`/brands/slug/${slug}`);
+    return data;
   },
 
   /**
    * Create a new brand
    */
   async create(data: CreateBrandInput): Promise<ApiResponse<Brand>> {
-    return api.post('/brands', data);
+    const { data: response } = await api.post('/brands', data);
+    return response;
   },
 
   /**
    * Update an existing brand
    */
   async update(id: string, data: UpdateBrandInput): Promise<ApiResponse<Brand>> {
-    return api.put(`/brands/${id}`, data);
+    const { data: response } = await api.put(`/brands/${id}`, data);
+    return response;
   },
 
   /**
    * Delete a brand (soft delete if has products)
    */
   async delete(id: string): Promise<ApiResponse<void>> {
-    return api.delete(`/brands/${id}`);
+    const { data } = await api.delete(`/brands/${id}`);
+    return data;
   },
 
   /**
@@ -64,10 +70,11 @@ export const adminBrandService = {
     const formData = new FormData();
     formData.append('image', file);
 
-    return api.post(`/brands/${id}/logo`, formData, {
+    const { data } = await api.post(`/brands/${id}/logo`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return data;
   },
 };

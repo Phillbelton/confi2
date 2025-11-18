@@ -26,49 +26,56 @@ export const adminCategoryService = {
    * Get all categories
    */
   async getAll(): Promise<ApiResponse<{ categories: Category[] }>> {
-    return api.get('/categories');
+    const { data } = await api.get('/categories');
+    return data;
   },
 
   /**
    * Get main categories (no parent)
    */
   async getMainCategories(): Promise<ApiResponse<{ categories: Category[] }>> {
-    return api.get('/categories/main');
+    const { data } = await api.get('/categories/main');
+    return data;
   },
 
   /**
    * Get category by ID
    */
   async getById(id: string): Promise<ApiResponse<Category>> {
-    return api.get(`/categories/${id}`);
+    const { data } = await api.get(`/categories/${id}`);
+    return data;
   },
 
   /**
    * Get subcategories of a parent category
    */
   async getSubcategories(parentId: string): Promise<ApiResponse<{ subcategories: Category[] }>> {
-    return api.get(`/categories/${parentId}/subcategories`);
+    const { data } = await api.get(`/categories/${parentId}/subcategories`);
+    return data;
   },
 
   /**
    * Create a new category
    */
   async create(data: CreateCategoryInput): Promise<ApiResponse<Category>> {
-    return api.post('/categories', data);
+    const { data: response } = await api.post('/categories', data);
+    return response;
   },
 
   /**
    * Update an existing category
    */
   async update(id: string, data: UpdateCategoryInput): Promise<ApiResponse<Category>> {
-    return api.put(`/categories/${id}`, data);
+    const { data: response } = await api.put(`/categories/${id}`, data);
+    return response;
   },
 
   /**
    * Delete a category (soft delete if has products)
    */
   async delete(id: string): Promise<ApiResponse<void>> {
-    return api.delete(`/categories/${id}`);
+    const { data } = await api.delete(`/categories/${id}`);
+    return data;
   },
 
   /**
@@ -78,10 +85,11 @@ export const adminCategoryService = {
     const formData = new FormData();
     formData.append('image', file);
 
-    return api.post(`/categories/${id}/image`, formData, {
+    const { data } = await api.post(`/categories/${id}/image`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return data;
   },
 };

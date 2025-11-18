@@ -67,7 +67,8 @@ export const stockMovementService = {
     const queryString = params.toString();
     const url = `/stock-movements${queryString ? `?${queryString}` : ''}`;
 
-    return api.get(url);
+    const { data } = await api.get(url);
+    return data;
   },
 
   /**
@@ -88,27 +89,31 @@ export const stockMovementService = {
     const queryString = params.toString();
     const url = `/stock-movements/variant/${variantId}${queryString ? `?${queryString}` : ''}`;
 
-    return api.get(url);
+    const { data } = await api.get(url);
+    return data;
   },
 
   /**
    * Get stock movements for a specific order
    */
   async getOrderMovements(orderId: string): Promise<ApiResponse<StockMovement[]>> {
-    return api.get(`/stock-movements/order/${orderId}`);
+    const { data } = await api.get(`/stock-movements/order/${orderId}`);
+    return data;
   },
 
   /**
    * Adjust stock manually (can be positive or negative)
    */
   async adjustStock(data: AdjustStockInput): Promise<ApiResponse<StockMovement>> {
-    return api.post('/stock-movements/adjust', data);
+    const { data: response } = await api.post('/stock-movements/adjust', data);
+    return response;
   },
 
   /**
    * Restock product (always positive, with optional supplier info)
    */
   async restockProduct(data: RestockInput): Promise<ApiResponse<StockMovement>> {
-    return api.post('/stock-movements/restock', data);
+    const { data: response } = await api.post('/stock-movements/restock', data);
+    return response;
   },
 };
