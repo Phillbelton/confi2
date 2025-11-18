@@ -296,8 +296,8 @@ export function CategoryForm({
                   </Tooltip>
                 </div>
                 <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
+                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
+                  value={field.value || 'none'}
                   disabled={isSubmitting}
                 >
                   <FormControl>
@@ -306,7 +306,7 @@ export function CategoryForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">
+                    <SelectItem value="none">
                       Sin categoría padre
                     </SelectItem>
                     {availableParents.map((cat) => (
