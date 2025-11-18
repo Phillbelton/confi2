@@ -36,6 +36,10 @@ export default function EditarProductoPage() {
     updateVariant,
     deleteVariant,
     updateStock,
+    uploadVariantImages,
+    isUploadingVariantImages,
+    deleteVariantImage,
+    isDeletingVariantImage,
   } = useAdminProductVariants(productId);
 
   const handleSubmit = async (data: UpdateProductParentInput) => {
@@ -70,6 +74,14 @@ export default function EditarProductoPage() {
     if (confirm('¿Estás seguro de eliminar esta variante?')) {
       deleteVariant(variantId);
     }
+  };
+
+  const handleUploadVariantImages = (variantId: string, files: File[]) => {
+    uploadVariantImages({ id: variantId, files });
+  };
+
+  const handleDeleteVariantImage = (variantId: string, filename: string) => {
+    deleteVariantImage({ id: variantId, filename });
   };
 
   if (isLoading) {
@@ -147,7 +159,11 @@ export default function EditarProductoPage() {
             variants={variants}
             onUpdateVariant={handleUpdateVariant}
             onDeleteVariant={handleDeleteVariant}
+            onUploadImages={handleUploadVariantImages}
+            onDeleteImage={handleDeleteVariantImage}
             isLoading={isLoadingVariants}
+            isUploadingImages={isUploadingVariantImages}
+            isDeletingImage={isDeletingVariantImage}
           />
         </TabsContent>
       </Tabs>

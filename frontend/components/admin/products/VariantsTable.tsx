@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit, Package, Trash2, Check, X } from 'lucide-react';
+import { Edit, Package, Trash2, Check, X, Upload, Image as ImageIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -14,20 +14,37 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { VariantImageManager } from './VariantImageManager';
 import type { ProductVariant } from '@/types';
 
 interface VariantsTableProps {
   variants: ProductVariant[];
   onUpdateVariant: (variantId: string, data: { price?: number; stock?: number }) => void;
   onDeleteVariant: (variantId: string) => void;
+  onUploadImages?: (variantId: string, files: File[]) => void;
+  onDeleteImage?: (variantId: string, filename: string) => void;
   isLoading?: boolean;
+  isUploadingImages?: boolean;
+  isDeletingImage?: boolean;
 }
 
 export function VariantsTable({
   variants,
   onUpdateVariant,
   onDeleteVariant,
+  onUploadImages,
+  onDeleteImage,
   isLoading = false,
+  isUploadingImages = false,
+  isDeletingImage = false,
 }: VariantsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
@@ -84,6 +101,7 @@ export function VariantsTable({
                 <TableHead>Variante</TableHead>
                 <TableHead>Precio</TableHead>
                 <TableHead>Stock</TableHead>
+                <TableHead>Imágenes</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -143,6 +161,42 @@ export function VariantsTable({
                         >
                           {variant.stock}
                         </Badge>
+                      )}
+                    </TableCell>
+
+                    {/* Images */}
+                    <TableCell>
+                      {onUploadImages && onDeleteImage ? (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isLoading}>
+                              <Upload className="h-4 w-4 mr-1" />
+                              {variant.images && variant.images.length > 0
+                                ? `${variant.images.length}`
+                                : '0'}
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Imágenes de Variante</DialogTitle>
+                              <DialogDescription>
+                                {attributesText}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <VariantImageManager
+                              images={variant.images || []}
+                              onUpload={(files) => onUploadImages(variant._id, files)}
+                              onDelete={(filename) => onDeleteImage(variant._id, filename)}
+                              isUploading={isUploadingImages}
+                              isDeleting={isDeletingImage}
+                              maxImages={5}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          {variant.images?.length || 0}
+                        </span>
                       )}
                     </TableCell>
 

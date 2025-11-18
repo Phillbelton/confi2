@@ -199,6 +199,34 @@ export function useAdminProductVariants(parentId: string) {
     },
   });
 
+  // Upload variant images mutation
+  const uploadVariantImagesMutation = useMutation({
+    mutationFn: ({ id, files }: { id: string; files: File[] }) =>
+      adminProductService.uploadProductVariantImages(id, files),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success('Imágenes cargadas exitosamente');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al cargar imágenes');
+    },
+  });
+
+  // Delete variant image mutation
+  const deleteVariantImageMutation = useMutation({
+    mutationFn: ({ id, filename }: { id: string; filename: string }) =>
+      adminProductService.deleteProductVariantImage(id, filename),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success('Imagen eliminada exitosamente');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al eliminar imagen');
+    },
+  });
+
   return {
     variants: variantsQuery.data?.data || [],
     isLoading: variantsQuery.isLoading,
@@ -211,6 +239,10 @@ export function useAdminProductVariants(parentId: string) {
     isUpdatingStock: updateStockMutation.isPending,
     deleteVariant: deleteVariantMutation.mutate,
     isDeletingVariant: deleteVariantMutation.isPending,
+    uploadVariantImages: uploadVariantImagesMutation.mutate,
+    isUploadingVariantImages: uploadVariantImagesMutation.isPending,
+    deleteVariantImage: deleteVariantImageMutation.mutate,
+    isDeletingVariantImage: deleteVariantImageMutation.isPending,
     refetch: variantsQuery.refetch,
   };
 }
