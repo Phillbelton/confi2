@@ -22,13 +22,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { VariantImageUploader, VariantImageFile } from './VariantImageUploader';
 
 export interface VariantCombination {
   id: string;
   attributes: Record<string, string>;
   price: number;
   stock: number;
-  images?: File[];
+  images?: VariantImageFile[];
   sku?: string;
 }
 
@@ -83,16 +84,12 @@ export function VariantConfigurationTable({
     }
   };
 
-  const handleImagesUpload = (id: string, files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    const imageFiles = Array.from(files).slice(0, 5); // Max 5 images per variant
-
+  const handleUpdateVariantImages = (id: string, images: VariantImageFile[]) => {
     const updated = combinations.map((combo) => {
       if (combo.id === id) {
         return {
           ...combo,
-          images: imageFiles,
+          images,
         };
       }
       return combo;
@@ -263,40 +260,25 @@ export function VariantConfigurationTable({
                           <Button variant="outline" size="sm" disabled={disabled}>
                             <Upload className="h-4 w-4 mr-1" />
                             {combo.images && combo.images.length > 0
-                              ? `${combo.images.length} archivo(s)`
-                              : 'Subir'}
+                              ? `${combo.images.length} imagen(es)`
+                              : 'Imágenes'}
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>Imágenes de Variante</DialogTitle>
                             <DialogDescription>
-                              Sube hasta 5 imágenes para esta variante (opcional)
+                              {Object.entries(combo.attributes)
+                                .map(([key, value]) => `${key}: ${value}`)
+                                .join(', ')}
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-4">
-                            <Input
-                              type="file"
-                              accept="image/jpeg,image/png,image/webp"
-                              multiple
-                              onChange={(e) => handleImagesUpload(combo.id, e.target.files)}
-                              disabled={disabled}
-                            />
-                            {combo.images && combo.images.length > 0 && (
-                              <div className="text-sm text-muted-foreground">
-                                <p className="font-medium mb-2">
-                                  Archivos seleccionados ({combo.images.length}):
-                                </p>
-                                <ul className="list-disc list-inside space-y-1">
-                                  {combo.images.map((file, idx) => (
-                                    <li key={idx} className="truncate">
-                                      {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
+                          <VariantImageUploader
+                            images={combo.images || []}
+                            onChange={(images) => handleUpdateVariantImages(combo.id, images)}
+                            maxImages={5}
+                            disabled={disabled}
+                          />
                         </DialogContent>
                       </Dialog>
                     </TableCell>
