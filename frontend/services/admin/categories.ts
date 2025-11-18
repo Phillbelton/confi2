@@ -1,4 +1,4 @@
-import { apiClient } from '../api';
+import { api } from '@/lib/axios';
 import type { Category, ApiResponse } from '@/types';
 
 export interface CreateCategoryInput {
@@ -26,49 +26,49 @@ export const adminCategoryService = {
    * Get all categories
    */
   async getAll(): Promise<ApiResponse<{ categories: Category[] }>> {
-    return apiClient.get('/categories');
+    return api.get('/categories');
   },
 
   /**
    * Get main categories (no parent)
    */
   async getMainCategories(): Promise<ApiResponse<{ categories: Category[] }>> {
-    return apiClient.get('/categories/main');
+    return api.get('/categories/main');
   },
 
   /**
    * Get category by ID
    */
   async getById(id: string): Promise<ApiResponse<Category>> {
-    return apiClient.get(`/categories/${id}`);
+    return api.get(`/categories/${id}`);
   },
 
   /**
    * Get subcategories of a parent category
    */
   async getSubcategories(parentId: string): Promise<ApiResponse<{ subcategories: Category[] }>> {
-    return apiClient.get(`/categories/${parentId}/subcategories`);
+    return api.get(`/categories/${parentId}/subcategories`);
   },
 
   /**
    * Create a new category
    */
   async create(data: CreateCategoryInput): Promise<ApiResponse<Category>> {
-    return apiClient.post('/categories', data);
+    return api.post('/categories', data);
   },
 
   /**
    * Update an existing category
    */
   async update(id: string, data: UpdateCategoryInput): Promise<ApiResponse<Category>> {
-    return apiClient.put(`/categories/${id}`, data);
+    return api.put(`/categories/${id}`, data);
   },
 
   /**
    * Delete a category (soft delete if has products)
    */
   async delete(id: string): Promise<ApiResponse<void>> {
-    return apiClient.delete(`/categories/${id}`);
+    return api.delete(`/categories/${id}`);
   },
 
   /**
@@ -78,7 +78,7 @@ export const adminCategoryService = {
     const formData = new FormData();
     formData.append('image', file);
 
-    return apiClient.post(`/categories/${id}/image`, formData, {
+    return api.post(`/categories/${id}/image`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

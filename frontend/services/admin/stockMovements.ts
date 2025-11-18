@@ -1,4 +1,4 @@
-import { apiClient } from '../api';
+import { api } from '@/lib/axios';
 import type { ApiResponse, ApiPaginatedResponse } from '@/types';
 
 export interface StockMovement {
@@ -67,7 +67,7 @@ export const stockMovementService = {
     const queryString = params.toString();
     const url = `/stock-movements${queryString ? `?${queryString}` : ''}`;
 
-    return apiClient.get(url);
+    return api.get(url);
   },
 
   /**
@@ -88,27 +88,27 @@ export const stockMovementService = {
     const queryString = params.toString();
     const url = `/stock-movements/variant/${variantId}${queryString ? `?${queryString}` : ''}`;
 
-    return apiClient.get(url);
+    return api.get(url);
   },
 
   /**
    * Get stock movements for a specific order
    */
   async getOrderMovements(orderId: string): Promise<ApiResponse<StockMovement[]>> {
-    return apiClient.get(`/stock-movements/order/${orderId}`);
+    return api.get(`/stock-movements/order/${orderId}`);
   },
 
   /**
    * Adjust stock manually (can be positive or negative)
    */
   async adjustStock(data: AdjustStockInput): Promise<ApiResponse<StockMovement>> {
-    return apiClient.post('/stock-movements/adjust', data);
+    return api.post('/stock-movements/adjust', data);
   },
 
   /**
    * Restock product (always positive, with optional supplier info)
    */
   async restockProduct(data: RestockInput): Promise<ApiResponse<StockMovement>> {
-    return apiClient.post('/stock-movements/restock', data);
+    return api.post('/stock-movements/restock', data);
   },
 };
