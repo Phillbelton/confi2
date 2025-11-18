@@ -62,7 +62,7 @@ export const stockMovementService = {
     if (query.startDate) params.append('startDate', query.startDate);
     if (query.endDate) params.append('endDate', query.endDate);
     if (query.minQuantity !== undefined) params.append('minQuantity', query.minQuantity.toString());
-    if (query.sort) params.append('sort', query.sort);
+    // Note: Backend doesn't support sort parameter yet, always sorts by createdAt desc
 
     const queryString = params.toString();
     const url = `/stock-movements${queryString ? `?${queryString}` : ''}`;

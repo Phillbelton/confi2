@@ -79,7 +79,6 @@ export default function InventarioPage() {
     page: movementsPage,
     limit: 20,
     type: movementsType !== 'all' ? (movementsType as any) : undefined,
-    sort: 'date_desc',
   });
 
   const movements = (movementsData?.data as any)?.movements || [];
