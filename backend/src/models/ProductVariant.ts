@@ -272,6 +272,10 @@ productVariantSchema.virtual('displayName').get(function () {
   if (attributesMap instanceof Map) {
     return Array.from(attributesMap.values()).join(' ') || 'Variante única';
   }
+  // Fix: Check if attributes exists before calling Object.values()
+  if (!this.attributes) {
+    return 'Variante única';
+  }
   return Object.values(this.attributes).join(' ') || 'Variante única';
 });
 
@@ -287,9 +291,12 @@ productVariantSchema.pre('save', async function (next) {
 
       // Construir nombre: "Bebida Cola 350ml Original"
       const attributesMap = this.attributes as any;
-      const attributeValues = attributesMap instanceof Map
-        ? Array.from(attributesMap.values()).join(' ')
-        : Object.values(this.attributes).join(' ');
+      let attributeValues = '';
+      if (attributesMap instanceof Map) {
+        attributeValues = Array.from(attributesMap.values()).join(' ');
+      } else if (this.attributes) {
+        attributeValues = Object.values(this.attributes).join(' ');
+      }
       this.name = attributeValues ? `${parent.name} ${attributeValues}` : parent.name;
 
       // Generar slug
