@@ -324,14 +324,39 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
 
         {/* Price */}
         {selectedVariant && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-primary">
-              ${(getDiscountedPrice() || selectedVariant.price).toLocaleString()}
-            </span>
-            {getDiscountedPrice() && (
-              <span className="text-sm text-muted-foreground line-through">
-                ${selectedVariant.price.toLocaleString()}
+          <div className="space-y-2">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-primary">
+                ${(getDiscountedPrice() || selectedVariant.price).toLocaleString()}
               </span>
+              {getDiscountedPrice() && (
+                <span className="text-sm text-muted-foreground line-through">
+                  ${selectedVariant.price.toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* Tier Discount Badges */}
+            {(hasVariantTieredDiscount || hasParentTieredDiscount) && discountTiers && discountTiers.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {discountTiers.slice(0, 3).map((tier, index) => (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0.5 bg-accent/10 text-accent-foreground border-accent/20"
+                  >
+                    {tier.range}: {tier.price}
+                  </Badge>
+                ))}
+                {discountTiers.length > 3 && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground"
+                  >
+                    +{discountTiers.length - 3} más
+                  </Badge>
+                )}
+              </div>
             )}
           </div>
         )}
