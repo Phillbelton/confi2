@@ -10,6 +10,7 @@ import { AppError, asyncHandler } from '../middleware/errorHandler';
 export const getCategories = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const includeInactive = req.query.includeInactive === 'true';
+    const flat = req.query.flat === 'true'; // Para admin: retornar array plano
 
     const query = includeInactive ? {} : { active: true };
 
@@ -17,7 +18,17 @@ export const getCategories = asyncHandler(
       .sort({ order: 1, name: 1 })
       .lean();
 
-    // Organizar en estructura jerárquica
+    // Si se solicita formato plano (para admin), retornar todas las categorías
+    if (flat) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          categories,
+        },
+      });
+    }
+
+    // Organizar en estructura jerárquica (para uso público)
     const mainCategories = categories.filter(cat => !cat.parent);
     const subcategories = categories.filter(cat => cat.parent);
 

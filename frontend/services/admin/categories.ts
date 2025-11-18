@@ -23,10 +23,10 @@ export interface UpdateCategoryInput {
 
 export const adminCategoryService = {
   /**
-   * Get all categories
+   * Get all categories (for admin - flat structure with inactive included)
    */
   async getAll(): Promise<ApiResponse<{ categories: Category[] }>> {
-    const { data } = await api.get('/categories');
+    const { data } = await api.get('/categories?flat=true&includeInactive=true');
     return data;
   },
 
