@@ -35,6 +35,23 @@ export interface TieredDiscount {
   active: boolean;
 }
 
+export interface FixedDiscount {
+  enabled: boolean;
+  type: 'percentage' | 'amount';
+  value: number;
+  startDate?: string;
+  endDate?: string;
+  badge?: string;
+}
+
+export interface TieredDiscountVariant {
+  tiers: TieredDiscountTier[];
+  startDate?: string;
+  endDate?: string;
+  badge?: string;
+  active: boolean;
+}
+
 export interface ProductParent {
   _id: string;
   name: string;
@@ -79,6 +96,8 @@ export interface ProductVariant {
   };
   images?: string[];
   description?: string;
+  fixedDiscount?: FixedDiscount;
+  tieredDiscount?: TieredDiscountVariant;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -86,6 +105,8 @@ export interface ProductVariant {
   isLowStock?: boolean;
   isOutOfStock?: boolean;
   displayName?: string;
+  hasActiveDiscount?: boolean;
+  hasActiveTieredDiscount?: boolean;
 }
 
 // ============================================================================

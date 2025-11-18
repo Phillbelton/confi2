@@ -12,6 +12,19 @@ export interface IFixedDiscount {
   badge?: string;
 }
 
+export interface ITieredDiscountVariant {
+  tiers: {
+    minQuantity: number;
+    maxQuantity: number | null;
+    type: 'percentage' | 'amount';
+    value: number;
+  }[];
+  startDate?: Date;
+  endDate?: Date;
+  badge?: string;
+  active: boolean;
+}
+
 export interface IProductVariant extends Document {
   _id: mongoose.Types.ObjectId;
   parentProduct: mongoose.Types.ObjectId;
@@ -27,6 +40,7 @@ export interface IProductVariant extends Document {
   allowBackorder: boolean;
   lowStockThreshold: number;
   fixedDiscount?: IFixedDiscount;
+  tieredDiscount?: ITieredDiscountVariant;
   active: boolean;
   order: number;
   views: number;
@@ -40,6 +54,7 @@ export interface IProductVariant extends Document {
   inStock: boolean;
   lowStock: boolean;
   hasActiveDiscount: boolean;
+  hasActiveTieredDiscount: boolean;
 }
 
 // NOTA IMPORTANTE: El campo 'slug' es required:false pero se genera automáticamente
@@ -135,6 +150,38 @@ const productVariantSchema = new Schema<IProductVariant>(
       endDate: Date,
       badge: String,
     },
+    tieredDiscount: {
+      tiers: [
+        {
+          minQuantity: {
+            type: Number,
+            required: true,
+            min: 1,
+          },
+          maxQuantity: {
+            type: Number,
+            default: null,
+          },
+          type: {
+            type: String,
+            enum: ['percentage', 'amount'],
+            required: true,
+          },
+          value: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+        },
+      ],
+      startDate: Date,
+      endDate: Date,
+      badge: String,
+      active: {
+        type: Boolean,
+        default: true,
+      },
+    },
     active: {
       type: Boolean,
       default: true,
@@ -203,6 +250,18 @@ productVariantSchema.virtual('hasActiveDiscount').get(function () {
   const now = new Date();
   const startValid = !this.fixedDiscount.startDate || this.fixedDiscount.startDate <= now;
   const endValid = !this.fixedDiscount.endDate || this.fixedDiscount.endDate >= now;
+
+  return startValid && endValid;
+});
+
+// Virtual: hasActiveTieredDiscount
+productVariantSchema.virtual('hasActiveTieredDiscount').get(function () {
+  if (!this.tieredDiscount?.active) return false;
+  if (!this.tieredDiscount?.tiers || this.tieredDiscount.tiers.length === 0) return false;
+
+  const now = new Date();
+  const startValid = !this.tieredDiscount.startDate || this.tieredDiscount.startDate <= now;
+  const endValid = !this.tieredDiscount.endDate || this.tieredDiscount.endDate >= now;
 
   return startValid && endValid;
 });

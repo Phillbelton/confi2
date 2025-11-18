@@ -159,6 +159,20 @@ const fixedDiscountSchema = z.object({
   badge: z.string().optional(),
 });
 
+// Schema para tieredDiscount en ProductVariant (sin attribute/attributeValue)
+const tieredDiscountVariantSchema = z.object({
+  tiers: z.array(z.object({
+    minQuantity: z.number().int().positive(),
+    maxQuantity: z.number().int().positive().nullable(),
+    type: z.enum(['percentage', 'amount']),
+    value: z.number().positive(),
+  })).min(1, 'Debe tener al menos un nivel de descuento'),
+  startDate: z.string().or(z.date()).optional(),
+  endDate: z.string().or(z.date()).optional(),
+  badge: z.string().optional(),
+  active: z.boolean(),
+});
+
 // Schema para atributos de variante (Map de string -> string)
 const attributesSchema = z.record(z.string()).optional();
 
@@ -209,6 +223,8 @@ export const createProductVariantSchema = z.object({
 
     fixedDiscount: fixedDiscountSchema.optional(),
 
+    tieredDiscount: tieredDiscountVariantSchema.optional(),
+
     order: z.number().int().optional(),
 
     active: z.boolean().optional(),
@@ -258,6 +274,8 @@ export const updateProductVariantSchema = z.object({
     lowStockThreshold: z.number().int().positive().optional(),
 
     fixedDiscount: fixedDiscountSchema.optional(),
+
+    tieredDiscount: tieredDiscountVariantSchema.optional(),
 
     order: z.number().int().optional(),
 

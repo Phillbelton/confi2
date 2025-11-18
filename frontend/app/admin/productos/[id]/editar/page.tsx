@@ -84,6 +84,13 @@ export default function EditarProductoPage() {
     deleteVariantImage({ id: variantId, filename });
   };
 
+  const handleUpdateVariantDiscounts = (
+    variantId: string,
+    data: { fixedDiscount?: any; tieredDiscount?: any }
+  ) => {
+    updateVariant({ id: variantId, data });
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -161,6 +168,7 @@ export default function EditarProductoPage() {
             onDeleteVariant={handleDeleteVariant}
             onUploadImages={handleUploadVariantImages}
             onDeleteImage={handleDeleteVariantImage}
+            onUpdateDiscounts={handleUpdateVariantDiscounts}
             isLoading={isLoadingVariants}
             isUploadingImages={isUploadingVariantImages}
             isDeletingImage={isDeletingVariantImage}

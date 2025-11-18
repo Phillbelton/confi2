@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit, Package, Trash2, Check, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Edit, Package, Trash2, Check, X, Upload, Image as ImageIcon, Percent } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -23,7 +23,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { VariantImageManager } from './VariantImageManager';
-import type { ProductVariant } from '@/types';
+import { VariantDiscountManager } from './VariantDiscountManager';
+import type { ProductVariant, FixedDiscount, TieredDiscountVariant } from '@/types';
 
 interface VariantsTableProps {
   variants: ProductVariant[];
@@ -31,9 +32,11 @@ interface VariantsTableProps {
   onDeleteVariant: (variantId: string) => void;
   onUploadImages?: (variantId: string, files: File[]) => void;
   onDeleteImage?: (variantId: string, filename: string) => void;
+  onUpdateDiscounts?: (variantId: string, data: { fixedDiscount?: FixedDiscount; tieredDiscount?: TieredDiscountVariant }) => void;
   isLoading?: boolean;
   isUploadingImages?: boolean;
   isDeletingImage?: boolean;
+  isUpdatingDiscounts?: boolean;
 }
 
 export function VariantsTable({
@@ -42,9 +45,11 @@ export function VariantsTable({
   onDeleteVariant,
   onUploadImages,
   onDeleteImage,
+  onUpdateDiscounts,
   isLoading = false,
   isUploadingImages = false,
   isDeletingImage = false,
+  isUpdatingDiscounts = false,
 }: VariantsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
@@ -102,6 +107,7 @@ export function VariantsTable({
                 <TableHead>Precio</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Imágenes</TableHead>
+                <TableHead>Descuentos</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -197,6 +203,31 @@ export function VariantsTable({
                         <span className="text-sm text-muted-foreground">
                           {variant.images?.length || 0}
                         </span>
+                      )}
+                    </TableCell>
+
+                    {/* Discounts */}
+                    <TableCell>
+                      {onUpdateDiscounts ? (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isLoading}>
+                              <Percent className="h-4 w-4 mr-1" />
+                              {variant.fixedDiscount?.enabled || variant.tieredDiscount?.active
+                                ? '✓'
+                                : '—'}
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <VariantDiscountManager
+                              variant={variant}
+                              onSave={(data) => onUpdateDiscounts(variant._id, data)}
+                              isSaving={isUpdatingDiscounts}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </TableCell>
 
