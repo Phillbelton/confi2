@@ -75,39 +75,23 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
 
   const hasAnyDiscount = hasFixedDiscount || hasVariantTieredDiscount || hasParentTieredDiscount;
 
-  // Calculate discounted price for display (with first tier if tiered discount exists)
+  // Calculate discounted price for display (ONLY fixed discount, not tiered)
+  // Tiered discounts are shown separately in badges since they depend on quantity
   const getDiscountedPrice = () => {
     if (!selectedVariant) return null;
 
-    let currentPrice = selectedVariant.price;
-    let totalDiscount = 0;
-
-    // 1. Apply fixed discount
+    // Only apply fixed discount for the main price display
     if (hasFixedDiscount) {
       let fixedDiscount = 0;
       if (selectedVariant.fixedDiscount!.type === 'percentage') {
-        fixedDiscount = (currentPrice * selectedVariant.fixedDiscount!.value) / 100;
+        fixedDiscount = (selectedVariant.price * selectedVariant.fixedDiscount!.value) / 100;
       } else {
         fixedDiscount = selectedVariant.fixedDiscount!.value;
       }
-      totalDiscount += fixedDiscount;
-      currentPrice -= fixedDiscount; // Update price after fixed discount
+      return selectedVariant.price - fixedDiscount;
     }
 
-    // 2. Apply variant tiered discount (min tier) on the discounted price
-    if (hasVariantTieredDiscount) {
-      const minTier = selectedVariant.tieredDiscount!.tiers[0];
-      let tierDiscount = 0;
-      if (minTier.type === 'percentage') {
-        tierDiscount = (currentPrice * minTier.value) / 100;
-      } else {
-        tierDiscount = minTier.value;
-      }
-      totalDiscount += tierDiscount;
-      currentPrice -= tierDiscount;
-    }
-
-    return totalDiscount > 0 ? selectedVariant.price - totalDiscount : null;
+    return null;
   };
 
   // Get discount badge text
@@ -126,9 +110,12 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
       const badge = selectedVariant?.tieredDiscount?.badge;
       if (badge) return badge;
 
-      const minTier = selectedVariant!.tieredDiscount!.tiers[0];
-      const discountedPrice = getDiscountedPrice();
-      return `Desde ${minTier.minQuantity} un $${discountedPrice?.toLocaleString()} c/u`;
+      // Calculate price with first tier (considering fixed discount if present)
+      const tiers = getDiscountTiers();
+      if (tiers && tiers.length > 0) {
+        const minTier = selectedVariant!.tieredDiscount!.tiers[0];
+        return `Desde ${minTier.minQuantity} un ${tiers[0].price} c/u`;
+      }
     }
 
     if (hasParentTieredDiscount && selectedVariant) {
