@@ -166,12 +166,24 @@ const tieredDiscountVariantSchema = z.object({
     maxQuantity: z.number().int().positive().nullable(),
     type: z.enum(['percentage', 'amount']),
     value: z.number().positive(),
-  })).min(1, 'Debe tener al menos un nivel de descuento'),
+  })),
   startDate: z.string().or(z.date()).optional(),
   endDate: z.string().or(z.date()).optional(),
   badge: z.string().optional(),
   active: z.boolean(),
-});
+}).refine(
+  (data) => {
+    // Si active es true, debe tener al menos un tier
+    if (data.active && data.tiers.length === 0) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: 'Debe tener al menos un nivel de descuento cuando está activo',
+    path: ['tiers'],
+  }
+);
 
 // Schema para atributos de variante (Map de string -> string)
 const attributesSchema = z.record(z.string()).optional();
