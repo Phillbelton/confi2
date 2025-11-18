@@ -224,7 +224,7 @@ function AttributeCard({
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <p className="text-xs">
-                  <strong>Normalización automática:</strong> Los valores se formatean al guardar.
+                  <strong>Este valor se mostrará en el catálogo.</strong> Se normalizará automáticamente al guardar.
                   Ej: "250l" → "250 L", "5Litrios" → "5 L", "2quilos" → "2 kg"
                 </p>
               </TooltipContent>
