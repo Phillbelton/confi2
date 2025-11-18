@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { Order } from '../models/Order';
-import { ProductVariant } from '../models/ProductVariant';
+import ProductVariant from '../models/ProductVariant';
 import { User } from '../models/User';
 
 dotenv.config();
@@ -101,8 +101,8 @@ async function seedOrders() {
       totalDiscount: 0,
       shippingCost: 15000,
       total: order1Items.reduce((sum, item) => sum + item.subtotal, 0) + 15000,
-      deliveryMethod: 'envio',
-      paymentMethod: 'transferencia',
+      deliveryMethod: 'delivery',
+      paymentMethod: 'transfer',
       status: 'pending',
       whatsappSent: false,
       customerNotes: 'Por favor enviar por la mañana',
@@ -133,8 +133,8 @@ async function seedOrders() {
       totalDiscount: 0,
       shippingCost: 20000,
       total: order2Items.reduce((sum, item) => sum + item.subtotal, 0) + 20000,
-      deliveryMethod: 'envio',
-      paymentMethod: 'pago_movil',
+      deliveryMethod: 'delivery',
+      paymentMethod: 'transfer',
       status: 'confirmed',
       whatsappSent: true,
       whatsappSentAt: new Date(),
@@ -156,8 +156,8 @@ async function seedOrders() {
       totalDiscount: 0,
       shippingCost: 0,
       total: order3Items.reduce((sum, item) => sum + item.subtotal, 0),
-      deliveryMethod: 'retiro_tienda',
-      paymentMethod: 'efectivo',
+      deliveryMethod: 'pickup',
+      paymentMethod: 'cash',
       status: 'processing',
       whatsappSent: true,
       whatsappSentAt: new Date(),
@@ -191,8 +191,8 @@ async function seedOrders() {
       totalDiscount: 0,
       shippingCost: 25000,
       total: order4Items.reduce((sum, item) => sum + item.subtotal, 0) + 25000,
-      deliveryMethod: 'envio',
-      paymentMethod: 'tarjeta',
+      deliveryMethod: 'delivery',
+      paymentMethod: 'transfer',
       status: 'completed',
       whatsappSent: true,
       whatsappSentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 días atrás
@@ -221,8 +221,8 @@ async function seedOrders() {
       totalDiscount: 0,
       shippingCost: 15000,
       total: order5Items.reduce((sum, item) => sum + item.subtotal, 0) + 15000,
-      deliveryMethod: 'envio',
-      paymentMethod: 'transferencia',
+      deliveryMethod: 'delivery',
+      paymentMethod: 'transfer',
       status: 'cancelled',
       whatsappSent: false,
       cancelledAt: new Date(),
@@ -251,8 +251,8 @@ async function seedOrders() {
       totalDiscount: 0,
       shippingCost: 20000,
       total: order6Items.reduce((sum, item) => sum + item.subtotal, 0) + 20000,
-      deliveryMethod: 'envio',
-      paymentMethod: 'transferencia',
+      deliveryMethod: 'delivery',
+      paymentMethod: 'transfer',
       paymentProof: 'https://example.com/comprobante123.jpg',
       status: 'pending',
       whatsappSent: false,
@@ -283,7 +283,7 @@ async function seedOrders() {
       const customer = order.customer.name.substring(0, 25).padEnd(25, ' ');
       const total = `Gs. ${order.total.toLocaleString()}`.padEnd(18, ' ');
       const items = `${order.items.length} item(s)`.padEnd(10, ' ');
-      const delivery = order.deliveryMethod === 'envio' ? '🚚 Envío' : '🏪 Retiro';
+      const delivery = order.deliveryMethod === 'delivery' ? '🚚 Envío' : '🏪 Retiro';
 
       console.log(`${num} ${orderNum} | ${status} | ${customer} | ${total} | ${items} | ${delivery}`);
     });

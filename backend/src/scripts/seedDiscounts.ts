@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { ProductVariant } from '../models/ProductVariant';
+import ProductVariant from '../models/ProductVariant';
 
 dotenv.config();
 
@@ -249,7 +249,7 @@ async function seedDiscounts() {
       ]
     }).populate('parentProduct', 'name');
 
-    variantsWithDiscounts.forEach((variant, index) => {
+    variantsWithDiscounts.forEach((variant: any, index: number) => {
       const num = `${(index + 1).toString().padStart(2, ' ')}.`;
       const name = variant.name.substring(0, 40).padEnd(40, ' ');
       const price = `$${variant.price}`.padEnd(10, ' ');

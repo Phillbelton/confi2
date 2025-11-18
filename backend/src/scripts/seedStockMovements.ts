@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import StockMovement from '../models/StockMovement';
-import { ProductVariant } from '../models/ProductVariant';
+import ProductVariant from '../models/ProductVariant';
 import { User } from '../models/User';
 
 dotenv.config();
@@ -272,7 +272,7 @@ async function seedStockMovements() {
     console.log('');
 
     const variantsWithMovements = await ProductVariant.find({
-      _id: { $in: variants.map(v => v._id) }
+      _id: { $in: variants.map((v: any) => v._id) }
     });
 
     for (const variant of variantsWithMovements) {
