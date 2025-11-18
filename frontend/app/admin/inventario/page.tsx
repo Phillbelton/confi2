@@ -275,9 +275,11 @@ export default function InventarioPage() {
                               <div>
                                 <p className="font-medium">{variant.name}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {Object.entries(variant.attributes)
-                                    .map(([key, value]: [string, string]) => `${key}: ${value}`)
-                                    .join(', ')}
+                                  {variant.attributes && Object.keys(variant.attributes).length > 0
+                                    ? Object.entries(variant.attributes)
+                                        .map(([key, value]: [string, string]) => `${key}: ${value}`)
+                                        .join(', ')
+                                    : 'Sin atributos'}
                                 </p>
                               </div>
                             </TableCell>
