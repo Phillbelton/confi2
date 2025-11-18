@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Percent, Plus, Trash2, Info } from 'lucide-react';
+import { Percent, Plus, Trash2, Info, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormFieldWithHelp } from '@/components/ui/form-field-with-help';
 import { InlineHelp } from '@/components/ui/inline-help';
+import { HelpPanel, HelpSection, HelpExample } from '@/components/ui/help-panel';
 import type { ProductVariant, FixedDiscount, TieredDiscountVariant, TieredDiscountTier } from '@/types';
 
 interface VariantDiscountManagerProps {
@@ -55,6 +56,9 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
   const [tiers, setTiers] = useState<TieredDiscountTier[]>(
     variant.tieredDiscount?.tiers || []
   );
+
+  // Help panel state
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Calculate fixed discount preview
   const calculateFixedPreview = () => {
@@ -210,11 +214,24 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h3 className="text-lg font-semibold">Descuentos: {variant.displayName || variant.sku}</h3>
-        <p className="text-sm text-muted-foreground">
-          SKU: {variant.sku} • Precio base: ${variant.price.toLocaleString()}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold">Descuentos: {variant.displayName || variant.sku}</h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsHelpOpen(true)}
+            >
+              <HelpCircle className="h-5 w-5" />
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            SKU: {variant.sku} • Precio base: ${variant.price.toLocaleString()}
+          </p>
+        </div>
       </div>
 
       {/* Fixed Discount Section */}
@@ -603,6 +620,150 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
           {isSaving ? 'Guardando...' : 'Guardar Descuentos'}
         </Button>
       </div>
+
+      {/* Help Panel */}
+      <HelpPanel
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Ayuda: Sistema de Descuentos"
+      >
+        <HelpSection title="¿Qué tipos de descuentos existen?">
+          <p>
+            El sistema ofrece dos tipos de descuentos que se pueden combinar:
+          </p>
+          <ul className="list-disc ml-4 mt-2 space-y-1">
+            <li><strong>Descuento Fijo:</strong> Un descuento único que se aplica al precio base del producto</li>
+            <li><strong>Descuento Escalonado:</strong> Descuentos que varían según la cantidad comprada</li>
+          </ul>
+        </HelpSection>
+
+        <HelpSection title="Descuento Fijo - ¿Cuándo usarlo?">
+          <p>Ideal para:</p>
+          <ul className="list-disc ml-4 mt-2 space-y-1">
+            <li>Liquidaciones de productos</li>
+            <li>Promociones especiales (Black Friday, Día del Padre, etc.)</li>
+            <li>Productos con fecha de vencimiento próxima</li>
+            <li>Ofertas flash por tiempo limitado</li>
+          </ul>
+          <p className="mt-2">
+            Puedes elegir entre <strong>porcentaje</strong> (ej: 20% de descuento) o <strong>monto fijo</strong> (ej: 5.000 Gs de descuento).
+          </p>
+        </HelpSection>
+
+        <HelpExample title="Ejemplo: Descuento Fijo 20%">
+          <p>Producto: Crema Hidratante</p>
+          <p>Precio base: <strong>50.000 Gs</strong></p>
+          <p>Descuento: <strong>20%</strong></p>
+          <p className="mt-2 text-green-600 font-medium">
+            Precio final: 40.000 Gs (ahorro de 10.000 Gs)
+          </p>
+        </HelpExample>
+
+        <HelpSection title="Descuento Escalonado - ¿Cuándo usarlo?">
+          <p>Ideal para:</p>
+          <ul className="list-disc ml-4 mt-2 space-y-1">
+            <li>Venta mayorista (más compras = mejor precio)</li>
+            <li>Packs de ahorro</li>
+            <li>Incentivar compras en mayor cantidad</li>
+            <li>Liquidación de stock</li>
+          </ul>
+          <p className="mt-2">
+            Define rangos de cantidad con descuentos crecientes. Por ejemplo:
+          </p>
+          <ul className="list-disc ml-4 mt-2 space-y-1">
+            <li>2-5 unidades: 5% de descuento</li>
+            <li>6-11 unidades: 10% de descuento</li>
+            <li>12+ unidades: 15% de descuento</li>
+          </ul>
+        </HelpSection>
+
+        <HelpExample title="Ejemplo: Descuento Escalonado">
+          <p>Producto: Shampoo 250ml</p>
+          <p>Precio base: <strong>25.000 Gs</strong></p>
+          <div className="mt-2 space-y-1">
+            <p>• 1 unidad = 25.000 Gs c/u (sin descuento)</p>
+            <p>• 3 unidades (5% desc) = <strong className="text-green-600">23.750 Gs c/u</strong></p>
+            <p>• 8 unidades (10% desc) = <strong className="text-green-600">22.500 Gs c/u</strong></p>
+            <p>• 15 unidades (15% desc) = <strong className="text-green-600">21.250 Gs c/u</strong></p>
+          </div>
+        </HelpExample>
+
+        <HelpSection title="¿Cómo se combinan los descuentos?">
+          <p>
+            <strong>¡IMPORTANTE!</strong> Cuando activas ambos descuentos, se aplican en cascada:
+          </p>
+          <ol className="list-decimal ml-4 mt-2 space-y-2">
+            <li>
+              <strong>Paso 1:</strong> Se aplica el <span className="text-blue-600">descuento fijo</span> al precio base
+            </li>
+            <li>
+              <strong>Paso 2:</strong> Se aplica el <span className="text-orange-600">descuento escalonado</span> sobre el precio ya descontado (no sobre el precio original)
+            </li>
+          </ol>
+        </HelpSection>
+
+        <HelpExample title="Ejemplo: Descuentos Combinados">
+          <p>Producto: Acondicionador Premium</p>
+          <p>Precio base: <strong>100.000 Gs</strong></p>
+          <p>Descuento fijo: <strong>20%</strong></p>
+          <p>Descuento escalonado (10+ un): <strong>10%</strong></p>
+
+          <div className="mt-3 space-y-2 bg-slate-100 dark:bg-slate-800 p-3 rounded">
+            <p className="font-medium">Cliente compra 12 unidades:</p>
+            <p>1️⃣ Precio base: 100.000 Gs</p>
+            <p>2️⃣ Aplicar descuento fijo (-20%):</p>
+            <p className="ml-4">→ 100.000 - 20% = <strong>80.000 Gs</strong></p>
+            <p>3️⃣ Aplicar descuento escalonado (-10%) sobre 80.000:</p>
+            <p className="ml-4">→ 80.000 - 10% = <strong className="text-green-600">72.000 Gs c/u</strong></p>
+            <p className="mt-2 border-t pt-2">
+              <strong>Descuento total:</strong> 28% (28.000 Gs por unidad)
+            </p>
+            <p><strong>Total a pagar:</strong> 72.000 × 12 = <span className="text-green-600 text-lg">864.000 Gs</span></p>
+            <p className="text-sm text-muted-foreground">(En lugar de 1.200.000 Gs sin descuentos)</p>
+          </div>
+        </HelpExample>
+
+        <HelpSection title="Consejos y Buenas Prácticas">
+          <ul className="list-disc ml-4 space-y-2">
+            <li>
+              <strong>Etiquetas personalizadas:</strong> Usa textos llamativos como "¡LIQUIDACIÓN!", "BLACK FRIDAY", "PACK AHORRO" para atraer clientes
+            </li>
+            <li>
+              <strong>Fechas de vigencia:</strong> Define fechas de inicio y fin para promociones temporales. Deja vacío para descuentos permanentes
+            </li>
+            <li>
+              <strong>Preview de precios:</strong> Usa la sección de preview para verificar que los cálculos sean correctos antes de guardar
+            </li>
+            <li>
+              <strong>Niveles escalonados:</strong> Crea al menos 2-3 niveles para incentivar compras en mayor cantidad
+            </li>
+            <li>
+              <strong>Precio psicológico:</strong> Ajusta los descuentos para que el precio final termine en 90, 95 o 99 (ej: 19.990 en lugar de 20.000)
+            </li>
+          </ul>
+        </HelpSection>
+
+        <HelpSection title="Casos de Uso Comunes">
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium">🎯 Liquidación de temporada:</p>
+              <p className="text-sm ml-4">Descuento fijo del 30-50% sin descuento escalonado</p>
+            </div>
+            <div>
+              <p className="font-medium">📦 Venta mayorista:</p>
+              <p className="text-sm ml-4">Solo descuento escalonado (6+ un: 10%, 12+ un: 15%, 24+ un: 20%)</p>
+            </div>
+            <div>
+              <p className="font-medium">🔥 Promoción especial + pack:</p>
+              <p className="text-sm ml-4">Descuento fijo 15% + descuento escalonado para compras múltiples</p>
+            </div>
+            <div>
+              <p className="font-medium">⏰ Flash sale:</p>
+              <p className="text-sm ml-4">Descuento fijo 25% con fechas de vigencia (ej: solo fin de semana)</p>
+            </div>
+          </div>
+        </HelpSection>
+      </HelpPanel>
     </div>
   );
 }
