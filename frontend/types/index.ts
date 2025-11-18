@@ -119,6 +119,7 @@ export interface Category {
   slug: string;
   description?: string;
   image?: string;
+  icon?: string;
   color?: string;
   parent?: string | Category;
   order: number;
