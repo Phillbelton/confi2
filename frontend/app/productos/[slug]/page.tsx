@@ -373,7 +373,7 @@ export default function ProductDetailPage() {
                           value={variant._id}
                           disabled={variant.stock === 0}
                         >
-                          {variant.displayName} - ${variant.price.toLocaleString()}
+                          {variant.displayName}
                           {variant.stock === 0 && ' (Agotado)'}
                         </SelectItem>
                       ))}

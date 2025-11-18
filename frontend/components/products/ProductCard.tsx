@@ -316,7 +316,7 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
               <SelectContent>
                 {variants.map((variant) => (
                   <SelectItem key={variant._id} value={variant._id}>
-                    {variant.displayName} - ${variant.price.toLocaleString()}
+                    {variant.displayName}
                     {variant.stock === 0 && ' (Agotado)'}
                   </SelectItem>
                 ))}
