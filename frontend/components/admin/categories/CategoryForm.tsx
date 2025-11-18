@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InlineHelp } from '@/components/ui/inline-help';
 import type { Category } from '@/types';
 
 const categoryFormSchema = z.object({
@@ -154,7 +156,19 @@ export function CategoryForm({
       {/* Image Upload Section - Only show for editing */}
       {isEditing && (
         <div className="border rounded-lg p-4">
-          <h3 className="text-sm font-medium mb-3">Imagen de la categoría</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-medium">Imagen de la categoría</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs">
+                  Imagen representativa de la categoría. Se muestra en banners y listados. Tamaños recomendados: mínimo 400x400px. Formatos: JPG, PNG, WEBP.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
               {imagePreview ? (
@@ -268,7 +282,19 @@ export function CategoryForm({
             name="parent"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Categoría padre</FormLabel>
+                <div className="flex items-center gap-2">
+                  <FormLabel>Categoría padre</FormLabel>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">
+                        Categorías padre aparecen en el menú principal. Subcategorías se muestran cuando haces click en la padre. Ejemplo: "Alimentos" (padre) → "Snacks", "Bebidas" (subcategorías).
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <Select
                   onValueChange={field.onChange}
                   value={field.value}
@@ -357,7 +383,19 @@ export function CategoryForm({
               name="order"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Orden</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormLabel>Orden</FormLabel>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">
+                          Número para ordenar categorías en menús y listados. Menor número = aparece más arriba. Ejemplo: orden 1 aparece antes que orden 2.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <FormControl>
                     <Input
                       type="number"

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Brand } from '@/types';
 
 const brandFormSchema = z.object({
@@ -106,7 +107,19 @@ export function BrandForm({
       {/* Logo Upload Section - Only show for editing */}
       {isEditing && (
         <div className="border rounded-lg p-4">
-          <h3 className="text-sm font-medium mb-3">Logo de la marca</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-medium">Logo de la marca</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs">
+                  Logo oficial de la marca. Se muestra en tarjetas de producto y filtros. Tamaños recomendados: mínimo 200x200px. Formatos: JPG, PNG, WEBP. Fondos transparentes funcionan mejor.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
               {logoPreview ? (

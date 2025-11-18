@@ -293,8 +293,11 @@ export function SimpleProductForm({
             <CardTitle>SEO (Opcional)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="seoTitle">Título SEO</Label>
+            <FormFieldWithHelp
+              label="Título SEO"
+              htmlFor="seoTitle"
+              tooltip="Título optimizado para motores de búsqueda (Google, Bing). Aparece en resultados de búsqueda. Si lo dejas vacío, se usa el nombre del producto. Máximo 70 caracteres."
+            >
               <Input
                 id="seoTitle"
                 {...form.register('seoTitle')}
@@ -305,10 +308,13 @@ export function SimpleProductForm({
               <p className="text-sm text-muted-foreground mt-1">
                 {form.watch('seoTitle')?.length || 0}/70
               </p>
-            </div>
+            </FormFieldWithHelp>
 
-            <div>
-              <Label htmlFor="seoDescription">Descripción SEO</Label>
+            <FormFieldWithHelp
+              label="Descripción SEO"
+              htmlFor="seoDescription"
+              tooltip="Descripción breve para motores de búsqueda. Aparece debajo del título en resultados de búsqueda. Si la dejas vacía, se usa la descripción del producto. Máximo 160 caracteres."
+            >
               <Textarea
                 id="seoDescription"
                 {...form.register('seoDescription')}
@@ -320,7 +326,7 @@ export function SimpleProductForm({
               <p className="text-sm text-muted-foreground mt-1">
                 {form.watch('seoDescription')?.length || 0}/160
               </p>
-            </div>
+            </FormFieldWithHelp>
           </CardContent>
         </Card>
 
@@ -330,13 +336,20 @@ export function SimpleProductForm({
             <CardTitle>Configuración</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <InlineHelp variant="info">
+              <strong>Configuración de visibilidad:</strong> Controla cómo y dónde se muestra el producto en la tienda.
+            </InlineHelp>
+
             <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Producto Destacado</Label>
+              <FormFieldWithHelp
+                label="Producto Destacado"
+                tooltip="Si está activado, el producto aparecerá en la sección de 'Productos Destacados' en la página principal y en banners promocionales."
+                className="flex-1"
+              >
                 <p className="text-sm text-muted-foreground">
                   Aparecerá en la sección de productos destacados
                 </p>
-              </div>
+              </FormFieldWithHelp>
               <Switch
                 checked={form.watch('featured')}
                 onCheckedChange={(checked) => form.setValue('featured', checked)}
@@ -347,12 +360,15 @@ export function SimpleProductForm({
             <Separator />
 
             <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Producto Activo</Label>
+              <FormFieldWithHelp
+                label="Producto Activo"
+                tooltip="Controla si el producto es visible en la tienda. Desactívalo para ocultarlo temporalmente sin eliminarlo (útil para productos fuera de temporada o sin stock)."
+                className="flex-1"
+              >
                 <p className="text-sm text-muted-foreground">
                   El producto estará visible en la tienda
                 </p>
-              </div>
+              </FormFieldWithHelp>
               <Switch
                 checked={form.watch('active')}
                 onCheckedChange={(checked) => form.setValue('active', checked)}
