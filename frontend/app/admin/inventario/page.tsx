@@ -386,10 +386,17 @@ export default function InventarioPage() {
                               </div>
                             </TableCell>
                             <TableCell>{getMovementTypeBadge(movement.type)}</TableCell>
-                            <TableCell className="font-mono text-xs">
-                              {typeof movement.variant === 'string'
-                                ? movement.variant
-                                : movement.variant}
+                            <TableCell>
+                              {typeof movement.variant === 'string' ? (
+                                <span className="font-mono text-xs">{movement.variant}</span>
+                              ) : (
+                                <div>
+                                  <p className="font-medium text-sm">{movement.variant.name}</p>
+                                  <p className="font-mono text-xs text-muted-foreground">
+                                    {movement.variant.sku}
+                                  </p>
+                                </div>
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
                               <span
