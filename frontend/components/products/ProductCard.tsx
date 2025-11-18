@@ -52,8 +52,10 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
   // Check if out of stock
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
 
-  // Get first image (with safe URL validation)
-  const mainImage = getSafeImageUrl(product.images?.[0]);
+  // Get first image: use variant image if available, otherwise use parent image
+  const mainImage = getSafeImageUrl(
+    selectedVariant?.images?.[0] || product.images?.[0]
+  );
 
   // Calculate if has discount
   const hasActiveDiscount = product.tieredDiscounts?.some(

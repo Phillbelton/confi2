@@ -72,6 +72,11 @@ export default function ProductDetailPage() {
     }
   }, [variants, selectedVariantId]);
 
+  // Reset image index when variant changes (to avoid out of bounds index)
+  useEffect(() => {
+    setMainImageIndex(0);
+  }, [selectedVariantId]);
+
   // Error handling
   if (error) {
     return (
@@ -120,11 +125,11 @@ export default function ProductDetailPage() {
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
   const maxQuantity = selectedVariant?.allowBackorder ? 999 : (selectedVariant?.stock || 0);
 
-  // Get all images (product + variant)
-  const allImages = [
-    ...(product.images || []),
-    ...(selectedVariant?.images || []),
-  ].filter(Boolean);
+  // Get images: use variant images if available, otherwise use parent images
+  const allImages = (selectedVariant?.images && selectedVariant.images.length > 0
+    ? selectedVariant.images
+    : product.images || []
+  ).filter(Boolean);
 
   const mainImage = allImages[mainImageIndex] || '/placeholder-product.svg';
 
