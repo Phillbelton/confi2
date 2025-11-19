@@ -100,7 +100,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
       details.push(`fijo -${fixedPreview.discountPercentage.toFixed(0)}%`);
     }
 
-    // Apply tiered discount
+    // Apply tiered discount ON TOP of discounted price (not original)
     if (tieredActive && tiers.length > 0) {
       const applicableTier = [...tiers]
         .sort((a, b) => a.minQuantity - b.minQuantity)
@@ -114,7 +114,8 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
       if (applicableTier) {
         let tieredDiscount = 0;
         if (applicableTier.type === 'percentage') {
-          tieredDiscount = (variant.price * applicableTier.value) / 100;
+          // ✅ FIX: Calculate on already-discounted price, not original
+          tieredDiscount = (price * applicableTier.value) / 100;
         } else {
           tieredDiscount = applicableTier.value;
         }
@@ -128,7 +129,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
 
     return {
       originalPrice: variant.price,
-      finalPrice: price,
+      finalPrice: Math.max(0, price), // Ensure price never goes negative
       totalDiscount,
       totalPercentage,
       details: details.join(' + '),
@@ -565,35 +566,57 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
               </FormFieldWithHelp>
 
               {/* Combined Preview */}
-              {(fixedPreview || tiers.length > 0) && (
-                <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Info className="h-4 w-4" />
-                    <p className="text-sm font-medium">PREVIEW - Precios combinados</p>
-                  </div>
-                  {[1, 2, 6, 12].map((qty) => {
-                    const preview = calculateCombinedPreview(qty);
-                    if (preview.totalDiscount === 0 && qty > 1) return null;
-                    return (
-                      <div key={qty} className="flex justify-between text-sm items-center">
-                        <span className="text-muted-foreground">
-                          {qty} unidad{qty > 1 ? 'es' : ''}:
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">
-                            ${preview.finalPrice.toLocaleString()} c/u
+              {(fixedPreview || tiers.length > 0) && (() => {
+                // Generate example quantities based on tier minQuantity values
+                const exampleQuantities = [1]; // Always show 1 unit
+
+                // Add minQuantity from each tier
+                if (tiers.length > 0) {
+                  tiers
+                    .map(tier => tier.minQuantity)
+                    .filter(qty => qty > 1) // Exclude 1 as it's already added
+                    .sort((a, b) => a - b) // Sort ascending
+                    .forEach(qty => {
+                      if (!exampleQuantities.includes(qty)) {
+                        exampleQuantities.push(qty);
+                      }
+                    });
+                }
+
+                // If no tiers, show 1 and 2 as fallback
+                if (exampleQuantities.length === 1 && fixedPreview) {
+                  exampleQuantities.push(2);
+                }
+
+                return (
+                  <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info className="h-4 w-4" />
+                      <p className="text-sm font-medium">PREVIEW - Ejemplos de precios combinados</p>
+                    </div>
+                    {exampleQuantities.map((qty) => {
+                      const preview = calculateCombinedPreview(qty);
+                      return (
+                        <div key={qty} className="flex justify-between text-sm items-center">
+                          <span className="text-muted-foreground">
+                            {qty} unidad{qty > 1 ? 'es' : ''}:
                           </span>
-                          {preview.totalDiscount > 0 && (
-                            <span className="text-xs text-green-600">
-                              (-{preview.totalPercentage.toFixed(0)}%: {preview.details})
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">
+                              ${preview.finalPrice.toLocaleString()} c/u
                             </span>
-                          )}
+                            {preview.totalDiscount > 0 && (
+                              <span className="text-xs text-green-600">
+                                (-{preview.totalPercentage.toFixed(0)}%: {preview.details})
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </>
           )}
         </CardContent>
