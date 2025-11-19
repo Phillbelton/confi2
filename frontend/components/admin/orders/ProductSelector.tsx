@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Plus, Check } from 'lucide-react';
+import { Search, Plus, Check, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { getImageUrl } from '@/lib/images';
+import { hasActiveDiscount } from '@/lib/discountCalculator';
 
 interface ProductVariant {
   _id: string;
@@ -105,6 +106,7 @@ export function ProductSelector({
               {variants?.map((variant) => {
                 const isSelected = selectedVariantIds.includes(variant._id);
                 const attributes = Object.entries(variant.attributes || {});
+                const hasDiscount = hasActiveDiscount(variant, variant.parentProduct);
 
                 return (
                   <div
@@ -129,6 +131,12 @@ export function ProductSelector({
                           <Badge variant="secondary" className="gap-1">
                             <Check className="h-3 w-3" />
                             Ya agregado
+                          </Badge>
+                        )}
+                        {!isSelected && hasDiscount && (
+                          <Badge variant="default" className="gap-1 text-xs bg-green-600">
+                            <Tag className="h-3 w-3" />
+                            Con descuento
                           </Badge>
                         )}
                       </div>

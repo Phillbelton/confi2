@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,11 @@ import { InlineHelp } from '@/components/ui/inline-help';
 import { ProductSelector } from './ProductSelector';
 import { useAdminOrders } from '@/hooks/admin/useAdminOrders';
 import type { Order } from '@/types/order';
+import type { ProductVariant, ProductParent } from '@/types';
 import { getImageUrl } from '@/lib/images';
+import { calculateItemDiscount } from '@/lib/discountCalculator';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/axios';
 
 interface EditableItem {
   variantId: string;
@@ -22,6 +26,8 @@ interface EditableItem {
   attributes: Record<string, string>;
   image?: string;
   quantity: number;
+  variant?: ProductVariant;
+  productParent?: ProductParent;
 }
 
 interface EditOrderItemsProps {
@@ -48,14 +54,90 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
     }))
   );
 
-  // Calculate totals
-  const calculateTotals = () => {
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const total = subtotal + order.shippingCost;
-    return { subtotal, total };
-  };
+  // Fetch complete variant data for existing items to calculate discounts
+  const variantIds = order.items.map((item) => item.variant);
+  const { data: variantsData } = useQuery({
+    queryKey: ['order-variants', order._id],
+    queryFn: async () => {
+      // Fetch all variants in parallel
+      const promises = variantIds.map((id) =>
+        api.get(`/products/variants/${id}`).then((res) => res.data.data)
+      );
+      const variants = await Promise.all(promises);
+      return variants as ProductVariant[];
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  const { subtotal: newSubtotal, total: newTotal } = calculateTotals();
+  // Update items with complete variant data when loaded
+  useEffect(() => {
+    if (variantsData && variantsData.length > 0) {
+      setItems((currentItems) =>
+        currentItems.map((item) => {
+          // Skip if already has variant data (newly added items)
+          if (item.variant && item.productParent) return item;
+
+          // Find matching variant data
+          const variantData = variantsData.find((v) => v._id === item.variantId);
+          if (variantData) {
+            return {
+              ...item,
+              variant: variantData,
+              productParent: variantData.parentProduct as ProductParent,
+            };
+          }
+          return item;
+        })
+      );
+    }
+  }, [variantsData]);
+
+  // Calculate totals with discount calculator
+  const calculateTotals = useMemo(() => {
+    // Prepare items for discount calculation
+    const calculationItems = items.map((item) => {
+      // If we have full variant/parent data, use discount calculator
+      if (item.variant && item.productParent) {
+        const discountResult = calculateItemDiscount(
+          item.variant,
+          item.quantity,
+          item.productParent,
+          items
+            .filter((i) => i.variant && i.productParent)
+            .map((i) => ({
+              variant: i.variant!,
+              quantity: i.quantity,
+              productParent: i.productParent!,
+            }))
+        );
+        return {
+          ...item,
+          originalPrice: discountResult.originalPrice,
+          finalPrice: discountResult.finalPrice,
+          discountPerUnit: discountResult.discountPerUnit,
+          subtotal: discountResult.subtotal,
+          totalDiscount: discountResult.totalDiscount,
+        };
+      }
+      // Fallback for items from order (no discount data available)
+      return {
+        ...item,
+        originalPrice: item.price,
+        finalPrice: item.price,
+        discountPerUnit: 0,
+        subtotal: item.price * item.quantity,
+        totalDiscount: 0,
+      };
+    });
+
+    const subtotal = calculationItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const totalDiscount = calculationItems.reduce((sum, item) => sum + item.totalDiscount, 0);
+    const total = subtotal + order.shippingCost;
+
+    return { calculationItems, subtotal, totalDiscount, total };
+  }, [items, order.shippingCost]);
+
+  const { calculationItems, subtotal: newSubtotal, totalDiscount, total: newTotal } = calculateTotals;
   const hasChanges =
     JSON.stringify(items) !==
     JSON.stringify(
@@ -82,6 +164,8 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
         attributes: variant.attributes || {},
         image: variant.images?.[0],
         quantity: 1,
+        variant: variant as ProductVariant,
+        productParent: variant.parentProduct as ProductParent,
       },
     ]);
   };
@@ -145,8 +229,9 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
 
         {/* Items list */}
         <div className="space-y-2">
-          {items.map((item, index) => {
+          {calculationItems.map((item, index) => {
             const attributes = Object.entries(item.attributes || {});
+            const hasDiscount = item.discountPerUnit > 0;
 
             return (
               <div key={index} className="flex items-center gap-3 p-3 rounded-lg border">
@@ -161,7 +246,14 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{item.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{item.name}</p>
+                    {hasDiscount && (
+                      <Badge variant="secondary" className="text-xs">
+                        -{item.discountPerUnit.toLocaleString('es-PY')} Gs
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="font-mono">{item.sku}</span>
                     {attributes.length > 0 && (
@@ -171,9 +263,22 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
                       </>
                     )}
                   </div>
-                  <p className="text-sm font-semibold">
-                    ${item.price.toLocaleString('es-PY')} c/u
-                  </p>
+                  <div className="flex items-center gap-2 text-sm">
+                    {hasDiscount ? (
+                      <>
+                        <span className="line-through text-muted-foreground">
+                          ${item.originalPrice.toLocaleString('es-PY')}
+                        </span>
+                        <span className="font-semibold text-primary">
+                          ${item.finalPrice.toLocaleString('es-PY')} c/u
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-semibold">
+                        ${item.finalPrice.toLocaleString('es-PY')} c/u
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Quantity input */}
@@ -193,7 +298,7 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
                 <div className="text-right min-w-[100px]">
                   <p className="text-sm text-muted-foreground">Subtotal</p>
                   <p className="font-semibold">
-                    ${(item.price * item.quantity).toLocaleString('es-PY')}
+                    ${item.subtotal.toLocaleString('es-PY')}
                   </p>
                 </div>
 
@@ -235,6 +340,12 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
             <span>Nuevo subtotal:</span>
             <span className="text-primary">${newSubtotal.toLocaleString('es-PY')}</span>
           </div>
+          {totalDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Descuentos aplicados:</span>
+              <span>-${totalDiscount.toLocaleString('es-PY')}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Costo de envío:</span>
             <span>${order.shippingCost.toLocaleString('es-PY')}</span>

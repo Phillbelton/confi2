@@ -767,7 +767,7 @@ export const getProductVariants = asyncHandler(
     // Ejecutar query con paginación
     const [variants, total] = await Promise.all([
       ProductVariant.find(query)
-        .populate('parentProduct', 'name slug')
+        .populate('parentProduct', 'name slug tieredDiscounts')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum)
