@@ -3,7 +3,7 @@ import * as tagController from '../controllers/tagController';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
-import Tag from '../models/Tag';
+import { Tag } from '../models/Tag';
 import * as tagSchemas from '../schemas/tagSchemas';
 
 const router = Router();

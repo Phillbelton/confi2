@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import AuditLog from '../models/AuditLog';
-import User from '../models/User';
-import Order from '../models/Order';
+import { User } from '../models/User';
+import { Order } from '../models/Order';
 import ProductVariant from '../models/ProductVariant';
 
 /**

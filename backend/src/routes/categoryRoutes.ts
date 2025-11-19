@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import { uploadSingle, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
 import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
-import Category from '../models/Category';
+import { Category } from '../models/Category';
 import * as categorySchemas from '../schemas/categorySchemas';
 
 const router = Router();

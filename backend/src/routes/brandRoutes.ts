@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import { uploadSingle, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
 import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
-import Brand from '../models/Brand';
+import { Brand } from '../models/Brand';
 import * as brandSchemas from '../schemas/brandSchemas';
 
 const router = Router();

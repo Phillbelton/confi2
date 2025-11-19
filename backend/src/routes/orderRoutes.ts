@@ -3,7 +3,7 @@ import * as orderController from '../controllers/orderController';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
-import Order from '../models/Order';
+import { Order } from '../models/Order';
 import {
   createOrderSchema,
   confirmOrderSchema,
