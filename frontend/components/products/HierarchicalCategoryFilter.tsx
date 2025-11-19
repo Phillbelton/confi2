@@ -145,7 +145,7 @@ export function HierarchicalCategoryFilter({
                 id={`cat-${parent._id}`}
                 checked={parentState === 'checked'}
                 // @ts-ignore - indeterminate is a valid HTML attribute
-                indeterminate={parentState === 'indeterminate'}
+                indeterminate={parentState === 'indeterminate' || undefined}
                 onCheckedChange={() => handleParentToggle(parent)}
               />
 
