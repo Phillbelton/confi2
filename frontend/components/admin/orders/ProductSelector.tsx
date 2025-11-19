@@ -53,7 +53,7 @@ export function ProductSelector({
       params.append('active', 'true');
       params.append('limit', '50');
 
-      const { data } = await api.get(`/product-variants?${params.toString()}`);
+      const { data } = await api.get(`/products/variants?${params.toString()}`);
       return data.data.data as ProductVariant[];
     },
     enabled: open,
