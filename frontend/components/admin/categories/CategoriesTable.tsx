@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import {
   Edit,
   Trash2,
@@ -262,9 +262,9 @@ export function CategoriesTable({
                 const isExpanded = expandedCategories.has(category._id);
 
                 return (
-                  <>
+                  <Fragment key={category._id}>
                     {/* Parent Category Row */}
-                    <TableRow key={category._id}>
+                    <TableRow>
                       {/* Image with expand/collapse button */}
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -406,7 +406,7 @@ export function CategoriesTable({
                       category.subcategories!.map((subcategory) =>
                         renderCategoryRow(subcategory, true)
                       )}
-                  </>
+                  </Fragment>
                 );
               })
             )}
