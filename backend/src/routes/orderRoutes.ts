@@ -13,6 +13,7 @@ import {
   getMyOrdersQuerySchema,
   markWhatsAppSentSchema,
   getOrderStatsQuerySchema,
+  editOrderItemsSchema,
 } from '../schemas/orderSchema';
 
 const router = Router();
@@ -29,7 +30,9 @@ router.get('/:id', validate(getOrderByIdSchema), orderController.getOrderById);
 // Protected routes (admin, funcionario)
 router.get('/', authenticate, authorize('admin', 'funcionario'), validate(getOrdersQuerySchema), orderController.getOrders);
 router.get('/stats', authenticate, authorize('admin', 'funcionario'), validate(getOrderStatsQuerySchema), orderController.getOrderStats);
+router.put('/:id/confirm', authenticate, authorize('admin', 'funcionario'), validate(confirmOrderSchema), orderController.confirmOrder);
 router.put('/:id/status', authenticate, authorize('admin', 'funcionario'), validate(updateOrderStatusSchema), orderController.updateOrderStatus);
+router.put('/:id/items', authenticate, authorize('admin', 'funcionario'), validate(editOrderItemsSchema), orderController.editOrderItems);
 router.put('/:id/whatsapp-sent', authenticate, authorize('admin', 'funcionario'), validate(markWhatsAppSentSchema), orderController.markWhatsAppSent);
 
 // Cancel order (owner, admin, funcionario)

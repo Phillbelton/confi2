@@ -112,3 +112,11 @@ export interface CancelOrderData {
 export interface UpdateAdminNotesData {
   adminNotes: string;
 }
+
+export interface EditOrderItemsData {
+  items: Array<{
+    variantId: string;
+    quantity: number;
+  }>;
+  adminNotes?: string;
+}

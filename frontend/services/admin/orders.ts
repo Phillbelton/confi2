@@ -6,6 +6,7 @@ import type {
   UpdateOrderStatusData,
   CancelOrderData,
   UpdateAdminNotesData,
+  EditOrderItemsData,
 } from '@/types/order';
 
 interface ApiResponse<T> {
@@ -74,6 +75,14 @@ export const adminOrdersService = {
    */
   updateAdminNotes: async (id: string, notesData: UpdateAdminNotesData): Promise<Order> => {
     const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/admin-notes`, notesData);
+    return data.data;
+  },
+
+  /**
+   * Edit order items (add, remove, change quantities)
+   */
+  editOrderItems: async (id: string, itemsData: EditOrderItemsData): Promise<Order> => {
+    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/items`, itemsData);
     return data.data;
   },
 };
