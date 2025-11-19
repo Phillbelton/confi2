@@ -10,6 +10,12 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Table,
   TableBody,
   TableCell,
@@ -591,7 +597,29 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                 return (
                   <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
                     <div className="flex items-center gap-2 mb-2">
-                      <Info className="h-4 w-4" />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md" side="right">
+                            <div className="space-y-2">
+                              <p className="font-semibold">Orden de aplicación:</p>
+                              <p className="text-sm">Los descuentos se combinan en este orden:</p>
+                              <ol className="list-decimal ml-4 mt-1 space-y-1 text-sm">
+                                <li>Primero se aplica el <strong>descuento fijo</strong> al precio base</li>
+                                <li>Luego se aplica el <strong>descuento escalonado</strong> sobre el precio ya descontado</li>
+                              </ol>
+                              <div className="text-sm mt-2 pt-2 border-t">
+                                <p className="font-medium">Ejemplo:</p>
+                                <p>Precio $10.000, Fijo -20%, Escalonado 10un -10%</p>
+                                <p className="mt-1">→ Paso 1: $10.000 - 20% = $8.000</p>
+                                <p>→ Paso 2: $8.000 - 10% = $7.200 (precio final)</p>
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <p className="text-sm font-medium">PREVIEW - Ejemplos de precios combinados</p>
                     </div>
                     {exampleQuantities.map((qty) => {
@@ -621,18 +649,6 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
           )}
         </CardContent>
       </Card>
-
-      {/* Info Alert */}
-      <InlineHelp variant="warning">
-        <strong>Orden de aplicación:</strong> Los descuentos se combinan en este orden:
-        <ol className="list-decimal ml-4 mt-1 space-y-1">
-          <li>Primero se aplica el <strong>descuento fijo</strong> al precio base</li>
-          <li>Luego se aplica el <strong>descuento escalonado</strong> sobre el precio ya descontado</li>
-        </ol>
-        <p className="mt-2">Ejemplo: Precio $10.000, Fijo -20%, Escalonado 10un -10%<br/>
-        → Paso 1: $10.000 - 20% = $8.000<br/>
-        → Paso 2: $8.000 - 10% = $7.200 (precio final)</p>
-      </InlineHelp>
 
       {/* Actions */}
       <div className="flex justify-end gap-2">
