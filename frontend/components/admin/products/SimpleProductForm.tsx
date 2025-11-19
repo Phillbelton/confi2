@@ -214,9 +214,9 @@ export function SimpleProductForm({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormFieldWithHelp
-                label="Precio (Gs)"
+                label="Precio ($)"
                 htmlFor="price"
-                tooltip="Precio base del producto en Guaraníes. Los descuentos se configuran por separado en la sección de descuentos."
+                tooltip="Precio base del producto en Pesos chilenos. Los descuentos se configuran por separado en la sección de descuentos."
                 required
               >
                 <Input

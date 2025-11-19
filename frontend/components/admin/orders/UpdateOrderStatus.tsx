@@ -249,7 +249,7 @@ export function UpdateOrderStatus({ orderId, currentStatus }: UpdateOrderStatusP
 
           <HelpExample title="Ejemplo: Confirmando por WhatsApp">
             <p className="text-sm">
-              <strong>Tú:</strong> "¡Hola! Recibimos tu pedido #12345. ¿Confirmas la compra de 2 Shampoos por 50.000 Gs?"
+              <strong>Tú:</strong> "¡Hola! Recibimos tu pedido #12345. ¿Confirmas la compra de 2 Shampoos por $50.000?"
             </p>
             <p className="text-sm mt-2">
               <strong>Cliente:</strong> "Sí, confirmo. Pago en efectivo al recibir."
