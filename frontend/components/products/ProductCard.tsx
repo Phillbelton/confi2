@@ -52,48 +52,140 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
   // Check if out of stock
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
 
-  // Get first image (with safe URL validation)
-  const mainImage = getSafeImageUrl(product.images?.[0]);
+  // Get first image: use variant image if available, otherwise use parent image
+  const mainImage = getSafeImageUrl(
+    selectedVariant?.images?.[0] || product.images?.[0]
+  );
 
-  // Calculate if has discount
-  const hasActiveDiscount = product.tieredDiscounts?.some(
+  // Check if variant has active fixed discount
+  const hasFixedDiscount = selectedVariant?.fixedDiscount?.enabled &&
+    (!selectedVariant.fixedDiscount.startDate || new Date(selectedVariant.fixedDiscount.startDate) <= new Date()) &&
+    (!selectedVariant.fixedDiscount.endDate || new Date(selectedVariant.fixedDiscount.endDate) >= new Date());
+
+  // Check if variant has active tiered discount
+  const hasVariantTieredDiscount = selectedVariant?.tieredDiscount?.active &&
+    selectedVariant.tieredDiscount.tiers.length > 0 &&
+    (!selectedVariant.tieredDiscount.startDate || new Date(selectedVariant.tieredDiscount.startDate) <= new Date()) &&
+    (!selectedVariant.tieredDiscount.endDate || new Date(selectedVariant.tieredDiscount.endDate) >= new Date());
+
+  // Check if parent has active tiered discount (legacy)
+  const hasParentTieredDiscount = product.tieredDiscounts?.some(
     (d) => d.active && (!d.endDate || new Date(d.endDate) > new Date())
   );
 
-  // Get tiered discount badge text
-  const getTieredDiscountBadge = () => {
-    if (!hasActiveDiscount) return null;
+  const hasAnyDiscount = hasFixedDiscount || hasVariantTieredDiscount || hasParentTieredDiscount;
 
-    const discount = product.tieredDiscounts.find((d) => d.active);
-    if (!discount || !discount.tiers.length) return null;
-
-    const minTier = discount.tiers[0];
+  // Calculate discounted price for display (ONLY fixed discount, not tiered)
+  // Tiered discounts are shown separately in badges since they depend on quantity
+  const getDiscountedPrice = () => {
     if (!selectedVariant) return null;
 
-    const discountedPrice = selectedVariant.price - (selectedVariant.price * minTier.value) / 100;
+    // Only apply fixed discount for the main price display
+    if (hasFixedDiscount) {
+      let fixedDiscount = 0;
+      if (selectedVariant.fixedDiscount!.type === 'percentage') {
+        fixedDiscount = (selectedVariant.price * selectedVariant.fixedDiscount!.value) / 100;
+      } else {
+        fixedDiscount = selectedVariant.fixedDiscount!.value;
+      }
+      return selectedVariant.price - fixedDiscount;
+    }
 
-    return `Desde ${minTier.minQuantity} un $${discountedPrice.toLocaleString()} c/u`;
+    return null;
   };
 
-  // Get discount tiers for tooltip
+  // Get discount badge text
+  const getDiscountBadge = () => {
+    if (hasFixedDiscount) {
+      const badge = selectedVariant?.fixedDiscount?.badge;
+      if (badge) return badge;
+
+      const value = selectedVariant!.fixedDiscount!.value;
+      return selectedVariant!.fixedDiscount!.type === 'percentage'
+        ? `-${value}%`
+        : `-$${value.toLocaleString()}`;
+    }
+
+    if (hasVariantTieredDiscount) {
+      const badge = selectedVariant?.tieredDiscount?.badge;
+      if (badge) return badge;
+
+      // Calculate price with first tier (considering fixed discount if present)
+      const tiers = getDiscountTiers();
+      if (tiers && tiers.length > 0) {
+        const minTier = selectedVariant!.tieredDiscount!.tiers[0];
+        return `Desde ${minTier.minQuantity} un ${tiers[0].price} c/u`;
+      }
+    }
+
+    if (hasParentTieredDiscount && selectedVariant) {
+      const discount = product.tieredDiscounts.find((d) => d.active);
+      if (discount?.tiers.length) {
+        const minTier = discount.tiers[0];
+        const discountAmount = (selectedVariant.price * minTier.value) / 100;
+        const finalPrice = selectedVariant.price - discountAmount;
+        return `Desde ${minTier.minQuantity} un $${finalPrice.toLocaleString()} c/u`;
+      }
+    }
+
+    return null;
+  };
+
+  // Get discount tiers for tooltip and badges
   const getDiscountTiers = () => {
-    if (!hasActiveDiscount || !selectedVariant) return null;
+    if (!selectedVariant) return null;
 
-    const discount = product.tieredDiscounts.find((d) => d.active);
-    if (!discount || !discount.tiers.length) return null;
+    // Calculate base price after fixed discount (if any)
+    let basePrice = selectedVariant.price;
+    if (hasFixedDiscount) {
+      if (selectedVariant.fixedDiscount!.type === 'percentage') {
+        basePrice -= (basePrice * selectedVariant.fixedDiscount!.value) / 100;
+      } else {
+        basePrice -= selectedVariant.fixedDiscount!.value;
+      }
+    }
 
-    return discount.tiers.map((tier) => {
-      const discountAmount = (selectedVariant.price * tier.value) / 100;
-      const finalPrice = selectedVariant.price - discountAmount;
+    // Show variant tiered discount tiers (applied on price after fixed discount)
+    if (hasVariantTieredDiscount) {
+      return selectedVariant.tieredDiscount!.tiers.map((tier) => {
+        let discountAmount = 0;
+        if (tier.type === 'percentage') {
+          discountAmount = (basePrice * tier.value) / 100;
+        } else {
+          discountAmount = tier.value;
+        }
+        const finalPrice = basePrice - discountAmount;
 
-      return {
-        range: tier.maxQuantity
-          ? `${tier.minQuantity}-${tier.maxQuantity} un`
-          : `${tier.minQuantity}+ un`,
-        price: `$${finalPrice.toLocaleString()}`,
-        discount: `${tier.value}%`,
-      };
-    });
+        return {
+          range: tier.maxQuantity
+            ? `${tier.minQuantity}-${tier.maxQuantity} un`
+            : `${tier.minQuantity}+ un`,
+          price: `$${finalPrice.toLocaleString()}`,
+          discount: tier.type === 'percentage' ? `${tier.value}%` : `$${tier.value}`,
+        };
+      });
+    }
+
+    // Show parent tiered discount tiers (legacy - only if no fixed discount)
+    if (hasParentTieredDiscount) {
+      const discount = product.tieredDiscounts.find((d) => d.active);
+      if (discount?.tiers.length) {
+        return discount.tiers.map((tier) => {
+          const discountAmount = (selectedVariant.price * tier.value) / 100;
+          const finalPrice = selectedVariant.price - discountAmount;
+
+          return {
+            range: tier.maxQuantity
+              ? `${tier.minQuantity}-${tier.maxQuantity} un`
+              : `${tier.minQuantity}+ un`,
+            price: `$${finalPrice.toLocaleString()}`,
+            discount: `${tier.value}%`,
+          };
+        });
+      }
+    }
+
+    return null;
   };
 
   const handleAddToCart = async () => {
@@ -159,17 +251,17 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
             )}
           </div>
 
-          {/* Tiered Discount Badge */}
-          {hasActiveDiscount && !isOutOfStock && (
+          {/* Discount Badge */}
+          {hasAnyDiscount && !isOutOfStock && (
             <div className="absolute top-2 right-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Badge className="bg-accent text-accent-foreground pulse-badge cursor-help">
-                      {getTieredDiscountBadge()}
+                      {getDiscountBadge()}
                     </Badge>
                   </TooltipTrigger>
-                  {discountTiers && (
+                  {discountTiers && discountTiers.length > 0 && (
                     <TooltipContent side="left" className="p-3">
                       <div className="space-y-2">
                         <p className="font-semibold text-sm">
@@ -224,7 +316,7 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
               <SelectContent>
                 {variants.map((variant) => (
                   <SelectItem key={variant._id} value={variant._id}>
-                    {variant.displayName} - ${variant.price.toLocaleString()}
+                    {variant.displayName}
                     {variant.stock === 0 && ' (Agotado)'}
                   </SelectItem>
                 ))}
@@ -235,14 +327,47 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
 
         {/* Price */}
         {selectedVariant && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-primary">
-              ${selectedVariant.price.toLocaleString()}
-            </span>
-            {selectedVariant.compareAtPrice && (
-              <span className="text-sm text-muted-foreground line-through">
-                ${selectedVariant.compareAtPrice.toLocaleString()}
+          <div className="space-y-2">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-primary">
+                ${(getDiscountedPrice() || selectedVariant.price).toLocaleString()}
               </span>
+              {getDiscountedPrice() && (
+                <span className="text-sm text-muted-foreground line-through">
+                  ${selectedVariant.price.toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* Tier Discount Badges */}
+            {(hasVariantTieredDiscount || hasParentTieredDiscount) && discountTiers && discountTiers.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {discountTiers.slice(0, 3).map((tier, index) => {
+                  // Extract min quantity from range (e.g., "2-5 un" -> "2", "6+ un" -> "6")
+                  const minQty = tier.range.split('-')[0].split('+')[0].trim();
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center justify-center px-2 py-1 rounded-md border border-accent/20 bg-accent/10 min-w-[60px]"
+                    >
+                      <span className="text-[9px] text-accent-foreground/70 font-medium leading-tight">
+                        desde {minQty}
+                      </span>
+                      <span className="text-[11px] text-accent-foreground font-bold leading-tight">
+                        {tier.price}
+                      </span>
+                    </div>
+                  );
+                })}
+                {discountTiers.length > 3 && (
+                  <div className="flex items-center justify-center px-2 py-1 rounded-md border border-muted bg-muted/50 min-w-[50px]">
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      +{discountTiers.length - 3}
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

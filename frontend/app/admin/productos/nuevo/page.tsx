@@ -298,10 +298,54 @@ export default function NuevoProductoPage() {
 
       const variantsResult = await variantsResponse.json();
 
+      // Step 3: Upload variant images if any
+      const createdVariants = variantsResult.data.created || [];
+      let imagesUploadedCount = 0;
+      let imagesFailedCount = 0;
+
+      for (const createdVariant of createdVariants) {
+        // Find matching combination by attributes
+        const matchingCombo = variantCombinations.find((combo) => {
+          const comboAttrs = JSON.stringify(combo.attributes);
+          const variantAttrs = JSON.stringify(createdVariant.attributes);
+          return comboAttrs === variantAttrs;
+        });
+
+        // If this combination has images, upload them
+        if (matchingCombo?.images && matchingCombo.images.length > 0) {
+          try {
+            const variantImagesFormData = new FormData();
+            matchingCombo.images.forEach((imageFile) => {
+              variantImagesFormData.append('images', imageFile.file);
+            });
+
+            const uploadResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/products/variants/${createdVariant._id}/images`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: variantImagesFormData,
+              }
+            );
+
+            if (uploadResponse.ok) {
+              imagesUploadedCount += matchingCombo.images.length;
+            } else {
+              imagesFailedCount += matchingCombo.images.length;
+            }
+          } catch (error) {
+            console.error('Error uploading variant images:', error);
+            imagesFailedCount += matchingCombo.images.length;
+          }
+        }
+      }
+
       // Show success message
       toast({
         title: 'Producto creado',
-        description: `Producto con ${variantsResult.data.created.length} variante(s) creado exitosamente`,
+        description: `Producto con ${variantsResult.data.created.length} variante(s) creado exitosamente${imagesUploadedCount > 0 ? ` y ${imagesUploadedCount} imagen(es) subida(s)` : ''}`,
       });
 
       // Show warnings for failed variants if any
@@ -309,6 +353,15 @@ export default function NuevoProductoPage() {
         toast({
           title: 'Advertencia',
           description: `${variantsResult.data.failed.length} variante(s) no se pudieron crear`,
+          variant: 'destructive',
+        });
+      }
+
+      // Show warnings for failed images if any
+      if (imagesFailedCount > 0) {
+        toast({
+          title: 'Advertencia',
+          description: `${imagesFailedCount} imagen(es) de variantes no se pudieron subir`,
           variant: 'destructive',
         });
       }
@@ -424,10 +477,54 @@ export default function NuevoProductoPage() {
 
       const variantsResult = await variantsResponse.json();
 
+      // Step 3: Upload variant images if any
+      const createdVariants = variantsResult.data.created || [];
+      let imagesUploadedCount = 0;
+      let imagesFailedCount = 0;
+
+      for (const createdVariant of createdVariants) {
+        // Find matching combination by attributes
+        const matchingCombo = variantCombinations.find((combo) => {
+          const comboAttrs = JSON.stringify(combo.attributes);
+          const variantAttrs = JSON.stringify(createdVariant.attributes);
+          return comboAttrs === variantAttrs;
+        });
+
+        // If this combination has images, upload them
+        if (matchingCombo?.images && matchingCombo.images.length > 0) {
+          try {
+            const variantImagesFormData = new FormData();
+            matchingCombo.images.forEach((imageFile) => {
+              variantImagesFormData.append('images', imageFile.file);
+            });
+
+            const uploadResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/products/variants/${createdVariant._id}/images`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: variantImagesFormData,
+              }
+            );
+
+            if (uploadResponse.ok) {
+              imagesUploadedCount += matchingCombo.images.length;
+            } else {
+              imagesFailedCount += matchingCombo.images.length;
+            }
+          } catch (error) {
+            console.error('Error uploading variant images:', error);
+            imagesFailedCount += matchingCombo.images.length;
+          }
+        }
+      }
+
       // Show success message
       toast({
         title: 'Producto creado',
-        description: `Listo para crear otro producto. ${variantsResult.data.created.length} variante(s) creadas`,
+        description: `Listo para crear otro producto. ${variantsResult.data.created.length} variante(s) creadas${imagesUploadedCount > 0 ? ` y ${imagesUploadedCount} imagen(es) subida(s)` : ''}`,
       });
 
       // Show warnings for failed variants if any
@@ -435,6 +532,15 @@ export default function NuevoProductoPage() {
         toast({
           title: 'Advertencia',
           description: `${variantsResult.data.failed.length} variante(s) no se pudieron crear`,
+          variant: 'destructive',
+        });
+      }
+
+      // Show warnings for failed images if any
+      if (imagesFailedCount > 0) {
+        toast({
+          title: 'Advertencia',
+          description: `${imagesFailedCount} imagen(es) de variantes no se pudieron subir`,
           variant: 'destructive',
         });
       }

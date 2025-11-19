@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import slugify from 'slugify';
 import { generateSimpleProductSKU, generateVariantSKU } from '../utils/skuGenerator';
+import { normalizeVariantValue } from '../utils/normalizeVariantValue';
 
 // Interfaces
 export interface IFixedDiscount {
@@ -10,6 +11,19 @@ export interface IFixedDiscount {
   startDate?: Date;
   endDate?: Date;
   badge?: string;
+}
+
+export interface ITieredDiscountVariant {
+  tiers: {
+    minQuantity: number;
+    maxQuantity: number | null;
+    type: 'percentage' | 'amount';
+    value: number;
+  }[];
+  startDate?: Date;
+  endDate?: Date;
+  badge?: string;
+  active: boolean;
 }
 
 export interface IProductVariant extends Document {
@@ -27,6 +41,7 @@ export interface IProductVariant extends Document {
   allowBackorder: boolean;
   lowStockThreshold: number;
   fixedDiscount?: IFixedDiscount;
+  tieredDiscount?: ITieredDiscountVariant;
   active: boolean;
   order: number;
   views: number;
@@ -40,6 +55,7 @@ export interface IProductVariant extends Document {
   inStock: boolean;
   lowStock: boolean;
   hasActiveDiscount: boolean;
+  hasActiveTieredDiscount: boolean;
 }
 
 // NOTA IMPORTANTE: El campo 'slug' es required:false pero se genera automáticamente
@@ -135,6 +151,38 @@ const productVariantSchema = new Schema<IProductVariant>(
       endDate: Date,
       badge: String,
     },
+    tieredDiscount: {
+      tiers: [
+        {
+          minQuantity: {
+            type: Number,
+            required: true,
+            min: 1,
+          },
+          maxQuantity: {
+            type: Number,
+            default: null,
+          },
+          type: {
+            type: String,
+            enum: ['percentage', 'amount'],
+            required: true,
+          },
+          value: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+        },
+      ],
+      startDate: Date,
+      endDate: Date,
+      badge: String,
+      active: {
+        type: Boolean,
+        default: true,
+      },
+    },
     active: {
       type: Boolean,
       default: true,
@@ -207,6 +255,31 @@ productVariantSchema.virtual('hasActiveDiscount').get(function () {
   return startValid && endValid;
 });
 
+// Virtual: hasActiveTieredDiscount
+productVariantSchema.virtual('hasActiveTieredDiscount').get(function () {
+  if (!this.tieredDiscount?.active) return false;
+  if (!this.tieredDiscount?.tiers || this.tieredDiscount.tiers.length === 0) return false;
+
+  const now = new Date();
+  const startValid = !this.tieredDiscount.startDate || this.tieredDiscount.startDate <= now;
+  const endValid = !this.tieredDiscount.endDate || this.tieredDiscount.endDate >= now;
+
+  return startValid && endValid;
+});
+
+// Virtual displayName: solo muestra los valores de los atributos (ej: "350ml Original")
+productVariantSchema.virtual('displayName').get(function () {
+  const attributesMap = this.attributes as any;
+  if (attributesMap instanceof Map) {
+    return Array.from(attributesMap.values()).join(' ') || 'Variante única';
+  }
+  // Fix: Check if attributes exists before calling Object.values()
+  if (!this.attributes) {
+    return 'Variante única';
+  }
+  return Object.values(this.attributes).join(' ') || 'Variante única';
+});
+
 // Pre-save: generar nombre y slug si no existen
 productVariantSchema.pre('save', async function (next) {
   if (this.isNew || this.isModified('attributes') || !this.name) {
@@ -219,9 +292,12 @@ productVariantSchema.pre('save', async function (next) {
 
       // Construir nombre: "Bebida Cola 350ml Original"
       const attributesMap = this.attributes as any;
-      const attributeValues = attributesMap instanceof Map
-        ? Array.from(attributesMap.values()).join(' ')
-        : Object.values(this.attributes).join(' ');
+      let attributeValues = '';
+      if (attributesMap instanceof Map) {
+        attributeValues = Array.from(attributesMap.values()).join(' ');
+      } else if (this.attributes) {
+        attributeValues = Object.values(this.attributes).join(' ');
+      }
       this.name = attributeValues ? `${parent.name} ${attributeValues}` : parent.name;
 
       // Generar slug
@@ -314,6 +390,30 @@ productVariantSchema.pre('save', async function (next) {
       }
     } catch (error) {
       return next(error as Error);
+    }
+  }
+  next();
+});
+
+// Pre-save: normalizar valores de atributos para consistencia
+productVariantSchema.pre('save', function (next) {
+  if (this.isNew || this.isModified('attributes')) {
+    const attributesMap = this.attributes as any;
+
+    if (attributesMap instanceof Map) {
+      // Normalizar cada valor del Map
+      const normalizedMap = new Map();
+      for (const [key, value] of attributesMap.entries()) {
+        normalizedMap.set(key, normalizeVariantValue(value));
+      }
+      this.attributes = normalizedMap as any;
+    } else if (this.attributes) {
+      // Normalizar cada valor del objeto
+      const normalizedObj: Record<string, string> = {};
+      for (const [key, value] of Object.entries(this.attributes)) {
+        normalizedObj[key] = normalizeVariantValue(value);
+      }
+      this.attributes = normalizedObj as any;
     }
   }
   next();

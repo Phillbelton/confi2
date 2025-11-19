@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { FormFieldWithHelp } from '@/components/ui/form-field-with-help';
+import { InlineHelp } from '@/components/ui/inline-help';
 import { CategorySelector } from './CategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { TagSelector } from './TagSelector';
@@ -211,8 +213,12 @@ export function SimpleProductForm({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="price">Precio (Gs) *</Label>
+              <FormFieldWithHelp
+                label="Precio (Gs)"
+                htmlFor="price"
+                tooltip="Precio base del producto en Guaraníes. Los descuentos se configuran por separado en la sección de descuentos."
+                required
+              >
                 <Input
                   id="price"
                   type="number"
@@ -225,10 +231,14 @@ export function SimpleProductForm({
                     {form.formState.errors.price.message}
                   </p>
                 )}
-              </div>
+              </FormFieldWithHelp>
 
-              <div>
-                <Label htmlFor="stock">Stock (unidades) *</Label>
+              <FormFieldWithHelp
+                label="Stock (unidades)"
+                htmlFor="stock"
+                tooltip="Cantidad disponible del producto. Se descuenta automáticamente cuando se realizan ventas."
+                required
+              >
                 <Input
                   id="stock"
                   type="number"
@@ -241,22 +251,20 @@ export function SimpleProductForm({
                     {form.formState.errors.stock.message}
                   </p>
                 )}
-              </div>
+              </FormFieldWithHelp>
 
-              <div>
-                <Label htmlFor="sku">
-                  SKU (opcional)
-                  <span className="text-xs text-muted-foreground ml-2">
-                    Se genera automático
-                  </span>
-                </Label>
+              <FormFieldWithHelp
+                label="Código único (SKU)"
+                htmlFor="sku"
+                tooltip="Código único del producto. Se genera automáticamente a partir del nombre si no lo ingresas. Útil para sistemas de inventario externos."
+              >
                 <Input
                   id="sku"
                   {...form.register('sku')}
                   placeholder="CHOCOLATE-PREMIUM-250G"
                   disabled={isSubmitting}
                 />
-              </div>
+              </FormFieldWithHelp>
             </div>
           </CardContent>
         </Card>
@@ -266,7 +274,10 @@ export function SimpleProductForm({
           <CardHeader>
             <CardTitle>Imágenes (opcional)</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <InlineHelp variant="info">
+              <strong>Imágenes del producto:</strong> Puedes subir hasta 5 imágenes. La <strong>primera imagen</strong> se mostrará en el catálogo. Arrastra para reordenar. Tamaños recomendados: mínimo 800x800px. Formatos: JPG, PNG, WEBP.
+            </InlineHelp>
             <ImageUploaderWithPreview
               images={images}
               onChange={setImages}
@@ -282,8 +293,11 @@ export function SimpleProductForm({
             <CardTitle>SEO (Opcional)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="seoTitle">Título SEO</Label>
+            <FormFieldWithHelp
+              label="Título SEO"
+              htmlFor="seoTitle"
+              tooltip="Título optimizado para motores de búsqueda (Google, Bing). Aparece en resultados de búsqueda. Si lo dejas vacío, se usa el nombre del producto. Máximo 70 caracteres."
+            >
               <Input
                 id="seoTitle"
                 {...form.register('seoTitle')}
@@ -294,10 +308,13 @@ export function SimpleProductForm({
               <p className="text-sm text-muted-foreground mt-1">
                 {form.watch('seoTitle')?.length || 0}/70
               </p>
-            </div>
+            </FormFieldWithHelp>
 
-            <div>
-              <Label htmlFor="seoDescription">Descripción SEO</Label>
+            <FormFieldWithHelp
+              label="Descripción SEO"
+              htmlFor="seoDescription"
+              tooltip="Descripción breve para motores de búsqueda. Aparece debajo del título en resultados de búsqueda. Si la dejas vacía, se usa la descripción del producto. Máximo 160 caracteres."
+            >
               <Textarea
                 id="seoDescription"
                 {...form.register('seoDescription')}
@@ -309,7 +326,7 @@ export function SimpleProductForm({
               <p className="text-sm text-muted-foreground mt-1">
                 {form.watch('seoDescription')?.length || 0}/160
               </p>
-            </div>
+            </FormFieldWithHelp>
           </CardContent>
         </Card>
 
@@ -319,13 +336,20 @@ export function SimpleProductForm({
             <CardTitle>Configuración</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <InlineHelp variant="info">
+              <strong>Configuración de visibilidad:</strong> Controla cómo y dónde se muestra el producto en la tienda.
+            </InlineHelp>
+
             <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Producto Destacado</Label>
+              <FormFieldWithHelp
+                label="Producto Destacado"
+                tooltip="Si está activado, el producto aparecerá en la sección de 'Productos Destacados' en la página principal y en banners promocionales."
+                className="flex-1"
+              >
                 <p className="text-sm text-muted-foreground">
                   Aparecerá en la sección de productos destacados
                 </p>
-              </div>
+              </FormFieldWithHelp>
               <Switch
                 checked={form.watch('featured')}
                 onCheckedChange={(checked) => form.setValue('featured', checked)}
@@ -336,12 +360,15 @@ export function SimpleProductForm({
             <Separator />
 
             <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Producto Activo</Label>
+              <FormFieldWithHelp
+                label="Producto Activo"
+                tooltip="Controla si el producto es visible en la tienda. Desactívalo para ocultarlo temporalmente sin eliminarlo (útil para productos fuera de temporada o sin stock)."
+                className="flex-1"
+              >
                 <p className="text-sm text-muted-foreground">
                   El producto estará visible en la tienda
                 </p>
-              </div>
+              </FormFieldWithHelp>
               <Switch
                 checked={form.watch('active')}
                 onCheckedChange={(checked) => form.setValue('active', checked)}

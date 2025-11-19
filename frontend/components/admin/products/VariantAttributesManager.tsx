@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, X, GripVertical, Trash2 } from 'lucide-react';
+import { Plus, X, GripVertical, Trash2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VariantAttribute } from '@/types';
 
 interface VariantAttributesManagerProps {
@@ -213,30 +214,48 @@ function AttributeCard({
       </div>
 
       {/* Add Value */}
-      <div className="flex gap-2">
-        <Input
-          value={newValue}
-          onChange={(e) => setNewValue(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
-          placeholder="valor"
-          size={10}
-          disabled={disabled}
-          className="flex-1"
-        />
-        <Input
-          value={newDisplayValue}
-          onChange={(e) => setNewDisplayValue(e.target.value)}
-          placeholder="Valor para mostrar"
-          disabled={disabled}
-          className="flex-1"
-        />
-        <Button
-          onClick={handleAdd}
-          disabled={!newValue.trim() || !newDisplayValue.trim() || disabled}
-          size="sm"
-          variant="outline"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+      <div className="space-y-2">
+        <div className="flex items-center gap-1">
+          <Label className="text-xs text-muted-foreground">Agregar valor</Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs">
+                  <strong>Este valor se mostrará en el catálogo.</strong> Se normalizará automáticamente al guardar.
+                  Ej: "250l" → "250 L", "5Litrios" → "5 L", "2quilos" → "2 kg"
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+            placeholder="valor"
+            size={10}
+            disabled={disabled}
+            className="flex-1"
+          />
+          <Input
+            value={newDisplayValue}
+            onChange={(e) => setNewDisplayValue(e.target.value)}
+            placeholder="Valor para mostrar (ej: 250ml, 1L, 2kg)"
+            disabled={disabled}
+            className="flex-1"
+          />
+          <Button
+            onClick={handleAdd}
+            disabled={!newValue.trim() || !newDisplayValue.trim() || disabled}
+            size="sm"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {attribute.values.length < 2 && (

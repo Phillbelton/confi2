@@ -72,6 +72,11 @@ export default function ProductDetailPage() {
     }
   }, [variants, selectedVariantId]);
 
+  // Reset image index when variant changes (to avoid out of bounds index)
+  useEffect(() => {
+    setMainImageIndex(0);
+  }, [selectedVariantId]);
+
   // Error handling
   if (error) {
     return (
@@ -120,44 +125,103 @@ export default function ProductDetailPage() {
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
   const maxQuantity = selectedVariant?.allowBackorder ? 999 : (selectedVariant?.stock || 0);
 
-  // Get all images (product + variant)
-  const allImages = [
-    ...(product.images || []),
-    ...(selectedVariant?.images || []),
-  ].filter(Boolean);
+  // Get images: use variant images if available, otherwise use parent images
+  const allImages = (selectedVariant?.images && selectedVariant.images.length > 0
+    ? selectedVariant.images
+    : product.images || []
+  ).filter(Boolean);
 
   const mainImage = allImages[mainImageIndex] || '/placeholder-product.svg';
 
-  // Get active discount for selected variant
-  const hasActiveDiscount = product.tieredDiscounts?.some(
+  // Check for active discounts
+  const hasFixedDiscount = selectedVariant?.fixedDiscount?.enabled &&
+    (!selectedVariant.fixedDiscount.startDate || new Date(selectedVariant.fixedDiscount.startDate) <= new Date()) &&
+    (!selectedVariant.fixedDiscount.endDate || new Date(selectedVariant.fixedDiscount.endDate) >= new Date());
+
+  const hasVariantTieredDiscount = selectedVariant?.tieredDiscount?.active &&
+    selectedVariant.tieredDiscount.tiers.length > 0 &&
+    (!selectedVariant.tieredDiscount.startDate || new Date(selectedVariant.tieredDiscount.startDate) <= new Date()) &&
+    (!selectedVariant.tieredDiscount.endDate || new Date(selectedVariant.tieredDiscount.endDate) >= new Date());
+
+  const hasParentTieredDiscount = product.tieredDiscounts?.some(
     (d) => d.active && (!d.endDate || new Date(d.endDate) > new Date())
   );
 
   const getApplicableDiscount = () => {
-    if (!hasActiveDiscount || !selectedVariant) return null;
+    if (!selectedVariant) return null;
 
-    const discount = product.tieredDiscounts.find((d) => d.active);
-    if (!discount) return null;
+    let totalDiscount = 0;
+    let currentPrice = selectedVariant.price; // Track current price as discounts are applied
+    const discountDetails: string[] = [];
 
-    // Find applicable tier based on quantity
-    const applicableTier = [...discount.tiers]
-      .reverse()
-      .find(
-        (tier) =>
-          quantity >= tier.minQuantity &&
-          (tier.maxQuantity === null || quantity <= tier.maxQuantity)
-      );
+    // 1. Apply fixed discount
+    if (hasFixedDiscount) {
+      let fixedDiscountAmount = 0;
+      if (selectedVariant.fixedDiscount!.type === 'percentage') {
+        fixedDiscountAmount = (currentPrice * selectedVariant.fixedDiscount!.value) / 100;
+        discountDetails.push(`-${selectedVariant.fixedDiscount!.value}% fijo`);
+      } else {
+        fixedDiscountAmount = selectedVariant.fixedDiscount!.value;
+        discountDetails.push(`-$${fixedDiscountAmount.toLocaleString()} fijo`);
+      }
+      totalDiscount += fixedDiscountAmount;
+      currentPrice -= fixedDiscountAmount; // Update price after fixed discount
+    }
 
-    if (!applicableTier) return null;
+    // 2. Apply variant tiered discount ON THE DISCOUNTED PRICE
+    if (hasVariantTieredDiscount) {
+      const applicableTier = [...selectedVariant.tieredDiscount!.tiers]
+        .sort((a, b) => b.minQuantity - a.minQuantity)
+        .find(
+          (tier) =>
+            quantity >= tier.minQuantity &&
+            (tier.maxQuantity === null || quantity <= tier.maxQuantity)
+        );
 
-    const discountAmount = (selectedVariant.price * applicableTier.value) / 100;
-    const finalPrice = selectedVariant.price - discountAmount;
+      if (applicableTier) {
+        let tierDiscountAmount = 0;
+        if (applicableTier.type === 'percentage') {
+          // Apply percentage on current price (after fixed discount)
+          tierDiscountAmount = (currentPrice * applicableTier.value) / 100;
+          discountDetails.push(`-${applicableTier.value}% por cantidad`);
+        } else {
+          tierDiscountAmount = applicableTier.value;
+          discountDetails.push(`-$${tierDiscountAmount.toLocaleString()} por cantidad`);
+        }
+        totalDiscount += tierDiscountAmount;
+        currentPrice -= tierDiscountAmount; // Update price after tiered discount
+      }
+    }
+
+    // 3. Apply parent tiered discount (legacy, only if no other discounts)
+    if (totalDiscount === 0 && hasParentTieredDiscount) {
+      const discount = product.tieredDiscounts.find((d) => d.active);
+      if (discount) {
+        const applicableTier = [...discount.tiers]
+          .sort((a, b) => b.minQuantity - a.minQuantity)
+          .find(
+            (tier) =>
+              quantity >= tier.minQuantity &&
+              (tier.maxQuantity === null || quantity <= tier.maxQuantity)
+          );
+
+        if (applicableTier) {
+          const tierDiscountAmount = (selectedVariant.price * applicableTier.value) / 100;
+          totalDiscount += tierDiscountAmount;
+          discountDetails.push(`-${applicableTier.value}% por cantidad`);
+        }
+      }
+    }
+
+    if (totalDiscount === 0) return null;
+
+    const finalPrice = selectedVariant.price - totalDiscount;
 
     return {
-      tier: applicableTier,
-      discountAmount,
+      discountAmount: totalDiscount,
       finalPrice,
-      totalSavings: discountAmount * quantity,
+      totalSavings: totalDiscount * quantity,
+      details: discountDetails.join(' + '),
     };
   };
 
@@ -309,7 +373,7 @@ export default function ProductDetailPage() {
                           value={variant._id}
                           disabled={variant.stock === 0}
                         >
-                          {variant.displayName} - ${variant.price.toLocaleString()}
+                          {variant.displayName}
                           {variant.stock === 0 && ' (Agotado)'}
                         </SelectItem>
                       ))}
@@ -335,7 +399,7 @@ export default function ProductDetailPage() {
                   {discount && (
                     <div className="space-y-1">
                       <Badge className="bg-accent text-accent-foreground">
-                        -{discount.tier.value}% por comprar {quantity} unidades
+                        {discount.details}
                       </Badge>
                       <p className="text-sm text-success">
                         Ahorras ${discount.totalSavings.toLocaleString()} en total
@@ -351,8 +415,72 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Tiered Discounts Info */}
-              {hasActiveDiscount && selectedVariant && (
+              {/* Fixed Discount Info */}
+              {hasFixedDiscount && selectedVariant && (
+                <div className="border rounded-lg p-4 space-y-2">
+                  <p className="font-semibold text-sm">
+                    {selectedVariant.fixedDiscount?.badge || 'Descuento especial'}
+                  </p>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedVariant.fixedDiscount!.type === 'percentage'
+                      ? `-${selectedVariant.fixedDiscount!.value}% de descuento`
+                      : `-$${selectedVariant.fixedDiscount!.value.toLocaleString()} de descuento`}
+                  </div>
+                </div>
+              )}
+
+              {/* Variant Tiered Discounts Info */}
+              {hasVariantTieredDiscount && selectedVariant && (
+                <div className="border rounded-lg p-4 space-y-2">
+                  <p className="font-semibold text-sm">
+                    {selectedVariant.tieredDiscount?.badge || 'Descuentos por cantidad:'}
+                  </p>
+                  <div className="space-y-1">
+                    {selectedVariant.tieredDiscount!.tiers.map((tier, index) => {
+                      // Calculate base price after fixed discount (if any)
+                      let basePrice = selectedVariant.price;
+                      if (hasFixedDiscount) {
+                        if (selectedVariant.fixedDiscount!.type === 'percentage') {
+                          basePrice -= (basePrice * selectedVariant.fixedDiscount!.value) / 100;
+                        } else {
+                          basePrice -= selectedVariant.fixedDiscount!.value;
+                        }
+                      }
+
+                      // Apply tiered discount on the base price (after fixed discount)
+                      let discountAmount = 0;
+                      if (tier.type === 'percentage') {
+                        discountAmount = (basePrice * tier.value) / 100;
+                      } else {
+                        discountAmount = tier.value;
+                      }
+                      const finalPrice = basePrice - discountAmount;
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex justify-between text-sm"
+                        >
+                          <span className="text-muted-foreground">
+                            {tier.maxQuantity
+                              ? `${tier.minQuantity}-${tier.maxQuantity} un`
+                              : `${tier.minQuantity}+ un`}
+                          </span>
+                          <span className="font-semibold">
+                            ${finalPrice.toLocaleString()} c/u
+                          </span>
+                          <span className="text-success">
+                            -{tier.type === 'percentage' ? `${tier.value}%` : `$${tier.value}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Parent Tiered Discounts Info (legacy) */}
+              {!hasFixedDiscount && !hasVariantTieredDiscount && hasParentTieredDiscount && selectedVariant && (
                 <div className="border rounded-lg p-4 space-y-2">
                   <p className="font-semibold text-sm">Descuentos por cantidad:</p>
                   <div className="space-y-1">

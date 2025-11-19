@@ -30,7 +30,7 @@ interface CartStore extends Cart {
 
 /**
  * Calculate discount for a specific variant based on quantity
- * Implements tiered discount logic by attribute
+ * Priority: 1) Variant fixed discount, 2) Variant tiered discount (on discounted price), 3) Parent tiered discount
  */
 function calculateVariantDiscount(
   productParent: ProductParent,
@@ -38,47 +38,76 @@ function calculateVariantDiscount(
   quantity: number,
   allItems: CartItem[]
 ): number {
-  if (!productParent.tieredDiscounts || productParent.tieredDiscounts.length === 0) {
-    return 0;
-  }
+  let totalDiscount = 0;
+  let currentPrice = variant.price; // Track the current price as discounts are applied
+  const now = new Date();
 
-  // Find applicable tiered discount
-  for (const tieredDiscount of productParent.tieredDiscounts) {
-    if (!tieredDiscount.active) continue;
+  // 1. Apply variant fixed discount (if enabled and valid)
+  if (variant.fixedDiscount?.enabled) {
+    const startValid = !variant.fixedDiscount.startDate || new Date(variant.fixedDiscount.startDate) <= now;
+    const endValid = !variant.fixedDiscount.endDate || new Date(variant.fixedDiscount.endDate) >= now;
 
-    // Check if dates are valid
-    if (tieredDiscount.startDate && new Date(tieredDiscount.startDate) > new Date()) {
-      continue;
-    }
-    if (tieredDiscount.endDate && new Date(tieredDiscount.endDate) < new Date()) {
-      continue;
-    }
-
-    // For products WITHOUT variants (attribute = null)
-    if (!tieredDiscount.attribute || !tieredDiscount.attributeValue) {
-      return calculateTierDiscount(variant.price, quantity, tieredDiscount.tiers);
-    }
-
-    // For products WITH variants - check if variant matches attribute
-    const variantAttributeValue = variant.attributes[tieredDiscount.attribute];
-
-    if (variantAttributeValue === tieredDiscount.attributeValue) {
-      // Group quantity by same attribute value across all cart items
-      const groupedQuantity = allItems
-        .filter((item) => {
-          if (typeof item.productParent === 'string') return false;
-          if (item.productParent._id !== productParent._id) return false;
-
-          const itemVariant = item.variant;
-          return itemVariant.attributes[tieredDiscount.attribute] === tieredDiscount.attributeValue;
-        })
-        .reduce((sum, item) => sum + item.quantity, 0);
-
-      return calculateTierDiscount(variant.price, groupedQuantity, tieredDiscount.tiers);
+    if (startValid && endValid) {
+      let fixedDiscount = 0;
+      if (variant.fixedDiscount.type === 'percentage') {
+        fixedDiscount = (currentPrice * variant.fixedDiscount.value) / 100;
+      } else {
+        fixedDiscount = variant.fixedDiscount.value;
+      }
+      totalDiscount += fixedDiscount;
+      currentPrice -= fixedDiscount; // Update current price after fixed discount
     }
   }
 
-  return 0;
+  // 2. Apply variant tiered discount (if active and valid) - ON THE DISCOUNTED PRICE
+  if (variant.tieredDiscount?.active && variant.tieredDiscount.tiers.length > 0) {
+    const startValid = !variant.tieredDiscount.startDate || new Date(variant.tieredDiscount.startDate) <= now;
+    const endValid = !variant.tieredDiscount.endDate || new Date(variant.tieredDiscount.endDate) >= now;
+
+    if (startValid && endValid) {
+      // Apply tiered discount on the current price (after fixed discount)
+      const tierDiscount = calculateTierDiscount(currentPrice, quantity, variant.tieredDiscount.tiers);
+      totalDiscount += tierDiscount;
+      currentPrice -= tierDiscount; // Update current price after tiered discount
+    }
+  }
+
+  // 3. Apply parent tiered discount (legacy support) - only if no other discounts applied
+  if (totalDiscount === 0 && productParent.tieredDiscounts && productParent.tieredDiscounts.length > 0) {
+    for (const tieredDiscount of productParent.tieredDiscounts) {
+      if (!tieredDiscount.active) continue;
+
+      const startValid = !tieredDiscount.startDate || new Date(tieredDiscount.startDate) <= now;
+      const endValid = !tieredDiscount.endDate || new Date(tieredDiscount.endDate) >= now;
+
+      if (!startValid || !endValid) continue;
+
+      // For products WITHOUT variants (attribute = null)
+      if (!tieredDiscount.attribute || !tieredDiscount.attributeValue) {
+        return calculateTierDiscount(variant.price, quantity, tieredDiscount.tiers);
+      }
+
+      // For products WITH variants - check if variant matches attribute
+      const variantAttributeValue = variant.attributes[tieredDiscount.attribute];
+
+      if (variantAttributeValue === tieredDiscount.attributeValue) {
+        // Group quantity by same attribute value across all cart items
+        const groupedQuantity = allItems
+          .filter((item) => {
+            if (typeof item.productParent === 'string') return false;
+            if (item.productParent._id !== productParent._id) return false;
+
+            const itemVariant = item.variant;
+            return itemVariant.attributes[tieredDiscount.attribute] === tieredDiscount.attributeValue;
+          })
+          .reduce((sum, item) => sum + item.quantity, 0);
+
+        return calculateTierDiscount(variant.price, groupedQuantity, tieredDiscount.tiers);
+      }
+    }
+  }
+
+  return totalDiscount;
 }
 
 /**
