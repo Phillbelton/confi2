@@ -36,7 +36,11 @@ export const connectDatabase = async (): Promise<void> => {
 
   } catch (error: any) {
     logger.error('Error al conectar a MongoDB', { error: error.message, stack: error.stack });
-    process.exit(1);
+    logger.warn('⚠️  Servidor continuará sin conexión a MongoDB (modo desarrollo)');
+    // En desarrollo, permitir que el servidor continúe sin MongoDB
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
   }
 };
 
