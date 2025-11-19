@@ -720,3 +720,75 @@ export const addVariantToParent = asyncHandler(
     });
   }
 );
+
+/**
+ * Obtener variantes con filtros y búsqueda
+ * GET /api/products/variants?search=...&active=...&limit=...&page=...
+ * Role: Public
+ */
+export const getProductVariants = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const {
+      search,
+      active,
+      limit = '50',
+      page = '1',
+      parentProduct
+    } = req.query;
+
+    const limitNum = parseInt(limit as string, 10) || 50;
+    const pageNum = parseInt(page as string, 10) || 1;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Construir query
+    const query: any = {};
+
+    // Filtro por activo
+    if (active === 'true') {
+      query.active = true;
+    } else if (active === 'false') {
+      query.active = false;
+    }
+
+    // Filtro por producto padre
+    if (parentProduct) {
+      query.parentProduct = parentProduct;
+    }
+
+    // Búsqueda por texto (nombre, SKU, o valores de atributos)
+    if (search && typeof search === 'string') {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { name: searchRegex },
+        { sku: searchRegex },
+        { 'attributes': { $regex: searchRegex, $options: 'i' } },
+      ];
+    }
+
+    // Ejecutar query con paginación
+    const [variants, total] = await Promise.all([
+      ProductVariant.find(query)
+        .populate('parentProduct', 'name slug')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      ProductVariant.countDocuments(query),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        data: variants,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+          hasNext: pageNum < Math.ceil(total / limitNum),
+          hasPrev: pageNum > 1,
+        },
+      },
+    });
+  }
+);

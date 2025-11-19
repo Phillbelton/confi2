@@ -71,6 +71,7 @@ router.delete(
  */
 
 // Public routes
+router.get('/variants', productVariantController.getProductVariants); // IMPORTANTE: Esta ruta debe ir ANTES de /variants/:id
 router.get('/variants/:id', validate(getProductByIdSchema), productVariantController.getProductVariantById);
 router.get('/variants/sku/:sku', validate(getVariantBySkuSchema), productVariantController.getProductVariantBySku);
 router.get('/variants/:id/discount-preview', validate(getDiscountPreviewSchema), productVariantController.getVariantDiscountPreview);
