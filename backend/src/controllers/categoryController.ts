@@ -5,17 +5,28 @@ import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 
 // @desc    Obtener todas las categorías activas
-// @route   GET /api/categories
+// @route   GET /api/categories?flat=true&includeInactive=true
 // @access  Public
 export const getCategories = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const includeInactive = req.query.includeInactive === 'true';
+    const flat = req.query.flat === 'true';
 
     const query = includeInactive ? {} : { active: true };
 
     const categories = await Category.find(query)
       .sort({ order: 1, name: 1 })
       .lean();
+
+    // Si se solicita formato plano, retornar array simple
+    if (flat) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          categories,
+        },
+      });
+    }
 
     // Organizar en estructura jerárquica
     const mainCategories = categories.filter(cat => !cat.parent);

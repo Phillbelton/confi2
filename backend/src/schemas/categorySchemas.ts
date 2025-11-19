@@ -93,6 +93,7 @@ export const getCategoryByIdSchema = z.object({
 export const getCategoriesQuerySchema = z.object({
   query: z.object({
     includeInactive: z.enum(['true', 'false']).optional(),
+    flat: z.enum(['true', 'false']).optional(),
     parent: objectIdSchema.optional(),
     search: z.string().max(100).optional(),
   }),
