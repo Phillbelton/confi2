@@ -605,7 +605,7 @@ export const validateCart = asyncHandler(
     }
 
     // Todo correcto
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Carrito validado correctamente',
       data: {
