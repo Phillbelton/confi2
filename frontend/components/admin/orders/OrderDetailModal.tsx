@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Package, User, MapPin, Phone, Mail, FileText, Calendar } from 'lucide-react';
+import { Package, User, MapPin, Phone, Mail, FileText, Calendar, Edit } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,9 +12,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import { UpdateOrderStatus } from './UpdateOrderStatus';
+import { EditOrderItems } from './EditOrderItems';
 import type { Order, OrderItem } from '@/types/order';
 import { getImageUrl } from '@/lib/images';
 
@@ -24,6 +27,11 @@ interface OrderDetailModalProps {
 }
 
 export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Check if order is editable
+  const isEditable = ['pending_whatsapp', 'confirmed', 'preparing'].includes(order.status);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -44,22 +52,49 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
           {/* Status and Actions */}
           <div className="flex items-center justify-between">
             <OrderStatusBadge status={order.status} />
-            {order.whatsappSent && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                WhatsApp Enviado
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {order.whatsappSent && (
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  WhatsApp Enviado
+                </Badge>
+              )}
+              {isEditable && !isEditing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar Productos
+                </Button>
+              )}
+            </div>
           </div>
 
+          {/* Edit Mode */}
+          {isEditing && (
+            <>
+              <Separator />
+              <EditOrderItems
+                order={order}
+                onSuccess={() => {
+                  setIsEditing(false);
+                  // Refresh order data will happen via query invalidation
+                }}
+                onCancel={() => setIsEditing(false)}
+              />
+            </>
+          )}
+
           {/* Update Status */}
-          {order.status !== 'cancelled' && order.status !== 'completed' && (
+          {!isEditing && order.status !== 'cancelled' && order.status !== 'completed' && (
             <>
               <Separator />
               <UpdateOrderStatus orderId={order._id} currentStatus={order.status} />
             </>
           )}
 
-          <Separator />
+          {!isEditing && <Separator />}
 
           {/* Customer Info */}
           <div>

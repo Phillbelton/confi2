@@ -104,6 +104,11 @@ export async function getVisibleTierPreviews(
 
 /**
  * Calcula el precio unitario basado en la cantidad
+ * Aplica descuentos en orden de prioridad:
+ * 1. Variant Fixed Discount
+ * 2. Variant Tiered Discount (sobre precio con descuento fijo)
+ * 3. Parent Tiered Discount (legacy, solo si no hay otros descuentos)
+ *
  * @param variantId ID de la variante
  * @param quantity Cantidad solicitada
  * @returns Resultado del cálculo con descuento aplicado
@@ -117,49 +122,216 @@ export async function calculatePriceByQuantity(
       throw new Error('La cantidad debe ser mayor a 0');
     }
 
-    // Obtener la variante
-    const variant = await ProductVariant.findById(variantId);
+    // Obtener la variante con populate de parentProduct
+    const variant = await ProductVariant.findById(variantId).populate('parentProduct');
     if (!variant) {
       throw new Error('Variante no encontrada');
     }
 
-    // Obtener el tier aplicable
-    const tier = await getApplicableTier(variantId, quantity);
+    const originalPrice = variant.price;
+    let currentPrice = variant.price;
+    let totalDiscountPerUnit = 0;
+    let appliedTier = null;
 
-    // Si no hay tier aplicable, retornar precio normal
-    if (!tier) {
-      return {
-        originalPrice: variant.price,
-        finalPricePerUnit: variant.price,
-        totalDiscount: 0,
-        appliedTier: null,
-      };
+    // =========================================================================
+    // PRIORITY 1: Variant Fixed Discount
+    // =========================================================================
+    if (variant.fixedDiscount?.enabled) {
+      const now = new Date();
+      let isValidDate = true;
+
+      if (variant.fixedDiscount.startDate && new Date(variant.fixedDiscount.startDate) > now) {
+        isValidDate = false;
+      }
+      if (variant.fixedDiscount.endDate && new Date(variant.fixedDiscount.endDate) < now) {
+        isValidDate = false;
+      }
+
+      if (isValidDate) {
+        let fixedDiscount = 0;
+
+        if (variant.fixedDiscount.type === 'percentage') {
+          fixedDiscount = (currentPrice * variant.fixedDiscount.value) / 100;
+        } else {
+          fixedDiscount = variant.fixedDiscount.value;
+        }
+
+        totalDiscountPerUnit += fixedDiscount;
+        currentPrice -= fixedDiscount;
+      }
     }
 
-    // Calcular el precio con descuento
-    let finalPricePerUnit = variant.price;
+    // =========================================================================
+    // PRIORITY 2: Variant Tiered Discount (on discounted price)
+    // =========================================================================
+    if (variant.tieredDiscount?.active && variant.tieredDiscount.tiers.length > 0) {
+      const now = new Date();
+      let isValidDate = true;
 
-    if (tier.type === 'percentage') {
-      finalPricePerUnit = variant.price * (1 - tier.value / 100);
-    } else {
-      finalPricePerUnit = variant.price - tier.value;
+      if (variant.tieredDiscount.startDate && new Date(variant.tieredDiscount.startDate) > now) {
+        isValidDate = false;
+      }
+      if (variant.tieredDiscount.endDate && new Date(variant.tieredDiscount.endDate) < now) {
+        isValidDate = false;
+      }
+
+      if (isValidDate) {
+        // Ordenar tiers por minQuantity descendente
+        const sortedTiers = [...variant.tieredDiscount.tiers].sort(
+          (a, b) => b.minQuantity - a.minQuantity
+        );
+
+        // Buscar el tier más alto que aplique
+        for (const tier of sortedTiers) {
+          if (quantity >= tier.minQuantity) {
+            // Verificar maxQuantity si existe
+            if (tier.maxQuantity === null || quantity <= tier.maxQuantity) {
+              let tierDiscount = 0;
+
+              if (tier.type === 'percentage') {
+                tierDiscount = (currentPrice * tier.value) / 100;
+              } else {
+                tierDiscount = tier.value;
+              }
+
+              totalDiscountPerUnit += tierDiscount;
+              currentPrice -= tierDiscount;
+
+              appliedTier = {
+                minQuantity: tier.minQuantity,
+                maxQuantity: tier.maxQuantity,
+                type: tier.type,
+                value: tier.value,
+              };
+
+              break;
+            }
+          }
+        }
+      }
     }
 
-    // Asegurar que el precio no sea negativo
-    finalPricePerUnit = Math.max(0, finalPricePerUnit);
+    // =========================================================================
+    // PRIORITY 3: Parent Tiered Discount (legacy - only if no other discounts)
+    // =========================================================================
+    if (totalDiscountPerUnit === 0 && variant.parentProduct) {
+      const parent = variant.parentProduct as any;
 
-    const totalDiscount = (variant.price - finalPricePerUnit) * quantity;
+      if (parent.tieredDiscounts && parent.tieredDiscounts.length > 0) {
+        for (const tieredDiscount of parent.tieredDiscounts) {
+          if (!tieredDiscount.active) continue;
+
+          const now = new Date();
+          let isValidDate = true;
+
+          if (tieredDiscount.startDate && new Date(tieredDiscount.startDate) > now) {
+            isValidDate = false;
+          }
+          if (tieredDiscount.endDate && new Date(tieredDiscount.endDate) < now) {
+            isValidDate = false;
+          }
+
+          if (!isValidDate) continue;
+
+          // Para productos SIN variants (attribute = null)
+          if (!tieredDiscount.attribute || !tieredDiscount.attributeValue) {
+            const tier = await getApplicableTierFromDiscount(tieredDiscount, quantity);
+
+            if (tier) {
+              let tierDiscount = 0;
+
+              if (tier.type === 'percentage') {
+                tierDiscount = (originalPrice * tier.value) / 100;
+              } else {
+                tierDiscount = tier.value;
+              }
+
+              totalDiscountPerUnit = tierDiscount;
+              currentPrice = originalPrice - tierDiscount;
+
+              appliedTier = {
+                minQuantity: tier.minQuantity,
+                maxQuantity: tier.maxQuantity,
+                type: tier.type,
+                value: tier.value,
+              };
+
+              break;
+            }
+          }
+
+          // Para productos CON variants - verificar si el variant coincide con el atributo
+          const attributesMap = variant.attributes as any;
+          const variantAttrValue =
+            attributesMap instanceof Map
+              ? attributesMap.get(tieredDiscount.attribute)
+              : variant.attributes[tieredDiscount.attribute];
+
+          if (variantAttrValue === tieredDiscount.attributeValue) {
+            const tier = await getApplicableTierFromDiscount(tieredDiscount, quantity);
+
+            if (tier) {
+              let tierDiscount = 0;
+
+              if (tier.type === 'percentage') {
+                tierDiscount = (originalPrice * tier.value) / 100;
+              } else {
+                tierDiscount = tier.value;
+              }
+
+              totalDiscountPerUnit = tierDiscount;
+              currentPrice = originalPrice - tierDiscount;
+
+              appliedTier = {
+                minQuantity: tier.minQuantity,
+                maxQuantity: tier.maxQuantity,
+                type: tier.type,
+                value: tier.value,
+              };
+
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // =========================================================================
+    // FINAL CALCULATIONS
+    // =========================================================================
+    const finalPricePerUnit = Math.max(0, currentPrice);
+    const totalDiscount = totalDiscountPerUnit * quantity;
 
     return {
-      originalPrice: variant.price,
+      originalPrice,
       finalPricePerUnit: Math.round(finalPricePerUnit),
       totalDiscount: Math.round(totalDiscount),
-      appliedTier: tier,
+      appliedTier,
     };
   } catch (error) {
     console.error('Error en calculatePriceByQuantity:', error);
     throw error;
   }
+}
+
+/**
+ * Helper para encontrar el tier aplicable de un descuento dado
+ */
+function getApplicableTierFromDiscount(
+  tieredDiscount: ITieredDiscount,
+  quantity: number
+): ITieredDiscount['tiers'][0] | null {
+  const sortedTiers = [...tieredDiscount.tiers].sort((a, b) => b.minQuantity - a.minQuantity);
+
+  for (const tier of sortedTiers) {
+    if (quantity >= tier.minQuantity) {
+      if (tier.maxQuantity === null || quantity <= tier.maxQuantity) {
+        return tier;
+      }
+    }
+  }
+
+  return null;
 }
 
 /**

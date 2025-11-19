@@ -2,6 +2,8 @@ import { Router } from 'express';
 import * as orderController from '../controllers/orderController';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
+import { Order } from '../models/Order';
 import {
   createOrderSchema,
   confirmOrderSchema,
@@ -13,13 +15,14 @@ import {
   getMyOrdersQuerySchema,
   markWhatsAppSentSchema,
   getOrderStatsQuerySchema,
+  editOrderItemsSchema,
 } from '../schemas/orderSchema';
 
 const router = Router();
 
 // Public routes (crear orden - visita puede crear orden)
 router.post('/validate-cart', orderController.validateCart);
-router.post('/', validate(createOrderSchema), orderController.createOrder);
+router.post('/', validate(createOrderSchema), auditLog('order', 'create'), orderController.createOrder);
 router.get('/number/:orderNumber', validate(getOrderByNumberSchema), orderController.getOrderByNumber);
 
 // Protected routes (cliente autenticado puede ver sus órdenes)
@@ -29,10 +32,12 @@ router.get('/:id', validate(getOrderByIdSchema), orderController.getOrderById);
 // Protected routes (admin, funcionario)
 router.get('/', authenticate, authorize('admin', 'funcionario'), validate(getOrdersQuerySchema), orderController.getOrders);
 router.get('/stats', authenticate, authorize('admin', 'funcionario'), validate(getOrderStatsQuerySchema), orderController.getOrderStats);
-router.put('/:id/status', authenticate, authorize('admin', 'funcionario'), validate(updateOrderStatusSchema), orderController.updateOrderStatus);
-router.put('/:id/whatsapp-sent', authenticate, authorize('admin', 'funcionario'), validate(markWhatsAppSentSchema), orderController.markWhatsAppSent);
+router.put('/:id/confirm', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(confirmOrderSchema), auditLog('order', 'update'), orderController.confirmOrder);
+router.put('/:id/status', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(updateOrderStatusSchema), auditLog('order', 'update'), orderController.updateOrderStatus);
+router.put('/:id/items', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(editOrderItemsSchema), auditLog('order', 'update'), orderController.editOrderItems);
+router.put('/:id/whatsapp-sent', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(markWhatsAppSentSchema), auditLog('order', 'update'), orderController.markWhatsAppSent);
 
 // Cancel order (owner, admin, funcionario)
-router.put('/:id/cancel', validate(cancelOrderSchema), orderController.cancelOrder);
+router.put('/:id/cancel', captureBeforeState(Order), validate(cancelOrderSchema), auditLog('order', 'cancel'), orderController.cancelOrder);
 
 export default router;

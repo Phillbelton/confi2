@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { Order, IOrder, User } from '../models';
 import ProductVariant from '../models/ProductVariant';
 import ProductParent from '../models/ProductParent';
+import StockMovement from '../models/StockMovement';
 import { AuthRequest, ApiResponse, PaginatedResponse, OrderStatus } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { applyDiscountToCart } from '../services/discountService';
@@ -617,6 +618,215 @@ export const validateCart = asyncHandler(
           finalPricePerUnit: item.finalPricePerUnit,
           totalDiscount: item.totalDiscount,
           subtotal: item.subtotal,
+        })),
+      },
+    });
+  }
+);
+
+// @desc    Editar items de orden (agregar, quitar, cambiar cantidades)
+// @route   PUT /api/orders/:id/items
+// @access  Private (admin, funcionario)
+export const editOrderItems = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const { items, adminNotes } = req.body;
+    const { id } = req.params;
+
+    // Buscar orden
+    const order = await Order.findById(id);
+
+    if (!order) {
+      throw new AppError(404, 'Orden no encontrada');
+    }
+
+    // Validar que la orden esté en un estado editable
+    const editableStates = ['pending_whatsapp', 'confirmed', 'preparing'];
+    if (!editableStates.includes(order.status)) {
+      throw new AppError(
+        400,
+        `No se puede editar una orden en estado "${order.status}". Solo se pueden editar órdenes en estados: pending_whatsapp, confirmed, preparing`
+      );
+    }
+
+    // Preparar items con descuentos aplicados
+    const cartItems = items.map((item: any) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+    }));
+
+    // Aplicar descuentos automáticamente a los nuevos items
+    const itemsWithDiscounts = await applyDiscountToCart(cartItems);
+
+    // Construir nuevos items de la orden con snapshots
+    const newOrderItems = await Promise.all(
+      itemsWithDiscounts.map(async (item) => {
+        const variant = await ProductVariant.findById(item.variantId).populate(
+          'parentProduct',
+          'name'
+        );
+
+        if (!variant) {
+          throw new AppError(404, `Variante ${item.variantId} no encontrada`);
+        }
+
+        // Crear snapshot de la variante
+        return {
+          variant: variant._id,
+          variantSnapshot: {
+            sku: variant.sku,
+            name: variant.name,
+            price: item.originalPrice,
+            attributes: variant.attributes as any,
+            image: variant.images[0] || '',
+          },
+          quantity: item.quantity,
+          pricePerUnit: item.finalPricePerUnit,
+          discount: item.totalDiscount,
+          subtotal: item.subtotal,
+        };
+      })
+    );
+
+    // Comparar items viejos vs nuevos para ajustar stock
+    const oldItems = order.items;
+    const oldItemsMap = new Map();
+
+    // Mapear items viejos por variantId
+    oldItems.forEach((item) => {
+      const variantId = item.variant.toString();
+      oldItemsMap.set(variantId, item.quantity);
+    });
+
+    // Mapear items nuevos por variantId
+    const newItemsMap = new Map();
+    newOrderItems.forEach((item) => {
+      const variantId = item.variant.toString();
+      newItemsMap.set(variantId, item.quantity);
+    });
+
+    // Procesar cambios de stock
+    const stockChanges = [];
+
+    // 1. Items eliminados o con cantidad reducida
+    for (const [variantId, oldQuantity] of oldItemsMap) {
+      const newQuantity = newItemsMap.get(variantId) || 0;
+      const quantityDiff = oldQuantity - newQuantity;
+
+      if (quantityDiff > 0) {
+        // Item eliminado o cantidad reducida -> restaurar stock
+        stockChanges.push({
+          variantId,
+          quantityChange: quantityDiff, // positivo = restaurar
+          type: 'restoration' as const,
+        });
+      }
+    }
+
+    // 2. Items nuevos o con cantidad aumentada
+    for (const [variantId, newQuantity] of newItemsMap) {
+      const oldQuantity = oldItemsMap.get(variantId) || 0;
+      const quantityDiff = newQuantity - oldQuantity;
+
+      if (quantityDiff > 0) {
+        // Item nuevo o cantidad aumentada -> deducir stock
+        stockChanges.push({
+          variantId,
+          quantityChange: quantityDiff, // positivo = deducir
+          type: 'deduction' as const,
+        });
+      }
+    }
+
+    // Aplicar cambios de stock y crear StockMovements
+    for (const change of stockChanges) {
+      const variant = await ProductVariant.findById(change.variantId);
+
+      if (!variant) {
+        throw new AppError(404, `Variante ${change.variantId} no encontrada`);
+      }
+
+      if (change.type === 'deduction') {
+        // Verificar disponibilidad de stock para nuevos items
+        if (variant.trackStock && !variant.allowBackorder) {
+          if (variant.stock < change.quantityChange) {
+            throw new AppError(
+              400,
+              `Stock insuficiente para ${variant.name}. Disponible: ${variant.stock}, requerido: ${change.quantityChange}`
+            );
+          }
+        }
+
+        // Deducir stock
+        const previousStock = variant.stock;
+        variant.stock -= change.quantityChange;
+        await variant.save();
+
+        // Crear StockMovement de tipo 'adjustment' para edición
+        await StockMovement.create({
+          type: 'adjustment',
+          quantity: -change.quantityChange,
+          previousStock,
+          newStock: variant.stock,
+          variant: variant._id,
+          order: order._id,
+          user: req.user?.id,
+          reason: `Edición de orden ${order.orderNumber} - Item agregado/aumentado`,
+          notes: adminNotes || `Cantidad agregada: ${change.quantityChange}`,
+        });
+      } else {
+        // Restaurar stock
+        const previousStock = variant.stock;
+        variant.stock += change.quantityChange;
+        await variant.save();
+
+        // Crear StockMovement de tipo 'adjustment'
+        await StockMovement.create({
+          type: 'adjustment',
+          quantity: change.quantityChange,
+          previousStock,
+          newStock: variant.stock,
+          variant: variant._id,
+          order: order._id,
+          user: req.user?.id,
+          reason: `Edición de orden ${order.orderNumber} - Item eliminado/reducido`,
+          notes: adminNotes || `Cantidad restaurada: ${change.quantityChange}`,
+        });
+      }
+    }
+
+    // Actualizar items de la orden
+    order.items = newOrderItems as any;
+
+    // Recalcular totales
+    const subtotal = newOrderItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const totalDiscount = newOrderItems.reduce((sum, item) => sum + item.discount, 0);
+
+    order.subtotal = subtotal;
+    order.totalDiscount = totalDiscount;
+    order.total = subtotal + order.shippingCost;
+
+    // Agregar notas del admin si se proporcionaron
+    if (adminNotes) {
+      order.adminNotes = adminNotes;
+    }
+
+    // Registrar quién actualizó la orden
+    if (req.user) {
+      order.updatedBy = req.user.id as any;
+    }
+
+    // Guardar orden
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Orden actualizada exitosamente',
+      data: {
+        order,
+        stockChanges: stockChanges.map((change) => ({
+          variantId: change.variantId,
+          quantityChange: change.quantityChange,
+          type: change.type,
         })),
       },
     });

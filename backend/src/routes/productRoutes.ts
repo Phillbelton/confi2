@@ -6,6 +6,9 @@ import { authenticate, authorize } from '../middleware/auth';
 import { uploadMultiple, uploadSingle, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
 import { parseProductFormData } from '../middleware/parseFormData';
+import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
+import ProductParent from '../models/ProductParent';
+import ProductVariant from '../models/ProductVariant';
 import {
   createProductParentSchema,
   updateProductParentSchema,
@@ -45,10 +48,11 @@ router.post(
   handleMulterError,
   parseProductFormData, // Parsear FormData a tipos correctos
   validate(createProductParentSchema),
+  auditLog('product', 'create'),
   productParentController.createProductParent
 );
-router.put('/parents/:id', authenticate, authorize('admin', 'funcionario'), validate(updateProductParentSchema), productParentController.updateProductParent);
-router.delete('/parents/:id', authenticate, authorize('admin', 'funcionario'), validate(deleteProductSchema), productParentController.deleteProductParent);
+router.put('/parents/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductParent), validate(updateProductParentSchema), auditLog('product', 'update'), productParentController.updateProductParent);
+router.delete('/parents/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductParent), validate(deleteProductSchema), auditLog('product', 'delete'), productParentController.deleteProductParent);
 
 // Image upload routes for ProductParent
 router.post(
@@ -71,17 +75,18 @@ router.delete(
  */
 
 // Public routes
+router.get('/variants', productVariantController.getProductVariants); // IMPORTANTE: Esta ruta debe ir ANTES de /variants/:id
 router.get('/variants/:id', validate(getProductByIdSchema), productVariantController.getProductVariantById);
 router.get('/variants/sku/:sku', validate(getVariantBySkuSchema), productVariantController.getProductVariantBySku);
 router.get('/variants/:id/discount-preview', validate(getDiscountPreviewSchema), productVariantController.getVariantDiscountPreview);
 
 // Protected routes (admin, funcionario)
-router.post('/variants', authenticate, authorize('admin', 'funcionario'), validate(createProductVariantSchema), productVariantController.createProductVariant);
-router.post('/parents/:id/variants/batch', authenticate, authorize('admin', 'funcionario'), productVariantController.createVariantsBatch);
-router.post('/parents/:id/variants', authenticate, authorize('admin', 'funcionario'), productVariantController.addVariantToParent);
-router.put('/variants/:id', authenticate, authorize('admin', 'funcionario'), validate(updateProductVariantSchema), productVariantController.updateProductVariant);
-router.patch('/variants/:id/stock', authenticate, authorize('admin', 'funcionario'), validate(updateStockSchema), productVariantController.updateVariantStock);
-router.delete('/variants/:id', authenticate, authorize('admin', 'funcionario'), validate(deleteProductSchema), productVariantController.deleteProductVariant);
+router.post('/variants', authenticate, authorize('admin', 'funcionario'), validate(createProductVariantSchema), auditLog('variant', 'create'), productVariantController.createProductVariant);
+router.post('/parents/:id/variants/batch', authenticate, authorize('admin', 'funcionario'), auditLog('variant', 'create'), productVariantController.createVariantsBatch);
+router.post('/parents/:id/variants', authenticate, authorize('admin', 'funcionario'), auditLog('variant', 'create'), productVariantController.addVariantToParent);
+router.put('/variants/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductVariant), validate(updateProductVariantSchema), auditLog('variant', 'update'), productVariantController.updateProductVariant);
+router.patch('/variants/:id/stock', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductVariant), validate(updateStockSchema), auditLog('variant', 'update'), productVariantController.updateVariantStock);
+router.delete('/variants/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductVariant), validate(deleteProductSchema), auditLog('variant', 'delete'), productVariantController.deleteProductVariant);
 
 // Stock monitoring routes
 router.get('/variants/stock/low', authenticate, authorize('admin', 'funcionario'), validate(getStockVariantsSchema), productVariantController.getLowStockVariants);

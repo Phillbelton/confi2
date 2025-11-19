@@ -227,6 +227,25 @@ export const getOrderStatsQuerySchema = z.object({
   })
 });
 
+// Schema para editar items de orden
+export const editOrderItemsSchema = z.object({
+  params: z.object({
+    id: z.string()
+      .length(24, 'ID de MongoDB debe tener 24 caracteres')
+  }),
+
+  body: z.object({
+    items: z.array(orderItemSchema)
+      .min(1, 'La orden debe tener al menos 1 producto')
+      .max(50, 'Máximo 50 productos por orden'),
+
+    adminNotes: z.string()
+      .max(1000, 'Las notas no pueden exceder 1000 caracteres')
+      .trim()
+      .optional()
+  })
+});
+
 // Tipos inferidos
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type OrderItemInput = z.infer<typeof orderItemSchema>;
@@ -239,3 +258,4 @@ export type GetOrderByNumberInput = z.infer<typeof getOrderByNumberSchema>;
 export type GetMyOrdersQueryInput = z.infer<typeof getMyOrdersQuerySchema>;
 export type MarkWhatsAppSentInput = z.infer<typeof markWhatsAppSentSchema>;
 export type GetOrderStatsQueryInput = z.infer<typeof getOrderStatsQuerySchema>;
+export type EditOrderItemsInput = z.infer<typeof editOrderItemsSchema>;

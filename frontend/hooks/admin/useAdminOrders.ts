@@ -5,6 +5,7 @@ import type {
   OrderFilters,
   UpdateOrderStatusData,
   CancelOrderData,
+  EditOrderItemsData,
 } from '@/types/order';
 import type { AdminPaginationParams } from '@/types/admin';
 
@@ -63,6 +64,21 @@ export function useAdminOrders(params: UseOrdersParams) {
     },
   });
 
+  // Edit order items mutation
+  const editOrderItemsMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: EditOrderItemsData }) =>
+      adminOrdersService.editOrderItems(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+      toast.success('Orden actualizada exitosamente');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al actualizar la orden');
+    },
+  });
+
   return {
     orders: ordersQuery.data?.data || [],
     pagination: ordersQuery.data?.pagination,
@@ -74,6 +90,8 @@ export function useAdminOrders(params: UseOrdersParams) {
     isMarkingWhatsApp: markWhatsAppMutation.isPending,
     cancelOrder: cancelOrderMutation.mutate,
     isCancelling: cancelOrderMutation.isPending,
+    editOrderItems: editOrderItemsMutation.mutate,
+    isEditingItems: editOrderItemsMutation.isPending,
     refetch: ordersQuery.refetch,
   };
 }
