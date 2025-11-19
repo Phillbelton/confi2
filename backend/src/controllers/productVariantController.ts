@@ -755,13 +755,12 @@ export const getProductVariants = asyncHandler(
       query.parentProduct = parentProduct;
     }
 
-    // Búsqueda por texto (nombre, SKU, o valores de atributos)
+    // Búsqueda por texto (nombre y SKU)
     if (search && typeof search === 'string') {
       const searchRegex = new RegExp(search, 'i');
       query.$or = [
         { name: searchRegex },
         { sku: searchRegex },
-        { 'attributes': { $regex: searchRegex, $options: 'i' } },
       ];
     }
 
