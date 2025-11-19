@@ -136,12 +136,16 @@ export const getProductParents = asyncHandler(
       page = '1',
       limit = '20',
       category,
+      categories,
       brand,
+      brands,
       tags,
       search,
       minPrice,
       maxPrice,
       active = 'true',
+      featured,
+      onSale,
       sort,
     } = req.query as any;
 
@@ -153,14 +157,39 @@ export const getProductParents = asyncHandler(
       filter.active = true;
     }
 
-    // Filtro de categoría
-    if (category) {
-      filter.categories = category;
+    // Filtro de categorías (soporta tanto category como categories, tanto string como array)
+    const categoryFilter = categories || category;
+    if (categoryFilter) {
+      // Si es un string separado por comas, convertir a array
+      const categoryArray = typeof categoryFilter === 'string'
+        ? categoryFilter.split(',').filter(Boolean).map((id: string) => id.trim())
+        : Array.isArray(categoryFilter)
+        ? categoryFilter
+        : [categoryFilter];
+
+      if (categoryArray.length > 0) {
+        filter.categories = { $in: categoryArray };
+      }
     }
 
-    // Filtro de marca
-    if (brand) {
-      filter.brand = brand;
+    // Filtro de featured
+    if (featured === 'true') {
+      filter.featured = true;
+    }
+
+    // Filtro de marcas (soporta tanto brand como brands, tanto string como array)
+    const brandFilter = brands || brand;
+    if (brandFilter) {
+      // Si es un string separado por comas, convertir a array
+      const brandArray = typeof brandFilter === 'string'
+        ? brandFilter.split(',').filter(Boolean).map((id: string) => id.trim())
+        : Array.isArray(brandFilter)
+        ? brandFilter
+        : [brandFilter];
+
+      if (brandArray.length > 0) {
+        filter.brand = { $in: brandArray };
+      }
     }
 
     // Filtro de tags
