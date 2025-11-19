@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { Order, IOrder, User } from '../models';
 import ProductVariant from '../models/ProductVariant';
 import ProductParent from '../models/ProductParent';
+import StockMovement from '../models/StockMovement';
 import { AuthRequest, ApiResponse, PaginatedResponse, OrderStatus } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { applyDiscountToCart } from '../services/discountService';
@@ -761,7 +762,6 @@ export const editOrderItems = asyncHandler(
         await variant.save();
 
         // Crear StockMovement de tipo 'adjustment' para edición
-        const { StockMovement } = await import('../models/StockMovement');
         await StockMovement.create({
           type: 'adjustment',
           quantity: -change.quantityChange,
@@ -780,7 +780,6 @@ export const editOrderItems = asyncHandler(
         await variant.save();
 
         // Crear StockMovement de tipo 'adjustment'
-        const { StockMovement } = await import('../models/StockMovement');
         await StockMovement.create({
           type: 'adjustment',
           quantity: change.quantityChange,
