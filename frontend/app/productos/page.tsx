@@ -95,8 +95,8 @@ function ProductsContent() {
     setCurrentPage(1);
   };
 
-  const categories = categoriesData?.data || [];
-  const brands = brandsData?.data || [];
+  const categories = categoriesData || [];
+  const brands = brandsData || [];
   const products = productsData?.data || [];
   const pagination = productsData?.pagination;
 

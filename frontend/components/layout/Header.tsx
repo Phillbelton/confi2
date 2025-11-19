@@ -1,13 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, Search, Menu } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ShoppingCart, Search, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useCartStore } from '@/store/useCartStore';
 import { CartSheet } from '@/components/cart/CartSheet';
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 
 const navigation = [
   { name: 'Inicio', href: '/' },
@@ -17,9 +25,21 @@ const navigation = [
 ];
 
 export function Header() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const itemCount = useCartStore((state) => state.itemCount);
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setSearchOpen(false);
+      router.push(`/productos?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -55,6 +75,7 @@ export function Header() {
             size="icon"
             className="h-9 w-9 touch-target"
             aria-label="Buscar productos"
+            onClick={() => setSearchOpen(true)}
           >
             <Search className="h-5 w-5" />
           </Button>
@@ -110,6 +131,34 @@ export function Header() {
 
       {/* Cart Sheet */}
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
+
+      {/* Search Dialog */}
+      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Buscar productos</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSearch} className="mt-4">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Buscar chocolates, dulces, golosinas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+                autoFocus
+              />
+              <Button type="submit" disabled={!searchQuery.trim()}>
+                <Search className="h-4 w-4 mr-2" />
+                Buscar
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Presiona Enter para buscar
+            </p>
+          </form>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

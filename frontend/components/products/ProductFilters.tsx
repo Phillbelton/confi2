@@ -36,6 +36,7 @@ function FiltersContent({
     filters.minPrice || 0,
     filters.maxPrice || 100000,
   ]);
+  const [showAllBrands, setShowAllBrands] = useState(false);
 
   const handleCategoryToggle = (categoryId: string) => {
     const current = filters.categories || [];
@@ -147,7 +148,7 @@ function FiltersContent({
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-3">
-              {brands.slice(0, 10).map((brand) => (
+              {(showAllBrands ? brands : brands.slice(0, 10)).map((brand) => (
                 <div key={brand._id} className="flex items-center space-x-2">
                   <Checkbox
                     id={`brand-${brand._id}`}
@@ -163,8 +164,13 @@ function FiltersContent({
                 </div>
               ))}
               {brands.length > 10 && (
-                <Button variant="ghost" size="sm" className="w-full text-xs">
-                  Ver más marcas...
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => setShowAllBrands(!showAllBrands)}
+                >
+                  {showAllBrands ? 'Ver menos marcas' : `Ver todas las marcas (${brands.length})`}
                 </Button>
               )}
             </div>
