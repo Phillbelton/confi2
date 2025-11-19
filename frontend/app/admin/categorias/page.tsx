@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FolderTree, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import {
 import { CategoriesTable } from '@/components/admin/categories/CategoriesTable';
 import { CategoryForm } from '@/components/admin/categories/CategoryForm';
 import { useAdminCategories, useCategoryOperations } from '@/hooks/admin/useAdminCategories';
+import { buildCategoryTree } from '@/lib/categoryUtils';
 import type { Category } from '@/types';
 
 export default function CategoriasPage() {
@@ -25,6 +26,11 @@ export default function CategoriasPage() {
     useCategoryOperations();
 
   const categories = data?.data?.categories || [];
+
+  // Build hierarchical category tree for the table
+  const categoriesTree = useMemo(() => {
+    return buildCategoryTree(categories);
+  }, [categories]);
 
   const handleOpenDialog = (category?: Category) => {
     setSelectedCategory(category);
@@ -107,7 +113,7 @@ export default function CategoriasPage() {
       {/* Categories Table */}
       {!isLoading && !error && (
         <CategoriesTable
-          categories={categories}
+          categories={categoriesTree}
           onEdit={handleOpenDialog}
           onDelete={handleDelete}
           isDeleting={isDeleting}
