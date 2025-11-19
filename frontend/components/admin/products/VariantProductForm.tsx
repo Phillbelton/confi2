@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Loader2, Save, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Save, Plus, Trash2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,12 @@ import { BrandSelector } from './BrandSelector';
 import { TagSelector } from './TagSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
 import { VariantConfigurationTable, VariantCombination } from './VariantConfigurationTable';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const variantProductSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
@@ -323,7 +329,24 @@ export function VariantProductForm({
             {/* Atributos de Variantes */}
             <Card>
               <CardHeader>
-                <CardTitle>Atributos de Variantes *</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Atributos de Variantes *</CardTitle>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p className="font-semibold mb-1">Importante: Inmutabilidad de Atributos</p>
+                        <p className="text-sm">
+                          Los atributos que definas aquí son la identidad de cada variante. Una vez creadas,
+                          los atributos son inmutables para garantizar trazabilidad e integridad en órdenes.
+                          Elige cuidadosamente los valores antes de continuar.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
