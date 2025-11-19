@@ -564,3 +564,159 @@ export const createVariantsBatch = asyncHandler(
     });
   }
 );
+
+/**
+ * Agregar una variante individual a un producto existente
+ * POST /api/products/parents/:id/variants
+ * Role: admin, funcionario
+ *
+ * Features:
+ * - Valida que no exista una variante con la misma combinación de atributos
+ * - Valida que los atributos (keys) existan en parent.variantAttributes
+ * - Sincroniza automáticamente: agrega nuevos valores a parent.variantAttributes si no existen
+ * - Mantiene la inmutabilidad de SKU (se genera una sola vez)
+ */
+export const addVariantToParent = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse<{
+    variant: IProductVariant;
+    parentUpdated: boolean;
+    newValuesAdded: Array<{ attribute: string; value: string }>;
+  }>>) => {
+    const { id: parentProductId } = req.params;
+    const { attributes, price, stock, sku, description, lowStockThreshold } = req.body;
+
+    // Validaciones básicas
+    if (price === undefined || stock === undefined) {
+      throw new AppError(400, 'Faltan campos requeridos (price, stock)');
+    }
+
+    if (!attributes || typeof attributes !== 'object' || Object.keys(attributes).length === 0) {
+      throw new AppError(400, 'Debe proporcionar atributos para la variante');
+    }
+
+    // Verificar que el producto padre existe
+    const parent = await ProductParent.findById(parentProductId);
+    if (!parent) {
+      throw new AppError(404, 'Producto padre no encontrado');
+    }
+
+    // Verificar que el producto tiene variantAttributes configurados
+    if (!parent.variantAttributes || parent.variantAttributes.length === 0) {
+      throw new AppError(
+        400,
+        'Este producto no tiene atributos de variantes configurados. No se pueden agregar variantes.'
+      );
+    }
+
+    // VALIDACIÓN 1: Verificar que los atributos (keys) de la variante existen en parent.variantAttributes
+    const parentAttributeNames = parent.variantAttributes.map((attr) => attr.name);
+    const variantAttributeKeys = Object.keys(attributes);
+
+    for (const key of variantAttributeKeys) {
+      if (!parentAttributeNames.includes(key)) {
+        throw new AppError(
+          400,
+          `El atributo "${key}" no existe en los atributos del producto. Atributos disponibles: ${parentAttributeNames.join(', ')}`
+        );
+      }
+    }
+
+    // Verificar que todos los atributos requeridos están presentes
+    if (variantAttributeKeys.length !== parentAttributeNames.length) {
+      throw new AppError(
+        400,
+        `Debe proporcionar todos los atributos. Requeridos: ${parentAttributeNames.join(', ')}`
+      );
+    }
+
+    // VALIDACIÓN 2: Verificar que no exista una variante con la misma combinación de atributos
+    const existingVariants = await ProductVariant.find({
+      parentProduct: parentProductId,
+      active: true,
+    });
+
+    for (const existingVariant of existingVariants) {
+      const existingAttrs = existingVariant.attributes as any;
+      const existingAttrsObj = existingAttrs instanceof Map
+        ? Object.fromEntries(existingAttrs)
+        : existingAttrs;
+
+      // Comparar combinaciones
+      const isSameCombination = variantAttributeKeys.every(
+        (key) => existingAttrsObj[key] === attributes[key]
+      );
+
+      if (isSameCombination) {
+        throw new AppError(
+          400,
+          `Ya existe una variante con esta combinación de atributos: ${JSON.stringify(attributes)}`
+        );
+      }
+    }
+
+    // SINCRONIZACIÓN: Detectar y agregar nuevos valores a parent.variantAttributes
+    let parentUpdated = false;
+    const newValuesAdded: Array<{ attribute: string; value: string }> = [];
+
+    for (const [attrName, attrValue] of Object.entries(attributes)) {
+      // Encontrar el atributo en parent.variantAttributes
+      const parentAttr = parent.variantAttributes.find((attr) => attr.name === attrName);
+
+      if (!parentAttr) {
+        // Esto no debería pasar por la validación anterior, pero por seguridad
+        continue;
+      }
+
+      // Verificar si el valor existe en los values del atributo
+      const valueExists = parentAttr.values.some((v) => v.value === attrValue);
+
+      if (!valueExists) {
+        // Agregar el nuevo valor
+        const newOrder = parentAttr.values.length; // Agregar al final
+        parentAttr.values.push({
+          value: attrValue as string,
+          displayValue: attrValue as string,
+          order: newOrder,
+        });
+
+        parentUpdated = true;
+        newValuesAdded.push({
+          attribute: attrName,
+          value: attrValue as string,
+        });
+      }
+    }
+
+    // Actualizar el parent si se agregaron nuevos valores
+    if (parentUpdated) {
+      await parent.save();
+    }
+
+    // Crear la variante
+    const variant = await ProductVariant.create({
+      parentProduct: parentProductId,
+      sku, // Opcional, se auto-genera si no se provee
+      attributes,
+      description,
+      price,
+      stock,
+      trackStock: true,
+      allowBackorder: true,
+      lowStockThreshold: lowStockThreshold || 5,
+      active: true,
+      createdBy: req.user?.id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: parentUpdated
+        ? `Variante creada exitosamente. Se agregaron ${newValuesAdded.length} nuevo(s) valor(es) a los atributos del producto.`
+        : 'Variante creada exitosamente',
+      data: {
+        variant,
+        parentUpdated,
+        newValuesAdded,
+      },
+    });
+  }
+);

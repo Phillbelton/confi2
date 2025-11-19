@@ -156,6 +156,36 @@ export function useAdminProductVariants(parentId: string) {
     },
   });
 
+  // Add variant to parent mutation (with auto-sync of variantAttributes)
+  const addVariantToParentMutation = useMutation({
+    mutationFn: (data: {
+      attributes: Record<string, string>;
+      price: number;
+      stock: number;
+      sku?: string;
+      description?: string;
+      lowStockThreshold?: number;
+    }) => adminProductService.addVariantToParent(parentId, data),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-product', parentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+
+      if (result.parentUpdated && result.newValuesAdded.length > 0) {
+        toast.success(
+          `Variante creada exitosamente. Se agregaron ${result.newValuesAdded.length} nuevo(s) valor(es) a los atributos del producto.`,
+          { duration: 5000 }
+        );
+      } else {
+        toast.success('Variante creada exitosamente');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al agregar la variante');
+    },
+  });
+
   // Update variant mutation
   const updateVariantMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateProductVariantInput }) =>
@@ -233,6 +263,8 @@ export function useAdminProductVariants(parentId: string) {
     error: variantsQuery.error,
     createVariant: createVariantMutation.mutate,
     isCreatingVariant: createVariantMutation.isPending,
+    addVariantToParent: addVariantToParentMutation.mutate,
+    isAddingVariant: addVariantToParentMutation.isPending,
     updateVariant: updateVariantMutation.mutate,
     isUpdatingVariant: updateVariantMutation.isPending,
     updateStock: updateStockMutation.mutate,

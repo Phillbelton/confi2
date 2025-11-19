@@ -216,7 +216,7 @@ export function VariantConfigurationTable({
               <TableRow>
                 <TableHead>Variante</TableHead>
                 <TableHead>SKU (Opcional)</TableHead>
-                <TableHead>Precio (Gs) *</TableHead>
+                <TableHead>Precio ($) *</TableHead>
                 <TableHead>Stock *</TableHead>
                 <TableHead>Imágenes</TableHead>
               </TableRow>
@@ -332,7 +332,7 @@ export function VariantConfigurationTable({
           </div>
           <div>
             <p className="text-muted-foreground">Precio Promedio</p>
-            <p className="text-2xl font-bold">Gs {avgPrice.toLocaleString()}</p>
+            <p className="text-2xl font-bold">${avgPrice.toLocaleString()}</p>
           </div>
         </div>
 
@@ -397,7 +397,7 @@ export function VariantConfigurationTable({
                 <strong>SKU (Opcional):</strong> Código único de la variante. Se genera automáticamente si lo dejas vacío
               </li>
               <li>
-                <strong>Precio (Obligatorio):</strong> Precio de venta en Guaraníes. Puede ser diferente para cada variante
+                <strong>Precio (Obligatorio):</strong> Precio de venta en Pesos chilenos. Puede ser diferente para cada variante
               </li>
               <li>
                 <strong>Stock (Obligatorio):</strong> Cantidad disponible. Se descuenta automáticamente con cada venta
@@ -410,9 +410,9 @@ export function VariantConfigurationTable({
 
           <HelpExample title="Ejemplo: Precios diferentes por tamaño">
             <div className="text-sm space-y-1">
-              <p><strong>Shampoo Coco 250ml:</strong> 25.000 Gs, Stock: 50</p>
-              <p><strong>Shampoo Coco 500ml:</strong> 45.000 Gs, Stock: 30</p>
-              <p><strong>Shampoo Coco 1L:</strong> 80.000 Gs, Stock: 20</p>
+              <p><strong>Shampoo Coco 250ml:</strong> $25.000, Stock: 50</p>
+              <p><strong>Shampoo Coco 500ml:</strong> $45.000, Stock: 30</p>
+              <p><strong>Shampoo Coco 1L:</strong> $80.000, Stock: 20</p>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Nota: El precio por litro es más bajo en presentaciones grandes
@@ -432,8 +432,8 @@ export function VariantConfigurationTable({
             <div className="text-sm space-y-2">
               <p className="font-medium">Escenario: Camisetas en 5 colores</p>
               <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded space-y-1">
-                <p>1️⃣ Aplicar precio masivo: <strong>35.000 Gs</strong></p>
-                <p className="text-muted-foreground text-xs">→ Todas las camisetas quedan a 35.000 Gs</p>
+                <p>1️⃣ Aplicar precio masivo: <strong>$35.000</strong></p>
+                <p className="text-muted-foreground text-xs">→ Todas las camisetas quedan a $35.000</p>
 
                 <p className="mt-2">2️⃣ Aplicar stock masivo: <strong>50 unidades</strong></p>
                 <p className="text-muted-foreground text-xs">→ Todas tienen 50 unidades de stock</p>

@@ -538,3 +538,87 @@ export const getOrderStats = asyncHandler(
     });
   }
 );
+
+// @desc    Validar carrito con precios del servidor (anti-fraude)
+// @route   POST /api/orders/validate-cart
+// @access  Public
+export const validateCart = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const { items } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new AppError(400, 'El carrito está vacío');
+    }
+
+    // Preparar items para el servicio de descuentos
+    const cartItems = items.map((item: any) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+    }));
+
+    // Calcular precios con descuentos usando el servicio del backend
+    const calculatedItems = await applyDiscountToCart(cartItems);
+
+    // Comparar con los precios que envió el frontend
+    const discrepancies = [];
+    let hasDiscrepancy = false;
+
+    for (let i = 0; i < items.length; i++) {
+      const frontendItem = items[i];
+      const serverItem = calculatedItems[i];
+
+      // Comparar precio unitario final
+      if (Math.round(frontendItem.finalPrice) !== Math.round(serverItem.finalPricePerUnit)) {
+        hasDiscrepancy = true;
+        discrepancies.push({
+          variantId: frontendItem.variantId,
+          frontend: {
+            finalPrice: frontendItem.finalPrice,
+            subtotal: frontendItem.subtotal,
+          },
+          server: {
+            finalPrice: serverItem.finalPricePerUnit,
+            subtotal: serverItem.subtotal,
+          },
+        });
+      }
+    }
+
+    // Si hay discrepancias, retornar error con los precios correctos
+    if (hasDiscrepancy) {
+      return res.status(400).json({
+        success: false,
+        message: 'Los precios del carrito no coinciden con los del servidor',
+        data: {
+          valid: false,
+          discrepancies,
+          serverPrices: calculatedItems.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+            originalPrice: item.originalPrice,
+            finalPricePerUnit: item.finalPricePerUnit,
+            totalDiscount: item.totalDiscount,
+            subtotal: item.subtotal,
+          })),
+        },
+      });
+    }
+
+    // Todo correcto
+    return res.status(200).json({
+      success: true,
+      message: 'Carrito validado correctamente',
+      data: {
+        valid: true,
+        items: calculatedItems.map((item) => ({
+          variantId: item.variantId,
+          quantity: item.quantity,
+          originalPrice: item.originalPrice,
+          finalPricePerUnit: item.finalPricePerUnit,
+          totalDiscount: item.totalDiscount,
+          subtotal: item.subtotal,
+        })),
+      },
+    });
+  }
+);

@@ -79,6 +79,9 @@ export function CategoryForm({
 
   // Filter out current category and its children from parent options
   const availableParents = categories.filter((cat) => {
+    // Ensure category has a valid _id (not empty or undefined)
+    if (!cat._id || cat._id.trim() === '') return false;
+
     if (!isEditing) return !cat.parent; // For new categories, show only main categories
     return cat._id !== category._id && !cat.parent; // For editing, exclude self and show only main
   });

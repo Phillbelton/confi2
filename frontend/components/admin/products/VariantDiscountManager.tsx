@@ -10,6 +10,12 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Table,
   TableBody,
   TableCell,
@@ -100,7 +106,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
       details.push(`fijo -${fixedPreview.discountPercentage.toFixed(0)}%`);
     }
 
-    // Apply tiered discount
+    // Apply tiered discount ON TOP of discounted price (not original)
     if (tieredActive && tiers.length > 0) {
       const applicableTier = [...tiers]
         .sort((a, b) => a.minQuantity - b.minQuantity)
@@ -114,13 +120,14 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
       if (applicableTier) {
         let tieredDiscount = 0;
         if (applicableTier.type === 'percentage') {
-          tieredDiscount = (variant.price * applicableTier.value) / 100;
+          // ✅ FIX: Calculate on already-discounted price, not original
+          tieredDiscount = (price * applicableTier.value) / 100;
         } else {
           tieredDiscount = applicableTier.value;
         }
         price -= tieredDiscount;
         totalDiscount += tieredDiscount;
-        details.push(`escal -${applicableTier.value}${applicableTier.type === 'percentage' ? '%' : 'Gs'}`);
+        details.push(`escal -${applicableTier.value}${applicableTier.type === 'percentage' ? '%' : '$'}`);
       }
     }
 
@@ -128,7 +135,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
 
     return {
       originalPrice: variant.price,
-      finalPrice: price,
+      finalPrice: Math.max(0, price), // Ensure price never goes negative
       totalDiscount,
       totalPercentage,
       details: details.join(' + '),
@@ -269,7 +276,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
               {/* Type Selection */}
               <FormFieldWithHelp
                 label="Tipo de descuento"
-                tooltip="Porcentaje: descuenta un % del precio (ej: 20%). Monto fijo: descuenta una cantidad exacta (ej: 5000 Gs)."
+                tooltip="Porcentaje: descuenta un % del precio (ej: 20%). Monto fijo: descuenta una cantidad exacta (ej: $5.000)."
               >
                 <RadioGroup value={fixedType} onValueChange={(v) => setFixedType(v as 'percentage' | 'amount')}>
                   <div className="flex items-center space-x-2">
@@ -281,7 +288,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="amount" id="fixed-amount" />
                     <Label htmlFor="fixed-amount" className="font-normal">
-                      Monto fijo (Gs)
+                      Monto fijo ($)
                     </Label>
                   </div>
                 </RadioGroup>
@@ -291,7 +298,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
               <FormFieldWithHelp
                 label="Valor del descuento"
                 htmlFor="fixed-value"
-                tooltip={fixedType === 'percentage' ? 'Ingresa el porcentaje a descontar (0-100)' : 'Ingresa el monto exacto a descontar en Guaraníes'}
+                tooltip={fixedType === 'percentage' ? 'Ingresa el porcentaje a descontar (0-100)' : 'Ingresa el monto exacto a descontar en Pesos chilenos'}
                 required
               >
                 <div className="flex items-center gap-2">
@@ -306,7 +313,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                     placeholder="0"
                   />
                   <span className="text-sm text-muted-foreground min-w-[60px]">
-                    {fixedType === 'percentage' ? '%' : 'Gs.'}
+                    {fixedType === 'percentage' ? '%' : '$'}
                   </span>
                 </div>
               </FormFieldWithHelp>
@@ -519,7 +526,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
                                 className="w-20 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
                               >
                                 <option value="percentage">%</option>
-                                <option value="amount">Gs</option>
+                                <option value="amount">$</option>
                               </select>
                             </TableCell>
                             <TableCell>
@@ -565,51 +572,83 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
               </FormFieldWithHelp>
 
               {/* Combined Preview */}
-              {(fixedPreview || tiers.length > 0) && (
-                <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Info className="h-4 w-4" />
-                    <p className="text-sm font-medium">PREVIEW - Precios combinados</p>
-                  </div>
-                  {[1, 2, 6, 12].map((qty) => {
-                    const preview = calculateCombinedPreview(qty);
-                    if (preview.totalDiscount === 0 && qty > 1) return null;
-                    return (
-                      <div key={qty} className="flex justify-between text-sm items-center">
-                        <span className="text-muted-foreground">
-                          {qty} unidad{qty > 1 ? 'es' : ''}:
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">
-                            ${preview.finalPrice.toLocaleString()} c/u
+              {(fixedPreview || tiers.length > 0) && (() => {
+                // Generate example quantities based on tier minQuantity values
+                const exampleQuantities = [1]; // Always show 1 unit
+
+                // Add minQuantity from each tier
+                if (tiers.length > 0) {
+                  tiers
+                    .map(tier => tier.minQuantity)
+                    .filter(qty => qty > 1) // Exclude 1 as it's already added
+                    .sort((a, b) => a - b) // Sort ascending
+                    .forEach(qty => {
+                      if (!exampleQuantities.includes(qty)) {
+                        exampleQuantities.push(qty);
+                      }
+                    });
+                }
+
+                // If no tiers, show 1 and 2 as fallback
+                if (exampleQuantities.length === 1 && fixedPreview) {
+                  exampleQuantities.push(2);
+                }
+
+                return (
+                  <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md" side="right">
+                            <div className="space-y-2">
+                              <p className="font-semibold">Orden de aplicación:</p>
+                              <p className="text-sm">Los descuentos se combinan en este orden:</p>
+                              <ol className="list-decimal ml-4 mt-1 space-y-1 text-sm">
+                                <li>Primero se aplica el <strong>descuento fijo</strong> al precio base</li>
+                                <li>Luego se aplica el <strong>descuento escalonado</strong> sobre el precio ya descontado</li>
+                              </ol>
+                              <div className="text-sm mt-2 pt-2 border-t">
+                                <p className="font-medium">Ejemplo:</p>
+                                <p>Precio $10.000, Fijo -20%, Escalonado 10un -10%</p>
+                                <p className="mt-1">→ Paso 1: $10.000 - 20% = $8.000</p>
+                                <p>→ Paso 2: $8.000 - 10% = $7.200 (precio final)</p>
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <p className="text-sm font-medium">PREVIEW - Ejemplos de precios combinados</p>
+                    </div>
+                    {exampleQuantities.map((qty) => {
+                      const preview = calculateCombinedPreview(qty);
+                      return (
+                        <div key={qty} className="flex justify-between text-sm items-center">
+                          <span className="text-muted-foreground">
+                            {qty} unidad{qty > 1 ? 'es' : ''}:
                           </span>
-                          {preview.totalDiscount > 0 && (
-                            <span className="text-xs text-green-600">
-                              (-{preview.totalPercentage.toFixed(0)}%: {preview.details})
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">
+                              ${preview.finalPrice.toLocaleString()} c/u
                             </span>
-                          )}
+                            {preview.totalDiscount > 0 && (
+                              <span className="text-xs text-green-600">
+                                (-{preview.totalPercentage.toFixed(0)}%: {preview.details})
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </>
           )}
         </CardContent>
       </Card>
-
-      {/* Info Alert */}
-      <InlineHelp variant="warning">
-        <strong>Orden de aplicación:</strong> Los descuentos se combinan en este orden:
-        <ol className="list-decimal ml-4 mt-1 space-y-1">
-          <li>Primero se aplica el <strong>descuento fijo</strong> al precio base</li>
-          <li>Luego se aplica el <strong>descuento escalonado</strong> sobre el precio ya descontado</li>
-        </ol>
-        <p className="mt-2">Ejemplo: Precio $10.000, Fijo -20%, Escalonado 10un -10%<br/>
-        → Paso 1: $10.000 - 20% = $8.000<br/>
-        → Paso 2: $8.000 - 10% = $7.200 (precio final)</p>
-      </InlineHelp>
 
       {/* Actions */}
       <div className="flex justify-end gap-2">
@@ -646,16 +685,16 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
             <li>Ofertas flash por tiempo limitado</li>
           </ul>
           <p className="mt-2">
-            Puedes elegir entre <strong>porcentaje</strong> (ej: 20% de descuento) o <strong>monto fijo</strong> (ej: 5.000 Gs de descuento).
+            Puedes elegir entre <strong>porcentaje</strong> (ej: 20% de descuento) o <strong>monto fijo</strong> (ej: $5.000 de descuento).
           </p>
         </HelpSection>
 
         <HelpExample title="Ejemplo: Descuento Fijo 20%">
           <p>Producto: Crema Hidratante</p>
-          <p>Precio base: <strong>50.000 Gs</strong></p>
+          <p>Precio base: <strong>$50.000</strong></p>
           <p>Descuento: <strong>20%</strong></p>
           <p className="mt-2 text-green-600 font-medium">
-            Precio final: 40.000 Gs (ahorro de 10.000 Gs)
+            Precio final: $40.000 (ahorro de $10.000)
           </p>
         </HelpExample>
 
@@ -679,12 +718,12 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
 
         <HelpExample title="Ejemplo: Descuento Escalonado">
           <p>Producto: Shampoo 250ml</p>
-          <p>Precio base: <strong>25.000 Gs</strong></p>
+          <p>Precio base: <strong>$25.000</strong></p>
           <div className="mt-2 space-y-1">
-            <p>• 1 unidad = 25.000 Gs c/u (sin descuento)</p>
-            <p>• 3 unidades (5% desc) = <strong className="text-green-600">23.750 Gs c/u</strong></p>
-            <p>• 8 unidades (10% desc) = <strong className="text-green-600">22.500 Gs c/u</strong></p>
-            <p>• 15 unidades (15% desc) = <strong className="text-green-600">21.250 Gs c/u</strong></p>
+            <p>• 1 unidad = $25.000 c/u (sin descuento)</p>
+            <p>• 3 unidades (5% desc) = <strong className="text-green-600">$23.750 c/u</strong></p>
+            <p>• 8 unidades (10% desc) = <strong className="text-green-600">$22.500 c/u</strong></p>
+            <p>• 15 unidades (15% desc) = <strong className="text-green-600">$21.250 c/u</strong></p>
           </div>
         </HelpExample>
 
@@ -704,22 +743,22 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
 
         <HelpExample title="Ejemplo: Descuentos Combinados">
           <p>Producto: Acondicionador Premium</p>
-          <p>Precio base: <strong>100.000 Gs</strong></p>
+          <p>Precio base: <strong>$100.000</strong></p>
           <p>Descuento fijo: <strong>20%</strong></p>
           <p>Descuento escalonado (10+ un): <strong>10%</strong></p>
 
           <div className="mt-3 space-y-2 bg-slate-100 dark:bg-slate-800 p-3 rounded">
             <p className="font-medium">Cliente compra 12 unidades:</p>
-            <p>1️⃣ Precio base: 100.000 Gs</p>
+            <p>1️⃣ Precio base: $100.000</p>
             <p>2️⃣ Aplicar descuento fijo (-20%):</p>
-            <p className="ml-4">→ 100.000 - 20% = <strong>80.000 Gs</strong></p>
-            <p>3️⃣ Aplicar descuento escalonado (-10%) sobre 80.000:</p>
-            <p className="ml-4">→ 80.000 - 10% = <strong className="text-green-600">72.000 Gs c/u</strong></p>
+            <p className="ml-4">→ $100.000 - 20% = <strong>$80.000</strong></p>
+            <p>3️⃣ Aplicar descuento escalonado (-10%) sobre $80.000:</p>
+            <p className="ml-4">→ $80.000 - 10% = <strong className="text-green-600">$72.000 c/u</strong></p>
             <p className="mt-2 border-t pt-2">
-              <strong>Descuento total:</strong> 28% (28.000 Gs por unidad)
+              <strong>Descuento total:</strong> 28% ($28.000 por unidad)
             </p>
-            <p><strong>Total a pagar:</strong> 72.000 × 12 = <span className="text-green-600 text-lg">864.000 Gs</span></p>
-            <p className="text-sm text-muted-foreground">(En lugar de 1.200.000 Gs sin descuentos)</p>
+            <p><strong>Total a pagar:</strong> $72.000 × 12 = <span className="text-green-600 text-lg">$864.000</span></p>
+            <p className="text-sm text-muted-foreground">(En lugar de $1.200.000 sin descuentos)</p>
           </div>
         </HelpExample>
 

@@ -15,12 +15,14 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import type { ProductFilters as Filters, Category, Brand } from '@/types';
+import { HierarchicalCategoryFilter } from './HierarchicalCategoryFilter';
+import type { ProductFilters as Filters, Brand } from '@/types';
+import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 
 interface ProductFiltersProps {
   filters: Filters;
   onFilterChange: (filters: Filters) => void;
-  categories: Category[];
+  categories: CategoryWithSubcategories[];
   brands: Brand[];
   className?: string;
   isMobile?: boolean;
@@ -37,13 +39,8 @@ function FiltersContent({
     filters.maxPrice || 100000,
   ]);
 
-  const handleCategoryToggle = (categoryId: string) => {
-    const current = filters.categories || [];
-    const updated = current.includes(categoryId)
-      ? current.filter((id) => id !== categoryId)
-      : [...current, categoryId];
-
-    onFilterChange({ ...filters, categories: updated });
+  const handleCategorySelectionChange = (selectedIds: string[]) => {
+    onFilterChange({ ...filters, categories: selectedIds });
   };
 
   const handleBrandToggle = (brandId: string) => {
@@ -115,23 +112,11 @@ function FiltersContent({
             )}
           </AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-3">
-              {categories.map((category) => (
-                <div key={category._id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`cat-${category._id}`}
-                    checked={filters.categories?.includes(category._id)}
-                    onCheckedChange={() => handleCategoryToggle(category._id)}
-                  />
-                  <Label
-                    htmlFor={`cat-${category._id}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {category.name}
-                  </Label>
-                </div>
-              ))}
-            </div>
+            <HierarchicalCategoryFilter
+              categories={categories}
+              selectedCategories={filters.categories || []}
+              onSelectionChange={handleCategorySelectionChange}
+            />
           </AccordionContent>
         </AccordionItem>
 

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductForm } from '@/components/admin/products/ProductForm';
 import { ImageUploader } from '@/components/admin/products/ImageUploader';
 import { VariantsTable } from '@/components/admin/products/VariantsTable';
+import { AddVariantDialog } from '@/components/admin/products/AddVariantDialog';
 import {
   useAdminProduct,
   useAdminProducts,
@@ -33,6 +34,8 @@ export default function EditarProductoPage() {
   const {
     variants,
     isLoading: isLoadingVariants,
+    addVariantToParent,
+    isAddingVariant,
     updateVariant,
     deleteVariant,
     updateStock,
@@ -89,6 +92,16 @@ export default function EditarProductoPage() {
     data: { fixedDiscount?: any; tieredDiscount?: any }
   ) => {
     updateVariant({ id: variantId, data });
+  };
+
+  const handleAddVariant = (data: {
+    attributes: Record<string, string>;
+    price: number;
+    stock: number;
+    sku?: string;
+    description?: string;
+  }) => {
+    addVariantToParent(data);
   };
 
   if (isLoading) {
@@ -162,17 +175,32 @@ export default function EditarProductoPage() {
 
         {/* Variants Tab */}
         <TabsContent value="variants">
-          <VariantsTable
-            variants={variants}
-            onUpdateVariant={handleUpdateVariant}
-            onDeleteVariant={handleDeleteVariant}
-            onUploadImages={handleUploadVariantImages}
-            onDeleteImage={handleDeleteVariantImage}
-            onUpdateDiscounts={handleUpdateVariantDiscounts}
-            isLoading={isLoadingVariants}
-            isUploadingImages={isUploadingVariantImages}
-            isDeletingImage={isDeletingVariantImage}
-          />
+          <div className="space-y-4">
+            {/* Add Variant Button */}
+            {product.hasVariants && (
+              <div className="flex justify-end">
+                <AddVariantDialog
+                  productParent={product}
+                  existingVariants={variants}
+                  onAddVariant={handleAddVariant}
+                  isAdding={isAddingVariant}
+                />
+              </div>
+            )}
+
+            {/* Variants Table */}
+            <VariantsTable
+              variants={variants}
+              onUpdateVariant={handleUpdateVariant}
+              onDeleteVariant={handleDeleteVariant}
+              onUploadImages={handleUploadVariantImages}
+              onDeleteImage={handleDeleteVariantImage}
+              onUpdateDiscounts={handleUpdateVariantDiscounts}
+              isLoading={isLoadingVariants}
+              isUploadingImages={isUploadingVariantImages}
+              isDeletingImage={isDeletingVariantImage}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

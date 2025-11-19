@@ -1,5 +1,6 @@
 import { api } from '@/lib/axios';
 import type { Category, ApiResponse } from '@/types';
+import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 
 export interface CreateCategoryInput {
   name: string;
@@ -23,10 +24,10 @@ export interface UpdateCategoryInput {
 
 export const adminCategoryService = {
   /**
-   * Get all categories
+   * Get all categories (hierarchical structure from backend)
    */
-  async getAll(): Promise<ApiResponse<{ categories: Category[] }>> {
-    const { data } = await api.get('/categories');
+  async getAll(): Promise<ApiResponse<{ categories: CategoryWithSubcategories[] }>> {
+    const { data } = await api.get('/categories?includeInactive=true');
     return data;
   },
 

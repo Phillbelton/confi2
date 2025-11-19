@@ -130,6 +130,31 @@ export const adminProductService = {
     return response.data.data;
   },
 
+  addVariantToParent: async (
+    parentProductId: string,
+    data: {
+      attributes: Record<string, string>;
+      price: number;
+      stock: number;
+      sku?: string;
+      description?: string;
+      lowStockThreshold?: number;
+    }
+  ): Promise<{
+    variant: ProductVariant;
+    parentUpdated: boolean;
+    newValuesAdded: Array<{ attribute: string; value: string }>;
+  }> => {
+    const response = await api.post<
+      ApiResponse<{
+        variant: ProductVariant;
+        parentUpdated: boolean;
+        newValuesAdded: Array<{ attribute: string; value: string }>;
+      }>
+    >(`/products/parents/${parentProductId}/variants`, data);
+    return response.data.data;
+  },
+
   updateProductVariant: async (id: string, data: UpdateProductVariantInput): Promise<ProductVariant> => {
     const response = await api.put<ApiResponse<ProductVariant>>(`/products/variants/${id}`, data);
     return response.data.data;

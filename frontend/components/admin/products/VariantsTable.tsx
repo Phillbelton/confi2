@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit, Package, Trash2, Check, X, Upload, Image as ImageIcon, Percent } from 'lucide-react';
+import { Edit, Package, Trash2, Check, X, Upload, Image as ImageIcon, Percent, Info } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -22,6 +22,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { VariantImageManager } from './VariantImageManager';
 import { VariantDiscountManager } from './VariantDiscountManager';
 import type { ProductVariant, FixedDiscount, TieredDiscountVariant } from '@/types';
@@ -102,8 +108,42 @@ export function VariantsTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Variante</TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    SKU
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">
+                            El SKU es inmutable. Se genera automáticamente al crear la variante
+                            y no puede modificarse para mantener la trazabilidad.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    Variante
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">
+                            Los atributos de la variante son inmutables. Solo puedes editar
+                            precio, stock, imágenes y descuentos.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableHead>
                 <TableHead>Precio</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Imágenes</TableHead>

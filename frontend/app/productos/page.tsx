@@ -16,7 +16,7 @@ import { ProductFilters } from '@/components/products/ProductFilters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useProducts } from '@/hooks/useProducts';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategoriesHierarchical } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
 import type { ProductFilters as Filters, ProductSort, ProductParent } from '@/types';
 
@@ -63,7 +63,7 @@ function ProductsContent() {
     sort: sortBy,
   });
 
-  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategoriesHierarchical();
   const { data: brandsData, isLoading: brandsLoading } = useBrands();
 
   // Update URL when filters change
@@ -95,7 +95,7 @@ function ProductsContent() {
     setCurrentPage(1);
   };
 
-  const categories = categoriesData?.data || [];
+  const categories = categoriesData || [];
   const brands = brandsData?.data || [];
   const products = productsData?.data || [];
   const pagination = productsData?.pagination;
