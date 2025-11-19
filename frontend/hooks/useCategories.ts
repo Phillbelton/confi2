@@ -9,6 +9,14 @@ export function useCategories() {
   });
 }
 
+export function useCategoriesHierarchical() {
+  return useQuery({
+    queryKey: ['categories', 'hierarchical'],
+    queryFn: () => categoryService.getAllHierarchical(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
 export function useMainCategories() {
   return useQuery({
     queryKey: ['categories', 'main'],
