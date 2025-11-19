@@ -206,7 +206,14 @@ export const getProductParents = asyncHandler(
 
     // Query principal
     let query = ProductParent.find(filter)
-      .populate('categories', 'name slug')
+      .populate({
+        path: 'categories',
+        select: 'name slug parent',
+        populate: {
+          path: 'parent',
+          select: 'name slug'
+        }
+      })
       .populate('brand', 'name slug')
       .sort(sortObj)
       .skip(skip)
@@ -284,7 +291,14 @@ export const getProductParentById = asyncHandler(
 
     // Obtener el ProductParent
     const productParent = await ProductParent.findById(id)
-      .populate('categories', 'name slug parent')
+      .populate({
+        path: 'categories',
+        select: 'name slug parent',
+        populate: {
+          path: 'parent',
+          select: 'name slug'
+        }
+      })
       .populate('brand', 'name slug logo');
 
     if (!productParent) {
@@ -333,7 +347,14 @@ export const getProductParentBySlug = asyncHandler(
 
     // Obtener el ProductParent
     const productParent = await ProductParent.findOne({ slug, active: true })
-      .populate('categories', 'name slug parent')
+      .populate({
+        path: 'categories',
+        select: 'name slug parent',
+        populate: {
+          path: 'parent',
+          select: 'name slug'
+        }
+      })
       .populate('brand', 'name slug logo');
 
     if (!productParent) {
@@ -539,7 +560,14 @@ export const getFeaturedProducts = asyncHandler(
       featured: true,
       active: true,
     })
-      .populate('categories', 'name slug')
+      .populate({
+        path: 'categories',
+        select: 'name slug parent',
+        populate: {
+          path: 'parent',
+          select: 'name slug'
+        }
+      })
       .populate('brand', 'name slug')
       .sort({ views: -1, createdAt: -1 })
       .limit(parseInt(limit));
