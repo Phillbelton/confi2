@@ -4,6 +4,7 @@ import * as uploadController from '../controllers/uploadController';
 import { authenticate, authorize } from '../middleware/auth';
 import { uploadSingle, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
+import { auditLog } from '../middleware/auditMiddleware';
 import * as categorySchemas from '../schemas/categorySchemas';
 
 const router = Router();
@@ -16,11 +17,11 @@ router.get('/slug/:slug', validate(categorySchemas.getCategoryBySlugSchema), cat
 router.get('/:id/subcategories', validate(categorySchemas.getSubcategoriesSchema), categoryController.getSubcategories);
 
 // Protected routes (admin, funcionario)
-router.post('/', authenticate, authorize('admin', 'funcionario'), validate(categorySchemas.createCategorySchema), categoryController.createCategory);
-router.put('/:id', authenticate, authorize('admin', 'funcionario'), validate(categorySchemas.updateCategorySchema), categoryController.updateCategory);
+router.post('/', authenticate, authorize('admin', 'funcionario'), validate(categorySchemas.createCategorySchema), auditLog('category', 'create'), categoryController.createCategory);
+router.put('/:id', authenticate, authorize('admin', 'funcionario'), validate(categorySchemas.updateCategorySchema), auditLog('category', 'update'), categoryController.updateCategory);
 
 // Protected routes (admin only)
-router.delete('/:id', authenticate, authorize('admin'), validate(categorySchemas.deleteCategorySchema), categoryController.deleteCategory);
+router.delete('/:id', authenticate, authorize('admin'), validate(categorySchemas.deleteCategorySchema), auditLog('category', 'delete'), categoryController.deleteCategory);
 
 // Image upload routes for Category
 router.post(
