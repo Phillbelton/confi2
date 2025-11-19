@@ -25,12 +25,21 @@ export default function CategoriasPage() {
   const { create, update, deleteCategory, uploadImage, isCreating, isUpdating, isDeleting, isUploadingImage } =
     useCategoryOperations();
 
-  const categories = data?.data?.categories || [];
+  // Backend already returns hierarchical structure
+  const categoriesTree = data?.data?.categories || [];
 
-  // Build hierarchical category tree for the table
-  const categoriesTree = useMemo(() => {
-    return buildCategoryTree(categories);
-  }, [categories]);
+  // Flatten the tree for CategoryForm (needs flat list for parent selection)
+  const categories = useMemo(() => {
+    const tree = data?.data?.categories || [];
+    const flat: Category[] = [];
+    tree.forEach((cat: any) => {
+      flat.push(cat);
+      if (cat.subcategories && cat.subcategories.length > 0) {
+        flat.push(...cat.subcategories);
+      }
+    });
+    return flat;
+  }, [data]);
 
   const handleOpenDialog = (category?: Category) => {
     setSelectedCategory(category);
