@@ -18,6 +18,7 @@ import {
 const router = Router();
 
 // Public routes (crear orden - visita puede crear orden)
+router.post('/validate-cart', orderController.validateCart);
 router.post('/', validate(createOrderSchema), orderController.createOrder);
 router.get('/number/:orderNumber', validate(getOrderByNumberSchema), orderController.getOrderByNumber);
 

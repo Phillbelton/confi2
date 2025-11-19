@@ -27,7 +27,49 @@ export interface WhatsAppMessagePayload {
   orderId: string;
 }
 
+export interface ValidateCartPayload {
+  items: {
+    variantId: string;
+    quantity: number;
+    finalPrice: number;
+    subtotal: number;
+  }[];
+}
+
+export interface ValidateCartResponse {
+  valid: boolean;
+  discrepancies?: Array<{
+    variantId: string;
+    frontend: { finalPrice: number; subtotal: number };
+    server: { finalPrice: number; subtotal: number };
+  }>;
+  serverPrices?: Array<{
+    variantId: string;
+    quantity: number;
+    originalPrice: number;
+    finalPricePerUnit: number;
+    totalDiscount: number;
+    subtotal: number;
+  }>;
+  items?: Array<{
+    variantId: string;
+    quantity: number;
+    originalPrice: number;
+    finalPricePerUnit: number;
+    totalDiscount: number;
+    subtotal: number;
+  }>;
+}
+
 export const orderService = {
+  // Validate cart prices with server (anti-fraud)
+  validateCart: async (payload: ValidateCartPayload) => {
+    const { data } = await api.post<ApiResponse<ValidateCartResponse>>('/orders/validate-cart', payload);
+    // Backend returns { success: true, data: { valid: true, items: [...] } }
+    // or { success: false, data: { valid: false, discrepancies: [...], serverPrices: [...] } }
+    return data.data as ValidateCartResponse;
+  },
+
   // Create order (public - for checkout)
   create: async (payload: CreateOrderPayload) => {
     const { data } = await api.post<ApiResponse<{ order: Order; whatsappURL: string }>>('/orders', payload);
