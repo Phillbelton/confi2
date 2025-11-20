@@ -14,7 +14,11 @@ import { Badge } from '@/components/ui/badge';
 import { useFuncionarioStore } from '@/store/useFuncionarioStore';
 import { useRouter } from 'next/navigation';
 
-export function FuncionarioHeader() {
+interface FuncionarioHeaderProps {
+  onSearchClick?: () => void;
+}
+
+export function FuncionarioHeader({ onSearchClick }: FuncionarioHeaderProps = {}) {
   const { user, toggleSidebar, logout } = useFuncionarioStore();
   const router = useRouter();
 
@@ -47,9 +51,14 @@ export function FuncionarioHeader() {
             <input
               type="text"
               placeholder="Buscar orden, cliente... (Ctrl+K)"
-              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 cursor-pointer"
               readOnly
+              onClick={onSearchClick}
             />
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600">
+              <span>Ctrl</span>
+              <span>K</span>
+            </kbd>
           </div>
         </div>
 
