@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,18 +18,40 @@ import {
   Truck,
   Package,
   CreditCard,
-  FileText,
+  RefreshCw,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useFuncionarioOrder } from '@/hooks/funcionario/useFuncionarioOrder';
+import { useFuncionarioOrders } from '@/hooks/funcionario/useFuncionarioOrders';
 import { OrderStatusBadge } from '@/components/funcionario/orders/OrderStatusBadge';
 import { OrderTimeline } from '@/components/funcionario/orders/OrderTimeline';
+import { ConfirmOrderModal } from '@/components/funcionario/orders/ConfirmOrderModal';
+import { UpdateStatusModal } from '@/components/funcionario/orders/UpdateStatusModal';
+import { CancelOrderModal } from '@/components/funcionario/orders/CancelOrderModal';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const { order, isLoading, error } = useFuncionarioOrder(resolvedParams.id);
+  const router = useRouter();
+  const { order, isLoading, error, refetch } = useFuncionarioOrder(resolvedParams.id);
+
+  // Get mutations from orders hook
+  const {
+    confirmOrder,
+    isConfirming,
+    updateStatus,
+    isUpdatingStatus,
+    cancelOrder,
+    isCancelling,
+  } = useFuncionarioOrders({ page: 1, limit: 1 });
+
+  // Modal states
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -65,6 +87,58 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const canEdit = ['pending_whatsapp', 'confirmed', 'preparing'].includes(order.status);
   const canConfirm = order.status === 'pending_whatsapp';
   const canCancel = !['completed', 'cancelled'].includes(order.status);
+  const canChangeStatus = !['completed', 'cancelled'].includes(order.status);
+
+  // Handle confirm order
+  const handleConfirmOrder = (data: { shippingCost: number; adminNotes?: string }) => {
+    confirmOrder(
+      { id: order._id, data },
+      {
+        onSuccess: () => {
+          setConfirmModalOpen(false);
+          refetch();
+        },
+      }
+    );
+  };
+
+  // Handle update status
+  const handleUpdateStatus = (data: { status: any; adminNotes?: string }) => {
+    updateStatus(
+      { id: order._id, data },
+      {
+        onSuccess: () => {
+          setUpdateStatusModalOpen(false);
+          refetch();
+        },
+      }
+    );
+  };
+
+  // Handle cancel order
+  const handleCancelOrder = (data: { reason: string }) => {
+    cancelOrder(
+      { id: order._id, data },
+      {
+        onSuccess: () => {
+          setCancelModalOpen(false);
+          router.push('/funcionario/ordenes');
+        },
+      }
+    );
+  };
+
+  // Quick status change
+  const handleQuickStatusChange = (newStatus: any) => {
+    updateStatus(
+      { id: order._id, data: { status: newStatus } },
+      {
+        onSuccess: () => {
+          refetch();
+        },
+      }
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -90,6 +164,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </p>
           </div>
         </div>
+
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Actualizar
+        </Button>
       </div>
 
       {/* Action Buttons */}
@@ -110,26 +189,92 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {canConfirm && (
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+          <Button
+            className="gap-2 bg-blue-600 hover:bg-blue-700"
+            onClick={() => setConfirmModalOpen(true)}
+          >
             <CheckCircle className="h-4 w-4" />
             Confirmar Orden
           </Button>
         )}
 
+        {canChangeStatus && !canConfirm && (
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setUpdateStatusModalOpen(true)}
+          >
+            <ArrowRight className="h-4 w-4" />
+            Cambiar Estado
+          </Button>
+        )}
+
         {canEdit && (
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" disabled>
             <Edit className="h-4 w-4" />
             Editar Productos
+            <span className="text-xs text-slate-500">(Próximamente)</span>
           </Button>
         )}
 
         {canCancel && (
-          <Button variant="destructive" className="gap-2">
+          <Button
+            variant="destructive"
+            className="gap-2"
+            onClick={() => setCancelModalOpen(true)}
+          >
             <XCircle className="h-4 w-4" />
             Cancelar Orden
           </Button>
         )}
       </div>
+
+      {/* Quick Status Actions */}
+      {canChangeStatus && !canConfirm && (
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-3">
+            ⚡ Acciones rápidas de estado:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {order.status === 'confirmed' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleQuickStatusChange('preparing')}
+                disabled={isUpdatingStatus}
+                className="gap-2"
+              >
+                <Package className="h-4 w-4" />
+                Marcar como Preparando
+              </Button>
+            )}
+            {order.status === 'preparing' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleQuickStatusChange('shipped')}
+                disabled={isUpdatingStatus}
+                className="gap-2"
+              >
+                <Truck className="h-4 w-4" />
+                Marcar como Enviada
+              </Button>
+            )}
+            {order.status === 'shipped' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleQuickStatusChange('completed')}
+                disabled={isUpdatingStatus}
+                className="gap-2 text-green-600 border-green-600 hover:bg-green-50"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Marcar como Completada
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -197,7 +342,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 Productos ({order.items.length})
               </CardTitle>
               {canEdit && (
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled>
                   Editar
                 </Button>
               )}
@@ -387,6 +532,37 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <OrderTimeline order={order} />
         </div>
       </div>
+
+      {/* Modals */}
+      {canConfirm && (
+        <ConfirmOrderModal
+          open={confirmModalOpen}
+          onOpenChange={setConfirmModalOpen}
+          order={order}
+          onConfirm={handleConfirmOrder}
+          isConfirming={isConfirming}
+        />
+      )}
+
+      {canChangeStatus && (
+        <UpdateStatusModal
+          open={updateStatusModalOpen}
+          onOpenChange={setUpdateStatusModalOpen}
+          order={order}
+          onUpdate={handleUpdateStatus}
+          isUpdating={isUpdatingStatus}
+        />
+      )}
+
+      {canCancel && (
+        <CancelOrderModal
+          open={cancelModalOpen}
+          onOpenChange={setCancelModalOpen}
+          order={order}
+          onCancel={handleCancelOrder}
+          isCancelling={isCancelling}
+        />
+      )}
     </div>
   );
 }
