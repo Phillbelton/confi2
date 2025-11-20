@@ -30,6 +30,7 @@ import { OrderTimeline } from '@/components/funcionario/orders/OrderTimeline';
 import { ConfirmOrderModal } from '@/components/funcionario/orders/ConfirmOrderModal';
 import { UpdateStatusModal } from '@/components/funcionario/orders/UpdateStatusModal';
 import { CancelOrderModal } from '@/components/funcionario/orders/CancelOrderModal';
+import { EditOrderItemsModal } from '@/components/funcionario/orders/EditOrderItemsModal';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -46,12 +47,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     isUpdatingStatus,
     cancelOrder,
     isCancelling,
+    editOrderItems,
+    isEditingItems,
   } = useFuncionarioOrders({ page: 1, limit: 1 });
 
   // Modal states
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [editItemsModalOpen, setEditItemsModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -123,6 +127,19 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         onSuccess: () => {
           setCancelModalOpen(false);
           router.push('/funcionario/ordenes');
+        },
+      }
+    );
+  };
+
+  // Handle edit order items
+  const handleEditOrderItems = (data: { items: any[]; adminNotes?: string }) => {
+    editOrderItems(
+      { id: order._id, data },
+      {
+        onSuccess: () => {
+          setEditItemsModalOpen(false);
+          refetch();
         },
       }
     );
@@ -210,10 +227,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {canEdit && (
-          <Button variant="outline" className="gap-2" disabled>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setEditItemsModalOpen(true)}
+          >
             <Edit className="h-4 w-4" />
             Editar Productos
-            <span className="text-xs text-slate-500">(Próximamente)</span>
           </Button>
         )}
 
@@ -342,7 +362,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 Productos ({order.items.length})
               </CardTitle>
               {canEdit && (
-                <Button variant="outline" size="sm" disabled>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditItemsModalOpen(true)}
+                >
                   Editar
                 </Button>
               )}
@@ -561,6 +585,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           order={order}
           onCancel={handleCancelOrder}
           isCancelling={isCancelling}
+        />
+      )}
+
+      {canEdit && (
+        <EditOrderItemsModal
+          open={editItemsModalOpen}
+          onOpenChange={setEditItemsModalOpen}
+          order={order}
+          onSave={handleEditOrderItems}
+          isSaving={isEditingItems}
         />
       )}
     </div>
