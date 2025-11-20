@@ -31,6 +31,7 @@ import { ConfirmOrderModal } from '@/components/funcionario/orders/ConfirmOrderM
 import { UpdateStatusModal } from '@/components/funcionario/orders/UpdateStatusModal';
 import { CancelOrderModal } from '@/components/funcionario/orders/CancelOrderModal';
 import { EditOrderItemsModal } from '@/components/funcionario/orders/EditOrderItemsModal';
+import { WhatsAppHelper } from '@/components/funcionario/orders/WhatsAppHelper';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -56,6 +57,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [editItemsModalOpen, setEditItemsModalOpen] = useState(false);
+  const [whatsappHelperOpen, setWhatsappHelperOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -193,12 +195,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         {order.customer.phone && (
           <Button
             className="gap-2 bg-green-600 hover:bg-green-700"
-            onClick={() => {
-              window.open(
-                `https://wa.me/${order.customer.phone.replace(/\D/g, '')}`,
-                '_blank'
-              );
-            }}
+            onClick={() => setWhatsappHelperOpen(true)}
           >
             <MessageCircle className="h-4 w-4" />
             Enviar WhatsApp
@@ -597,6 +594,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           isSaving={isEditingItems}
         />
       )}
+
+      <WhatsAppHelper
+        open={whatsappHelperOpen}
+        onOpenChange={setWhatsappHelperOpen}
+        order={order}
+        onSend={(message) => {
+          // Optional: Log sent message or mark as sent in backend
+          console.log('WhatsApp message sent:', message);
+        }}
+      />
     </div>
   );
 }
