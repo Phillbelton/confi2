@@ -77,7 +77,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  if (error || !order) {
+  if (error || !order || !order.createdAt) {
     return (
       <div className="text-center py-12">
         <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
@@ -176,10 +176,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             <p className="text-sm text-slate-500">
               Creada{' '}
-              {formatDistanceToNow(new Date(order.createdAt), {
-                addSuffix: true,
-                locale: es,
-              })}
+              {safeFormatDate(
+                order.createdAt,
+                (d) => formatDistanceToNow(d, { addSuffix: true, locale: es }),
+                'fecha desconocida'
+              )}
             </p>
           </div>
         </div>
@@ -538,9 +539,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                     {order.whatsappSentAt && (
                       <p className="text-xs text-slate-500 mt-1">
-                        {format(new Date(order.whatsappSentAt), "d/MM/yyyy 'a las' HH:mm", {
-                          locale: es,
-                        })}
+                        {safeFormatDate(
+                          order.whatsappSentAt,
+                          (d) => format(d, "d/MM/yyyy 'a las' HH:mm", { locale: es })
+                        )}
                       </p>
                     )}
                   </div>
@@ -614,4 +616,15 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value) + ' Gs';
+}
+
+function safeFormatDate(date: Date | string | undefined | null, formatFn: (d: Date) => string, fallback: string = '-'): string {
+  if (!date) return fallback;
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return fallback;
+    return formatFn(dateObj);
+  } catch {
+    return fallback;
+  }
 }
