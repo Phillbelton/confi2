@@ -1,0 +1,400 @@
+'use client';
+
+import { use } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  ArrowLeft,
+  MessageCircle,
+  CheckCircle,
+  Edit,
+  XCircle,
+  MapPin,
+  Phone,
+  Mail,
+  Truck,
+  Package,
+  CreditCard,
+  FileText,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useFuncionarioOrder } from '@/hooks/funcionario/useFuncionarioOrder';
+import { OrderStatusBadge } from '@/components/funcionario/orders/OrderStatusBadge';
+import { OrderTimeline } from '@/components/funcionario/orders/OrderTimeline';
+import { formatDistanceToNow, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const { order, isLoading, error } = useFuncionarioOrder(resolvedParams.id);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-96" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-48" />
+            <Skeleton className="h-64" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="text-center py-12">
+        <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Orden no encontrada</h2>
+        <p className="text-slate-500 mb-6">La orden que buscas no existe o no tienes acceso.</p>
+        <Link href="/funcionario/ordenes">
+          <Button>Volver a órdenes</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const canEdit = ['pending_whatsapp', 'confirmed', 'preparing'].includes(order.status);
+  const canConfirm = order.status === 'pending_whatsapp';
+  const canCancel = !['completed', 'cancelled'].includes(order.status);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/funcionario/ordenes">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold font-mono">{order.orderNumber}</h1>
+              <OrderStatusBadge status={order.status} />
+            </div>
+            <p className="text-sm text-slate-500">
+              Creada{' '}
+              {formatDistanceToNow(new Date(order.createdAt), {
+                addSuffix: true,
+                locale: es,
+              })}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-2">
+        {order.customer.phone && (
+          <Button
+            className="gap-2 bg-green-600 hover:bg-green-700"
+            onClick={() => {
+              window.open(
+                `https://wa.me/${order.customer.phone.replace(/\D/g, '')}`,
+                '_blank'
+              );
+            }}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Enviar WhatsApp
+          </Button>
+        )}
+
+        {canConfirm && (
+          <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+            <CheckCircle className="h-4 w-4" />
+            Confirmar Orden
+          </Button>
+        )}
+
+        {canEdit && (
+          <Button variant="outline" className="gap-2">
+            <Edit className="h-4 w-4" />
+            Editar Productos
+          </Button>
+        )}
+
+        {canCancel && (
+          <Button variant="destructive" className="gap-2">
+            <XCircle className="h-4 w-4" />
+            Cancelar Orden
+          </Button>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column - Main Info */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Customer Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Información del Cliente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-slate-500 mb-1">Nombre</p>
+                  <p className="font-semibold">{order.customer.name}</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Phone className="h-4 w-4 text-slate-500" />
+                    <p className="text-sm text-slate-500">Teléfono</p>
+                  </div>
+                  <p className="font-semibold">{order.customer.phone}</p>
+                </div>
+                {order.customer.email && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Mail className="h-4 w-4 text-slate-500" />
+                      <p className="text-sm text-slate-500">Email</p>
+                    </div>
+                    <p className="font-semibold text-sm">{order.customer.email}</p>
+                  </div>
+                )}
+              </div>
+
+              {order.customer.address && (
+                <>
+                  <Separator />
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-4 w-4 text-slate-500" />
+                      <p className="text-sm text-slate-500">Dirección de Entrega</p>
+                    </div>
+                    <p className="font-semibold">
+                      {order.customer.address.street} {order.customer.address.number}
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      {order.customer.address.neighborhood && `${order.customer.address.neighborhood}, `}
+                      {order.customer.address.city}
+                    </p>
+                    {order.customer.address.reference && (
+                      <p className="text-sm text-slate-500 mt-1">
+                        <span className="font-medium">Referencia:</span> {order.customer.address.reference}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Products */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">
+                Productos ({order.items.length})
+              </CardTitle>
+              {canEdit && (
+                <Button variant="outline" size="sm">
+                  Editar
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {order.items.map((item, index) => (
+                  <div key={index} className="flex gap-4 pb-4 border-b last:border-0">
+                    {/* Product Image */}
+                    {item.variantSnapshot.image && (
+                      <div className="w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
+                        <img
+                          src={item.variantSnapshot.image}
+                          alt={item.variantSnapshot.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">{item.variantSnapshot.name}</p>
+                      <p className="text-xs text-slate-500 font-mono">
+                        SKU: {item.variantSnapshot.sku}
+                      </p>
+
+                      {/* Attributes */}
+                      {item.variantSnapshot.attributes &&
+                        Object.keys(item.variantSnapshot.attributes).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {Object.entries(item.variantSnapshot.attributes).map(([key, value]) => (
+                              <Badge key={key} variant="outline" className="text-xs">
+                                {key}: {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                      {/* Pricing */}
+                      <div className="mt-2 space-y-1">
+                        <p className="text-sm">
+                          {item.quantity} × {formatCurrency(item.pricePerUnit)} ={' '}
+                          <span className="font-semibold">
+                            {formatCurrency(item.quantity * item.pricePerUnit)}
+                          </span>
+                        </p>
+                        {item.discount > 0 && (
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            Descuento: -{formatCurrency(item.discount)}
+                          </p>
+                        )}
+                        <p className="text-sm font-semibold">
+                          Subtotal: {formatCurrency(item.subtotal)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Order Totals */}
+              <Separator className="my-4" />
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Subtotal:</span>
+                  <span className="font-semibold">{formatCurrency(order.subtotal)}</span>
+                </div>
+                {order.totalDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Descuentos totales:</span>
+                    <span className="font-semibold">-{formatCurrency(order.totalDiscount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Costo de envío:</span>
+                  <span className="font-semibold">{formatCurrency(order.shippingCost)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-lg font-bold">
+                  <span>TOTAL:</span>
+                  <span>{formatCurrency(order.total)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notes */}
+          {(order.customerNotes || order.deliveryNotes || order.adminNotes) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Notas y Observaciones</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {order.customerNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">
+                      💬 Notas del cliente:
+                    </p>
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                      <p className="text-sm">{order.customerNotes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {order.deliveryNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">
+                      🚚 Instrucciones de entrega:
+                    </p>
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                      <p className="text-sm">{order.deliveryNotes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {order.adminNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">
+                      🔒 Notas administrativas:
+                    </p>
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                      <p className="text-sm">{order.adminNotes}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Column - Timeline & Details */}
+        <div className="space-y-6">
+          {/* Order Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Detalles</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Truck className="h-4 w-4 text-slate-500" />
+                  <p className="text-sm text-slate-500">Método de entrega</p>
+                </div>
+                <Badge variant="outline">
+                  {order.deliveryMethod === 'delivery' ? '🚚 Delivery' : '📦 Retiro'}
+                </Badge>
+              </div>
+
+              <Separator />
+
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard className="h-4 w-4 text-slate-500" />
+                  <p className="text-sm text-slate-500">Método de pago</p>
+                </div>
+                <Badge variant="outline">
+                  {order.paymentMethod === 'cash' ? '💵 Efectivo' : '💳 Transferencia'}
+                </Badge>
+              </div>
+
+              {order.whatsappSent && (
+                <>
+                  <Separator />
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageCircle className="h-4 w-4 text-green-600" />
+                      <p className="text-sm text-slate-500">WhatsApp</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <p className="text-sm text-green-600 dark:text-green-400">Enviado</p>
+                    </div>
+                    {order.whatsappSentAt && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        {format(new Date(order.whatsappSentAt), "d/MM/yyyy 'a las' HH:mm", {
+                          locale: es,
+                        })}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Timeline */}
+          <OrderTimeline order={order} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-PY', {
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value) + ' Gs';
+}
