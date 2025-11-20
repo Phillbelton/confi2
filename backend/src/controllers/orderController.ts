@@ -863,7 +863,7 @@ export const updateShippingCost = asyncHandler(
 
     // Actualizar costo de envío
     order.shippingCost = shippingCost;
-    order.total = order.subtotal - order.totalDiscount + shippingCost;
+    order.total = order.subtotal + shippingCost;
 
     await order.save();
 
