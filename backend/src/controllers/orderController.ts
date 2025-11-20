@@ -321,7 +321,7 @@ export const getOrderById = asyncHandler(
 
     res.status(200).json({
       success: true,
-      data: { order },
+      data: order,
     });
   }
 );
@@ -344,7 +344,7 @@ export const getOrderByNumber = asyncHandler(
 
     res.status(200).json({
       success: true,
-      data: { order },
+      data: order,
     });
   }
 );
