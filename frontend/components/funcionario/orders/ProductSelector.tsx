@@ -26,6 +26,7 @@ interface ProductVariant {
   allowBackorder: boolean;
   attributes: Record<string, string>;
   image?: string;
+  images?: string[]; // Backend returns images array
 }
 
 interface ProductSelectorProps {
@@ -143,10 +144,10 @@ export function ProductSelector({
                     }`}
                   >
                     <div className="flex gap-3">
-                      {variant.image && (
+                      {(variant.image || variant.images?.[0]) && (
                         <div className="w-12 h-12 rounded bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
                           <img
-                            src={variant.image}
+                            src={variant.image || variant.images?.[0]}
                             alt={variant.name}
                             className="w-full h-full object-cover"
                           />
