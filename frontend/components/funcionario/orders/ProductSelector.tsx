@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Loader2, Package } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import api from '@/lib/axios';
 
 interface ProductVariant {
   _id: string;
@@ -46,12 +47,29 @@ export function ProductSelector({
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - En producción esto vendría de una API
+  // Fetch product variants from API
   useEffect(() => {
     if (open) {
-      // Aquí iría la llamada a GET /api/products/variants o similar
-      // Por ahora usamos datos mock
-      setIsLoading(false);
+      setIsLoading(true);
+      api
+        .get('/products/variants', {
+          params: {
+            active: 'true', // Solo productos activos
+            limit: 100, // Obtener más productos
+          },
+        })
+        .then((response) => {
+          // La respuesta tiene estructura: { success: true, data: { data: [...], pagination: {...} } }
+          const variantsData = response.data.data?.data || [];
+          setVariants(variantsData);
+        })
+        .catch((error) => {
+          console.error('Error fetching variants:', error);
+          setVariants([]);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
   }, [open]);
 
