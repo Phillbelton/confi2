@@ -35,10 +35,10 @@ export function EditShippingCost({
 
   const quickAmounts = [
     { label: 'Gratis', value: 0 },
-    { label: '10k', value: 10000 },
-    { label: '15k', value: 15000 },
-    { label: '20k', value: 20000 },
-    { label: '25k', value: 25000 },
+    { label: '$2.000', value: 2000 },
+    { label: '$3.000', value: 3000 },
+    { label: '$5.000', value: 5000 },
+    { label: '$8.000', value: 8000 },
   ];
 
   if (!isEditing) {
@@ -118,22 +118,22 @@ export function EditShippingCost({
           className="flex-1"
           disabled={isSaving}
           min="0"
-          step="1000"
+          step="100"
         />
-        <span className="text-sm text-slate-500 whitespace-nowrap">Gs</span>
+        <span className="text-sm text-slate-500 whitespace-nowrap">$</span>
       </div>
 
       <p className="text-xs text-slate-500">
-        Nuevo total: <span className="font-semibold">{formatCurrency(parseInt(cost) || 0)}</span>
+        Costo de envío: <span className="font-semibold">{formatCurrency(parseInt(cost) || 0)}</span>
       </p>
     </div>
   );
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-PY', {
+  return '$' + new Intl.NumberFormat('es-CL', {
     style: 'decimal',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value) + ' Gs';
+  }).format(value);
 }

@@ -241,9 +241,9 @@ export default function PendientesPage() {
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-PY', {
+  return '$' + new Intl.NumberFormat('es-CL', {
     style: 'decimal',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value) + ' Gs';
+  }).format(value);
 }

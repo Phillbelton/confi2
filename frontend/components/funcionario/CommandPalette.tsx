@@ -253,15 +253,15 @@ function getStatusColor(status: string): string {
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-PY', {
+  return '$' + new Intl.NumberFormat('es-CL', {
     style: 'decimal',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value) + ' Gs';
+  }).format(value);
 }
 
 function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString('es-PY', {
+  return new Date(date).toLocaleDateString('es-CL', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
