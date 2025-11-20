@@ -38,6 +38,6 @@ router.put('/:id/items', authenticate, authorize('admin', 'funcionario'), captur
 router.put('/:id/whatsapp-sent', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(markWhatsAppSentSchema), auditLog('order', 'update'), orderController.markWhatsAppSent);
 
 // Cancel order (owner, admin, funcionario)
-router.put('/:id/cancel', captureBeforeState(Order), validate(cancelOrderSchema), auditLog('order', 'cancel'), orderController.cancelOrder);
+router.put('/:id/cancel', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(cancelOrderSchema), auditLog('order', 'cancel'), orderController.cancelOrder);
 
 export default router;
