@@ -32,7 +32,7 @@ export function ConfirmOrderModal({
   onConfirm,
   isConfirming,
 }: ConfirmOrderModalProps) {
-  const [shippingCost, setShippingCost] = useState('15000');
+  const [shippingCost, setShippingCost] = useState('0');
   const [adminNotes, setAdminNotes] = useState('');
   const [sendWhatsApp, setSendWhatsApp] = useState(true);
 
@@ -72,7 +72,7 @@ export function ConfirmOrderModal({
             Confirmar Orden {order.orderNumber}
           </DialogTitle>
           <DialogDescription>
-            Establece el costo de envío y confirma la orden del cliente
+            Confirma la orden del cliente. El costo de envío se puede calcular y agregar después.
           </DialogDescription>
         </DialogHeader>
 
@@ -92,7 +92,7 @@ export function ConfirmOrderModal({
 
           {/* Shipping Cost Input */}
           <div className="space-y-2">
-            <Label htmlFor="shippingCost">Costo de envío (requerido)</Label>
+            <Label htmlFor="shippingCost">Costo de envío (opcional)</Label>
             <Input
               id="shippingCost"
               type="number"

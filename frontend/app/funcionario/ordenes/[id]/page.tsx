@@ -32,6 +32,7 @@ import { UpdateStatusModal } from '@/components/funcionario/orders/UpdateStatusM
 import { CancelOrderModal } from '@/components/funcionario/orders/CancelOrderModal';
 import { EditOrderItemsModal } from '@/components/funcionario/orders/EditOrderItemsModal';
 import { WhatsAppHelper } from '@/components/funcionario/orders/WhatsAppHelper';
+import { EditShippingCost } from '@/components/funcionario/orders/EditShippingCost';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -50,6 +51,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     isCancelling,
     editOrderItems,
     isEditingItems,
+    updateShippingCost,
+    isUpdatingShippingCost,
   } = useFuncionarioOrders({ page: 1, limit: 1 });
 
   // Modal states
@@ -151,6 +154,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const handleQuickStatusChange = (newStatus: any) => {
     updateStatus(
       { id: order._id, data: { status: newStatus } },
+      {
+        onSuccess: () => {
+          refetch();
+        },
+      }
+    );
+  };
+
+  // Update shipping cost
+  const handleUpdateShippingCost = (newCost: number) => {
+    updateShippingCost(
+      { id: order._id, shippingCost: newCost },
       {
         onSuccess: () => {
           refetch();
@@ -438,10 +453,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <span className="font-semibold">-{formatCurrency(order.totalDiscount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Costo de envío:</span>
-                  <span className="font-semibold">{formatCurrency(order.shippingCost)}</span>
-                </div>
+                <EditShippingCost
+                  currentCost={order.shippingCost}
+                  onSave={handleUpdateShippingCost}
+                  isSaving={isUpdatingShippingCost}
+                  canEdit={canEdit}
+                />
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>TOTAL:</span>

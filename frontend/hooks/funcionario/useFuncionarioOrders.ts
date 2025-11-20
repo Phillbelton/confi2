@@ -95,6 +95,21 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
     },
   });
 
+  // Update shipping cost mutation
+  const updateShippingCostMutation = useMutation({
+    mutationFn: ({ id, shippingCost }: { id: string; shippingCost: number }) =>
+      funcionarioOrdersService.updateShippingCost(id, shippingCost),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['funcionario-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['funcionario-order'] });
+      queryClient.invalidateQueries({ queryKey: ['funcionario-stats'] });
+      toast.success('Costo de envío actualizado');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al actualizar el costo de envío');
+    },
+  });
+
   return {
     orders: ordersQuery.data?.data || [],
     pagination: ordersQuery.data?.pagination,
@@ -110,6 +125,8 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
     isCancelling: cancelOrderMutation.isPending,
     editOrderItems: editOrderItemsMutation.mutate,
     isEditingItems: editOrderItemsMutation.isPending,
+    updateShippingCost: updateShippingCostMutation.mutate,
+    isUpdatingShippingCost: updateShippingCostMutation.isPending,
     refetch: ordersQuery.refetch,
   };
 }

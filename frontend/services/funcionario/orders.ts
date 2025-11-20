@@ -91,6 +91,14 @@ export const funcionarioOrdersService = {
   },
 
   /**
+   * Update shipping cost
+   */
+  updateShippingCost: async (id: string, shippingCost: number): Promise<Order> => {
+    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/shipping`, { shippingCost });
+    return data.data;
+  },
+
+  /**
    * Get stats for dashboard
    */
   getStats: async (startDate?: string, endDate?: string): Promise<any> => {

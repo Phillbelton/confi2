@@ -832,3 +832,45 @@ export const editOrderItems = asyncHandler(
     });
   }
 );
+
+// @desc    Actualizar costo de envío de una orden
+// @route   PUT /api/orders/:id/shipping
+// @access  Private (admin, funcionario)
+export const updateShippingCost = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const { id } = req.params;
+    const { shippingCost } = req.body;
+
+    if (!req.user) {
+      throw new AppError(401, 'Usuario no autenticado');
+    }
+
+    // Validar que shippingCost sea un número válido
+    if (typeof shippingCost !== 'number' || shippingCost < 0) {
+      throw new AppError(400, 'Costo de envío inválido');
+    }
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      throw new AppError(404, 'Orden no encontrada');
+    }
+
+    // No se puede modificar órdenes completadas o canceladas
+    if (order.status === 'completed' || order.status === 'cancelled') {
+      throw new AppError(400, 'No se puede modificar el costo de envío de una orden completada o cancelada');
+    }
+
+    // Actualizar costo de envío
+    order.shippingCost = shippingCost;
+    order.total = order.subtotal - order.totalDiscount + shippingCost;
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Costo de envío actualizado exitosamente',
+      data: order,
+    });
+  }
+);
