@@ -120,11 +120,14 @@ function calculateTierDiscount(
 /**
  * Calculate discount for a single item
  * This is the unified function used across the entire frontend
+ * Applies discounts in priority order:
+ * 1. Variant Fixed Discount
+ * 2. Variant Tiered Discount (acumulativo sobre precio con descuento fijo)
  *
  * @param variant - The product variant
  * @param quantity - Quantity being purchased
- * @param productParent - The parent product (needed for legacy tiered discounts)
- * @param allCartItems - All items in cart (for grouped quantity calculation in parent tiered discounts)
+ * @param productParent - The parent product (optional, for future use)
+ * @param allCartItems - All items in cart (optional, for future use)
  * @returns Complete discount calculation result
  */
 export function calculateItemDiscount(
@@ -193,90 +196,6 @@ export function calculateItemDiscount(
           value: tier.value,
           source: 'variant-tiered' as const,
         };
-      }
-    }
-  }
-
-  // =========================================================================
-  // PRIORITY 3: Parent Tiered Discount (legacy - only if no other discounts)
-  // =========================================================================
-
-  if (
-    totalDiscountPerUnit === 0 &&
-    productParent?.tieredDiscounts &&
-    productParent.tieredDiscounts.length > 0
-  ) {
-    for (const tieredDiscount of productParent.tieredDiscounts) {
-      if (!tieredDiscount.active) continue;
-
-      const isValid = isDateValid(
-        tieredDiscount.startDate,
-        tieredDiscount.endDate
-      );
-
-      if (!isValid) continue;
-
-      // For products WITHOUT variants (attribute = null)
-      if (!tieredDiscount.attribute || !tieredDiscount.attributeValue) {
-        const tier = findApplicableTier(quantity, tieredDiscount.tiers);
-
-        if (tier) {
-          const tierDiscount = calculateTierDiscount(originalPrice, tier);
-          totalDiscountPerUnit = tierDiscount;
-          currentPrice = originalPrice - tierDiscount;
-
-          appliedTier = {
-            minQuantity: tier.minQuantity,
-            maxQuantity: tier.maxQuantity,
-            type: tier.type,
-            value: tier.value,
-            source: 'parent-tiered' as const,
-          };
-          break;
-        }
-      }
-
-      // For products WITH variants - check if variant matches attribute
-      const variantAttributeValue = variant.attributes[tieredDiscount.attribute];
-
-      if (variantAttributeValue === tieredDiscount.attributeValue) {
-        // Group quantity by same attribute value across all cart items
-        let groupedQuantity = quantity;
-
-        if (allCartItems && allCartItems.length > 0) {
-          groupedQuantity = allCartItems
-            .filter((item) => {
-              if (!item.productParent || typeof item.productParent === 'string') {
-                return false;
-              }
-              if (item.productParent._id !== productParent._id) {
-                return false;
-              }
-
-              return (
-                item.variant.attributes[tieredDiscount.attribute] ===
-                tieredDiscount.attributeValue
-              );
-            })
-            .reduce((sum, item) => sum + item.quantity, 0);
-        }
-
-        const tier = findApplicableTier(groupedQuantity, tieredDiscount.tiers);
-
-        if (tier) {
-          const tierDiscount = calculateTierDiscount(originalPrice, tier);
-          totalDiscountPerUnit = tierDiscount;
-          currentPrice = originalPrice - tierDiscount;
-
-          appliedTier = {
-            minQuantity: tier.minQuantity,
-            maxQuantity: tier.maxQuantity,
-            type: tier.type,
-            value: tier.value,
-            source: 'parent-tiered' as const,
-          };
-          break;
-        }
       }
     }
   }
@@ -407,21 +326,6 @@ export function getDiscountBadge(
     }
   }
 
-  // Check parent tiered discount
-  if (productParent?.tieredDiscounts && productParent.tieredDiscounts.length > 0) {
-    const activeDiscount = productParent.tieredDiscounts.find((d) => {
-      if (!d.active) return false;
-      return isDateValid(d.startDate, d.endDate);
-    });
-
-    if (activeDiscount && activeDiscount.tiers.length > 0) {
-      const firstTier = activeDiscount.tiers[0];
-      const discount = calculateItemDiscount(variant, firstTier.minQuantity, productParent);
-
-      return `Desde ${firstTier.minQuantity} un $${discount.finalPrice.toLocaleString()} c/u`;
-    }
-  }
-
   return null;
 }
 
@@ -444,14 +348,6 @@ export function hasActiveDiscount(
     if (isDateValid(variant.tieredDiscount.startDate, variant.tieredDiscount.endDate)) {
       return true;
     }
-  }
-
-  // Check parent tiered discount
-  if (productParent?.tieredDiscounts && productParent.tieredDiscounts.length > 0) {
-    return productParent.tieredDiscounts.some((d) => {
-      if (!d.active) return false;
-      return isDateValid(d.startDate, d.endDate);
-    });
   }
 
   return false;
@@ -494,29 +390,6 @@ export function getDiscountTiers(
       return variant.tieredDiscount.tiers.map((tier) => {
         const tierDiscount = calculateTierDiscount(basePrice, tier);
         const finalPrice = basePrice - tierDiscount;
-
-        return {
-          range: tier.maxQuantity
-            ? `${tier.minQuantity}-${tier.maxQuantity} un`
-            : `${tier.minQuantity}+ un`,
-          price: `$${Math.round(finalPrice).toLocaleString()}`,
-          discount: tier.type === 'percentage' ? `${tier.value}%` : `$${tier.value}`,
-        };
-      });
-    }
-  }
-
-  // Show parent tiered discount tiers (legacy)
-  if (productParent?.tieredDiscounts && productParent.tieredDiscounts.length > 0) {
-    const activeDiscount = productParent.tieredDiscounts.find((d) => {
-      if (!d.active) return false;
-      return isDateValid(d.startDate, d.endDate);
-    });
-
-    if (activeDiscount && activeDiscount.tiers.length > 0) {
-      return activeDiscount.tiers.map((tier) => {
-        const tierDiscount = calculateTierDiscount(variant.price, tier);
-        const finalPrice = variant.price - tierDiscount;
 
         return {
           range: tier.maxQuantity

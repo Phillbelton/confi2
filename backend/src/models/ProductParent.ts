@@ -13,21 +13,6 @@ export interface IVariantAttribute {
   }[];
 }
 
-export interface ITieredDiscount {
-  attribute: string;
-  attributeValue: string;
-  tiers: {
-    minQuantity: number;
-    maxQuantity: number | null;
-    type: 'percentage' | 'amount';
-    value: number;
-  }[];
-  startDate?: Date;
-  endDate?: Date;
-  badge?: string;
-  active: boolean;
-}
-
 export interface IProductParent extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
@@ -40,7 +25,6 @@ export interface IProductParent extends Document {
   seoTitle?: string;
   seoDescription?: string;
   variantAttributes: IVariantAttribute[];
-  tieredDiscounts: ITieredDiscount[];
   featured: boolean;
   active: boolean;
   views: number;
@@ -154,49 +138,6 @@ const productParentSchema = new Schema<IProductParent>(
             },
           },
         ],
-      },
-    ],
-    tieredDiscounts: [
-      {
-        attribute: {
-          type: String,
-          required: true,
-          lowercase: true,
-        },
-        attributeValue: {
-          type: String,
-          required: true,
-        },
-        tiers: [
-          {
-            minQuantity: {
-              type: Number,
-              required: true,
-              min: 1,
-            },
-            maxQuantity: {
-              type: Number,
-              default: null,
-            },
-            type: {
-              type: String,
-              enum: ['percentage', 'amount'],
-              required: true,
-            },
-            value: {
-              type: Number,
-              required: true,
-              min: 0,
-            },
-          },
-        ],
-        startDate: Date,
-        endDate: Date,
-        badge: String,
-        active: {
-          type: Boolean,
-          default: true,
-        },
       },
     ],
     featured: {
