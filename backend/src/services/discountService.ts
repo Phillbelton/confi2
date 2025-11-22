@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import ProductParent from '../models/ProductParent';
 import ProductVariant from '../models/ProductVariant';
 
 /**
