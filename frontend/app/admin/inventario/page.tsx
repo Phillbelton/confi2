@@ -127,6 +127,7 @@ export default function InventarioPage() {
       adjustment: { label: 'Ajuste', variant: 'secondary' as const, color: 'bg-gray-600' },
       return: { label: 'Devolución', variant: 'default' as const, color: 'bg-amber-600' },
       damage: { label: 'Daño/Pérdida', variant: 'destructive' as const, color: '' },
+      cancellation: { label: 'Cancelación', variant: 'destructive' as const, color: 'bg-red-600' },
     };
 
     const config = variants[type] || variants.adjustment;
