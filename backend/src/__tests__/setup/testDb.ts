@@ -1,3 +1,14 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load test environment variables BEFORE any other imports
+dotenv.config({ path: path.resolve(__dirname, '../../../.env.test') });
+
+// Set required env vars for test if not already set
+process.env.NODE_ENV = 'test';
+process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 
