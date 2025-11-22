@@ -81,8 +81,8 @@ export default function InventarioPage() {
     type: movementsType !== 'all' ? (movementsType as any) : undefined,
   });
 
-  const movements = movementsData?.data?.movements || [];
-  const movementsPagination = movementsData?.data?.pagination;
+const movements = movementsData?.data || [];
+const movementsPagination = movementsData?.pagination;
 
   // Stock operations
   const { adjustStock, isAdjusting } = useStockOperations();
