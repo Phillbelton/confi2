@@ -1,11 +1,17 @@
 import { api } from '@/lib/axios';
 import type { ApiResponse, ApiPaginatedResponse } from '@/types';
 
+export interface StockMovementVariant {
+  _id: string;
+  name: string;
+  sku: string;
+}
+
 export interface StockMovement {
   _id: string;
-  variant: string;
+  variant: StockMovementVariant | string;
   order?: string;
-  type: 'sale' | 'restock' | 'adjustment' | 'return' | 'damage';
+  type: 'sale' | 'restock' | 'adjustment' | 'return' | 'damage' | 'cancellation';
   quantity: number;
   previousStock: number;
   newStock: number;
