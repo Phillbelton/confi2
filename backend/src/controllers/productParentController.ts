@@ -36,7 +36,6 @@ export const createProductParent = asyncHandler(
       seoTitle,
       seoDescription,
       variantAttributes,
-      tieredDiscounts,
       featured,
       defaultVariant, // NUEVO: { price, stock, sku? }
     } = req.body;
@@ -74,7 +73,6 @@ export const createProductParent = asyncHandler(
       seoTitle,
       seoDescription,
       variantAttributes: variantAttributes || [],
-      tieredDiscounts: tieredDiscounts || [],
       featured: featured || false,
       active: true,
       createdBy: req.user?.id,
@@ -418,7 +416,6 @@ export const updateProductParent = asyncHandler(
       seoTitle,
       seoDescription,
       variantAttributes,
-      tieredDiscounts,
       featured,
       active,
     } = req.body;
@@ -466,8 +463,6 @@ export const updateProductParent = asyncHandler(
       productParent.seoDescription = seoDescription;
     if (variantAttributes !== undefined)
       productParent.variantAttributes = variantAttributes as any;
-    if (tieredDiscounts !== undefined)
-      productParent.tieredDiscounts = tieredDiscounts as any;
     if (featured !== undefined) productParent.featured = featured;
     if (active !== undefined) productParent.active = active;
 

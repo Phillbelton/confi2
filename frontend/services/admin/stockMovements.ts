@@ -3,9 +3,9 @@ import type { ApiResponse, ApiPaginatedResponse } from '@/types';
 
 export interface StockMovement {
   _id: string;
-  variant: string;
+  variant: StockMovementVariant | string;
   order?: string;
-  type: 'sale' | 'restock' | 'adjustment' | 'return' | 'damage';
+  type: 'sale' | 'restock' | 'adjustment' | 'return' | 'damage' | 'cancellation';
   quantity: number;
   previousStock: number;
   newStock: number;
@@ -46,7 +46,11 @@ export interface MovementsQuery {
   minQuantity?: number;
   sort?: 'date_asc' | 'date_desc' | 'quantity_asc' | 'quantity_desc';
 }
-
+export interface StockMovementVariant {
+  _id: string;
+  name: string;
+  sku: string;
+}
 export const stockMovementService = {
   /**
    * Get all stock movements with optional filters

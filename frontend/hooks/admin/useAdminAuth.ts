@@ -74,9 +74,12 @@ export function useAdminAuth() {
       // Show success message
       toast.success(`Bienvenido, ${data.user.name}!`);
 
+      // Redirect based on user role
+      const redirectPath = data.user.role === 'funcionario' ? '/funcionario' : '/admin';
+
       // Use window.location for hard navigation (router.push wasn't working)
       setTimeout(() => {
-        window.location.href = '/admin';
+        window.location.href = redirectPath;
       }, 500);
     },
     onError: (error: any) => {

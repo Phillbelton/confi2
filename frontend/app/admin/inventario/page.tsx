@@ -81,8 +81,8 @@ export default function InventarioPage() {
     type: movementsType !== 'all' ? (movementsType as any) : undefined,
   });
 
-  const movements = movementsData?.data?.movements || [];
-  const movementsPagination = movementsData?.data?.pagination;
+const movements = movementsData?.data || [];
+const movementsPagination = movementsData?.pagination;
 
   // Stock operations
   const { adjustStock, isAdjusting } = useStockOperations();
@@ -127,6 +127,7 @@ export default function InventarioPage() {
       adjustment: { label: 'Ajuste', variant: 'secondary' as const, color: 'bg-gray-600' },
       return: { label: 'Devolución', variant: 'default' as const, color: 'bg-amber-600' },
       damage: { label: 'Daño/Pérdida', variant: 'destructive' as const, color: '' },
+      cancellation: { label: 'Cancelación', variant: 'default' as const, color: 'bg-orange-600' },
     };
 
     const config = variants[type] || variants.adjustment;

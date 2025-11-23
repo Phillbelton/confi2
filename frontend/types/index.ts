@@ -64,7 +64,6 @@ export interface ProductParent {
   seoTitle?: string;
   seoDescription?: string;
   variantAttributes: VariantAttribute[];
-  tieredDiscounts: TieredDiscount[];
   featured: boolean;
   active: boolean;
   views: number;

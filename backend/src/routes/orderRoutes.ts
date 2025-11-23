@@ -35,9 +35,10 @@ router.get('/stats', authenticate, authorize('admin', 'funcionario'), validate(g
 router.put('/:id/confirm', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(confirmOrderSchema), auditLog('order', 'update'), orderController.confirmOrder);
 router.put('/:id/status', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(updateOrderStatusSchema), auditLog('order', 'update'), orderController.updateOrderStatus);
 router.put('/:id/items', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(editOrderItemsSchema), auditLog('order', 'update'), orderController.editOrderItems);
+router.put('/:id/shipping', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), auditLog('order', 'update'), orderController.updateShippingCost);
 router.put('/:id/whatsapp-sent', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(markWhatsAppSentSchema), auditLog('order', 'update'), orderController.markWhatsAppSent);
 
 // Cancel order (owner, admin, funcionario)
-router.put('/:id/cancel', captureBeforeState(Order), validate(cancelOrderSchema), auditLog('order', 'cancel'), orderController.cancelOrder);
+router.put('/:id/cancel', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(cancelOrderSchema), auditLog('order', 'cancel'), orderController.cancelOrder);
 
 export default router;

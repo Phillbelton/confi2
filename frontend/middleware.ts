@@ -4,8 +4,8 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if user is accessing admin routes
-  if (pathname.startsWith('/admin')) {
+  // Check if user is accessing admin or funcionario routes
+  if (pathname.startsWith('/admin') || pathname.startsWith('/funcionario')) {
     // Allow access to login page
     if (pathname === '/admin/login') {
       return NextResponse.next();
@@ -35,7 +35,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For non-admin routes, allow access
+  // For non-admin/funcionario routes, allow access
   return NextResponse.next();
 }
 
@@ -43,12 +43,13 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all admin routes except:
+     * Match all admin and funcionario routes except:
      * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
     '/admin/:path*',
+    '/funcionario/:path*',
   ],
 };

@@ -465,6 +465,69 @@ productVariantSchema.pre('save', async function (next) {
   next();
 });
 
+// Validación: tiers de descuento deben ser coherentes
+productVariantSchema.pre('save', function (next) {
+  if (this.tieredDiscount?.active && this.tieredDiscount.tiers && this.tieredDiscount.tiers.length > 0) {
+    const tiers = this.tieredDiscount.tiers;
+
+    for (const tier of tiers) {
+      // maxQuantity debe ser mayor que minQuantity
+      if (tier.maxQuantity !== null && tier.maxQuantity < tier.minQuantity) {
+        return next(
+          new Error(
+            `Tier inválido: maxQuantity (${tier.maxQuantity}) debe ser mayor que minQuantity (${tier.minQuantity})`
+          )
+        );
+      }
+
+      // minQuantity debe ser positivo
+      if (tier.minQuantity < 1) {
+        return next(new Error('minQuantity debe ser al menos 1'));
+      }
+
+      // Porcentajes no deben exceder 100%
+      if (tier.type === 'percentage' && tier.value > 100) {
+        return next(
+          new Error(`Descuento porcentual no puede exceder 100% (actual: ${tier.value}%)`)
+        );
+      }
+
+      // Porcentajes no deben ser negativos
+      if (tier.type === 'percentage' && tier.value < 0) {
+        return next(new Error('El descuento porcentual no puede ser negativo'));
+      }
+
+      // Valores de descuento fijo no deben ser negativos
+      if (tier.type === 'amount' && tier.value < 0) {
+        return next(new Error('El valor del descuento no puede ser negativo'));
+      }
+
+      // Descuento fijo no debe exceder el precio del producto
+      if (tier.type === 'amount' && tier.value > this.price) {
+        return next(
+          new Error(
+            `El descuento fijo ($${tier.value}) no puede ser mayor que el precio del producto ($${this.price})`
+          )
+        );
+      }
+    }
+
+    // Detectar superposiciones (advertencia, no error)
+    const sorted = [...tiers].sort((a, b) => a.minQuantity - b.minQuantity);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const current = sorted[i];
+      const next = sorted[i + 1];
+
+      if (current.maxQuantity !== null && current.maxQuantity >= next.minQuantity) {
+        console.warn(
+          `[ProductVariant ${this.sku}] Advertencia: Tiers superpuestos detectados entre ${current.minQuantity}-${current.maxQuantity} y ${next.minQuantity}-${next.maxQuantity || '∞'}`
+        );
+      }
+    }
+  }
+  next();
+});
+
 // Validación: stock no puede ser negativo si allowBackorder = false
 productVariantSchema.pre('save', function (next) {
   if (!this.allowBackorder && this.stock < 0) {

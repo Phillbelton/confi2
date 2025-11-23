@@ -38,22 +38,6 @@ const optionalObjectIdArraySchema = z
     return val;
   });
 
-// Schema para tiered discounts (completo según el modelo)
-const tieredDiscountSchema = z.object({
-  attribute: z.string(),
-  attributeValue: z.string(),
-  tiers: z.array(z.object({
-    minQuantity: z.number().int().positive(),
-    maxQuantity: z.number().int().positive().nullable(),
-    type: z.enum(['percentage', 'amount']),
-    value: z.number().positive(),
-  })),
-  startDate: z.string().or(z.date()).optional(),
-  endDate: z.string().or(z.date()).optional(),
-  badge: z.string().optional(),
-  active: z.boolean(),
-});
-
 // Schema para variant attributes (completo según el modelo)
 const variantAttributeSchema = z.object({
   name: z.string().min(1),
@@ -100,8 +84,6 @@ export const createProductParentSchema = z.object({
 
     variantAttributes: z.array(variantAttributeSchema).optional(),
 
-    tieredDiscounts: z.array(tieredDiscountSchema).optional(),
-
     featured: z.boolean().optional(),
 
     active: z.boolean().optional(),
@@ -140,8 +122,6 @@ export const updateProductParentSchema = z.object({
     seoDescription: z.string().max(500).optional(),
 
     variantAttributes: z.array(variantAttributeSchema).optional(),
-
-    tieredDiscounts: z.array(tieredDiscountSchema).optional(),
 
     featured: z.boolean().optional(),
 

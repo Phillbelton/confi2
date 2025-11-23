@@ -207,7 +207,6 @@ async function seedSimpleProducts() {
           tags: productData.tags || [],
           featured: productData.featured || false,
           variantAttributes: [], // Sin atributos de variación = producto simple
-          tieredDiscounts: [],
           active: true,
         });
 
