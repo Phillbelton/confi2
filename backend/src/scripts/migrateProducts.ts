@@ -135,7 +135,6 @@ async function migrateProducts() {
           images: images,
           tags: [],
           variantAttributes: [], // Sin variantes
-          tieredDiscounts: [],
           featured: oldProduct.featured || false,
           active: oldProduct.isActive !== false,
           views: 0,

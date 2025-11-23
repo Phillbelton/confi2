@@ -827,7 +827,6 @@ async function seedProducts() {
             featured: productData.featured || false,
             active: true,
             variantAttributes: variantAttributes,
-            tieredDiscounts: [],
             views: 0,
           });
           createdParents++;
