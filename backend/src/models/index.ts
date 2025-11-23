@@ -5,7 +5,7 @@ export { Tag, ITag, PREDEFINED_TAGS } from './Tag';
 export { Order, IOrder, IOrderItem } from './Order';
 
 // Nuevos modelos para sistema de variantes
-export { default as ProductParent, IProductParent, IVariantAttribute, ITieredDiscount } from './ProductParent';
+export { default as ProductParent, IProductParent, IVariantAttribute } from './ProductParent';
 export { default as ProductVariant, IProductVariant, IFixedDiscount } from './ProductVariant';
 export { default as StockMovement, IStockMovement, StockMovementType } from './StockMovement';
 export { default as AuditLog, IAuditLog, AuditAction, AuditEntity } from './AuditLog';
