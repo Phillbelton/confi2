@@ -106,7 +106,7 @@ export function ProductSelector({
               {variants?.map((variant) => {
                 const isSelected = selectedVariantIds.includes(variant._id);
                 const attributes = Object.entries(variant.attributes || {});
-                const hasDiscount = hasActiveDiscount(variant, variant.parentProduct);
+                const hasDiscount = hasActiveDiscount(variant as any, (variant as any).parent);
 
                 return (
                   <div
@@ -117,7 +117,7 @@ export function ProductSelector({
                     {/* Image */}
                     {variant.images?.[0] && (
                       <img
-                        src={getImageUrl(variant.images[0], 'thumbnail')}
+                        src={getImageUrl(variant.images[0])}
                         alt={variant.name}
                         className="w-12 h-12 object-cover rounded"
                       />
