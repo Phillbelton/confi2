@@ -44,9 +44,7 @@ const registerSchema = z
       .string()
       .min(6, 'Mínimo 6 caracteres'),
     confirmPassword: z.string(),
-    acceptTerms: z.literal(true, {
-      errorMap: () => ({ message: 'Debes aceptar los términos' }),
-    }),
+    acceptTerms: z.literal(true, 'Debes aceptar los términos'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden',
