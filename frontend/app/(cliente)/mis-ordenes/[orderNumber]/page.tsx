@@ -28,7 +28,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrderDetail, getOrderStatusConfig, canCancelOrder } from '@/hooks/client/useClientOrders';
 import { useCartStore } from '@/store/useCartStore';
-import type { Order, OrderStatus } from '@/types/order';
+import type { Order, OrderStatus, OrderItem } from '@/types/order';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -263,7 +263,7 @@ export default function OrderDetailPage({
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y">
-              {order.items.map((item, index) => (
+              {order.items.map((item: OrderItem, index: number) => (
                 <div key={index} className="flex gap-3 p-4">
                   <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     {item.variantSnapshot?.image ? (
