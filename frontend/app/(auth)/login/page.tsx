@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -75,14 +75,24 @@ export default function LoginPage() {
   });
 
   // Redirigir si ya está autenticado
-  if (_hasHydrated && isAuthenticated) {
-    router.push('/perfil');
-    return null;
-  }
+  useEffect(() => {
+    if (_hasHydrated && isAuthenticated) {
+      router.push('/perfil');
+    }
+  }, [_hasHydrated, isAuthenticated, router]);
 
   const onSubmit = async (data: LoginFormData) => {
     loginMutation.mutate(data);
   };
+
+  // Show loading while checking auth or redirecting
+  if (!_hasHydrated || isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30">
