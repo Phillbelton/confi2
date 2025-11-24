@@ -329,7 +329,7 @@ export default function RegisterPage() {
                     id="acceptTerms"
                     checked={acceptTerms}
                     onCheckedChange={(checked) =>
-                      setValue('acceptTerms', checked as boolean)
+                      setValue('acceptTerms', checked === true ? true : (false as unknown as true))
                     }
                     className="mt-0.5"
                   />
