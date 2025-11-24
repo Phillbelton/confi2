@@ -18,7 +18,7 @@ export const auditService = {
   /**
    * Get audit logs with filters and pagination
    */
-  getLogs: async (filters: AuditLogFilters = {}): Promise<ApiPaginatedResponse<AuditLog>> => {
+  getLogs: async (filters: AuditLogFilters = {}): Promise<ApiPaginatedResponse<AuditLog[]>> => {
     const params = new URLSearchParams();
 
     if (filters.page) params.append('page', filters.page.toString());
@@ -31,7 +31,7 @@ export const auditService = {
     if (filters.endDate) params.append('endDate', filters.endDate);
     if (filters.ip) params.append('ip', filters.ip);
 
-    const { data } = await api.get<ApiResponse<ApiPaginatedResponse<AuditLog>>>(
+    const { data } = await api.get<ApiResponse<ApiPaginatedResponse<AuditLog[]>>>(
       `/audit-logs?${params.toString()}`
     );
     return data.data;
