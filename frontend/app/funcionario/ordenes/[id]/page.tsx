@@ -127,7 +127,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   // Handle cancel order
   const handleCancelOrder = (data: { reason: string }) => {
     cancelOrder(
-      { id: order._id, data },
+      { id: order._id, data: { cancellationReason: data.reason } },
       {
         onSuccess: () => {
           setCancelModalOpen(false);
