@@ -23,7 +23,7 @@ export default function PendientesPage() {
     markWhatsAppSent({ id: orderId });
   };
 
-  const getPriorityBadge = (createdAt: Date) => {
+  const getPriorityBadge = (createdAt: string | Date) => {
     const hours = (new Date().getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
 
     if (hours > 24) {
