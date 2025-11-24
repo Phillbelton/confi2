@@ -70,7 +70,7 @@ const addressSchema = z.object({
     .min(1, 'La ciudad es requerida')
     .max(100, 'Máximo 100 caracteres'),
   reference: z.string().max(200, 'Máximo 200 caracteres').optional(),
-  isDefault: z.boolean().default(false),
+  isDefault: z.boolean(),
 });
 
 type AddressFormData = z.infer<typeof addressSchema>;
