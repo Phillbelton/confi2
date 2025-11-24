@@ -109,7 +109,7 @@ export const clientAuthService = {
    * Resetear contraseña con token (public api)
    */
   resetPassword: async (token: string, newPassword: string): Promise<void> => {
-    await api.post('/auth/reset-password', { token, newPassword });
+    await api.post(`/auth/reset-password/${token}`, { newPassword });
   },
 };
 

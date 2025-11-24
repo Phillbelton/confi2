@@ -200,7 +200,7 @@ function LoginContent() {
 
                 <motion.div variants={itemVariants} className="text-right">
                   <Link
-                    href="/recuperar-password"
+                    href="/recuperar-contrasena"
                     className="text-sm text-primary hover:underline"
                   >
                     ¿Olvidaste tu contraseña?

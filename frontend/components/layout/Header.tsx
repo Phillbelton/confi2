@@ -17,16 +17,19 @@ import { useClientStore } from '@/store/useClientStore';
 import { useClientLogout } from '@/hooks/client/useClientAuth';
 import { CartSheet } from '@/components/cart/CartSheet';
 import { UserDropdown } from './UserDropdown';
+import { SearchDialog } from './SearchDialog';
 import { useState } from 'react';
 
 const navigation = [
   { name: 'Inicio', href: '/' },
   { name: 'Productos', href: '/productos' },
+  { name: 'Ofertas', href: '/ofertas' },
 ];
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const itemCount = useCartStore((state) => state.itemCount);
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
   const logoutMutation = useClientLogout();
@@ -70,6 +73,7 @@ export function Header() {
             size="icon"
             className="h-9 w-9 touch-target"
             aria-label="Buscar productos"
+            onClick={() => setSearchOpen(true)}
           >
             <Search className="h-5 w-5" />
           </Button>
@@ -220,6 +224,9 @@ export function Header() {
 
       {/* Cart Sheet */}
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
+
+      {/* Search Dialog */}
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   );
 }
