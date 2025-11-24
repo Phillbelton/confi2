@@ -1,4 +1,4 @@
-import api from '@/lib/axios';
+import adminApi from '@/lib/adminApi';
 import type { AdminPaginatedResponse, AdminPaginationParams } from '@/types/admin';
 import type {
   Order,
@@ -34,7 +34,7 @@ export const funcionarioOrdersService = {
       return acc;
     }, {} as any);
 
-    const { data } = await api.get<ApiResponse<AdminPaginatedResponse<Order>>>('/orders', {
+    const { data } = await adminApi.get<ApiResponse<AdminPaginatedResponse<Order>>>('/orders', {
       params: cleanParams,
     });
     return data.data;
@@ -44,7 +44,7 @@ export const funcionarioOrdersService = {
    * Get order by ID
    */
   getOrderById: async (id: string): Promise<Order> => {
-    const { data } = await api.get<ApiResponse<Order>>(`/orders/${id}`);
+    const { data } = await adminApi.get<ApiResponse<Order>>(`/orders/${id}`);
     return data.data;
   },
 
@@ -52,7 +52,7 @@ export const funcionarioOrdersService = {
    * Confirm order (set shipping cost and change to confirmed)
    */
   confirmOrder: async (id: string, confirmData: ConfirmOrderData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/confirm`, confirmData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/confirm`, confirmData);
     return data.data;
   },
 
@@ -60,7 +60,7 @@ export const funcionarioOrdersService = {
    * Update order status
    */
   updateOrderStatus: async (id: string, statusData: UpdateOrderStatusData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/status`, statusData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/status`, statusData);
     return data.data;
   },
 
@@ -68,7 +68,7 @@ export const funcionarioOrdersService = {
    * Mark WhatsApp as sent
    */
   markWhatsAppSent: async (id: string, messageId?: string): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/whatsapp-sent`, {
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/whatsapp-sent`, {
       messageId,
     });
     return data.data;
@@ -78,7 +78,7 @@ export const funcionarioOrdersService = {
    * Cancel order
    */
   cancelOrder: async (id: string, cancelData: CancelOrderData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/cancel`, cancelData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/cancel`, cancelData);
     return data.data;
   },
 
@@ -86,7 +86,7 @@ export const funcionarioOrdersService = {
    * Edit order items (add, remove, change quantities)
    */
   editOrderItems: async (id: string, itemsData: EditOrderItemsData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/items`, itemsData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/items`, itemsData);
     return data.data;
   },
 
@@ -94,7 +94,7 @@ export const funcionarioOrdersService = {
    * Update shipping cost
    */
   updateShippingCost: async (id: string, shippingCost: number): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/shipping`, { shippingCost });
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/shipping`, { shippingCost });
     return data.data;
   },
 
@@ -106,7 +106,7 @@ export const funcionarioOrdersService = {
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    const { data } = await api.get<ApiResponse<any>>('/orders/stats', { params });
+    const { data } = await adminApi.get<ApiResponse<any>>('/orders/stats', { params });
     return data.data;
   },
 };

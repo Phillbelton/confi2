@@ -1,4 +1,4 @@
-import api from '@/lib/axios';
+import adminApi from '@/lib/adminApi';
 import type { ApiResponse, ApiPaginatedResponse } from '@/types';
 import type {
   AuditLog,
@@ -31,7 +31,7 @@ export const auditService = {
     if (filters.endDate) params.append('endDate', filters.endDate);
     if (filters.ip) params.append('ip', filters.ip);
 
-    const { data } = await api.get<ApiResponse<ApiPaginatedResponse<AuditLog[]>>>(
+    const { data } = await adminApi.get<ApiResponse<ApiPaginatedResponse<AuditLog[]>>>(
       `/audit-logs?${params.toString()}`
     );
     return data.data;
@@ -45,7 +45,7 @@ export const auditService = {
     params.append('limit', limit.toString());
     if (action) params.append('action', action);
 
-    const { data } = await api.get<ApiResponse<{ logs: AuditLog[] }>>(
+    const { data } = await adminApi.get<ApiResponse<{ logs: AuditLog[] }>>(
       `/audit-logs/recent?${params.toString()}`
     );
     return data.data.logs;
@@ -61,7 +61,7 @@ export const auditService = {
     if (filters.endDate) params.append('endDate', filters.endDate);
     if (filters.groupBy) params.append('groupBy', filters.groupBy);
 
-    const { data } = await api.get<ApiResponse<AuditStats>>(
+    const { data } = await adminApi.get<ApiResponse<AuditStats>>(
       `/audit-logs/stats?${params.toString()}`
     );
     return data.data;
@@ -78,7 +78,7 @@ export const auditService = {
     const params = new URLSearchParams();
     params.append('limit', limit.toString());
 
-    const { data } = await api.get<ApiResponse<EntityHistory>>(
+    const { data } = await adminApi.get<ApiResponse<EntityHistory>>(
       `/audit-logs/entity/${entityType}/${entityId}?${params.toString()}`
     );
     return data.data;
@@ -99,7 +99,7 @@ export const auditService = {
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
 
-    const { data } = await api.get<ApiResponse<UserActivity>>(
+    const { data } = await adminApi.get<ApiResponse<UserActivity>>(
       `/audit-logs/user/${userId}?${params.toString()}`
     );
     return data.data;

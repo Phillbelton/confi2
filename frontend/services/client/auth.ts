@@ -1,4 +1,5 @@
-import { api } from '@/lib/axios';
+import { api } from '@/lib/axios'; // Public api for login/register
+import { clientApi } from '@/lib/clientApi'; // Authenticated api for profile/logout
 import type { ApiResponse } from '@/types';
 import type { ClientUser } from '@/store/useClientStore';
 
@@ -31,7 +32,7 @@ export interface AuthResponse {
 
 export const clientAuthService = {
   /**
-   * Login cliente
+   * Login cliente (public api - no auth needed)
    */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const { data } = await api.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
@@ -45,7 +46,7 @@ export const clientAuthService = {
   },
 
   /**
-   * Registro cliente
+   * Registro cliente (public api - no auth needed)
    */
   register: async (userData: RegisterData): Promise<AuthResponse> => {
     const { data } = await api.post<ApiResponse<AuthResponse>>('/auth/register', {
@@ -62,11 +63,11 @@ export const clientAuthService = {
   },
 
   /**
-   * Logout
+   * Logout (authenticated)
    */
   logout: async (): Promise<void> => {
     try {
-      await api.post('/auth/logout');
+      await clientApi.post('/auth/logout');
     } finally {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('client-token');
@@ -75,37 +76,37 @@ export const clientAuthService = {
   },
 
   /**
-   * Obtener perfil actual
+   * Obtener perfil actual (authenticated)
    */
   getProfile: async (): Promise<ClientUser> => {
-    const { data } = await api.get<ApiResponse<{ user: ClientUser }>>('/auth/me');
+    const { data } = await clientApi.get<ApiResponse<{ user: ClientUser }>>('/auth/me');
     return (data.data as any)?.user;
   },
 
   /**
-   * Actualizar perfil
+   * Actualizar perfil (authenticated)
    */
   updateProfile: async (profileData: UpdateProfileData): Promise<ClientUser> => {
-    const { data } = await api.put<ApiResponse<{ user: ClientUser }>>('/auth/me', profileData);
+    const { data } = await clientApi.put<ApiResponse<{ user: ClientUser }>>('/auth/me', profileData);
     return (data.data as any)?.user;
   },
 
   /**
-   * Cambiar contraseña
+   * Cambiar contraseña (authenticated)
    */
   changePassword: async (passwordData: ChangePasswordData): Promise<void> => {
-    await api.put('/auth/change-password', passwordData);
+    await clientApi.put('/auth/change-password', passwordData);
   },
 
   /**
-   * Solicitar reseteo de contraseña
+   * Solicitar reseteo de contraseña (public api)
    */
   forgotPassword: async (email: string): Promise<void> => {
     await api.post('/auth/forgot-password', { email });
   },
 
   /**
-   * Resetear contraseña con token
+   * Resetear contraseña con token (public api)
    */
   resetPassword: async (token: string, newPassword: string): Promise<void> => {
     await api.post('/auth/reset-password', { token, newPassword });

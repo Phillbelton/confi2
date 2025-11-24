@@ -1,4 +1,4 @@
-import api from '@/lib/axios';
+import adminApi from '@/lib/adminApi';
 import type { AdminPaginatedResponse, AdminPaginationParams } from '@/types/admin';
 import type {
   Order,
@@ -30,7 +30,7 @@ export const adminOrdersService = {
       return acc;
     }, {} as any);
 
-    const { data } = await api.get<ApiResponse<AdminPaginatedResponse<Order>>>('/orders', {
+    const { data } = await adminApi.get<ApiResponse<AdminPaginatedResponse<Order>>>('/orders', {
       params: cleanParams,
     });
     return data.data;
@@ -40,7 +40,7 @@ export const adminOrdersService = {
    * Get order by ID
    */
   getOrderById: async (id: string): Promise<Order> => {
-    const { data } = await api.get<ApiResponse<Order>>(`/orders/${id}`);
+    const { data } = await adminApi.get<ApiResponse<Order>>(`/orders/${id}`);
     return data.data;
   },
 
@@ -48,7 +48,7 @@ export const adminOrdersService = {
    * Update order status
    */
   updateOrderStatus: async (id: string, statusData: UpdateOrderStatusData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/status`, statusData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/status`, statusData);
     return data.data;
   },
 
@@ -56,7 +56,7 @@ export const adminOrdersService = {
    * Mark WhatsApp as sent
    */
   markWhatsAppSent: async (id: string): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/whatsapp-sent`, {
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/whatsapp-sent`, {
       whatsappSent: true,
     });
     return data.data;
@@ -66,7 +66,7 @@ export const adminOrdersService = {
    * Cancel order
    */
   cancelOrder: async (id: string, cancelData: CancelOrderData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/cancel`, cancelData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/cancel`, cancelData);
     return data.data;
   },
 
@@ -74,7 +74,7 @@ export const adminOrdersService = {
    * Update admin notes
    */
   updateAdminNotes: async (id: string, notesData: UpdateAdminNotesData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/admin-notes`, notesData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/admin-notes`, notesData);
     return data.data;
   },
 
@@ -82,7 +82,7 @@ export const adminOrdersService = {
    * Edit order items (add, remove, change quantities)
    */
   editOrderItems: async (id: string, itemsData: EditOrderItemsData): Promise<Order> => {
-    const { data } = await api.put<ApiResponse<Order>>(`/orders/${id}/items`, itemsData);
+    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/items`, itemsData);
     return data.data;
   },
 };

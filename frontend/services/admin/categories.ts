@@ -1,4 +1,4 @@
-import { api } from '@/lib/axios';
+import { adminApi } from '@/lib/adminApi';
 import type { Category, ApiResponse } from '@/types';
 import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 
@@ -27,7 +27,7 @@ export const adminCategoryService = {
    * Get all categories (hierarchical structure from backend)
    */
   async getAll(): Promise<ApiResponse<{ categories: CategoryWithSubcategories[] }>> {
-    const { data } = await api.get('/categories?includeInactive=true');
+    const { data } = await adminApi.get('/categories?includeInactive=true');
     return data;
   },
 
@@ -35,7 +35,7 @@ export const adminCategoryService = {
    * Get main categories (no parent)
    */
   async getMainCategories(): Promise<ApiResponse<{ categories: Category[] }>> {
-    const { data } = await api.get('/categories/main');
+    const { data } = await adminApi.get('/categories/main');
     return data;
   },
 
@@ -43,7 +43,7 @@ export const adminCategoryService = {
    * Get category by ID
    */
   async getById(id: string): Promise<ApiResponse<Category>> {
-    const { data } = await api.get(`/categories/${id}`);
+    const { data } = await adminApi.get(`/categories/${id}`);
     return data;
   },
 
@@ -51,7 +51,7 @@ export const adminCategoryService = {
    * Get subcategories of a parent category
    */
   async getSubcategories(parentId: string): Promise<ApiResponse<{ subcategories: Category[] }>> {
-    const { data } = await api.get(`/categories/${parentId}/subcategories`);
+    const { data } = await adminApi.get(`/categories/${parentId}/subcategories`);
     return data;
   },
 
@@ -59,7 +59,7 @@ export const adminCategoryService = {
    * Create a new category
    */
   async create(data: CreateCategoryInput): Promise<ApiResponse<Category>> {
-    const { data: response } = await api.post('/categories', data);
+    const { data: response } = await adminApi.post('/categories', data);
     return response;
   },
 
@@ -67,7 +67,7 @@ export const adminCategoryService = {
    * Update an existing category
    */
   async update(id: string, data: UpdateCategoryInput): Promise<ApiResponse<Category>> {
-    const { data: response } = await api.put(`/categories/${id}`, data);
+    const { data: response } = await adminApi.put(`/categories/${id}`, data);
     return response;
   },
 
@@ -75,7 +75,7 @@ export const adminCategoryService = {
    * Delete a category (soft delete if has products)
    */
   async delete(id: string): Promise<ApiResponse<void>> {
-    const { data } = await api.delete(`/categories/${id}`);
+    const { data } = await adminApi.delete(`/categories/${id}`);
     return data;
   },
 
@@ -86,7 +86,7 @@ export const adminCategoryService = {
     const formData = new FormData();
     formData.append('image', file);
 
-    const { data } = await api.post(`/categories/${id}/image`, formData, {
+    const { data } = await adminApi.post(`/categories/${id}/image`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
