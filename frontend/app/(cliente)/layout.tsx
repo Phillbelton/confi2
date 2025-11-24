@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ClientHeader } from '@/components/client/ClientHeader';
 import { ClientSidebar } from '@/components/client/ClientSidebar';
 import { ClientBottomNav } from '@/components/client/ClientBottomNav';
-import { useClientStore } from '@/store/useClientStore';
-import { useClientProfile } from '@/hooks/client/useClientAuth';
+import { useClientAuth } from '@/hooks/client/useClientAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientLayout({
@@ -15,18 +14,17 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, _hasHydrated } = useClientStore();
-  const { isLoading: isProfileLoading } = useClientProfile();
+  const { isAuthenticated, isLoading } = useClientAuth();
 
   // Redirigir si no está autenticado
   useEffect(() => {
-    if (_hasHydrated && !isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [_hasHydrated, isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, router]);
 
   // Mostrar loading mientras se verifica autenticación
-  if (!_hasHydrated || isLoading || isProfileLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         {/* Header skeleton */}
