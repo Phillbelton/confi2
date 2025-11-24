@@ -39,7 +39,7 @@ const registerSchema = z
     phone: z
       .string()
       .min(1, 'El teléfono es requerido')
-      .regex(/^\+?[0-9\s\-]{8,20}$/, 'Teléfono inválido'),
+      .regex(/^9\s?\d{4}\s?\d{4}$/, 'Formato: 9 1234 5678'),
     password: z
       .string()
       .min(6, 'Mínimo 6 caracteres'),
@@ -115,7 +115,12 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormData) => {
     const { confirmPassword, acceptTerms, ...registerData } = data;
-    registerMutation.mutate(registerData);
+    // Prepend +56 and remove spaces from phone
+    const phoneClean = registerData.phone.replace(/\s/g, '');
+    registerMutation.mutate({
+      ...registerData,
+      phone: `+56${phoneClean}`,
+    });
   };
 
   return (
@@ -210,18 +215,23 @@ export default function RegisterPage() {
                 {/* Teléfono */}
                 <motion.div variants={itemVariants} className="space-y-2">
                   <Label htmlFor="phone">Teléfono (WhatsApp)</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    placeholder="+54 9 11 1234-5678"
-                    className={cn(
-                      'h-12',
-                      errors.phone && 'border-destructive focus-visible:ring-destructive'
-                    )}
-                    {...register('phone')}
-                  />
+                  <div className="flex">
+                    <div className="flex items-center justify-center px-3 h-12 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground font-medium">
+                      +56
+                    </div>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="9 1234 5678"
+                      className={cn(
+                        'h-12 rounded-l-none',
+                        errors.phone && 'border-destructive focus-visible:ring-destructive'
+                      )}
+                      {...register('phone')}
+                    />
+                  </div>
                   {errors.phone && (
                     <p className="text-sm text-destructive">{errors.phone.message}</p>
                   )}
