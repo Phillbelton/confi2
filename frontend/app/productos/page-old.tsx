@@ -1,23 +1,9 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef } from 'react';
+import { Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import {
-  Search,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  SlidersHorizontal,
-  Package,
-  Grid3x3,
-  List,
-  ArrowUp,
-  MessageCircle,
-  Flame,
-  Tag,
-  Star,
-  Sparkles,
-} from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,22 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import { ProductCardEnhanced } from '@/components/products/ProductCardEnhanced';
-import { QuickViewModal } from '@/components/products/QuickViewModal';
+import { ProductCardWithVariants } from '@/components/products/ProductCardWithVariants';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategoriesHierarchical, useMainCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
-import { useProductVariants } from '@/hooks/useProducts';
 import { cn } from '@/lib/utils';
-import type { ProductFilters as Filters, ProductParent, Category, ProductVariant } from '@/types';
+import type { ProductFilters as Filters, ProductParent, Category } from '@/types';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -150,10 +129,6 @@ function ProductsContent() {
 
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [quickViewProduct, setQuickViewProduct] = useState<ProductParent | null>(null);
-  const [quickViewVariants, setQuickViewVariants] = useState<ProductVariant[]>([]);
-  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Fetch data
   const { data: productsData, isLoading: productsLoading } = useProducts({
@@ -166,24 +141,6 @@ function ProductsContent() {
   const { data: categoriesData, isLoading: categoriesLoading } = useCategoriesHierarchical();
   const { data: mainCategories } = useMainCategories();
   const { data: brandsData, isLoading: brandsLoading } = useBrands();
-
-  // Fetch variants for quick view
-  const { data: variantsData } = useProductVariants(quickViewProduct?._id || '');
-
-  useEffect(() => {
-    if (variantsData?.data) {
-      setQuickViewVariants(variantsData.data);
-    }
-  }, [variantsData]);
-
-  // Scroll to top button
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Update URL when filters change
   useEffect(() => {
@@ -225,21 +182,9 @@ function ProductsContent() {
     });
   };
 
-  const handleQuickFilter = (filterType: 'featured' | 'onSale') => {
-    if (filterType === 'featured') {
-      handleFilterChange({ ...filters, featured: !filters.featured, onSale: undefined });
-    } else {
-      handleFilterChange({ ...filters, onSale: !filters.onSale, featured: undefined });
-    }
-  };
-
   const clearSearch = () => {
     setSearchInput('');
     handleFilterChange({ ...filters, search: undefined });
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const categories = categoriesData || [];
@@ -257,29 +202,40 @@ function ProductsContent() {
 
   return (
     <>
-      {/* Quick Access Tabs */}
-      <div className="mb-6 overflow-x-auto">
-        <div className="flex gap-3 min-w-max">
-          <Button
-            variant={filters.featured ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleQuickFilter('featured')}
-            className="flex-shrink-0"
-          >
-            <Flame className="h-4 w-4 mr-2" />
-            Destacados
-          </Button>
-          <Button
-            variant={filters.onSale ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleQuickFilter('onSale')}
-            className="flex-shrink-0"
-          >
-            <Tag className="h-4 w-4 mr-2" />
-            Ofertas
-          </Button>
-        </div>
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Catálogo
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+          {pagination
+            ? `${pagination.totalItems} productos encontrados`
+            : 'Cargando...'}
+        </p>
       </div>
+
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Buscar productos..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-10 pr-10 h-12"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </form>
 
       {/* Category Pills */}
       {mainCategories && mainCategories.length > 0 && (
@@ -292,56 +248,11 @@ function ProductsContent() {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="mb-6 flex flex-wrap gap-3 items-center justify-between">
-        {/* Results count */}
-        <div className="text-sm text-muted-foreground">
-          {pagination
-            ? `${pagination.totalItems} productos encontrados`
-            : 'Cargando...'}
-        </div>
-
-        {/* Sort and View Toggle */}
-        <div className="flex items-center gap-2">
-          <Select value={sortBy} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-[180px] h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="hidden sm:flex items-center border rounded-lg">
-            <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="rounded-none rounded-l-lg"
-              onClick={() => setViewMode('grid')}
-            >
-              <Grid3x3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="rounded-none rounded-r-lg"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Filters Sidebar (Desktop) */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
           <div className="sticky top-20">
-            <div className="bg-card rounded-lg border p-4 shadow-sm">
+            <div className="bg-card rounded-lg border p-4">
               <h2 className="font-semibold mb-4 flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4" />
                 Filtros
@@ -365,10 +276,11 @@ function ProductsContent() {
 
         {/* Products Grid */}
         <div className="flex-1 min-w-0">
-          {/* Mobile Filters */}
-          <div className="lg:hidden mb-6">
-            {!categoriesLoading && !brandsLoading && (
-              <div className="flex items-center gap-3">
+          {/* Toolbar */}
+          <div className="flex flex-wrap gap-3 mb-6 items-center justify-between">
+            {/* Mobile Filters */}
+            <div className="lg:hidden">
+              {!categoriesLoading && !brandsLoading && (
                 <ProductFilters
                   filters={filters}
                   onFilterChange={handleFilterChange}
@@ -376,13 +288,42 @@ function ProductsContent() {
                   brands={brands}
                   isMobile
                 />
-                {activeFilterCount > 0 && (
-                  <Badge variant="secondary">
-                    {activeFilterCount} filtro{activeFilterCount !== 1 ? 's' : ''}
-                  </Badge>
-                )}
+              )}
+            </div>
+
+            {/* Active Filter Badges (Mobile) */}
+            {activeFilterCount > 0 && (
+              <div className="flex gap-2 flex-wrap lg:hidden">
+                <Badge variant="secondary" className="text-xs">
+                  {activeFilterCount} filtro{activeFilterCount !== 1 ? 's' : ''}
+                </Badge>
+                <button
+                  onClick={() => handleFilterChange({})}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Limpiar
+                </button>
               </div>
             )}
+
+            {/* Sort */}
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                Ordenar:
+              </span>
+              <Select value={sortBy} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-[160px] sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Products Grid */}
@@ -413,20 +354,9 @@ function ProductsContent() {
               </Button>
             </div>
           ) : (
-            <div
-              className={cn(
-                'grid gap-4 sm:gap-6',
-                viewMode === 'grid'
-                  ? 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                  : 'grid-cols-1'
-              )}
-            >
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {products.map((product: ProductParent) => (
-                <ProductCardEnhancedWithVariants
-                  key={product._id}
-                  product={product}
-                  onQuickView={() => setQuickViewProduct(product)}
-                />
+                <ProductCardWithVariants key={product._id} product={product} />
               ))}
             </div>
           )}
@@ -484,59 +414,7 @@ function ProductsContent() {
           )}
         </div>
       </div>
-
-      {/* Sticky Bottom Actions */}
-      <div
-        className={cn(
-          'fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t p-4 transition-transform duration-300 z-40',
-          showScrollTop ? 'translate-y-0' : 'translate-y-full'
-        )}
-      >
-        <div className="container flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            Mostrando {products.length} de {pagination?.totalItems || 0}
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={scrollToTop}>
-              <ArrowUp className="h-4 w-4 mr-2" />
-              Volver arriba
-            </Button>
-            <Button variant="outline" size="sm">
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Ayuda
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick View Modal */}
-      <QuickViewModal
-        product={quickViewProduct}
-        variants={quickViewVariants}
-        open={!!quickViewProduct}
-        onOpenChange={(open) => !open && setQuickViewProduct(null)}
-      />
     </>
-  );
-}
-
-// Wrapper to fetch variants for each product
-function ProductCardEnhancedWithVariants({
-  product,
-  onQuickView,
-}: {
-  product: ProductParent;
-  onQuickView: () => void;
-}) {
-  const { data: variantsData } = useProductVariants(product._id);
-  const variants = variantsData?.data || [];
-
-  return (
-    <ProductCardEnhanced
-      product={product}
-      variants={variants}
-      onQuickView={onQuickView}
-    />
   );
 }
 
