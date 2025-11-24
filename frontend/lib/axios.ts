@@ -17,7 +17,19 @@ api.interceptors.request.use(
   (config) => {
     // In development, send token in Authorization header (cookies don't work cross-port)
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('admin-token');
+      // Check which token to use based on the current path or available tokens
+      const isAdminPath = window.location.pathname.startsWith('/admin') ||
+                          window.location.pathname.startsWith('/funcionario');
+
+      // Try admin token first for admin/funcionario paths, otherwise try client token
+      let token = null;
+      if (isAdminPath) {
+        token = localStorage.getItem('admin-token');
+      } else {
+        // For client paths, prefer client-token
+        token = localStorage.getItem('client-token') || localStorage.getItem('admin-token');
+      }
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -44,11 +56,18 @@ api.interceptors.response.use(
 
       switch (status) {
         case 401:
-          // Unauthorized - redirect to login
+          // Unauthorized - redirect to appropriate login
           if (typeof window !== 'undefined') {
-            // Only redirect if not already on login page
-            if (!window.location.pathname.includes('/login')) {
-              window.location.href = '/admin/login';
+            const currentPath = window.location.pathname;
+            // Only redirect if not already on a login page
+            if (!currentPath.includes('/login')) {
+              // Determine correct login page based on current path
+              if (currentPath.startsWith('/admin') || currentPath.startsWith('/funcionario')) {
+                window.location.href = '/admin/login';
+              } else {
+                // Client pages redirect to client login
+                window.location.href = '/login';
+              }
             }
           }
           break;
