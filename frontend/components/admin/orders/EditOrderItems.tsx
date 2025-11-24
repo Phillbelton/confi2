@@ -83,7 +83,7 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
             return {
               ...item,
               variant: variantData,
-              productParent: variantData.parentProduct as ProductParent,
+              productParent: variantData.parent as ProductParent,
             };
           }
           return item;
