@@ -135,9 +135,10 @@ export default function OrderDetailPage({
     );
   }
 
-  const statusConfig = getOrderStatusConfig(order.status);
-  const currentStepIndex = statusOrder[order.status];
-  const isCancelled = order.status === 'cancelled';
+  const orderStatus = order.status as OrderStatus;
+  const statusConfig = getOrderStatusConfig(orderStatus);
+  const currentStepIndex = statusOrder[orderStatus];
+  const isCancelled = orderStatus === 'cancelled';
 
   return (
     <motion.div
