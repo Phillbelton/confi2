@@ -72,24 +72,24 @@ export default function AuditoriaPage() {
           {logsData && logsData.pagination.totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Mostrando {logsData.data.length} de {logsData.pagination.total} registros
+                Mostrando {logsData.data.length} de {logsData.pagination.totalItems} registros
               </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!logsData.pagination.hasPrev}
+                  disabled={!logsData.pagination.hasPrevPage}
                   onClick={() => handlePageChange(filters.page! - 1)}
                 >
                   Anterior
                 </Button>
                 <span className="text-sm">
-                  Página {logsData.pagination.page} de {logsData.pagination.totalPages}
+                  Página {logsData.pagination.currentPage} de {logsData.pagination.totalPages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!logsData.pagination.hasNext}
+                  disabled={!logsData.pagination.hasNextPage}
                   onClick={() => handlePageChange(filters.page! + 1)}
                 >
                   Siguiente
