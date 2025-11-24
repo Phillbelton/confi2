@@ -31,7 +31,7 @@ export default function FuncionarioLayout({
 
   // Protected funcionario pages with sidebar and header
   return (
-    <ProtectedRoute allowedRoles={['admin', 'funcionario']}>
+    <ProtectedRoute>
       <TooltipProvider delayDuration={200}>
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
           <FuncionarioSidebar />
