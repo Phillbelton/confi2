@@ -34,8 +34,9 @@ export function useClientProfile() {
 
 /**
  * Hook para login de cliente
+ * @param redirectTo - URL to redirect after successful login (defaults to /perfil)
  */
-export function useClientLogin() {
+export function useClientLogin(redirectTo?: string) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setUser, setLoading } = useClientStore();
@@ -49,7 +50,7 @@ export function useClientLogin() {
       setUser(data.user);
       queryClient.setQueryData(['client-profile'], data.user);
       toast.success('¡Bienvenido de vuelta!');
-      router.push('/perfil');
+      router.push(redirectTo || '/perfil');
     },
     onError: (error: any) => {
       setLoading(false);
@@ -63,8 +64,9 @@ export function useClientLogin() {
 
 /**
  * Hook para registro de cliente
+ * @param redirectTo - URL to redirect after successful registration (defaults to /perfil)
  */
-export function useClientRegister() {
+export function useClientRegister(redirectTo?: string) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setUser, setLoading } = useClientStore();
@@ -78,7 +80,7 @@ export function useClientRegister() {
       setUser(data.user);
       queryClient.setQueryData(['client-profile'], data.user);
       toast.success('¡Cuenta creada exitosamente!');
-      router.push('/perfil');
+      router.push(redirectTo || '/perfil');
     },
     onError: (error: any) => {
       setLoading(false);

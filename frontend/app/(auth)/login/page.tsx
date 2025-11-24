@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -56,11 +56,13 @@ const itemVariants = {
   },
 } as const;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/perfil';
   const [showPassword, setShowPassword] = useState(false);
   const { isAuthenticated, _hasHydrated } = useClientStore();
-  const loginMutation = useClientLogin();
+  const loginMutation = useClientLogin(redirectTo);
 
   const {
     register,
@@ -77,9 +79,9 @@ export default function LoginPage() {
   // Redirigir si ya está autenticado
   useEffect(() => {
     if (_hasHydrated && isAuthenticated) {
-      router.push('/perfil');
+      router.push(redirectTo);
     }
-  }, [_hasHydrated, isAuthenticated, router]);
+  }, [_hasHydrated, isAuthenticated, router, redirectTo]);
 
   const onSubmit = async (data: LoginFormData) => {
     loginMutation.mutate(data);
@@ -255,5 +257,19 @@ export default function LoginPage() {
         </motion.div>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

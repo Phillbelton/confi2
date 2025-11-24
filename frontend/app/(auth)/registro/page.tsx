@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -79,12 +79,14 @@ const passwordRequirements = [
   { label: 'Un número', test: (p: string) => /[0-9]/.test(p) },
 ];
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/perfil';
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { isAuthenticated, _hasHydrated } = useClientStore();
-  const registerMutation = useClientRegister();
+  const registerMutation = useClientRegister(redirectTo);
 
   const {
     register,
@@ -410,5 +412,19 @@ export default function RegisterPage() {
         </motion.div>
       </main>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <RegisterContent />
+    </Suspense>
   );
 }
