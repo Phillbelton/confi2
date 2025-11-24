@@ -6,6 +6,7 @@ import { ClientHeader } from '@/components/client/ClientHeader';
 import { ClientSidebar } from '@/components/client/ClientSidebar';
 import { ClientBottomNav } from '@/components/client/ClientBottomNav';
 import { useClientAuth } from '@/hooks/client/useClientAuth';
+import { useOrderNotifications } from '@/hooks/client/useOrderNotifications';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientLayout({
@@ -15,6 +16,9 @@ export default function ClientLayout({
 }) {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useClientAuth();
+
+  // Monitor order status changes for notifications
+  useOrderNotifications();
 
   // Redirigir si no está autenticado
   useEffect(() => {
