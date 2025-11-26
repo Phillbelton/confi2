@@ -131,7 +131,7 @@ export default function ProfilePage() {
   };
 
   // Stats calculados
-  const orders = ordersData?.data || [];
+  const orders = ordersData?.data?.data || [];
   const totalOrders = orders.length;
   const totalSpent = orders.reduce((sum: number, order: any) => sum + order.total, 0);
   const inProgressOrders = orders.filter(

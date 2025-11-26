@@ -25,9 +25,9 @@ export function useOrderNotifications() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!ordersData?.data) return;
+    if (!ordersData?.data?.data) return;
 
-    const orders = ordersData.data;
+    const orders = ordersData.data.data;
 
     // Filter only active orders (not completed or cancelled)
     const activeOrders = orders.filter(
