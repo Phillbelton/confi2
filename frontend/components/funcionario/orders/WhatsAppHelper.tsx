@@ -408,11 +408,11 @@ function formatProducts(items: Order['items']): string {
 }
 
 function formatAddress(order: Order): string {
-  const { shippingAddress } = order;
-  if (!shippingAddress) return 'No especificada';
+  const address = order.customer?.address;
+  if (!address) return 'No especificada';
 
-  return `${shippingAddress.street || ''}, ${shippingAddress.city || ''}, ${shippingAddress.department || ''}${
-    shippingAddress.reference ? `\nReferencia: ${shippingAddress.reference}` : ''
+  return `${address.street || ''} ${address.number || ''}, ${address.neighborhood || ''}, ${address.city || ''}${
+    address.reference ? `\nReferencia: ${address.reference}` : ''
   }`;
 }
 

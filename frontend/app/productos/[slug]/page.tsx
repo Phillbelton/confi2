@@ -143,10 +143,6 @@ export default function ProductDetailPage() {
     (!selectedVariant.tieredDiscount.startDate || new Date(selectedVariant.tieredDiscount.startDate) <= new Date()) &&
     (!selectedVariant.tieredDiscount.endDate || new Date(selectedVariant.tieredDiscount.endDate) >= new Date());
 
-  const hasParentTieredDiscount = product.tieredDiscounts?.some(
-    (d) => d.active && (!d.endDate || new Date(d.endDate) > new Date())
-  );
-
   const getApplicableDiscount = () => {
     if (!selectedVariant) return null;
 
@@ -190,26 +186,6 @@ export default function ProductDetailPage() {
         }
         totalDiscount += tierDiscountAmount;
         currentPrice -= tierDiscountAmount; // Update price after tiered discount
-      }
-    }
-
-    // 3. Apply parent tiered discount (legacy, only if no other discounts)
-    if (totalDiscount === 0 && hasParentTieredDiscount) {
-      const discount = product.tieredDiscounts.find((d) => d.active);
-      if (discount) {
-        const applicableTier = [...discount.tiers]
-          .sort((a, b) => b.minQuantity - a.minQuantity)
-          .find(
-            (tier) =>
-              quantity >= tier.minQuantity &&
-              (tier.maxQuantity === null || quantity <= tier.maxQuantity)
-          );
-
-        if (applicableTier) {
-          const tierDiscountAmount = (selectedVariant.price * applicableTier.value) / 100;
-          totalDiscount += tierDiscountAmount;
-          discountDetails.push(`-${applicableTier.value}% por cantidad`);
-        }
       }
     }
 
@@ -475,38 +451,6 @@ export default function ProductDetailPage() {
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-              )}
-
-              {/* Parent Tiered Discounts Info (legacy) */}
-              {!hasFixedDiscount && !hasVariantTieredDiscount && hasParentTieredDiscount && selectedVariant && (
-                <div className="border rounded-lg p-4 space-y-2">
-                  <p className="font-semibold text-sm">Descuentos por cantidad:</p>
-                  <div className="space-y-1">
-                    {product.tieredDiscounts
-                      .find((d) => d.active)
-                      ?.tiers.map((tier, index) => {
-                        const discountAmount = (selectedVariant.price * tier.value) / 100;
-                        const finalPrice = selectedVariant.price - discountAmount;
-
-                        return (
-                          <div
-                            key={index}
-                            className="flex justify-between text-sm"
-                          >
-                            <span className="text-muted-foreground">
-                              {tier.maxQuantity
-                                ? `${tier.minQuantity}-${tier.maxQuantity} un`
-                                : `${tier.minQuantity}+ un`}
-                            </span>
-                            <span className="font-semibold">
-                              ${finalPrice.toLocaleString()} c/u
-                            </span>
-                            <span className="text-success">-{tier.value}%</span>
-                          </div>
-                        );
-                      })}
                   </div>
                 </div>
               )}

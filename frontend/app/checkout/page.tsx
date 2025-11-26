@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -13,17 +14,20 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/store/useCartStore';
+import { useClientStore } from '@/store/useClientStore';
 import { orderService } from '@/services/orders';
 import { getSafeImageUrl } from '@/lib/image-utils';
-import { ShoppingCart, Truck, MapPin, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
+import { ShoppingCart, Truck, MapPin, CreditCard, AlertCircle, Loader2, User, LogIn, UserPlus } from 'lucide-react';
 import type { DeliveryMethod, PaymentMethod } from '@/types';
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, total, subtotal, totalDiscount, clearCart } = useCartStore();
+  const { isAuthenticated, user, _hasHydrated } = useClientStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [continueAsGuest, setContinueAsGuest] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -40,12 +44,27 @@ export default function CheckoutPage() {
     customerNotes: '',
   });
 
+  // Pre-fill form if user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    }
+  }, [isAuthenticated, user]);
+
   // Redirect if cart is empty
   useEffect(() => {
     if (items.length === 0) {
       router.push('/productos');
     }
   }, [items, router]);
+
+  // Show auth gate if not authenticated and hasn't chosen to continue as guest
+  const showAuthGate = _hasHydrated && !isAuthenticated && !continueAsGuest;
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -116,6 +135,99 @@ export default function CheckoutPage() {
     return null; // Will redirect via useEffect
   }
 
+  // Auth Gate Component
+  if (showAuthGate) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container px-4 py-8 md:px-6">
+          <div className="max-w-md mx-auto">
+            <div className="text-center mb-8">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <User className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold mb-2">¿Cómo deseas continuar?</h1>
+              <p className="text-muted-foreground">
+                Inicia sesión para un checkout más rápido o continúa como invitado
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Login Option */}
+              <Card className="cursor-pointer hover:border-primary transition-colors">
+                <CardContent className="p-6">
+                  <Link href="/login?redirect=/checkout" className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                      <LogIn className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Iniciar sesión</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Accede a tu cuenta para checkout rápido
+                      </p>
+                    </div>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              {/* Register Option */}
+              <Card className="cursor-pointer hover:border-primary transition-colors">
+                <CardContent className="p-6">
+                  <Link href="/registro?redirect=/checkout" className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
+                      <UserPlus className="h-6 w-6 text-secondary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Crear cuenta</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Regístrate para guardar tus datos y ver historial
+                      </p>
+                    </div>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    O
+                  </span>
+                </div>
+              </div>
+
+              {/* Guest Option */}
+              <Button
+                variant="outline"
+                className="w-full h-14"
+                onClick={() => setContinueAsGuest(true)}
+              >
+                <User className="mr-2 h-5 w-5" />
+                Continuar como invitado
+              </Button>
+            </div>
+
+            {/* Cart Summary */}
+            <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-muted-foreground">
+                  {items.length} {items.length === 1 ? 'producto' : 'productos'} en tu carrito
+                </span>
+                <span className="font-semibold">${total.toLocaleString()}</span>
+              </div>
+              <Link href="/productos" className="text-sm text-primary hover:underline">
+                ← Seguir comprando
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -126,7 +238,9 @@ export default function CheckoutPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Finalizar Compra</h1>
             <p className="text-muted-foreground">
-              Complete sus datos para continuar con su pedido
+              {isAuthenticated && user
+                ? `Hola ${user.name.split(' ')[0]}, completa tu pedido`
+                : 'Complete sus datos para continuar con su pedido'}
             </p>
           </div>
 

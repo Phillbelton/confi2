@@ -1,4 +1,5 @@
 import { api } from '@/lib/axios';
+import { clientApi } from '@/lib/clientApi';
 import type { Order, ApiResponse } from '@/types';
 
 export interface CreateOrderPayload {
@@ -96,9 +97,9 @@ export const orderService = {
     return (data.data as any)?.order;
   },
 
-  // Get my orders (authenticated customer)
+  // Get my orders (authenticated customer - uses clientApi)
   getMyOrders: async () => {
-    const { data } = await api.get<ApiResponse<{ data: Order[]; pagination: any }>>('/orders/my-orders');
+    const { data } = await clientApi.get<ApiResponse<{ data: Order[]; pagination: any }>>('/orders/my-orders');
     // Backend returns { success: true, data: { data: [...], pagination: {...} } }
     return data.data as any;
   },

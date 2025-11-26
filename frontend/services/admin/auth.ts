@@ -1,4 +1,5 @@
-import api from '@/lib/axios';
+import api from '@/lib/axios'; // Public api for login
+import adminApi from '@/lib/adminApi'; // Authenticated api for other calls
 import type { AdminLoginCredentials, AdminLoginResponse, AdminUser } from '@/types/admin';
 
 interface ApiResponse<T> {
@@ -9,7 +10,7 @@ interface ApiResponse<T> {
 
 export const adminAuthService = {
   /**
-   * Login admin user
+   * Login admin user (uses public api - no token needed)
    */
   login: async (credentials: AdminLoginCredentials): Promise<AdminLoginResponse> => {
     const { data } = await api.post<ApiResponse<AdminLoginResponse>>('/auth/login', credentials);
@@ -20,14 +21,14 @@ export const adminAuthService = {
    * Logout admin user
    */
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout');
+    await adminApi.post('/auth/logout');
   },
 
   /**
    * Get current admin profile
    */
   getProfile: async (): Promise<AdminUser> => {
-    const { data } = await api.get<ApiResponse<{ user: AdminUser }>>('/auth/me');
+    const { data } = await adminApi.get<ApiResponse<{ user: AdminUser }>>('/auth/me');
     return data.data.user;
   },
 
@@ -35,7 +36,7 @@ export const adminAuthService = {
    * Refresh token
    */
   refreshToken: async (): Promise<{ token: string }> => {
-    const { data } = await api.post<ApiResponse<{ token: string }>>('/auth/refresh');
+    const { data } = await adminApi.post<ApiResponse<{ token: string }>>('/auth/refresh');
     return data.data;
   },
 };

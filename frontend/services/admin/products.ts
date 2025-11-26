@@ -1,4 +1,4 @@
-import { api } from '@/lib/axios';
+import { adminApi } from '@/lib/adminApi';
 import type {
   ProductParent,
   ProductVariant,
@@ -86,17 +86,17 @@ export const adminProductService = {
   // ============================================================================
 
   createProductParent: async (data: CreateProductParentInput): Promise<ProductParent> => {
-    const response = await api.post<ApiResponse<ProductParent>>('/products/parents', data);
+    const response = await adminApi.post<ApiResponse<ProductParent>>('/products/parents', data);
     return response.data.data;
   },
 
   updateProductParent: async (id: string, data: UpdateProductParentInput): Promise<ProductParent> => {
-    const response = await api.put<ApiResponse<ProductParent>>(`/products/parents/${id}`, data);
+    const response = await adminApi.put<ApiResponse<ProductParent>>(`/products/parents/${id}`, data);
     return response.data.data;
   },
 
   deleteProductParent: async (id: string): Promise<void> => {
-    await api.delete(`/products/parents/${id}`);
+    await adminApi.delete(`/products/parents/${id}`);
   },
 
   uploadProductParentImages: async (id: string, files: File[]): Promise<string[]> => {
@@ -105,7 +105,7 @@ export const adminProductService = {
       formData.append('images', file);
     });
 
-    const response = await api.post<ApiResponse<{ imageUrls: string[] }>>(
+    const response = await adminApi.post<ApiResponse<{ imageUrls: string[] }>>(
       `/products/parents/${id}/images`,
       formData,
       {
@@ -118,7 +118,7 @@ export const adminProductService = {
   },
 
   deleteProductParentImage: async (id: string, filename: string): Promise<void> => {
-    await api.delete(`/products/parents/${id}/images/${filename}`);
+    await adminApi.delete(`/products/parents/${id}/images/${filename}`);
   },
 
   // ============================================================================
@@ -126,7 +126,7 @@ export const adminProductService = {
   // ============================================================================
 
   createProductVariant: async (data: CreateProductVariantInput): Promise<ProductVariant> => {
-    const response = await api.post<ApiResponse<ProductVariant>>('/products/variants', data);
+    const response = await adminApi.post<ApiResponse<ProductVariant>>('/products/variants', data);
     return response.data.data;
   },
 
@@ -145,7 +145,7 @@ export const adminProductService = {
     parentUpdated: boolean;
     newValuesAdded: Array<{ attribute: string; value: string }>;
   }> => {
-    const response = await api.post<
+    const response = await adminApi.post<
       ApiResponse<{
         variant: ProductVariant;
         parentUpdated: boolean;
@@ -156,17 +156,17 @@ export const adminProductService = {
   },
 
   updateProductVariant: async (id: string, data: UpdateProductVariantInput): Promise<ProductVariant> => {
-    const response = await api.put<ApiResponse<ProductVariant>>(`/products/variants/${id}`, data);
+    const response = await adminApi.put<ApiResponse<ProductVariant>>(`/products/variants/${id}`, data);
     return response.data.data;
   },
 
   updateVariantStock: async (id: string, data: UpdateStockInput): Promise<ProductVariant> => {
-    const response = await api.patch<ApiResponse<ProductVariant>>(`/products/variants/${id}/stock`, data);
+    const response = await adminApi.patch<ApiResponse<ProductVariant>>(`/products/variants/${id}/stock`, data);
     return response.data.data;
   },
 
   deleteProductVariant: async (id: string): Promise<void> => {
-    await api.delete(`/products/variants/${id}`);
+    await adminApi.delete(`/products/variants/${id}`);
   },
 
   uploadProductVariantImages: async (id: string, files: File[]): Promise<string[]> => {
@@ -175,7 +175,7 @@ export const adminProductService = {
       formData.append('images', file);
     });
 
-    const response = await api.post<ApiResponse<{ imageUrls: string[] }>>(
+    const response = await adminApi.post<ApiResponse<{ imageUrls: string[] }>>(
       `/products/variants/${id}/images`,
       formData,
       {
@@ -188,7 +188,7 @@ export const adminProductService = {
   },
 
   deleteProductVariantImage: async (id: string, filename: string): Promise<void> => {
-    await api.delete(`/products/variants/${id}/images/${filename}`);
+    await adminApi.delete(`/products/variants/${id}/images/${filename}`);
   },
 
   // ============================================================================
@@ -198,7 +198,7 @@ export const adminProductService = {
   bulkUpdateStock: async (updates: { variantId: string; stock: number }[]): Promise<void> => {
     await Promise.all(
       updates.map((update) =>
-        api.patch(`/products/variants/${update.variantId}/stock`, { stock: update.stock })
+        adminApi.patch(`/products/variants/${update.variantId}/stock`, { stock: update.stock })
       )
     );
   },
@@ -206,7 +206,7 @@ export const adminProductService = {
   bulkToggleActive: async (productIds: string[], active: boolean): Promise<void> => {
     await Promise.all(
       productIds.map((id) =>
-        api.put(`/products/parents/${id}`, { active })
+        adminApi.put(`/products/parents/${id}`, { active })
       )
     );
   },

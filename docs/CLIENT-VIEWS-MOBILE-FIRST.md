@@ -3,7 +3,7 @@
 Documentación exhaustiva de diseño y especificaciones técnicas para las vistas del área de cliente con enfoque **mobile-first** y experiencia **premium**.
 
 **Fecha:** 2025-01-24
-**Versión:** 1.0
+**Versión:** 1.1 (Actualizado: 2025-11-24)
 **Prioridad:** CRÍTICA
 **Audiencia:** Desarrolladores Frontend
 
@@ -11,6 +11,7 @@ Documentación exhaustiva de diseño y especificaciones técnicas para las vista
 
 ## ÍNDICE
 
+0. [Arquitectura de Autenticación](#0-arquitectura-de-autenticación)
 1. [Principios de Diseño](#1-principios-de-diseño)
 2. [Sistema de Diseño Cliente](#2-sistema-de-diseño-cliente)
 3. [Layout General Cliente](#3-layout-general-cliente)
@@ -24,6 +25,133 @@ Documentación exhaustiva de diseño y especificaciones técnicas para las vista
 11. [Estados y Feedback](#11-estados-y-feedback)
 12. [Integración Backend](#12-integración-backend)
 13. [Checklist de Implementación](#13-checklist-de-implementación)
+
+---
+
+## 0. ARQUITECTURA DE AUTENTICACIÓN
+
+### 0.1 Filosofía: Misma UI con Restricciones de Autenticación
+
+El enfoque estándar para e-commerce es **una sola UI** para todos los usuarios, con restricciones de autenticación solo donde sea necesario. Esto reduce fricción y aumenta conversiones.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PRINCIPIO: El usuario puede explorar y agregar al carrito      │
+│  sin registrarse. Solo se pide login al hacer checkout.         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 0.2 Clasificación de Rutas
+
+| Tipo | Ruta | Descripción | Comportamiento |
+|------|------|-------------|----------------|
+| **Pública** | `/` | Home | Acceso libre |
+| **Pública** | `/productos` | Catálogo | Acceso libre |
+| **Pública** | `/productos/[slug]` | Detalle producto | Acceso libre |
+| **Pública** | `/login` | Login cliente | Redirige a /perfil si ya autenticado |
+| **Pública** | `/registro` | Registro | Redirige a /perfil si ya autenticado |
+| **Protegida** | `/perfil` | Mi perfil | Redirige a /login si no autenticado |
+| **Protegida** | `/mis-ordenes` | Mis pedidos | Redirige a /login si no autenticado |
+| **Protegida** | `/mis-ordenes/[id]` | Detalle pedido | Redirige a /login si no autenticado |
+| **Protegida** | `/direcciones` | Direcciones | Redirige a /login si no autenticado |
+| **Semi-protegida** | `/checkout` | Checkout | Permite guest o pide login |
+
+### 0.3 Comportamiento del Header Público
+
+El `Header` (usado en Home, Catálogo, Detalle) debe mostrar diferentes estados:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SIN LOGIN:                                                     │
+│  [Logo]  Inicio  Productos  Ofertas    [🔍] [🛒] [Iniciar sesión]│
+├─────────────────────────────────────────────────────────────────┤
+│  CON LOGIN:                                                     │
+│  [Logo]  Inicio  Productos  Ofertas    [🔍] [🛒] [👤 Mi cuenta ▼]│
+│                                              └─→ Dropdown:      │
+│                                                   • Mi perfil   │
+│                                                   • Mis pedidos │
+│                                                   • Cerrar sesión│
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 0.4 Implementación Header con Auth-Awareness
+
+```tsx
+// components/layout/Header.tsx
+'use client';
+
+import { useClientStore } from '@/store/useClientStore';
+
+export function Header() {
+  const { isAuthenticated, user } = useClientStore();
+
+  return (
+    <header>
+      {/* ... logo, nav ... */}
+
+      <div className="flex items-center gap-2">
+        <CartButton />
+
+        {isAuthenticated ? (
+          <UserDropdown user={user} />
+        ) : (
+          <Button variant="outline" asChild>
+            <Link href="/login">Iniciar sesión</Link>
+          </Button>
+        )}
+      </div>
+    </header>
+  );
+}
+```
+
+### 0.5 Flujo de Checkout
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FLUJO CHECKOUT                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Usuario agrega productos al carrito (sin login)                │
+│                    ↓                                            │
+│  Click en "Ir al checkout"                                      │
+│                    ↓                                            │
+│  ┌─────────────────────────────────────────┐                   │
+│  │ ¿Usuario autenticado?                   │                   │
+│  │                                         │                   │
+│  │   SÍ → Continuar a checkout            │                   │
+│  │   NO → Mostrar opciones:               │                   │
+│  │        • "Continuar como invitado"     │                   │
+│  │        • "Iniciar sesión" (redirect)   │                   │
+│  │        • "Crear cuenta"                │                   │
+│  └─────────────────────────────────────────┘                   │
+│                                                                 │
+│  Si elige login: redirect a /login?redirect=/checkout           │
+│  Post-login: volver a /checkout con carrito intacto            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 0.6 Carrito: Persistencia Cross-Session
+
+```tsx
+// El carrito usa localStorage y funciona igual para todos
+// store/useCartStore.ts
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      // ... métodos
+    }),
+    {
+      name: 'quelita-cart', // Mismo key para guest y autenticado
+    }
+  )
+);
+
+// Opcional: Sincronizar carrito con backend al hacer login
+// para recuperar carrito de sesiones anteriores
+```
 
 ---
 

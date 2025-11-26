@@ -83,7 +83,7 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
             return {
               ...item,
               variant: variantData,
-              productParent: variantData.parentProduct as ProductParent,
+              productParent: variantData.parent as ProductParent,
             };
           }
           return item;
@@ -238,7 +238,7 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
                 {/* Image */}
                 {item.image && (
                   <img
-                    src={getImageUrl(item.image, 'thumbnail')}
+                    src={getImageUrl(item.image)}
                     alt={item.name}
                     className="w-12 h-12 object-cover rounded"
                   />

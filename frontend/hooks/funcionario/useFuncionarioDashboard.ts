@@ -13,8 +13,8 @@ export function useFuncionarioDashboard() {
     queryKey: ['funcionario-orders-today'],
     queryFn: () =>
       funcionarioOrdersService.getOrders({
-        startDate: today.toISOString(),
-        endDate: todayEnd.toISOString(),
+        dateFrom: today.toISOString(),
+        dateTo: todayEnd.toISOString(),
         page: 1,
         limit: 100, // Get all today's orders
       }),

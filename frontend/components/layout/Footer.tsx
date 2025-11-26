@@ -13,6 +13,7 @@ const footerLinks = {
     { name: 'Seguimiento', href: '/seguimiento' },
   ],
   info: [
+    { name: 'Contacto', href: '/contacto' },
     { name: 'Sobre nosotros', href: '/nosotros' },
     { name: 'Términos y condiciones', href: '/terminos' },
     { name: 'Política de privacidad', href: '/privacidad' },
