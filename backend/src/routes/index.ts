@@ -37,8 +37,10 @@ router.use('/tags', tagRoutes);
 router.use('/brands', brandRoutes);
 router.use('/orders', orderRoutes);
 router.use('/stock-movements', stockRoutes);
-router.use('/users', userRoutes);
+// IMPORTANT: More specific routes must come BEFORE general routes
+// Otherwise /users middleware (admin-only) will intercept /users/me/addresses
 router.use('/users/me/addresses', addressRoutes);
+router.use('/users', userRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/admin/dashboard', dashboardRoutes);
 
