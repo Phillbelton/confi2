@@ -71,9 +71,9 @@ export const orderService = {
     return data.data as ValidateCartResponse;
   },
 
-  // Create order (public - for checkout)
+  // Create order (uses clientApi to send auth token if user is logged in)
   create: async (payload: CreateOrderPayload) => {
-    const { data } = await api.post<ApiResponse<{ order: Order; whatsappURL: string }>>('/orders', payload);
+    const { data } = await clientApi.post<ApiResponse<{ order: Order; whatsappURL: string }>>('/orders', payload);
     // Backend returns { success: true, data: { order: {...}, whatsappURL: '...' } }
     return data.data as any;
   },
