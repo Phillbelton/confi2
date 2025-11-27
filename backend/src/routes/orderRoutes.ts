@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as orderController from '../controllers/orderController';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, optionalAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
 import { Order } from '../models/Order';
@@ -20,9 +20,9 @@ import {
 
 const router = Router();
 
-// Public routes (crear orden - visita puede crear orden)
+// Public routes (crear orden - visita puede crear orden, pero si está autenticado se vincula al usuario)
 router.post('/validate-cart', orderController.validateCart);
-router.post('/', validate(createOrderSchema), auditLog('order', 'create'), orderController.createOrder);
+router.post('/', optionalAuth, validate(createOrderSchema), auditLog('order', 'create'), orderController.createOrder);
 router.get('/number/:orderNumber', validate(getOrderByNumberSchema), orderController.getOrderByNumber);
 
 // Protected routes (cliente autenticado puede ver sus órdenes)
