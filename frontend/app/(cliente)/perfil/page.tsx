@@ -131,15 +131,7 @@ export default function ProfilePage() {
   };
 
   // Stats calculados
-  const orders = ordersData?.data?.data || [];
-
-  // DEBUG: Remove after fixing
-  console.log('🔍 DEBUG ordersData:', ordersData);
-  console.log('🔍 DEBUG ordersData.data:', ordersData?.data);
-  console.log('🔍 DEBUG ordersData.data.data:', ordersData?.data?.data);
-  console.log('🔍 DEBUG orders:', orders);
-  console.log('🔍 DEBUG orders.length:', orders.length);
-
+  const orders = ordersData?.data || [];
   const totalOrders = orders.length;
   const totalSpent = orders.reduce((sum: number, order: any) => sum + order.total, 0);
   const inProgressOrders = orders.filter(

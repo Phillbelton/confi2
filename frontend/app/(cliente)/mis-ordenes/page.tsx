@@ -53,7 +53,7 @@ export default function MyOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  const orders: Order[] = ordersData?.data?.data || [];
+  const orders: Order[] = ordersData?.data || [];
 
   // Filtrar órdenes
   const filteredOrders = orders.filter((order) => {
