@@ -90,11 +90,11 @@ export const orderService = {
 
   // Get order by order number (public - for tracking)
   getByOrderNumber: async (orderNumber: string) => {
-    const { data } = await api.get<ApiResponse<{ order: Order }>>(
+    const { data } = await api.get<ApiResponse<Order>>(
       `/orders/number/${orderNumber}`
     );
-    // Backend returns { success: true, data: { order: {...} } }
-    return (data.data as any)?.order;
+    // Backend returns { success: true, data: {...order...} }
+    return data.data;
   },
 
   // Get my orders (authenticated customer - uses clientApi)
