@@ -134,6 +134,7 @@ describe('Orders API', () => {
     it('should use user default address if no address specified', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Casa',
         street: 'Default Street',
         number: '123',
         city: 'Asunción',
@@ -265,7 +266,7 @@ describe('Orders API', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.order._id).toBe(order._id.toString());
+      expect(response.body.data._id).toBe(order._id.toString());
     });
 
     it('should get order by ID as admin', async () => {
@@ -303,7 +304,7 @@ describe('Orders API', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.order.orderNumber).toBe(order.orderNumber);
+      expect(response.body.data.orderNumber).toBe(order.orderNumber);
     });
 
     it('should return 404 for non-existent order number', async () => {
@@ -453,7 +454,7 @@ describe('Orders API', () => {
       const response = await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${token}`)
-        .send({ reason: 'Cancel' });
+        .send({ reason: 'Trying to cancel another user order' });
 
       expect(response.status).toBe(403);
     });
