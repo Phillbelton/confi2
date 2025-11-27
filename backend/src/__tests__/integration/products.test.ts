@@ -116,8 +116,8 @@ describe('Product API', () => {
         .query({ category: category1._id.toString() })
         .expect(200);
 
-      expect(response.body.data.length).toBe(1);
-      expect(response.body.data[0].name).toBe('Product in Cat 1');
+      expect(response.body.data.data.length).toBe(1);
+      expect(response.body.data.data[0].name).toBe('Product in Cat 1');
     });
 
     it('should filter products by brand', async () => {
@@ -142,8 +142,8 @@ describe('Product API', () => {
         .query({ brand: brand1._id.toString() })
         .expect(200);
 
-      expect(response.body.data.length).toBe(1);
-      expect(response.body.data[0].name).toBe('Product Brand 1');
+      expect(response.body.data.data.length).toBe(1);
+      expect(response.body.data.data[0].name).toBe('Product Brand 1');
     });
 
     it('should support pagination with skip and limit', async () => {
@@ -160,10 +160,11 @@ describe('Product API', () => {
 
       const response = await request(app)
         .get('/api/products/parents')
-        .query({ skip: 2, limit: 2 })
+        .query({ page: 2, limit: 2 })
         .expect(200);
 
-      expect(response.body.data.length).toBe(2);
+      expect(response.body.data.data.length).toBe(2);
+      expect(response.body.data.pagination.page).toBe(2);
     });
 
     it('should search products by name', async () => {
@@ -187,8 +188,8 @@ describe('Product API', () => {
         .query({ search: 'Laptop' })
         .expect(200);
 
-      expect(response.body.data.length).toBe(1);
-      expect(response.body.data[0].name).toContain('Laptop');
+      expect(response.body.data.data.length).toBe(1);
+      expect(response.body.data.data[0].name).toContain('Laptop');
     });
 
     it('should not list inactive products', async () => {
@@ -213,8 +214,8 @@ describe('Product API', () => {
         .get('/api/products/parents')
         .expect(200);
 
-      expect(response.body.data.length).toBe(1);
-      expect(response.body.data[0].name).toBe('Active Product');
+      expect(response.body.data.data.length).toBe(1);
+      expect(response.body.data.data[0].name).toBe('Active Product');
     });
   });
 
@@ -1565,8 +1566,8 @@ describe('Product API', () => {
         })
         .expect(200);
 
-      expect(response.body.data.length).toBe(1);
-      expect(response.body.data[0].name).toBe('Product A');
+      expect(response.body.data.data.length).toBe(1);
+      expect(response.body.data.data[0].name).toBe('Product A');
     });
   });
 });
