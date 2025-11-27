@@ -86,11 +86,12 @@ describe('Product API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBe(2);
-      expect(response.body.data[0]).toHaveProperty('name');
-      expect(response.body.data[0]).toHaveProperty('slug');
-      expect(response.body.data[0]).toHaveProperty('description');
+      expect(Array.isArray(response.body.data.data)).toBe(true);
+      expect(response.body.data.data.length).toBe(2);
+      expect(response.body.data.pagination).toBeDefined();
+      expect(response.body.data.data[0]).toHaveProperty('name');
+      expect(response.body.data.data[0]).toHaveProperty('slug');
+      expect(response.body.data.data[0]).toHaveProperty('description');
     });
 
     it('should filter products by category', async () => {
