@@ -21,7 +21,10 @@ router.get('/', validate(getMovementsQuerySchema), stockMovementController.getMo
 router.get('/variant/:variantId', validate(getVariantMovementsSchema), stockMovementController.getVariantMovements);
 router.get('/order/:orderId', validate(getOrderMovementsSchema), stockMovementController.getOrderMovements);
 
-// Modify stock
+// Create stock movement (unified endpoint)
+router.post('/', stockMovementController.createStockMovement);
+
+// Modify stock (legacy endpoints)
 router.post('/adjust', validate(adjustStockSchema), stockMovementController.adjustStockManually);
 router.post('/restock', validate(restockSchema), stockMovementController.restockProduct);
 

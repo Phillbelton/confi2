@@ -282,7 +282,13 @@ productVariantSchema.virtual('displayName').get(function () {
 
 // Pre-save: generar nombre y slug si no existen
 productVariantSchema.pre('save', async function (next) {
-  if (this.isNew || this.isModified('attributes') || !this.name) {
+  // Solo generar nombre automático si:
+  // 1. No existe nombre (!this.name)
+  // 2. O los attributes cambiaron pero el usuario no estableció un nombre manualmente
+  const userSetName = this.isModified('name') && this.name;
+  const shouldGenerateName = !this.name || (this.isModified('attributes') && !userSetName);
+
+  if (shouldGenerateName) {
     try {
       // Obtener producto padre para construir el nombre
       const parent = await mongoose.models.ProductParent.findById(this.parentProduct);
@@ -299,8 +305,14 @@ productVariantSchema.pre('save', async function (next) {
         attributeValues = Object.values(this.attributes).join(' ');
       }
       this.name = attributeValues ? `${parent.name} ${attributeValues}` : parent.name;
+    } catch (error) {
+      return next(error as Error);
+    }
+  }
 
-      // Generar slug
+  // Generar slug si no existe o si el nombre cambió
+  if (!this.slug || this.isModified('name')) {
+    try {
       this.slug = slugify(this.name, {
         lower: true,
         strict: true,
@@ -317,17 +329,20 @@ productVariantSchema.pre('save', async function (next) {
         this.slug = `${this.slug}-${Date.now()}`;
       }
 
-      // Validación estricta: garantizar que el slug y name SIEMPRE existan
+      // Validación estricta: garantizar que el slug SIEMPRE exista
       if (!this.slug) {
         return next(new Error('CRITICAL: No se pudo generar el slug para la variante'));
-      }
-      if (!this.name) {
-        return next(new Error('CRITICAL: No se pudo generar el nombre para la variante'));
       }
     } catch (error) {
       return next(error as Error);
     }
   }
+
+  // Validar que el nombre exista
+  if (!this.name) {
+    return next(new Error('CRITICAL: La variante debe tener un nombre'));
+  }
+
   next();
 });
 
