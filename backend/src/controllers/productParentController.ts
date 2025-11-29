@@ -111,11 +111,7 @@ export const createProductParent = asyncHandler(
     return res.status(201).json({
       success: true,
       message,
-      data: {
-        productParent: productParent.toObject(),
-        defaultVariant: createdVariant?.toObject() || undefined,
-        imageUploadResult: imageUploadResult || undefined,
-      },
+      data: productParent.toObject(),
     });
   }
 );

@@ -712,11 +712,7 @@ export const addVariantToParent = asyncHandler(
       message: parentUpdated
         ? `Variante creada exitosamente. Se agregaron ${newValuesAdded.length} nuevo(s) valor(es) a los atributos del producto.`
         : 'Variante creada exitosamente',
-      data: {
-        variant,
-        parentUpdated,
-        newValuesAdded,
-      },
+      data: variant,
     });
   }
 );
