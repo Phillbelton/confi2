@@ -1,26 +1,24 @@
+/**
+ * Auth Controller
+ *
+ * Controlador delgado que delega lógica de negocio al AuthService.
+ * Responsable solo de:
+ * - Extraer datos del request
+ * - Llamar al service apropiado
+ * - Formatear y enviar respuesta
+ * - Manejar cookies
+ */
+
 import { Response } from 'express';
-import jwt, { SignOptions } from 'jsonwebtoken';
-import { User } from '../models/User';
-import { AuthRequest, ApiResponse, TokenPayload } from '../types';
-import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { AuthRequest, ApiResponse } from '../types';
+import { asyncHandler } from '../middleware/errorHandler';
+import { authService } from '../services/AuthService';
+import { successResponse, SuccessMessages } from '../utils/responseHelpers';
 import { ENV } from '../config/env';
-import { validatePassword, getPasswordErrorMessage } from '../utils/passwordValidator';
 
-// Generar JWT Token
-const generateToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, ENV.JWT_SECRET, {
-    expiresIn: ENV.JWT_EXPIRES_IN,
-  } as jwt.SignOptions);
-};
-
-// Generar Refresh Token
-const generateRefreshToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, ENV.JWT_REFRESH_SECRET, {
-    expiresIn: ENV.JWT_REFRESH_EXPIRES_IN,
-  } as jwt.SignOptions);
-};
-
-// Set token en cookie
+/**
+ * Helper para establecer cookies de autenticación
+ */
 const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
   const isProduction = ENV.NODE_ENV === 'production';
   const isTest = ENV.NODE_ENV === 'test';
@@ -44,45 +42,29 @@ const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
   // El token ya está en response body para que frontend lo almacene
 };
 
-// @desc    Registrar nuevo usuario
-// @route   POST /api/auth/register
-// @access  Public
-export const register = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { name, email, password, phone } = req.body;
+/**
+ * @desc    Registrar nuevo usuario
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
+export const register = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  const { name, email, password, phone } = req.body;
 
-    // Verificar si el usuario ya existe
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      throw new AppError(400, 'El email ya está registrado');
-    }
+  // Delegar lógica al service
+  const { user, token, refreshToken } = await authService.register({
+    name,
+    email,
+    password,
+    phone,
+  });
 
-    // Crear usuario
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-      role: 'cliente',
-    });
+  // Establecer cookies
+  setTokenCookie(res, token, refreshToken);
 
-    // Generar tokens
-    const tokenPayload: TokenPayload = {
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    };
-
-    const token = generateToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    // Set cookies
-    setTokenCookie(res, token, refreshToken);
-
-    res.status(201).json({
-      success: true,
-      message: 'Usuario registrado exitosamente',
-      data: {
+  // Enviar respuesta
+  res.status(201).json(
+    successResponse(
+      {
         user: {
           id: user._id,
           name: user.name,
@@ -91,75 +73,31 @@ export const register = asyncHandler(
           role: user.role,
         },
         token,
+        refreshToken,
       },
-    });
-  }
-);
+      SuccessMessages.REGISTER
+    )
+  );
+});
 
-// @desc    Login de usuario
-// @route   POST /api/auth/login
-// @access  Public
-export const login = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { email, password } = req.body;
+/**
+ * @desc    Login de usuario
+ * @route   POST /api/auth/login
+ * @access  Public
+ */
+export const login = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  const { email, password } = req.body;
 
-    // Buscar usuario (incluir password que está en select: false)
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      throw new AppError(401, 'Credenciales inválidas');
-    }
+  // Delegar lógica al service
+  const { user, token, refreshToken } = await authService.login({ email, password });
 
-    // Verificar si la cuenta está activa
-    if (!user.active) {
-      throw new AppError(403, 'Cuenta desactivada. Contacta a soporte.');
-    }
+  // Establecer cookies
+  setTokenCookie(res, token, refreshToken);
 
-    // Verificar si la cuenta está bloqueada
-    if (user.isLocked()) {
-      const lockMinutes = Math.ceil((user.lockUntil!.getTime() - Date.now()) / 60000);
-      throw new AppError(
-        423,
-        `Cuenta bloqueada por múltiples intentos fallidos. Intenta nuevamente en ${lockMinutes} minuto(s).`
-      );
-    }
-
-    // Verificar contraseña
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      // Incrementar intentos fallidos
-      await user.incrementLoginAttempts();
-
-      // Si ahora está bloqueada después del incremento, informar al usuario
-      if (user.isLocked()) {
-        throw new AppError(
-          423,
-          'Demasiados intentos fallidos. Tu cuenta ha sido bloqueada por 15 minutos.'
-        );
-      }
-
-      throw new AppError(401, 'Credenciales inválidas');
-    }
-
-    // Login exitoso: resetear intentos fallidos
-    await user.resetLoginAttempts();
-
-    // Generar tokens
-    const tokenPayload: TokenPayload = {
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    };
-
-    const token = generateToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    // Set cookies
-    setTokenCookie(res, token, refreshToken);
-
-    res.status(200).json({
-      success: true,
-      message: 'Login exitoso',
-      data: {
+  // Enviar respuesta
+  res.status(200).json(
+    successResponse(
+      {
         user: {
           id: user._id,
           name: user.name,
@@ -168,187 +106,119 @@ export const login = asyncHandler(
           role: user.role,
         },
         token,
+        refreshToken,
       },
-    });
-  }
-);
+      SuccessMessages.LOGIN
+    )
+  );
+});
 
-// @desc    Logout de usuario
-// @route   POST /api/auth/logout
-// @access  Private
-export const logout = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const isProduction = ENV.NODE_ENV === 'production';
-    const isTest = ENV.NODE_ENV === 'test';
+/**
+ * @desc    Refresh access token
+ * @route   POST /api/auth/refresh
+ * @access  Public
+ */
+export const refreshToken = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
-    // En producción y tests, limpiar cookies con las mismas opciones que fueron seteadas
-    if (isProduction || isTest) {
-      const cookieOptions = {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: 'strict' as const,
-      };
+  // Delegar lógica al service
+  const { user, token, refreshToken: newRefreshToken } = await authService.refreshToken(refreshToken);
 
-      res.clearCookie('token', cookieOptions);
-      res.clearCookie('refreshToken', cookieOptions);
-    }
+  // Establecer nuevas cookies
+  setTokenCookie(res, token, newRefreshToken);
 
-    res.status(200).json({
-      success: true,
-      message: 'Logout exitoso',
-    });
-  }
-);
-
-// @desc    Obtener usuario actual
-// @route   GET /api/auth/me
-// @access  Private
-export const getMe = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    if (!req.user) {
-      throw new AppError(401, 'No autenticado');
-    }
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      throw new AppError(404, 'Usuario no encontrado');
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          phone: user.phone,
-          addresses: user.addresses,
-        },
-      },
-    });
-  }
-);
-
-// @desc    Actualizar perfil de usuario
-// @route   PUT /api/auth/profile
-// @access  Private
-export const updateProfile = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    if (!req.user) {
-      throw new AppError(401, 'No autenticado');
-    }
-
-    const { name, phone } = req.body;
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      throw new AppError(404, 'Usuario no encontrado');
-    }
-
-    // Actualizar campos
-    if (name) user.name = name;
-    if (phone) user.phone = phone;
-    // Note: addresses se gestionan mediante /api/users/me/addresses
-
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Perfil actualizado exitosamente',
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          phone: user.phone,
-          addresses: user.addresses,
-        },
-      },
-    });
-  }
-);
-
-// @desc    Cambiar contraseña
-// @route   PUT /api/auth/change-password
-// @access  Private
-export const changePassword = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    if (!req.user) {
-      throw new AppError(401, 'No autenticado');
-    }
-
-    const { currentPassword, newPassword } = req.body;
-
-    const user = await User.findById(req.user.id).select('+password');
-    if (!user) {
-      throw new AppError(404, 'Usuario no encontrado');
-    }
-
-    // Verificar contraseña actual
-    const isPasswordValid = await user.comparePassword(currentPassword);
-    if (!isPasswordValid) {
-      throw new AppError(401, 'Contraseña actual incorrecta');
-    }
-
-    // Actualizar contraseña
-    user.password = newPassword;
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Contraseña actualizada exitosamente',
-    });
-  }
-);
-
-// @desc    Refresh token
-// @route   POST /api/auth/refresh
-// @access  Public
-export const refreshToken = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const refreshTokenFromCookie = req.cookies?.refreshToken;
-
-    if (!refreshTokenFromCookie) {
-      throw new AppError(401, 'Refresh token no proporcionado');
-    }
-
-    try {
-      // Verificar refresh token
-      const decoded = jwt.verify(
-        refreshTokenFromCookie,
-        ENV.JWT_REFRESH_SECRET
-      ) as TokenPayload;
-
-      // Verificar que el usuario existe
-      const user = await User.findById(decoded.id);
-      if (!user) {
-        throw new AppError(404, 'Usuario no encontrado');
-      }
-
-      // Generar nuevos tokens
-      const tokenPayload: TokenPayload = {
-        id: user._id.toString(),
+  // Enviar respuesta
+  res.status(200).json(
+    successResponse({
+      user: {
+        id: user._id,
+        name: user.name,
         email: user.email,
         role: user.role,
-      };
+      },
+      token,
+      refreshToken: newRefreshToken,
+    })
+  );
+});
 
-      const newToken = generateToken(tokenPayload);
-      const newRefreshToken = generateRefreshToken(tokenPayload);
+/**
+ * @desc    Logout de usuario
+ * @route   POST /api/auth/logout
+ * @access  Private
+ */
+export const logout = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  const isProduction = ENV.NODE_ENV === 'production';
+  const isTest = ENV.NODE_ENV === 'test';
 
-      // Set cookies
-      setTokenCookie(res, newToken, newRefreshToken);
+  // En producción y tests, limpiar cookies con las mismas opciones que fueron seteadas
+  if (isProduction || isTest) {
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict' as const,
+    };
 
-      res.status(200).json({
-        success: true,
-        message: 'Token refrescado exitosamente',
-        data: {
-          token: newToken,
-        },
-      });
-    } catch (error) {
-      throw new AppError(401, 'Refresh token inválido o expirado');
-    }
+    res.clearCookie('token', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
   }
-);
+
+  res.status(200).json(successResponse({}, SuccessMessages.LOGOUT));
+});
+
+/**
+ * @desc    Obtener usuario actual
+ * @route   GET /api/auth/me
+ * @access  Private
+ */
+export const getMe = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
+  }
+
+  // Delegar lógica al service
+  const user = await authService.getUserById(req.user.id);
+
+  res.status(200).json(
+    successResponse({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      addresses: user.addresses,
+      createdAt: user.createdAt,
+    })
+  );
+});
+
+/**
+ * @desc    Actualizar perfil de usuario
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
+  }
+
+  const { name, phone, email } = req.body;
+
+  // Delegar lógica al service
+  const user = await authService.updateProfile(req.user.id, { name, phone, email });
+
+  res.status(200).json(
+    successResponse(
+      {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+      SuccessMessages.UPDATED
+    )
+  );
+});
