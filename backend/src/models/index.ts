@@ -10,8 +10,4 @@ export { default as ProductVariant, IProductVariant, IFixedDiscount } from './Pr
 export { default as StockMovement, IStockMovement, StockMovementType } from './StockMovement';
 export { default as AuditLog, IAuditLog, AuditAction, AuditEntity } from './AuditLog';
 
-// Sistema de mensajería
-export { Conversation, IConversation } from './Conversation';
-export { Message, IMessage } from './Message';
-
 // NOTA: El modelo Product.ts antiguo debe ser deprecado y reemplazado por ProductParent + ProductVariant
