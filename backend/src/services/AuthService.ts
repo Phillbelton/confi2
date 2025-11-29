@@ -90,11 +90,16 @@ export class AuthService {
    * Login de usuario
    */
   async login(credentials: LoginDTO): Promise<AuthResult> {
-    // Buscar usuario con contraseña incluida
-    const user = await User.findOne({ email: credentials.email, active: true }).select('+password');
+    // Buscar usuario con contraseña incluida (sin filtrar por active primero)
+    const user = await User.findOne({ email: credentials.email }).select('+password');
 
     if (!user) {
       throw new AppError(401, 'Credenciales inválidas');
+    }
+
+    // Verificar si la cuenta está activa
+    if (!user.active) {
+      throw new AppError(403, 'Cuenta desactivada. Contacta a soporte.');
     }
 
     // Verificar si la cuenta está bloqueada

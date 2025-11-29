@@ -117,11 +117,11 @@ export function getPaginationParams(query: any): {
  */
 export const SuccessMessages = {
   CREATED: 'Recurso creado exitosamente',
-  UPDATED: 'Recurso actualizado exitosamente',
+  UPDATED: 'Perfil actualizado exitosamente',
   DELETED: 'Recurso eliminado exitosamente',
   LOGIN: 'Login exitoso',
   LOGOUT: 'Logout exitoso',
-  REGISTER: 'Registro exitoso',
+  REGISTER: 'Usuario registrado exitosamente',
   PASSWORD_CHANGED: 'Contraseña cambiada exitosamente',
   PASSWORD_RESET: 'Contraseña restablecida exitosamente',
 } as const;

@@ -182,13 +182,15 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response<ApiResp
 
   res.status(200).json(
     successResponse({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      addresses: user.addresses,
-      createdAt: user.createdAt,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        addresses: user.addresses,
+        createdAt: user.createdAt,
+      },
     })
   );
 });
@@ -212,11 +214,13 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
   res.status(200).json(
     successResponse(
       {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+        },
       },
       SuccessMessages.UPDATED
     )
