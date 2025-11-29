@@ -32,7 +32,10 @@ export class UserService {
     }
 
     // Usar el método del modelo para agregar dirección
-    await user.addAddress(addressData);
+    await user.addAddress({
+      ...addressData,
+      isDefault: addressData.isDefault ?? false,
+    });
 
     return user;
   }
@@ -52,7 +55,7 @@ export class UserService {
     }
 
     // Verificar que la dirección existe
-    const address = user.addresses.id(addressId);
+    const address = user.addresses.find(addr => addr._id.toString() === addressId);
     if (!address) {
       throw new AppError(404, 'Dirección no encontrada');
     }
@@ -74,7 +77,7 @@ export class UserService {
     }
 
     // Verificar que la dirección existe
-    const address = user.addresses.id(addressId);
+    const address = user.addresses.find(addr => addr._id.toString() === addressId);
     if (!address) {
       throw new AppError(404, 'Dirección no encontrada');
     }
@@ -96,7 +99,7 @@ export class UserService {
     }
 
     // Verificar que la dirección existe
-    const address = user.addresses.id(addressId);
+    const address = user.addresses.find(addr => addr._id.toString() === addressId);
     if (!address) {
       throw new AppError(404, 'Dirección no encontrada');
     }
@@ -130,7 +133,7 @@ export class UserService {
       throw new AppError(404, 'Usuario no encontrado');
     }
 
-    const address = user.addresses.id(addressId);
+    const address = user.addresses.find(addr => addr._id.toString() === addressId);
     if (!address) {
       throw new AppError(404, 'Dirección no encontrada');
     }
