@@ -1,7 +1,32 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { Options as RateLimitOptions } from 'express-rate-limit';
 import { Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { ENV } from '../config/env';
+
+/**
+ * Factory para crear rate limiters conscientes del entorno de test
+ * En modo test, todos los limiters se desactivan automáticamente
+ */
+export function createTestAwareRateLimiter(options: Partial<RateLimitOptions>): any {
+  const skipOriginal = options.skip;
+
+  return rateLimit({
+    ...options,
+    skip: (req: Request, res: any) => {
+      // Siempre skip en tests
+      if (ENV.NODE_ENV === 'test') {
+        return true;
+      }
+
+      // Si hay skip function original, usarla
+      if (skipOriginal) {
+        return skipOriginal(req, res);
+      }
+
+      return false;
+    },
+  });
+}
 
 /**
  * Extrae el rol del token JWT sin validarlo completamente
