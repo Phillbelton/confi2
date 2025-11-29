@@ -577,11 +577,7 @@ export const createVariantsBatch = asyncHandler(
  * - Mantiene la inmutabilidad de SKU (se genera una sola vez)
  */
 export const addVariantToParent = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{
-    variant: IProductVariant;
-    parentUpdated: boolean;
-    newValuesAdded: Array<{ attribute: string; value: string }>;
-  }>>) => {
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
     const { id: parentProductId } = req.params;
     const { attributes, price, stock, sku, description, lowStockThreshold } = req.body;
 
@@ -712,11 +708,7 @@ export const addVariantToParent = asyncHandler(
       message: parentUpdated
         ? `Variante creada exitosamente. Se agregaron ${newValuesAdded.length} nuevo(s) valor(es) a los atributos del producto.`
         : 'Variante creada exitosamente',
-      data: {
-        variant,
-        parentUpdated,
-        newValuesAdded,
-      },
+      data: variant,
     });
   }
 );

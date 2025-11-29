@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import * as authController from '../controllers/authController';
 import * as passwordController from '../controllers/passwordController';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { createTestAwareRateLimiter } from '../middleware/rateLimiter';
 import {
   registerSchema,
   loginSchema,
@@ -22,7 +22,8 @@ const router = Router();
  */
 
 // Rate limiters específicos para auth (protección contra ataques de fuerza bruta)
-const loginLimiter = rateLimit({
+// Usando factory test-aware para desactivar automáticamente en tests
+const loginLimiter = createTestAwareRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5, // Máximo 5 intentos
   message: {
@@ -47,7 +48,7 @@ const loginLimiter = rateLimit({
   },
 });
 
-const registerLimiter = rateLimit({
+const registerLimiter = createTestAwareRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3, // Máximo 3 registros por hora desde la misma IP
   message: {
@@ -66,7 +67,7 @@ const registerLimiter = rateLimit({
   },
 });
 
-const passwordChangeLimiter = rateLimit({
+const passwordChangeLimiter = createTestAwareRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 3, // Máximo 3 cambios de contraseña
   message: {
@@ -77,7 +78,7 @@ const passwordChangeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const passwordResetLimiter = rateLimit({
+const passwordResetLimiter = createTestAwareRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3, // Máximo 3 solicitudes de reset
   message: {

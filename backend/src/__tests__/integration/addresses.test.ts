@@ -8,6 +8,7 @@ describe('Addresses API', () => {
     it('should get user addresses', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Casa',
         street: 'Test Street',
         number: '123',
         city: 'Asunción',
@@ -58,6 +59,7 @@ describe('Addresses API', () => {
         .post('/api/users/me/addresses')
         .set('Cookie', `token=${token}`)
         .send({
+          label: 'Oficina',
           street: 'Av. Mariscal López',
           number: '1234',
           city: 'Asunción',
@@ -84,6 +86,7 @@ describe('Addresses API', () => {
         .post('/api/users/me/addresses')
         .set('Cookie', `token=${token}`)
         .send({
+          label: 'Casa',
           street: 'Test Street',
           number: '123',
           city: 'Asunción',
@@ -97,6 +100,7 @@ describe('Addresses API', () => {
     it('should unset previous default when adding new default', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Casa',
         street: 'Old Default',
         number: '111',
         city: 'Asunción',
@@ -111,6 +115,7 @@ describe('Addresses API', () => {
         .post('/api/users/me/addresses')
         .set('Cookie', `token=${token}`)
         .send({
+          label: 'Oficina',
           street: 'New Default',
           number: '222',
           city: 'Asunción',
@@ -150,6 +155,7 @@ describe('Addresses API', () => {
         .post('/api/users/me/addresses')
         .set('Cookie', `token=${token}`)
         .send({
+          label: 'Casa',
           street: 'AB', // Too short
           number: '123',
           city: 'Asunción',
@@ -163,6 +169,7 @@ describe('Addresses API', () => {
       const response = await request(app)
         .post('/api/users/me/addresses')
         .send({
+          label: 'Casa',
           street: 'Test Street',
           number: '123',
           city: 'Asunción',
@@ -177,6 +184,7 @@ describe('Addresses API', () => {
     it('should update existing address', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Trabajo',
         street: 'Old Street',
         number: '111',
         city: 'Asunción',
@@ -221,6 +229,7 @@ describe('Addresses API', () => {
     it('should validate updated fields', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Casa',
         street: 'Test Street',
         number: '123',
         city: 'Asunción',
@@ -257,6 +266,7 @@ describe('Addresses API', () => {
     it('should delete address', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Oficina',
         street: 'Delete Me',
         number: '123',
         city: 'Asunción',
@@ -284,6 +294,7 @@ describe('Addresses API', () => {
       const user = await createTestUser();
       user.addresses.push(
         {
+          label: 'Casa',
           street: 'Default Address',
           number: '123',
           city: 'Asunción',
@@ -291,6 +302,7 @@ describe('Addresses API', () => {
           isDefault: true,
         } as any,
         {
+          label: 'Trabajo',
           street: 'Other Address',
           number: '456',
           city: 'Asunción',
@@ -314,6 +326,7 @@ describe('Addresses API', () => {
     it('should allow deleting default address if its the only one', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Casa',
         street: 'Only Address',
         number: '123',
         city: 'Asunción',
@@ -362,6 +375,7 @@ describe('Addresses API', () => {
       const user = await createTestUser();
       user.addresses.push(
         {
+          label: 'Casa',
           street: 'Old Default',
           number: '111',
           city: 'Asunción',
@@ -369,6 +383,7 @@ describe('Addresses API', () => {
           isDefault: true,
         } as any,
         {
+          label: 'Oficina',
           street: 'New Default',
           number: '222',
           city: 'Asunción',
@@ -410,6 +425,7 @@ describe('Addresses API', () => {
     it('should be idempotent (setting already default address)', async () => {
       const user = await createTestUser();
       user.addresses.push({
+        label: 'Casa',
         street: 'Already Default',
         number: '123',
         city: 'Asunción',
@@ -448,6 +464,7 @@ describe('Addresses API', () => {
         .post('/api/users/me/addresses')
         .set('Cookie', `token=${token}`)
         .send({
+          label: 'Casa',
           street: 'A'.repeat(100),
           number: '1'.repeat(20),
           city: 'C'.repeat(50),
@@ -466,6 +483,7 @@ describe('Addresses API', () => {
         .post('/api/users/me/addresses')
         .set('Cookie', `token=${token}`)
         .send({
+          label: 'Casa',
           street: 'A'.repeat(101), // Too long
           number: '123',
           city: 'Asunción',
@@ -483,6 +501,7 @@ describe('Addresses API', () => {
         .post('/api/users/me/addresses')
         .set('Cookie', `token=${token}`)
         .send({
+          label: 'Oficina',
           street: 'Av. José de San Martín',
           number: '123-A',
           city: 'Asunción',

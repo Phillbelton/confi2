@@ -224,7 +224,7 @@ export const getOrderStatsQuerySchema = z.object({
     endDate: z.string()
       .datetime('Fecha de fin inválida')
       .optional()
-  })
+  }).passthrough().default({})
 });
 
 // Schema para editar items de orden

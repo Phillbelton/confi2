@@ -1,33 +1,35 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../types';
-import { User } from '../models';
-import { AppError } from '../utils/appError';
-import { asyncHandler } from '../middleware/asyncHandler';
+/**
+ * Address Controller
+ *
+ * Controlador delgado que delega lógica de negocio al UserService.
+ * Maneja operaciones CRUD de direcciones de usuario.
+ */
+
+import { Response } from 'express';
+import { AuthRequest, ApiResponse } from '../types';
+import { asyncHandler } from '../middleware/errorHandler';
+import { userService } from '../services/UserService';
+import { successResponse, SuccessMessages } from '../utils/responseHelpers';
 
 /**
  * @desc    Obtener todas las direcciones del usuario
  * @route   GET /api/users/me/addresses
  * @access  Private
  */
-export const getAddresses = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userId = req.user?.id;
-
-  if (!userId) {
-    return next(new AppError(401, 'Usuario no autenticado'));
+export const getAddresses = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
   }
 
-  const user = await User.findById(userId).select('addresses');
+  // Delegar lógica al service
+  const addresses = await userService.getUserAddresses(req.user.id);
 
-  if (!user) {
-    return next(new AppError(404, 'Usuario no encontrado'));
-  }
-
-  res.status(200).json({
-    success: true,
-    data: {
-      addresses: user.addresses || [],
-    },
-  });
+  res.status(200).json(
+    successResponse({
+      addresses,
+    })
+  );
 });
 
 /**
@@ -35,41 +37,26 @@ export const getAddresses = asyncHandler(async (req: AuthRequest, res: Response,
  * @route   POST /api/users/me/addresses
  * @access  Private
  */
-export const createAddress = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userId = req.user?.id;
-
-  if (!userId) {
-    return next(new AppError(401, 'Usuario no autenticado'));
+export const createAddress = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
   }
 
-  const addressData = req.body;
+  // Delegar lógica al service
+  const user = await userService.addAddress(req.user.id, req.body);
 
-  const user = await User.findById(userId);
+  // Obtener la dirección recién creada (última en el array)
+  const newAddress = user.addresses[user.addresses.length - 1];
 
-  if (!user) {
-    return next(new AppError(404, 'Usuario no encontrado'));
-  }
-
-  // Límite de 10 direcciones por usuario
-  if (user.addresses && user.addresses.length >= 10) {
-    return next(new AppError(400, 'Límite de 10 direcciones alcanzado'));
-  }
-
-  // Usar el método addAddress del modelo
-  const updatedUser = await user.addAddress({
-    ...addressData,
-    isDefault: user.addresses.length === 0, // Primera dirección = default
-  });
-
-  const newAddress = updatedUser.addresses[updatedUser.addresses.length - 1];
-
-  res.status(201).json({
-    success: true,
-    message: 'Dirección creada exitosamente',
-    data: {
-      address: newAddress,
-    },
-  });
+  res.status(201).json(
+    successResponse(
+      {
+        address: newAddress,
+      },
+      'Dirección creada exitosamente'
+    )
+  );
 });
 
 /**
@@ -77,40 +64,28 @@ export const createAddress = asyncHandler(async (req: AuthRequest, res: Response
  * @route   PUT /api/users/me/addresses/:id
  * @access  Private
  */
-export const updateAddress = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userId = req.user?.id;
-
-  if (!userId) {
-    return next(new AppError(401, 'Usuario no autenticado'));
+export const updateAddress = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
   }
 
   const { id: addressId } = req.params;
-  const addressData = req.body;
 
-  const user = await User.findById(userId);
+  // Delegar lógica al service
+  const user = await userService.updateAddress(req.user.id, addressId, req.body);
 
-  if (!user) {
-    return next(new AppError(404, 'Usuario no encontrado'));
-  }
+  // Encontrar la dirección actualizada
+  const updatedAddress = user.addresses.find((addr) => addr._id.toString() === addressId);
 
-  // Usar el método updateAddress del modelo
-  const updatedUser = await user.updateAddress(addressId, addressData);
-
-  const updatedAddress = updatedUser.addresses.find(
-    (addr) => addr._id.toString() === addressId
+  res.status(200).json(
+    successResponse(
+      {
+        address: updatedAddress,
+      },
+      'Dirección actualizada exitosamente'
+    )
   );
-
-  if (!updatedAddress) {
-    return next(new AppError(404, 'Dirección no encontrada'));
-  }
-
-  res.status(200).json({
-    success: true,
-    message: 'Dirección actualizada exitosamente',
-    data: {
-      address: updatedAddress,
-    },
-  });
 });
 
 /**
@@ -118,66 +93,53 @@ export const updateAddress = asyncHandler(async (req: AuthRequest, res: Response
  * @route   DELETE /api/users/me/addresses/:id
  * @access  Private
  */
-export const deleteAddress = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userId = req.user?.id;
-
-  if (!userId) {
-    return next(new AppError(401, 'Usuario no autenticado'));
+export const deleteAddress = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
   }
 
   const { id: addressId } = req.params;
 
-  const user = await User.findById(userId);
+  // Delegar lógica al service
+  const user = await userService.deleteAddress(req.user.id, addressId);
 
-  if (!user) {
-    return next(new AppError(404, 'Usuario no encontrado'));
-  }
-
-  // Usar el método deleteAddress del modelo
-  const updatedUser = await user.deleteAddress(addressId);
-
-  res.status(200).json({
-    success: true,
-    message: 'Dirección eliminada exitosamente',
-    data: {
-      addresses: updatedUser.addresses,
-    },
-  });
+  res.status(200).json(
+    successResponse(
+      {
+        addresses: user.addresses,
+      },
+      'Dirección eliminada exitosamente'
+    )
+  );
 });
 
 /**
  * @desc    Marcar dirección como predeterminada
- * @route   PATCH /api/users/me/addresses/:id/default
+ * @route   PUT /api/users/me/addresses/:id/default
  * @access  Private
  */
-export const setDefaultAddress = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userId = req.user?.id;
-
-  if (!userId) {
-    return next(new AppError(401, 'Usuario no autenticado'));
+export const setDefaultAddress = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
   }
 
   const { id: addressId } = req.params;
 
-  const user = await User.findById(userId);
+  // Delegar lógica al service
+  const user = await userService.setDefaultAddress(req.user.id, addressId);
 
-  if (!user) {
-    return next(new AppError(404, 'Usuario no encontrado'));
-  }
+  // Encontrar la dirección que ahora es default
+  const defaultAddress = user.addresses.find((addr) => addr._id.toString() === addressId);
 
-  // Usar el método setDefaultAddress del modelo
-  const updatedUser = await user.setDefaultAddress(addressId);
-
-  const defaultAddress = updatedUser.addresses.find(
-    (addr) => addr._id.toString() === addressId
+  res.status(200).json(
+    successResponse(
+      {
+        address: defaultAddress,
+        addresses: user.addresses,
+      },
+      'Dirección predeterminada actualizada'
+    )
   );
-
-  res.status(200).json({
-    success: true,
-    message: 'Dirección predeterminada actualizada',
-    data: {
-      address: defaultAddress,
-      addresses: updatedUser.addresses,
-    },
-  });
 });

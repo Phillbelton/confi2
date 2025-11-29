@@ -19,7 +19,7 @@ async function debugOrders() {
     }
 
     // Connect to MongoDB
-    const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/confiteria';
+    const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/confiteria';
     await mongoose.connect(MONGO_URI);
     console.log('✅ Connected to MongoDB');
 

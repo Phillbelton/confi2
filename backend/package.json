@@ -23,6 +23,8 @@
     "backup": "ts-node -r tsconfig-paths/register src/scripts/backup.ts",
     "restore": "ts-node -r tsconfig-paths/register src/scripts/restore.ts",
     "debug:cloudinary": "ts-node -r tsconfig-paths/register src/scripts/debugCloudinary.ts",
+    "debug:orders": "ts-node -r tsconfig-paths/register src/scripts/debugOrders.ts",
+    "health:check": "ts-node -r tsconfig-paths/register src/scripts/systemHealthCheck.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "cross-env NODE_ENV=test jest --runInBand",
@@ -41,6 +43,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/nodemailer": "^7.0.3",
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.0",
     "compression": "^1.7.4",

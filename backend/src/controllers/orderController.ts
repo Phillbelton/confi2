@@ -131,6 +131,14 @@ export const createOrder = asyncHandler(
           throw new AppError(404, `Variante ${item.variantId} no encontrada`);
         }
 
+        // Validar stock ANTES de crear la orden
+        if (variant.trackStock && !variant.allowBackorder && variant.stock < item.quantity) {
+          throw new AppError(
+            400,
+            `Stock insuficiente para ${variant.name}. Disponible: ${variant.stock}, Solicitado: ${item.quantity}`
+          );
+        }
+
         // Crear snapshot de la variante
         return {
           variant: variant._id,
@@ -311,7 +319,8 @@ export const getOrderById = asyncHandler(
 
     // Si no es admin/funcionario, verificar que sea el dueño
     if (req.user) {
-      const isOwner = order.customer.user?.toString() === req.user.id;
+      const userId = order.customer.user?._id?.toString() || order.customer.user?.toString();
+      const isOwner = userId === req.user.id;
       const isAdminOrFuncionario = ['admin', 'funcionario'].includes(req.user.role);
 
       if (!isOwner && !isAdminOrFuncionario) {
