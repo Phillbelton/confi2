@@ -65,6 +65,10 @@ export const apiRateLimiter = rateLimit({
 
   // Skip para health check
   skip: (req: Request) => {
+    // Deshabilitar en tests
+    if (ENV.NODE_ENV === 'test') {
+      return true;
+    }
     return req.path === '/health';
   },
 
@@ -94,6 +98,10 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // No contar requests exitosos
+  skip: (req: Request) => {
+    // Deshabilitar en tests
+    return ENV.NODE_ENV === 'test';
+  },
 });
 
 /**
@@ -113,4 +121,8 @@ export const uploadRateLimiter = rateLimit({
   message: 'Límite de uploads excedido. Intenta de nuevo más tarde.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req: Request) => {
+    // Deshabilitar en tests
+    return ENV.NODE_ENV === 'test';
+  },
 });
