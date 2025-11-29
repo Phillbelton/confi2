@@ -178,9 +178,20 @@ export const login = asyncHandler(
 // @access  Private
 export const logout = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    // Limpiar cookies
-    res.clearCookie('token');
-    res.clearCookie('refreshToken');
+    const isProduction = ENV.NODE_ENV === 'production';
+    const isTest = ENV.NODE_ENV === 'test';
+
+    // En producción y tests, limpiar cookies con las mismas opciones que fueron seteadas
+    if (isProduction || isTest) {
+      const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'strict' as const,
+      };
+
+      res.clearCookie('token', cookieOptions);
+      res.clearCookie('refreshToken', cookieOptions);
+    }
 
     res.status(200).json({
       success: true,
