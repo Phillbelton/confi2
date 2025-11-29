@@ -26,7 +26,10 @@ const config: Config.InitialOptions = {
   ],
 
   // Setup and teardown
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup/testDb.ts'],
+  setupFilesAfterEnv: [
+    '<rootDir>/src/__tests__/setup/testDb.ts',
+    '<rootDir>/src/__tests__/setup/jest.setup.ts',
+  ],
 
   // Coverage configuration
   collectCoverageFrom: [
