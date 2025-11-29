@@ -22,15 +22,14 @@ const generateRefreshToken = (payload: TokenPayload): string => {
 
 // Set token en cookie
 const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
-  // For development cross-port cookies to work, we need SameSite=None with Secure
-  // But Secure requires HTTPS. Since we're on HTTP (localhost), browsers may reject.
-  // Solution: Don't use httpOnly cookies in dev, return token in response instead
   const isProduction = ENV.NODE_ENV === 'production';
+  const isTest = ENV.NODE_ENV === 'test';
 
-  if (isProduction) {
+  // En producción y tests, usar cookies httpOnly
+  if (isProduction || isTest) {
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: isProduction, // Solo secure en producción (tests usan HTTP)
       sameSite: 'strict' as const,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     };
@@ -41,8 +40,8 @@ const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
     });
   }
-  // In development, cookies don't work cross-port on localhost
-  // Token is already in response body for frontend to store
+  // En development, las cookies no funcionan cross-port en localhost
+  // El token ya está en response body para que frontend lo almacene
 };
 
 // @desc    Registrar nuevo usuario
