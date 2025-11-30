@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { orderService } from '@/services/orders';
+import { clientOrdersService } from '@/services/client/orders';
 import type { Order, OrderStatus } from '@/types/order';
 
 export interface OrderFilters {
@@ -42,14 +43,12 @@ export function useCancelOrder() {
 
   return useMutation({
     mutationFn: async ({ orderId, reason }: { orderId: string; reason: string }) => {
-      // Este endpoint necesitaría ser implementado o usar uno existente
-      // Por ahora asumimos que existe un endpoint de cancelación para clientes
-      throw new Error('Endpoint de cancelación no implementado para clientes');
+      return await clientOrdersService.cancelOrder(orderId, reason);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       queryClient.invalidateQueries({ queryKey: ['order'] });
-      toast.success('Pedido cancelado');
+      toast.success('Pedido cancelado exitosamente');
     },
     onError: (error: any) => {
       toast.error(error.message || 'No se pudo cancelar el pedido');

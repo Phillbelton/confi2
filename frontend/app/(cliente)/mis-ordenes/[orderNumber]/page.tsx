@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -26,7 +27,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useOrderDetail, getOrderStatusConfig, canCancelOrder } from '@/hooks/client/useClientOrders';
+import { useOrderDetail, getOrderStatusConfig, canCancelOrder, useCancelOrder } from '@/hooks/client/useClientOrders';
+import { CancelOrderModal } from '@/components/client/CancelOrderModal';
 import { useCartStore } from '@/store/useCartStore';
 import type { Order, OrderStatus, OrderItem } from '@/types/order';
 import { cn } from '@/lib/utils';
@@ -72,6 +74,9 @@ export default function OrderDetailPage({
   const router = useRouter();
   const { data: order, isLoading, error, refetch } = useOrderDetail(orderNumber);
   const addItem = useCartStore((state) => state.addItem);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -104,6 +109,7 @@ export default function OrderDetailPage({
       }
     );
   };
+const handleCancelOrder = (reason: string) => {    if (!order) return;        cancelOrder(      { orderId: order._id, reason },      {        onSuccess: () => {          setCancelModalOpen(false);          router.push('/mis-ordenes');        },      }    );  };
 
   const handleContactWhatsApp = () => {
     const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '';
@@ -398,11 +404,21 @@ export default function OrderDetailPage({
         )}
 
         {canCancelOrder(order) && (
-          <Button variant="ghost" className="w-full text-destructive hover:text-destructive">
+          <Button variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={() => setCancelModalOpen(true)}>
             Cancelar pedido
           </Button>
         )}
       </motion.div>
+
+        {canCancelOrder(order) && (
+          <CancelOrderModal
+            open={cancelModalOpen}
+            onOpenChange={setCancelModalOpen}
+            orderNumber={order.orderNumber}
+            onCancel={handleCancelOrder}
+            isCancelling={isCancelling}
+          />
+        )}
     </motion.div>
   );
 }
