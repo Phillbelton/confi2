@@ -19,57 +19,73 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAdminStore } from '@/store/useAdminStore';
 
+type UserRole = 'admin' | 'funcionario' | 'cliente';
+
 const menuItems = [
   {
     title: 'Dashboard',
     href: '/admin',
     icon: LayoutDashboard,
+    roles: ['admin', 'funcionario'] as UserRole[],
   },
   {
     title: 'Productos',
     href: '/admin/productos',
     icon: Package,
+    roles: ['admin', 'funcionario'] as UserRole[],
   },
   {
     title: 'Órdenes',
     href: '/admin/ordenes',
     icon: ShoppingCart,
+    roles: ['admin'] as UserRole[], // Solo admin
   },
   {
     title: 'Inventario',
     href: '/admin/inventario',
     icon: Warehouse,
+    roles: ['admin', 'funcionario'] as UserRole[],
   },
   {
     title: 'Categorías',
     href: '/admin/categorias',
     icon: FolderTree,
+    roles: ['admin'] as UserRole[], // Solo admin
   },
   {
     title: 'Marcas',
     href: '/admin/marcas',
     icon: Tags,
+    roles: ['admin'] as UserRole[], // Solo admin
   },
   {
     title: 'Usuarios',
     href: '/admin/usuarios',
     icon: Users,
+    roles: ['admin'] as UserRole[], // Solo admin
   },
   {
     title: 'Reportes',
     href: '/admin/reportes',
     icon: FileText,
+    roles: ['admin'] as UserRole[], // Solo admin
   },
   {
     title: 'Auditoría',
     href: '/admin/auditoria',
     icon: Activity,
+    roles: ['admin'] as UserRole[], // Solo admin
   },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar } = useAdminStore();
+  const { sidebarOpen, toggleSidebar, user } = useAdminStore();
+
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter((item) =>
+    user?.role ? item.roles.includes(user.role as UserRole) : false
+  );
 
   return (
     <>
@@ -112,7 +128,7 @@ export function AdminSidebar() {
           {/* Navigation */}
           <ScrollArea className="flex-1 px-3 py-4">
             <nav className="space-y-1">
-              {menuItems.map((item) => {
+              {filteredMenuItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                 const Icon = item.icon;
 

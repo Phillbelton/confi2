@@ -12,12 +12,17 @@ export function middleware(request: NextRequest) {
     }
 
     // In development, skip server-side token check
-    // The ProtectedRoute component will handle authentication on the client
+    // The ProtectedRoute component will handle authentication AND authorization on the client
     // This is necessary because we use localStorage (not cookies) in development
+    // 
+    // Note: ProtectedRoute now validates:
+    // 1. User is authenticated
+    // 2. User has admin or funcionario role
+    // 3. User has permission to access the specific route
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     if (isDevelopment) {
-      // Let client-side ProtectedRoute handle auth
+      // Let client-side ProtectedRoute handle auth and authorization
       return NextResponse.next();
     }
 
@@ -32,6 +37,9 @@ export function middleware(request: NextRequest) {
     }
 
     // Token exists, allow access
+    // Note: Role-based authorization is handled by ProtectedRoute component
+    // For stronger production security, we could decode the JWT here and validate
+    // route permissions, but that would require access to JWT secret in middleware
     return NextResponse.next();
   }
 
