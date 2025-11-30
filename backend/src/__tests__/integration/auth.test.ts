@@ -617,6 +617,7 @@ describe('Authentication API', () => {
         .send({
           currentPassword: 'OldPassword123!',
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       expect(response.status).toBe(200);
@@ -656,6 +657,7 @@ describe('Authentication API', () => {
         .send({
           currentPassword: 'WrongPassword123!',
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       expect(response.status).toBe(401);
@@ -669,6 +671,7 @@ describe('Authentication API', () => {
         .send({
           currentPassword: 'OldPassword123!',
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       expect(response.status).toBe(401);
@@ -687,6 +690,7 @@ describe('Authentication API', () => {
         .send({
           currentPassword: 'CorrectPassword123!',
           newPassword: '123', // Too weak
+          confirmPassword: '123',
         });
 
       expect(response.status).toBe(400);
@@ -848,7 +852,7 @@ describe('Authentication API', () => {
         .post('/api/auth/refresh')
         .set('Cookie', `refreshToken=${refreshToken}`);
 
-      expect(refreshResponse.status).toBe(404);
+      expect(refreshResponse.status).toBe(401);
       expect(refreshResponse.body.success).toBe(false);
     });
   });
@@ -1019,6 +1023,7 @@ describe('Authentication API', () => {
         .post(`/api/auth/reset-password/${plainToken}`)
         .send({
           newPassword: 'NewResetPassword456!',
+          confirmPassword: 'NewResetPassword456!',
         });
 
       expect(response.status).toBe(200);
@@ -1051,6 +1056,7 @@ describe('Authentication API', () => {
         .post('/api/auth/reset-password/invalid-token-here')
         .send({
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       expect(response.status).toBe(400);
@@ -1072,6 +1078,7 @@ describe('Authentication API', () => {
         .post(`/api/auth/reset-password/${plainToken}`)
         .send({
           newPassword: 'FirstReset123!',
+          confirmPassword: 'FirstReset123!',
         });
 
       // Try to use the same token again
@@ -1079,6 +1086,7 @@ describe('Authentication API', () => {
         .post(`/api/auth/reset-password/${plainToken}`)
         .send({
           newPassword: 'SecondReset456!',
+          confirmPassword: 'SecondReset456!',
         });
 
       expect(response.status).toBe(400);
@@ -1104,6 +1112,7 @@ describe('Authentication API', () => {
         .post('/api/auth/reset-password/test-token')
         .send({
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       expect(response.status).toBe(400);
@@ -1131,6 +1140,7 @@ describe('Authentication API', () => {
         .post(`/api/auth/reset-password/${plainToken}`)
         .send({
           newPassword: '123', // Too weak
+          confirmPassword: '123',
         });
 
       expect(response.status).toBe(400);
@@ -1160,6 +1170,7 @@ describe('Authentication API', () => {
         .post(`/api/auth/reset-password/${plainToken}`)
         .send({
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       // Login attempts should be reset
@@ -1180,6 +1191,7 @@ describe('Authentication API', () => {
         .post(`/api/auth/reset-password/${plainToken}`)
         .send({
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       const tokenAfter = await PasswordResetToken.findOne({

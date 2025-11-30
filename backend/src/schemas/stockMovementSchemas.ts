@@ -94,8 +94,8 @@ export const getVariantMovementsSchema = z.object({
       .enum(['sale', 'restock', 'adjustment', 'return', 'damage'])
       .optional(),
 
-    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    startDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+    endDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
   }),
 });
 
@@ -120,8 +120,8 @@ export const getMovementsQuerySchema = z.object({
 
     order: objectIdSchema.optional(),
 
-    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    startDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+    endDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
 
     minQuantity: z.string().regex(/^-?\d+$/).optional(), // Permite negativos
 

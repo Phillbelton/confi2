@@ -124,6 +124,7 @@ export const SuccessMessages = {
   REGISTER: 'Usuario registrado exitosamente',
   PASSWORD_CHANGED: 'Contraseña cambiada exitosamente',
   PASSWORD_RESET: 'Contraseña restablecida exitosamente',
+  TOKEN_REFRESHED: 'Token refrescado exitosamente',
 } as const;
 
 /**

@@ -1,18 +1,57 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir /b /s index.ts 2)",
-      "Bash(nul)",
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(find:*)",
       "Bash(findstr:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm run dev:*)",
-      "Bash(npm run migrate:*)",
-      "Bash(npm run seed:categories:*)",
-      "Bash(npm install:*)",
-      "Bash(dir /b \"C:\\Users\\sk\\Desktop\\claudes\\nuevaConfi\\backend\\src\\utils\\*.ts\" 2)",
-      "Bash(dir:*)"
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(echo:*)",
+      "Bash(tee:*)",
+      "Bash(tasklist:*)",
+      "Bash(ps:*)",
+      "Read(C:/Users/sk/Desktop/confi2-recuperado/**)",
+      "Read(C:/Users/sk/.claude-worktrees/confi2-recuperado/**)",
+      "Edit(C:/Users/sk/Desktop/confi2-recuperado/**)",
+      "Write(C:/Users/sk/Desktop/confi2-recuperado/**)",
+      "Edit(C:/Users/sk/.claude-worktrees/confi2-recuperado/**)",
+      "Write(C:/Users/sk/.claude-worktrees/confi2-recuperado/**)",
+      "Read(/tmp/**)",
+      "Write(/tmp/**)"
     ],
-    "deny": [],
-    "ask": []
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf /)",
+      "Bash(del /s /q C:\\*)",
+      "Bash(format:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fdx:*)",
+      "Bash(npm uninstall:*)",
+      "Edit(/etc/**)",
+      "Write(/etc/**)",
+      "Edit(C:/Windows/**)",
+      "Write(C:/Windows/**)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(npm publish:*)",
+      "Bash(docker:*)",
+      "Edit(**/.env*)",
+      "Write(**/.env*)",
+      "Edit(**/package.json)",
+      "Write(**/package.json)"
+    ]
   }
 }

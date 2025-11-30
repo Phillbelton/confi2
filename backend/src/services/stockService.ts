@@ -284,7 +284,7 @@ export async function getOutOfStockVariants(limit: number = 50) {
 /**
  * Ajuste manual de stock (para admin/funcionario)
  * @param variantId ID de la variante
- * @param newStock Nuevo stock
+ * @param quantity Cantidad a ajustar (positivo o negativo)
  * @param reason Razón del ajuste
  * @param userId ID del usuario que realiza el ajuste
  * @param notes Notas adicionales
@@ -292,50 +292,44 @@ export async function getOutOfStockVariants(limit: number = 50) {
  */
 export async function adjustStock(
   variantId: mongoose.Types.ObjectId | string,
-  newStock: number,
+  quantity: number,
   reason: string,
   userId: mongoose.Types.ObjectId | string,
   notes?: string
 ): Promise<IStockMovement> {
-  try {
-    if (newStock < 0) {
-      throw new Error('El stock no puede ser negativo');
-    }
-
-    if (!reason || reason.trim() === '') {
-      throw new Error('Debe proporcionar una razón para el ajuste de stock');
-    }
-
-    // Obtener la variante actual
-    const variant = await ProductVariant.findById(variantId);
-    if (!variant) {
-      throw new Error('Variante no encontrada');
-    }
-
-    const currentStock = variant.stock;
-    const difference = newStock - currentStock;
-
-    if (difference === 0) {
-      throw new Error('El nuevo stock es igual al stock actual');
-    }
-
-    // Crear movimiento de stock
-    const movement = await StockMovement.createMovement(
-      variantId as mongoose.Types.ObjectId,
-      'adjustment',
-      difference, // Positivo o negativo según corresponda
-      `Ajuste manual: ${reason}`,
-      {
-        userId: userId as mongoose.Types.ObjectId,
-        notes,
-      }
-    );
-
-    return movement;
-  } catch (error) {
-    console.error('Error en adjustStock:', error);
-    throw error;
+  if (quantity === 0) {
+    throw new Error('La cantidad de ajuste no puede ser cero');
   }
+
+  if (!reason || reason.trim() === '') {
+    throw new Error('Debe proporcionar una razón para el ajuste de stock');
+  }
+
+  // Obtener la variante actual
+  const variant = await ProductVariant.findById(variantId);
+  if (!variant) {
+    throw new Error('Variante no encontrada');
+  }
+
+  const newStock = variant.stock + quantity;
+
+  if (newStock < 0) {
+    throw new Error('Stock insuficiente. Stock actual: ' + variant.stock + ', cantidad solicitada: ' + Math.abs(quantity));
+  }
+
+  // Crear movimiento de stock
+  const movement = await StockMovement.createMovement(
+    variantId as mongoose.Types.ObjectId,
+    'adjustment',
+    quantity, // Positivo o negativo según corresponda
+    `Ajuste manual: ${reason}`,
+    {
+      userId: userId as mongoose.Types.ObjectId,
+      notes,
+    }
+  );
+
+  return movement;
 }
 
 /**
@@ -343,6 +337,7 @@ export async function adjustStock(
  * @param variantId ID de la variante
  * @param quantity Cantidad a agregar (debe ser positivo)
  * @param userId ID del usuario que realiza el restock
+ * @param reason Razón del restock (opcional, usa default si no se provee)
  * @param notes Notas adicionales
  * @returns Movimiento de stock creado
  */
@@ -350,6 +345,7 @@ export async function restockVariant(
   variantId: mongoose.Types.ObjectId | string,
   quantity: number,
   userId: mongoose.Types.ObjectId | string,
+  reason?: string,
   notes?: string
 ): Promise<IStockMovement> {
   try {
@@ -362,7 +358,7 @@ export async function restockVariant(
       variantId as mongoose.Types.ObjectId,
       'restock',
       quantity, // Positivo para restock
-      'Reposición de stock',
+      reason || 'Reposición de stock',
       {
         userId: userId as mongoose.Types.ObjectId,
         notes,

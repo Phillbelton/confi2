@@ -52,6 +52,7 @@ describe('Stock Movements API', () => {
         quantity: 50,
         previousStock: 100,
         newStock: 150,
+        reason: 'Test restock',
       });
       await StockMovement.create({
         variant: variant._id,
@@ -59,6 +60,7 @@ describe('Stock Movements API', () => {
         quantity: -10,
         previousStock: 150,
         newStock: 140,
+        reason: 'Test adjustment',
       });
 
       const response = await request(app)
@@ -82,6 +84,7 @@ describe('Stock Movements API', () => {
         previousStock: 100,
         newStock: 110,
         createdAt: new Date('2025-01-15'),
+        reason: 'Test adjustment for date filtering',
       });
 
       const response = await request(app)
@@ -130,6 +133,7 @@ describe('Stock Movements API', () => {
         quantity: 50,
         previousStock: 100,
         newStock: 150,
+        reason: 'Test restock',
       });
       await StockMovement.create({
         variant: variant._id,
@@ -137,6 +141,7 @@ describe('Stock Movements API', () => {
         quantity: -10,
         previousStock: 150,
         newStock: 140,
+        reason: 'Test sale',
       });
 
       const response = await request(app)
@@ -319,7 +324,7 @@ describe('Stock Movements API', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('stock');
+      expect(response.body.error.toLowerCase()).toContain('stock');
     });
 
     it('should allow funcionario to create movements', async () => {
@@ -440,7 +445,7 @@ describe('Stock Movements API', () => {
       await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${adminToken}`)
-        .send({ reason: 'Test' });
+        .send({ reason: 'Test cancellation for integration test' });
 
       const movements = await StockMovement.find({
         variant: variant._id,

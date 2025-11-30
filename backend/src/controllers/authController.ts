@@ -12,7 +12,7 @@
 import { Response } from 'express';
 import { AuthRequest, ApiResponse } from '../types';
 import { asyncHandler } from '../middleware/errorHandler';
-import { authService } from '../services/AuthService';
+import { authService } from '../services/authService';
 import { successResponse, SuccessMessages } from '../utils/responseHelpers';
 import { ENV } from '../config/env';
 
@@ -138,7 +138,7 @@ export const refreshToken = asyncHandler(async (req: AuthRequest, res: Response<
       },
       token,
       refreshToken: newRefreshToken,
-    })
+    }, SuccessMessages.TOKEN_REFRESHED)
   );
 });
 
@@ -151,16 +151,17 @@ export const logout = asyncHandler(async (req: AuthRequest, res: Response<ApiRes
   const isProduction = ENV.NODE_ENV === 'production';
   const isTest = ENV.NODE_ENV === 'test';
 
-  // En producción y tests, limpiar cookies con las mismas opciones que fueron seteadas
+  // En producción y tests, limpiar cookies estableciendo Max-Age=0
   if (isProduction || isTest) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'strict' as const,
+      maxAge: 0, // Expire immediately
     };
 
-    res.clearCookie('token', cookieOptions);
-    res.clearCookie('refreshToken', cookieOptions);
+    res.cookie('token', '', cookieOptions);
+    res.cookie('refreshToken', '', cookieOptions);
   }
 
   res.status(200).json(successResponse({}, SuccessMessages.LOGOUT));
