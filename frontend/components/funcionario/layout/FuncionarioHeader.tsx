@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useFuncionarioStore } from '@/store/useFuncionarioStore';
+import { useFuncionarioAuth } from '@/hooks/funcionario/useFuncionarioAuth';
 import { useRouter } from 'next/navigation';
 
 interface FuncionarioHeaderProps {
@@ -19,12 +20,12 @@ interface FuncionarioHeaderProps {
 }
 
 export function FuncionarioHeader({ onSearchClick }: FuncionarioHeaderProps = {}) {
-  const { user, toggleSidebar, logout } = useFuncionarioStore();
+  const { user, toggleSidebar } = useFuncionarioStore();
+  const { logout } = useFuncionarioAuth();
   const router = useRouter();
 
   const handleLogout = () => {
     logout();
-    router.push('/admin/login');
   };
 
   // TODO: Implementar notificaciones reales
