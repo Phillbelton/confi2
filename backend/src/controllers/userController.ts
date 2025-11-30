@@ -218,6 +218,15 @@ export const activateUser = asyncHandler(
     res.status(200).json({
       success: true,
       message: 'Usuario activado exitosamente',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          active: user.active,
+        },
+      },
     });
   }
 );
@@ -236,7 +245,7 @@ export const getFuncionarios = asyncHandler(
 
     res.status(200).json({
       success: true,
-      data: { funcionarios },
+      data: { users: funcionarios },
     });
   }
 );

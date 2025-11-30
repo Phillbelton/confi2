@@ -192,7 +192,7 @@ export const createStockMovement = asyncHandler(
             throw new AppError(404, 'Variante no encontrada');
           }
           movement = await StockMovement.createMovement(
-            variantId,
+            variantId as any,
             'return',
             quantity,
             reason,

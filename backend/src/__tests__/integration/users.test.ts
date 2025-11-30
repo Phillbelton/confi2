@@ -311,10 +311,10 @@ describe('Users API (Admin Only)', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain('contraseña');
+      expect(response.body.message.toLowerCase()).toContain('contraseña');
 
       // Verify password was changed
-      const updatedUser = await User.findById(user._id);
+      const updatedUser = await User.findById(user._id).select('+password');
       const isMatch = await updatedUser?.comparePassword('NewPass123!');
       expect(isMatch).toBe(true);
     });

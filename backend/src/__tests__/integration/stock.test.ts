@@ -324,7 +324,7 @@ describe('Stock Movements API', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('stock');
+      expect(response.body.error.toLowerCase()).toContain('stock');
     });
 
     it('should allow funcionario to create movements', async () => {
@@ -445,7 +445,7 @@ describe('Stock Movements API', () => {
       await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${adminToken}`)
-        .send({ reason: 'Test' });
+        .send({ reason: 'Test cancellation for integration test' });
 
       const movements = await StockMovement.find({
         variant: variant._id,

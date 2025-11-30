@@ -179,18 +179,10 @@ export class AuthService {
       throw new AppError(404, 'Usuario no encontrado');
     }
 
-    // Si se actualiza el email, verificar que no esté en uso
-    if (data.email && data.email !== user.email) {
-      const emailExists = await User.findOne({ email: data.email });
-      if (emailExists) {
-        throw new AppError(400, 'El email ya está en uso');
-      }
-    }
-
     // Actualizar campos
     if (data.name) user.name = data.name;
     if (data.phone) user.phone = data.phone;
-    if (data.email) user.email = data.email;
+    // El email NO se puede cambiar desde el perfil (solo desde admin o endpoint dedicado)
 
     await user.save();
 
