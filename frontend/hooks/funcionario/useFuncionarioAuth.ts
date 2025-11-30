@@ -2,21 +2,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { adminAuthService } from '@/services/admin/auth';
-import { useAdminStore } from '@/store/useAdminStore';
+import { funcionarioAuthService } from '@/services/funcionario/auth';
+import { useFuncionarioStore } from '@/store/useFuncionarioStore';
 import type { AdminLoginCredentials } from '@/types/admin';
 
-export function useAdminAuth() {
+export function useFuncionarioAuth() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { setUser, logout: clearStore, setLoading } = useAdminStore();
+  const { setUser, logout: clearStore, setLoading } = useFuncionarioStore();
 
   // Don't fetch profile on login page to avoid unnecessary 401 errors
-  const isLoginPage = pathname === '/admin/login';
+  const isLoginPage = pathname === '/funcionario/login';
 
   // Check if we have a token to determine if we should fetch profile
-  const hasToken = typeof window !== 'undefined' ? !!localStorage.getItem('admin-token') : false;
+  const hasToken = typeof window !== 'undefined' ? !!localStorage.getItem('funcionario-token') : false;
 
   // Get profile query
   const {
@@ -24,8 +24,8 @@ export function useAdminAuth() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['admin-profile'],
-    queryFn: adminAuthService.getProfile,
+    queryKey: ['funcionario-profile'],
+    queryFn: funcionarioAuthService.getProfile,
     retry: false,
     staleTime: 1000 * 60 * 2, // 2 minutes - data considered fresh
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
@@ -42,7 +42,7 @@ export function useAdminAuth() {
     if (error && !isLoginPage && !isLoading) {
       // Only clear if we're not loading and there's an actual auth error
       const timer = setTimeout(() => {
-        localStorage.removeItem('admin-token');
+        localStorage.removeItem('funcionario-token');
         clearStore();
         queryClient.clear();
       }, 500); // Wait 500ms before clearing to avoid race conditions
@@ -54,37 +54,29 @@ export function useAdminAuth() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: (credentials: AdminLoginCredentials) =>
-      adminAuthService.login(credentials),
+      funcionarioAuthService.login(credentials),
     onSuccess: (data) => {
-      // Reject if not admin
-      if (data.user.role !== 'admin') {
-        if (data.user.role === 'funcionario') {
-          toast.error('Los funcionarios deben ingresar por /funcionario/login');
-          // Redirect to funcionario login
-          setTimeout(() => {
-            window.location.href = '/funcionario/login';
-          }, 1500);
-        } else {
-          toast.error('Acceso denegado. Solo administradores pueden ingresar aquí.');
-        }
+      // Check if user is funcionario
+      if (data.user.role !== 'funcionario') {
+        toast.error('Acceso denegado. Solo funcionarios pueden ingresar aquí.');
         return;
       }
 
       // Store token in localStorage for development (cookies don't work cross-port)
       if (data.token) {
-        localStorage.setItem('admin-token', data.token);
+        localStorage.setItem('funcionario-token', data.token);
       }
 
       // Set user in store and cache BEFORE redirecting
       setUser(data.user);
-      queryClient.setQueryData(['admin-profile'], data.user);
+      queryClient.setQueryData(['funcionario-profile'], data.user);
 
       // Show success message
       toast.success(`Bienvenido, ${data.user.name}!`);
 
-      // Redirect to admin dashboard
+      // Redirect to funcionario dashboard
       setTimeout(() => {
-        window.location.href = '/admin';
+        window.location.href = '/funcionario';
       }, 500);
     },
     onError: (error: any) => {
@@ -94,21 +86,21 @@ export function useAdminAuth() {
 
   // Logout mutation
   const logoutMutation = useMutation({
-    mutationFn: adminAuthService.logout,
+    mutationFn: funcionarioAuthService.logout,
     onSuccess: () => {
       // Clear token from localStorage
-      localStorage.removeItem('admin-token');
+      localStorage.removeItem('funcionario-token');
       clearStore();
       queryClient.clear();
       toast.success('Sesión cerrada exitosamente');
-      router.push('/admin/login');
+      router.push('/funcionario/login');
     },
     onError: (error: any) => {
       // Even if logout fails on server, clear client state
-      localStorage.removeItem('admin-token');
+      localStorage.removeItem('funcionario-token');
       clearStore();
       queryClient.clear();
-      router.push('/admin/login');
+      router.push('/funcionario/login');
       toast.error(error.message || 'Error al cerrar sesión');
     },
   });

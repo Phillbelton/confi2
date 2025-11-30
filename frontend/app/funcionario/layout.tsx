@@ -2,7 +2,7 @@
 
 import { type ReactNode, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { ProtectedRoute } from '@/components/admin/auth/ProtectedRoute';
+import { FuncionarioProtectedRoute } from '@/components/funcionario/auth/FuncionarioProtectedRoute';
 import { FuncionarioSidebar } from '@/components/funcionario/layout/FuncionarioSidebar';
 import { FuncionarioHeader } from '@/components/funcionario/layout/FuncionarioHeader';
 import { CommandPalette } from '@/components/funcionario/CommandPalette';
@@ -15,6 +15,7 @@ export default function FuncionarioLayout({
 }) {
   const pathname = usePathname();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const isLoginPage = pathname === '/funcionario/login';
 
   // Keyboard shortcut: Ctrl+K or Cmd+K
   useEffect(() => {
@@ -29,9 +30,14 @@ export default function FuncionarioLayout({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Login page doesn't need protection or layout
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
   // Protected funcionario pages with sidebar and header
   return (
-    <ProtectedRoute>
+    <FuncionarioProtectedRoute>
       <TooltipProvider delayDuration={200}>
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
           <FuncionarioSidebar />
@@ -51,6 +57,6 @@ export default function FuncionarioLayout({
           />
         </div>
       </TooltipProvider>
-    </ProtectedRoute>
+    </FuncionarioProtectedRoute>
   );
 }
