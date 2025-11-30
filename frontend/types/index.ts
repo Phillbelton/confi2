@@ -174,27 +174,32 @@ export interface OrderCustomer {
     street: string;
     number: string;
     city: string;
+    neighborhood?: string;
+    reference?: string;
     postalCode: string;
   };
 }
 
 export interface OrderItem {
-  variant: string | ProductVariant;
-  name: string;
-  price: number;
+  variant: string;
+  variantSnapshot: {
+    sku: string;
+    name: string;
+    price: number;
+    attributes: { [key: string]: string };
+    image: string;
+  };
   quantity: number;
+  pricePerUnit: number;
   discount: number;
   subtotal: number;
-  // Frontend helpers
-  productParent?: ProductParent;
-  attributes?: { [key: string]: string };
-  image?: string;
 }
 
 export interface Order {
   _id: string;
   orderNumber: string;
   customer: OrderCustomer;
+  deliveryNotes?: string;
   items: OrderItem[];
   subtotal: number;
   totalDiscount: number;
@@ -212,6 +217,8 @@ export interface Order {
   updatedAt: string;
   completedAt?: string;
   cancelledAt?: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
 }
 
 // ============================================================================
