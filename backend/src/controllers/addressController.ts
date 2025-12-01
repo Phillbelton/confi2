@@ -8,7 +8,7 @@
 import { Response } from 'express';
 import { AuthRequest, ApiResponse } from '../types';
 import { asyncHandler } from '../middleware/errorHandler';
-import { userService } from '../services/UserService';
+import { userService } from '../services/userService';
 import { successResponse, SuccessMessages } from '../utils/responseHelpers';
 
 /**

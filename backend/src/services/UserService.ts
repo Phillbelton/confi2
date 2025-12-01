@@ -82,6 +82,11 @@ export class UserService {
       throw new AppError(404, 'Dirección no encontrada');
     }
 
+    // No permitir eliminar dirección predeterminada si hay otras direcciones
+    if (address.isDefault && user.addresses.length > 1) {
+      throw new AppError(400, 'No puedes eliminar la dirección predeterminada cuando existen otras direcciones. Primero establece otra dirección como predeterminada.');
+    }
+
     // Usar el método del modelo para eliminar
     await user.deleteAddress(addressId);
 

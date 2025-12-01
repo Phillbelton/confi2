@@ -293,15 +293,8 @@ userSchema.methods.deleteAddress = async function (addressId: string): Promise<I
     throw new Error('Dirección no encontrada');
   }
 
-  const wasDefault = address.isDefault;
-
   // Remover dirección
   this.addresses.pull(addressId);
-
-  // Si era la default y quedan direcciones, hacer la primera como default
-  if (wasDefault && this.addresses.length > 0) {
-    this.addresses[0].isDefault = true;
-  }
 
   return await this.save();
 };

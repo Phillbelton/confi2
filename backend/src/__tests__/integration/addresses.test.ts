@@ -397,7 +397,7 @@ describe('Addresses API', () => {
       const token = generateAuthToken(user);
 
       const response = await request(app)
-        .put(`/api/users/me/addresses/${newDefaultId}/default`)
+        .patch(`/api/users/me/addresses/${newDefaultId}/default`)
         .set('Cookie', `token=${token}`);
 
       expect(response.status).toBe(200);
@@ -416,7 +416,7 @@ describe('Addresses API', () => {
       const fakeId = '507f1f77bcf86cd799439011';
 
       const response = await request(app)
-        .put(`/api/users/me/addresses/${fakeId}/default`)
+        .patch(`/api/users/me/addresses/${fakeId}/default`)
         .set('Cookie', `token=${token}`);
 
       expect(response.status).toBe(404);
@@ -438,7 +438,7 @@ describe('Addresses API', () => {
       const token = generateAuthToken(user);
 
       const response = await request(app)
-        .put(`/api/users/me/addresses/${addressId}/default`)
+        .patch(`/api/users/me/addresses/${addressId}/default`)
         .set('Cookie', `token=${token}`);
 
       expect(response.status).toBe(200);
@@ -484,7 +484,7 @@ describe('Addresses API', () => {
         .set('Cookie', `token=${token}`)
         .send({
           label: 'Casa',
-          street: 'A'.repeat(101), // Too long
+          street: 'A'.repeat(201), // Too long (max is 200)
           number: '123',
           city: 'Asunción',
           neighborhood: 'Centro',
