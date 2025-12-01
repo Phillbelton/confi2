@@ -55,7 +55,7 @@ function extractRoleFromToken(req: Request): string | null {
  * Límites:
  * - Admin/Funcionario: 1000 requests / 15 min (trabajo intensivo)
  * - Usuario autenticado: 500 requests / 15 min
- * - Anónimo: 100 requests / 15 min (protección contra ataques)
+ * - Anónimo: 300 requests / 15 min (suficiente para navegación de catálogo)
  */
 export const apiRateLimiter = rateLimit({
   windowMs: ENV.RATE_LIMIT_WINDOW_MS, // 15 minutos
@@ -66,7 +66,8 @@ export const apiRateLimiter = rateLimit({
 
     if (!role) {
       // Usuario anónimo (sin token o token inválido)
-      return 100;
+      // 300 permite navegar catálogo de productos sin problemas
+      return 300;
     }
 
     // Usuarios con roles administrativos
