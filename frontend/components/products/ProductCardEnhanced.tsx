@@ -209,6 +209,11 @@ export function ProductCardEnhanced({
             <motion.div
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
+              style={{
+                backfaceVisibility: 'hidden',
+                transform: 'translateZ(0)',
+                willChange: 'transform',
+              }}
             >
               <Image
                 src={mainImage}
@@ -216,6 +221,7 @@ export function ProductCardEnhanced({
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                priority={false}
               />
             </motion.div>
           </Link>
