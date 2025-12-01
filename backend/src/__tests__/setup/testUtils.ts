@@ -6,6 +6,7 @@ import { Tag } from '../../models/Tag';
 import ProductParent from '../../models/ProductParent';
 import ProductVariant from '../../models/ProductVariant';
 import { Order } from '../../models/Order';
+import AuditLog, { AuditAction, AuditEntity } from '../../models/AuditLog';
 import mongoose from 'mongoose';
 
 /**
@@ -266,6 +267,38 @@ export async function clearDatabase(): Promise<void> {
   for (const key in collections) {
     await collections[key].deleteMany({});
   }
+}
+
+/**
+ * Create a test audit log
+ */
+export async function createTestAuditLog(data?: {
+  user?: mongoose.Types.ObjectId;
+  action?: AuditAction;
+  entity?: AuditEntity;
+  entityId?: mongoose.Types.ObjectId;
+  changes?: { before?: any; after?: any };
+  ipAddress?: string;
+  userAgent?: string;
+}) {
+  // Create user if not provided
+  let userId = data?.user;
+  if (!userId) {
+    const user = await createTestUser();
+    userId = user._id as mongoose.Types.ObjectId;
+  }
+
+  const auditData = {
+    user: userId,
+    action: data?.action || 'create',
+    entity: data?.entity || 'product',
+    entityId: data?.entityId || new mongoose.Types.ObjectId(),
+    changes: data?.changes || { before: {}, after: {} },
+    ipAddress: data?.ipAddress || '127.0.0.1',
+    userAgent: data?.userAgent || 'Mozilla/5.0 Test Agent',
+  };
+
+  return await AuditLog.create(auditData);
 }
 
 /**

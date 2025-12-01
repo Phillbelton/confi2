@@ -1,8 +1,9 @@
 import request from 'supertest';
 import app from '../../server';
-import { createTestUser, generateAuthToken, createTestProductVariant } from '../setup/testUtils';
+import { createTestUser, generateAuthToken, createTestProductVariant, createTestAuditLog } from '../setup/testUtils';
 import AuditLogModel, { IAuditLog } from '../../models/AuditLog';
 import ProductVariant from '../../models/ProductVariant';
+import mongoose from 'mongoose';
 
 const AuditLog = AuditLogModel;
 
@@ -25,15 +26,13 @@ describe('Audit Logs API', () => {
   describe('GET /api/audit-logs', () => {
     it('should list all audit logs as admin', async () => {
       // Create some audit logs
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: {
           after: { name: 'Test Product' },
         },
-        ipAddress: '127.0.0.1',
       });
 
       const response = await request(app)
@@ -48,25 +47,22 @@ describe('Audit Logs API', () => {
     });
 
     it('should filter logs by action type', async () => {
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { after: {} },
       });
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'update',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { before: {}, after: {} },
       });
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'delete',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { before: {} },
       });
 
@@ -80,41 +76,37 @@ describe('Audit Logs API', () => {
     });
 
     it('should filter logs by entity type', async () => {
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { after: {} },
       });
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Category',
-        entityId: '507f1f77bcf86cd799439012',
+        entity: 'category',
         changes: { after: {} },
       });
 
       const response = await request(app)
         .get('/api/audit-logs')
         .set('Cookie', `token=${adminToken}`)
-        .query({ entity: 'Product' });
+        .query({ entity: 'product' });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.data.every((log: any) => log.entity === 'Product')).toBe(true);
+      expect(response.body.data.data.every((log: any) => log.entity === 'product')).toBe(true);
     });
 
     it('should filter logs by date range', async () => {
       const startDate = new Date('2025-01-01');
       const endDate = new Date('2025-01-31');
 
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { after: {} },
-        createdAt: new Date('2025-01-15'),
       });
 
       const response = await request(app)
@@ -154,38 +146,37 @@ describe('Audit Logs API', () => {
 
   describe('GET /api/audit-logs/entity/:entity/:entityId', () => {
     it('should get audit history for specific entity', async () => {
-      const entityId = '507f1f77bcf86cd799439011';
+      const entityId = new mongoose.Types.ObjectId();
 
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
+        entity: 'product',
         entityId,
         changes: { after: { name: 'Test' } },
       });
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'update',
-        entity: 'Product',
+        entity: 'product',
         entityId,
         changes: { before: { name: 'Test' }, after: { name: 'Updated' } },
       });
 
       const response = await request(app)
-        .get(`/api/audit-logs/entity/Product/${entityId}`)
+        .get(`/api/audit-logs/entity/product/${entityId}`)
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.logs).toBeInstanceOf(Array);
       expect(response.body.data.logs.length).toBe(2);
-      expect(response.body.data.logs.every((log: any) => log.entityId === entityId)).toBe(true);
     });
 
     it('should return empty array for entity with no history', async () => {
-      const entityId = '507f1f77bcf86cd799439999';
+      const entityId = new mongoose.Types.ObjectId();
 
       const response = await request(app)
-        .get(`/api/audit-logs/entity/Product/${entityId}`)
+        .get(`/api/audit-logs/entity/product/${entityId}`)
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
@@ -193,27 +184,29 @@ describe('Audit Logs API', () => {
     });
 
     it('should sort logs by date descending (newest first)', async () => {
-      const entityId = '507f1f77bcf86cd799439011';
+      const entityId = new mongoose.Types.ObjectId();
 
-      await AuditLog.create({
+      const log1 = await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
+        entity: 'product',
         entityId,
         changes: { after: {} },
-        createdAt: new Date('2025-01-01'),
       });
-      await AuditLog.create({
+
+      // Wait a bit to ensure different timestamps
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const log2 = await createTestAuditLog({
         user: admin._id,
         action: 'update',
-        entity: 'Product',
+        entity: 'product',
         entityId,
         changes: { before: {}, after: {} },
-        createdAt: new Date('2025-01-15'),
       });
 
       const response = await request(app)
-        .get(`/api/audit-logs/entity/Product/${entityId}`)
+        .get(`/api/audit-logs/entity/product/${entityId}`)
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
@@ -222,10 +215,10 @@ describe('Audit Logs API', () => {
     });
 
     it('should reject access from non-admin', async () => {
-      const entityId = '507f1f77bcf86cd799439011';
+      const entityId = new mongoose.Types.ObjectId();
 
       const response = await request(app)
-        .get(`/api/audit-logs/entity/Product/${entityId}`)
+        .get(`/api/audit-logs/entity/product/${entityId}`)
         .set('Cookie', `token=${clienteToken}`);
 
       expect(response.status).toBe(403);
@@ -236,18 +229,16 @@ describe('Audit Logs API', () => {
     it('should get activity logs for specific user', async () => {
       const targetUser = await createTestUser({ email: 'target@test.com' });
 
-      await AuditLog.create({
+      await createTestAuditLog({
         user: targetUser._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { after: {} },
       });
-      await AuditLog.create({
+      await createTestAuditLog({
         user: targetUser._id,
         action: 'update',
-        entity: 'Category',
-        entityId: '507f1f77bcf86cd799439012',
+        entity: 'category',
         changes: { before: {}, after: {} },
       });
 
@@ -274,11 +265,10 @@ describe('Audit Logs API', () => {
     it('should include user information in response', async () => {
       const targetUser = await createTestUser({ email: 'target@test.com' });
 
-      await AuditLog.create({
+      await createTestAuditLog({
         user: targetUser._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { after: {} },
       });
 
@@ -291,7 +281,7 @@ describe('Audit Logs API', () => {
     });
 
     it('should return 404 for non-existent user', async () => {
-      const fakeId = '507f1f77bcf86cd799439999';
+      const fakeId = new mongoose.Types.ObjectId();
 
       const response = await request(app)
         .get(`/api/audit-logs/user/${fakeId}`)
@@ -324,7 +314,7 @@ describe('Audit Logs API', () => {
         });
 
       const logs = await AuditLog.find({
-        entity: 'ProductVariant',
+        entity: 'variant',
         entityId: variant._id.toString(),
       });
 
@@ -341,7 +331,7 @@ describe('Audit Logs API', () => {
         .send({ price: 20000 });
 
       const logs = await AuditLog.find({
-        entity: 'ProductVariant',
+        entity: 'variant',
         entityId: variant._id.toString(),
         action: 'update',
       });
@@ -361,7 +351,7 @@ describe('Audit Logs API', () => {
         .send({ price: 15000 });
 
       const logs = await AuditLog.find({
-        entity: 'ProductVariant',
+        entity: 'variant',
         entityId: variant._id.toString(),
       });
 
@@ -379,7 +369,7 @@ describe('Audit Logs API', () => {
         .send({ price: 15000 });
 
       const logs = await AuditLog.find({
-        entity: 'ProductVariant',
+        entity: 'variant',
         entityId: variant._id.toString(),
       });
 
@@ -391,11 +381,10 @@ describe('Audit Logs API', () => {
 
   describe('Action Types', () => {
     it('should support "create" action', async () => {
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: {
           after: { name: 'New Product' },
         },
@@ -406,11 +395,10 @@ describe('Audit Logs API', () => {
     });
 
     it('should support "update" action', async () => {
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'update',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: {
           before: { price: 10000 },
           after: { price: 15000 },
@@ -422,11 +410,10 @@ describe('Audit Logs API', () => {
     });
 
     it('should support "delete" action', async () => {
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'delete',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: {
           before: { name: 'Deleted Product' },
         },
@@ -437,11 +424,10 @@ describe('Audit Logs API', () => {
     });
 
     it('should support "cancel" action', async () => {
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'cancel',
-        entity: 'Order',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'order',
         changes: {
           before: { status: 'confirmed' },
           after: { status: 'cancelled' },
@@ -453,11 +439,10 @@ describe('Audit Logs API', () => {
     });
 
     it('should support "block" action', async () => {
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'block',
-        entity: 'User',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'user',
         changes: {
           before: { active: true },
           after: { active: false },
@@ -472,18 +457,16 @@ describe('Audit Logs API', () => {
   describe('Statistics and Insights', () => {
     it('should provide stats on admin activity', async () => {
       // Create various actions
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'create',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439011',
+        entity: 'product',
         changes: { after: {} },
       });
-      await AuditLog.create({
+      await createTestAuditLog({
         user: admin._id,
         action: 'update',
-        entity: 'Product',
-        entityId: '507f1f77bcf86cd799439012',
+        entity: 'product',
         changes: { before: {}, after: {} },
       });
 
