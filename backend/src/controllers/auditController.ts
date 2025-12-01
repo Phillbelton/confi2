@@ -132,6 +132,13 @@ export const getUserActivity = asyncHandler(
     const { userId } = req.params;
     const { limit = '100', page = '1', action, startDate, endDate } = req.query as any;
 
+    // Verify user exists
+    const { User } = await import('../models/User');
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      throw new AppError(404, 'Usuario no encontrado');
+    }
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;

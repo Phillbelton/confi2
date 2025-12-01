@@ -44,6 +44,7 @@ describe('Audit Logs API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.data).toBeInstanceOf(Array);
       expect(response.body.data.pagination).toBeDefined();
+      expect(response.body.data.data.length).toBeGreaterThan(0);
     });
 
     it('should filter logs by action type', async () => {
@@ -92,16 +93,13 @@ describe('Audit Logs API', () => {
       const response = await request(app)
         .get('/api/audit-logs')
         .set('Cookie', `token=${adminToken}`)
-        .query({ entity: 'product' });
+        .query({ entityType: 'product' });
 
       expect(response.status).toBe(200);
       expect(response.body.data.data.every((log: any) => log.entity === 'product')).toBe(true);
     });
 
     it('should filter logs by date range', async () => {
-      const startDate = new Date('2025-01-01');
-      const endDate = new Date('2025-01-31');
-
       await createTestAuditLog({
         user: admin._id,
         action: 'create',
@@ -113,11 +111,12 @@ describe('Audit Logs API', () => {
         .get('/api/audit-logs')
         .set('Cookie', `token=${adminToken}`)
         .query({
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
+          startDate: '2024-01-01',
+          endDate: '2026-12-31',
         });
 
       expect(response.status).toBe(200);
+      expect(response.body.data.data).toBeInstanceOf(Array);
     });
 
     it('should reject access from funcionario', async () => {
@@ -168,8 +167,8 @@ describe('Audit Logs API', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.logs).toBeInstanceOf(Array);
-      expect(response.body.data.logs.length).toBe(2);
+      expect(response.body.data.history).toBeInstanceOf(Array);
+      expect(response.body.data.history.length).toBe(2);
     });
 
     it('should return empty array for entity with no history', async () => {
@@ -180,7 +179,7 @@ describe('Audit Logs API', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.logs).toEqual([]);
+      expect(response.body.data.history).toEqual([]);
     });
 
     it('should sort logs by date descending (newest first)', async () => {
@@ -210,7 +209,7 @@ describe('Audit Logs API', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      const logs = response.body.data.logs;
+      const logs = response.body.data.history;
       expect(new Date(logs[0].createdAt) >= new Date(logs[1].createdAt)).toBe(true);
     });
 
@@ -247,8 +246,8 @@ describe('Audit Logs API', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.logs).toBeInstanceOf(Array);
-      expect(response.body.data.logs.length).toBe(2);
+      expect(response.body.data.activity).toBeInstanceOf(Array);
+      expect(response.body.data.activity.length).toBe(2);
     });
 
     it('should return empty array for user with no activity', async () => {
@@ -259,7 +258,7 @@ describe('Audit Logs API', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.logs).toEqual([]);
+      expect(response.body.data.activity).toEqual([]);
     });
 
     it('should include user information in response', async () => {
@@ -277,7 +276,8 @@ describe('Audit Logs API', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.logs[0].user).toBeDefined();
+      expect(response.body.data.activity.length).toBeGreaterThan(0);
+      expect(response.body.data.userId).toBeDefined();
     });
 
     it('should return 404 for non-existent user', async () => {
@@ -475,7 +475,10 @@ describe('Audit Logs API', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.stats).toBeDefined();
+      expect(response.body.data.totalLogs).toBeDefined();
+      expect(response.body.data.actionStats).toBeInstanceOf(Array);
+      expect(response.body.data.entityStats).toBeInstanceOf(Array);
+      expect(response.body.data.topUsers).toBeInstanceOf(Array);
     });
   });
 });
