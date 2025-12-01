@@ -427,7 +427,7 @@ describe('Categories API', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('Acceso denegado');
+      expect(response.body.error).toContain('permisos');
     });
 
     it('should reject creation without authentication', async () => {
@@ -497,8 +497,8 @@ describe('Categories API', () => {
           color: 'not-a-hex-color',
         });
 
-      // Either validation fails or model validation fails
-      expect([400, 500]).toContain(response.status);
+      // Validation should fail
+      expect(response.status).toBe(400);
     });
 
     it('should accept valid hex color', async () => {
@@ -805,7 +805,7 @@ describe('Categories API', () => {
           color: 'invalid-color',
         });
 
-      expect([400, 500]).toContain(response.status);
+      expect(response.status).toBe(400);
     });
 
     it('should enforce max 2 levels hierarchy on update', async () => {
@@ -863,7 +863,7 @@ describe('Categories API', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('Acceso denegado');
+      expect(response.body.error).toContain('permisos');
     });
 
     it('should reject deletion as regular user', async () => {

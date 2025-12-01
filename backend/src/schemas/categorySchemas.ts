@@ -36,6 +36,11 @@ export const createCategorySchema = z.object({
       .max(50, 'El icono no puede exceder 50 caracteres')
       .optional(),
 
+    color: z
+      .string()
+      .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Color hex inválido')
+      .optional(),
+
     active: z.boolean().optional(),
 
     order: z
@@ -70,6 +75,11 @@ export const updateCategorySchema = z.object({
     icon: z
       .string()
       .max(50, 'El icono no puede exceder 50 caracteres')
+      .optional(),
+
+    color: z
+      .string()
+      .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Color hex inválido')
       .optional(),
 
     active: z.boolean().optional(),

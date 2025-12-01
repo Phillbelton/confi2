@@ -177,12 +177,13 @@ export const getSubcategories = asyncHandler(
 // @access  Admin, Funcionario
 export const createCategory = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { name, description, icon, parent, order, active } = req.body;
+    const { name, description, icon, color, parent, order, active } = req.body;
 
     const category = await Category.create({
       name,
       description,
       icon,
+      color,
       parent,
       order,
       active,
@@ -207,11 +208,12 @@ export const updateCategory = asyncHandler(
       throw new AppError(404, 'Categoría no encontrada');
     }
 
-    const { name, description, icon, parent, order, active } = req.body;
+    const { name, description, icon, color, parent, order, active } = req.body;
 
     if (name !== undefined) category.name = name;
     if (description !== undefined) category.description = description;
     if (icon !== undefined) category.icon = icon;
+    if (color !== undefined) category.color = color;
     if (parent !== undefined) category.parent = parent;
     if (order !== undefined) category.order = order;
     if (active !== undefined) category.active = active;
