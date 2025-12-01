@@ -12,7 +12,7 @@
 import { Response } from 'express';
 import { AuthRequest, ApiResponse } from '../types';
 import { asyncHandler } from '../middleware/errorHandler';
-import { authService } from '../services/authService';
+import { authService } from '../services/AuthService';
 import { successResponse, SuccessMessages } from '../utils/responseHelpers';
 import { ENV } from '../config/env';
 
