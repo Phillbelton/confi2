@@ -58,7 +58,6 @@ const tagSchema = new Schema<ITag>(
     order: {
       type: Number,
       default: 0,
-      min: 0,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
@@ -114,13 +113,23 @@ tagSchema.statics.getActiveTags = function () {
   return this.find({ active: true }).sort({ order: 1, name: 1 });
 };
 
-// Método estático: Obtener o crear tag
+// Método estático: Obtener o crear tag (con manejo de race conditions)
 tagSchema.statics.getOrCreate = async function (name: string) {
-  let tag = await this.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
-  if (!tag) {
-    tag = await this.create({ name });
+  try {
+    // Usar findOneAndUpdate con upsert para operación atómica
+    const tag = await this.findOneAndUpdate(
+      { name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } },
+      { $setOnInsert: { name: name.trim(), active: true } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    return tag;
+  } catch (error: any) {
+    // Si hay error de duplicado (race condition), intentar de nuevo
+    if (error.code === 11000) {
+      return await this.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    }
+    throw error;
   }
-  return tag;
 };
 
 export const Tag = mongoose.model<ITag, ITagModel>('Tag', tagSchema);

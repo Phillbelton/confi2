@@ -20,7 +20,7 @@ export const createTagSchema = z.object({
         required_error: 'El nombre es requerido',
       })
       .min(2, 'El nombre debe tener al menos 2 caracteres')
-      .max(50, 'El nombre no puede exceder 50 caracteres')
+      .max(30, 'El nombre no puede exceder 30 caracteres')
       .trim(),
 
     description: z
@@ -31,13 +31,12 @@ export const createTagSchema = z.object({
 
     color: z
       .string()
-      .regex(/^#[0-9A-Fa-f]{6}$/, 'Color debe ser un código hexadecimal válido (ej: #10B981)')
+      .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Color hex inválido')
       .optional(),
 
     order: z
       .number()
       .int('El orden debe ser un número entero')
-      .min(0, 'El orden no puede ser negativo')
       .optional(),
 
     active: z.boolean().optional(),
@@ -65,13 +64,12 @@ export const updateTagSchema = z.object({
 
     color: z
       .string()
-      .regex(/^#[0-9A-Fa-f]{6}$/, 'Color debe ser un código hexadecimal válido (ej: #10B981)')
+      .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Color hex inválido')
       .optional(),
 
     order: z
       .number()
       .int('El orden debe ser un número entero')
-      .min(0, 'El orden no puede ser negativo')
       .optional(),
 
     active: z.boolean().optional(),
@@ -115,7 +113,7 @@ export const getOrCreateTagSchema = z.object({
         required_error: 'El nombre es requerido',
       })
       .min(2, 'El nombre debe tener al menos 2 caracteres')
-      .max(50, 'El nombre no puede exceder 50 caracteres')
+      .max(30, 'El nombre no puede exceder 30 caracteres')
       .trim(),
   }),
 });

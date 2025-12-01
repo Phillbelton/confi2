@@ -179,6 +179,14 @@ export const createCategory = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const { name, description, icon, color, parent, order, active } = req.body;
 
+    // Validar jerarquía de 2 niveles máximo
+    if (parent) {
+      const parentCategory = await Category.findById(parent);
+      if (parentCategory && parentCategory.parent) {
+        throw new AppError(400, 'No se permiten más de 2 niveles de categorías (categoría → subcategoría)');
+      }
+    }
+
     const category = await Category.create({
       name,
       description,
@@ -209,6 +217,14 @@ export const updateCategory = asyncHandler(
     }
 
     const { name, description, icon, color, parent, order, active } = req.body;
+
+    // Validar jerarquía de 2 niveles máximo si se está cambiando el parent
+    if (parent !== undefined && parent !== null) {
+      const parentCategory = await Category.findById(parent);
+      if (parentCategory && parentCategory.parent) {
+        throw new AppError(400, 'No se permiten más de 2 niveles de categorías (categoría → subcategoría)');
+      }
+    }
 
     if (name !== undefined) category.name = name;
     if (description !== undefined) category.description = description;

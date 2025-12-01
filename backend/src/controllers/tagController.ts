@@ -86,6 +86,12 @@ export const createTag = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const { name, color, description, order } = req.body;
 
+    // Check for duplicate tag name
+    const existingTag = await Tag.findOne({ name });
+    if (existingTag) {
+      throw new AppError(400, 'Ya existe un tag con ese nombre');
+    }
+
     const tag = await Tag.create({
       name,
       color: color || '#10B981',
