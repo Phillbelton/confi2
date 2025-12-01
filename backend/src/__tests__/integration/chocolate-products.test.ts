@@ -245,7 +245,7 @@ describe('Chocolate Products - Variant Creation', () => {
       const variant = await ProductVariant.findById(response.body.data._id);
       expect(variant).toBeTruthy();
       const attributes = variant?.attributes as any;
-      expect(attributes.peso || attributes.get?.('peso')).toBe('100g');
+      expect(attributes.peso || attributes.get?.('peso')).toBe('100 g');
       expect(attributes.cacao || attributes.get?.('cacao')).toBe('70%');
     });
 

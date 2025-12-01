@@ -31,6 +31,14 @@ export const errorHandler = (
     isOperational = err.isOperational;
   }
 
+  // Handle MongoDB duplicate key error (11000)
+  if ((err as any).code === 11000) {
+    statusCode = 400;
+    const field = Object.keys((err as any).keyPattern || {})[0] || 'campo';
+    message = `Ya existe un registro con ese ${field}`;
+    isOperational = true;
+  }
+
   // Log del error
   if (!isOperational || ENV.NODE_ENV === 'development') {
     logger.error('Error en request', {

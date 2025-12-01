@@ -65,7 +65,7 @@ export const createProductParentSchema = z.object({
       .string({
         required_error: 'La descripción es requerida',
       })
-      .max(2000, 'La descripción no puede exceder 2000 caracteres')
+      .max(5000, 'La descripción no puede exceder 5000 caracteres')
       .trim(),
 
     categories: z
@@ -105,7 +105,7 @@ export const updateProductParentSchema = z.object({
 
     description: z
       .string()
-      .max(2000, 'La descripción no puede exceder 2000 caracteres')
+      .max(5000, 'La descripción no puede exceder 5000 caracteres')
       .trim()
       .optional(),
 

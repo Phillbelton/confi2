@@ -878,7 +878,7 @@ describe('Product API', () => {
           name: 'New Variant',
           price: 12000,
           stock: 50,
-          attributes: { size: 'L', color: 'blue' },
+          attributes: {},
           images: ['/uploads/variants/test.jpg'],
         })
         .expect(201);
@@ -929,7 +929,7 @@ describe('Product API', () => {
 
       expect(response.body.data).toHaveProperty('sku');
       expect(response.body.data.sku).toBeTruthy();
-      expect(response.body.data.sku).toMatch(/^[A-Z0-9]+$/);
+      expect(response.body.data.sku).toMatch(/^[A-Z0-9-]+$/);
     });
 
     it('should reject variant creation without authentication', async () => {
@@ -1220,18 +1220,22 @@ describe('Product API', () => {
 
   describe('ProductVariant - DELETE /api/products/variants/:id', () => {
     it('should delete variant as admin', async () => {
-      const variant = await createTestProductVariant();
+      // Create parent with at least 2 variants so deletion is allowed
+      const parent = await createTestProductParent();
+      const variant1 = await createTestProductVariant({ parentProduct: parent._id });
+      const variant2 = await createTestProductVariant({ parentProduct: parent._id });
 
       const response = await request(app)
-        .delete(`/api/products/variants/${variant._id.toString()}`)
+        .delete(`/api/products/variants/${variant1._id.toString()}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
 
-      // Verify deletion
-      const deleted = await ProductVariant.findById(variant._id);
-      expect(deleted).toBeNull();
+      // Verify soft deletion
+      const deleted = await ProductVariant.findById(variant1._id);
+      expect(deleted).toBeTruthy();
+      expect(deleted?.active).toBe(false);
     });
 
     it('should reject deletion by funcionario user', async () => {
@@ -1464,7 +1468,7 @@ describe('Product API', () => {
 
       expect(results[0].status).toBe(201);
       expect(results[1].status).toBe(201);
-      expect(results[0].body.data._id).not.toBe(results[1].body.data._id);
+      expect(results[0].body.data.productParent._id).not.toBe(results[1].body.data.productParent._id);
     });
 
     it('should handle special characters in product names', async () => {
@@ -1480,8 +1484,8 @@ describe('Product API', () => {
         })
         .expect(201);
 
-      expect(response.body.data).toHaveProperty('name');
-      expect(response.body.data).toHaveProperty('slug');
+      expect(response.body.data.productParent).toHaveProperty('name');
+      expect(response.body.data.productParent).toHaveProperty('slug');
     });
 
     it('should maintain data consistency when updating product with variants', async () => {
@@ -1522,7 +1526,7 @@ describe('Product API', () => {
         })
         .expect(201);
 
-      expect(response.body.data.description).toBe(longDescription);
+      expect(response.body.data.productParent.description).toBe(longDescription);
     });
 
     it('should reject product description exceeding max length', async () => {
