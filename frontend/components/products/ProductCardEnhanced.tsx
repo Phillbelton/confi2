@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ShoppingCart, Check, Eye, Plus, Minus, Star } from 'lucide-react';
+import { useFlyToCart } from '@/hooks/useFlyToCart';
+import { FlyingCartParticles } from '@/components/cart/FlyingCartParticle';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +28,7 @@ import {
   getDiscountTiers,
   hasActiveDiscount,
 } from '@/lib/discountCalculator';
+import { cardHover, fadeInUp } from '@/lib/motion-variants';
 
 interface ProductCardEnhancedProps {
   product: ProductParent;
@@ -47,6 +51,41 @@ export function ProductCardEnhanced({
   const [justAdded, setJustAdded] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const { triggerFly, particles, removeParticle } = useFlyToCart();
+
+  // 3D Hover Effect
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x);
+  const mouseYSpring = useSpring(y);
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['7.5deg', '-7.5deg']);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-7.5deg', '7.5deg']);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+
+    const rect = cardRef.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
 
   // Get selected variant or first variant
   const selectedVariant = variants.find((v) => v._id === selectedVariantId) || variants[0];
@@ -93,6 +132,14 @@ export function ProductCardEnhanced({
 
       addItem(product, selectedVariant, quantity);
 
+      // Trigger fly-to-cart animation
+      if (addButtonRef.current) {
+        const cartIcon = document.querySelector('[aria-label="Ver carrito"]');
+        if (cartIcon) {
+          triggerFly(addButtonRef.current, cartIcon as Element);
+        }
+      }
+
       // Show success state
       setJustAdded(true);
       toast.success('Producto agregado al carrito', {
@@ -124,205 +171,317 @@ export function ProductCardEnhanced({
   };
 
   return (
-    <Card
-      className={cn(
-        'group relative overflow-hidden transition-all duration-200 hover:shadow-xl border-border/50',
-        isOutOfStock && 'opacity-60',
-        className
-      )}
+    <motion.div
+      ref={cardRef}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-50px" }}
+      variants={fadeInUp}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: 'preserve-3d',
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className={cn('perspective-1000', className)}
     >
-      {/* Image Section */}
-      <div className="aspect-square relative overflow-hidden bg-muted">
-        <Link href={`/productos/${product.slug}`}>
-          <Image
-            src={mainImage}
-            alt={product.name}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-          />
-        </Link>
-
-        {/* Quick View Button - Shows on hover */}
-        {onQuickView && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-            onClick={onQuickView}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Ver
-          </Button>
+      <Card
+        className={cn(
+          'group relative overflow-hidden transition-all duration-300',
+          'hover:shadow-2xl border-border/50',
+          'transform-gpu', // GPU acceleration
+          isOutOfStock && 'opacity-60'
         )}
+      >
+        {/* Gradient overlay on hover */}
+        <motion.div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none z-10"
+          style={{
+            background: 'radial-gradient(circle at center, rgba(249, 115, 22, 0.1) 0%, transparent 70%)',
+          }}
+          transition={{ duration: 0.3 }}
+        />
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {product.featured && (
-            <Badge className="bg-secondary text-secondary-foreground shadow-md">
-              ⭐ Destacado
-            </Badge>
-          )}
-          {isNew && (
-            <Badge className="bg-green-500 text-white shadow-md">🆕 Nuevo</Badge>
-          )}
-          {isOutOfStock && (
-            <Badge variant="destructive" className="shadow-md">
-              Agotado
-            </Badge>
-          )}
-          {hasDiscount && !isOutOfStock && discountBadge && (
-            <Badge className="bg-destructive text-destructive-foreground pulse-badge shadow-md">
-              {discountBadge}
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <CardContent className="p-3 space-y-2">
-        {/* Product Name */}
-        <Link href={`/productos/${product.slug}`}>
-          <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors">
-            {product.name}
-          </h3>
-        </Link>
-
-        {/* Variant Selector */}
-        {product.hasVariants && variants.length > 0 && (
-          <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
-            <SelectTrigger className="h-8 text-xs w-full">
-              <SelectValue placeholder="Seleccionar" />
-            </SelectTrigger>
-            <SelectContent>
-              {variants.map((variant) => (
-                <SelectItem key={variant._id} value={variant._id}>
-                  {variant.displayName}
-                  {variant.stock === 0 && ' (Agotado)'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-        {/* Price */}
-        {selectedVariant && (
-          <div className="space-y-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold text-primary">
-                ${displayPrice.toLocaleString()}
-              </span>
-              {hasFixedDiscountApplied && (
-                <span className="text-xs text-muted-foreground line-through">
-                  ${originalPrice.toLocaleString()}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Rating */}
-        <div className="flex items-center gap-1">
-          <div className="flex">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={cn(
-                  'h-3 w-3',
-                  i < Math.floor(rating)
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
-                )}
+        {/* Image Section */}
+        <div className="aspect-square relative overflow-hidden bg-muted">
+          <Link href={`/productos/${product.slug}`}>
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <Image
+                src={mainImage}
+                alt={product.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               />
-            ))}
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {rating} ({reviewCount})
-          </span>
-        </div>
+            </motion.div>
+          </Link>
 
-        {/* Tier Discount Badges - Horizontal Scroll */}
-        {discountTiers && discountTiers.length > 0 && (
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-            {discountTiers.map((tier, index) => {
-              const minQty = tier.range.split('-')[0].split('+')[0].trim();
-              return (
-                <div
-                  key={index}
-                  className="flex-shrink-0 flex flex-col items-center justify-center px-2 py-1 rounded-md border border-accent/30 bg-accent/5 min-w-[55px]"
-                >
-                  <span className="text-[9px] text-accent-foreground/60 font-medium leading-tight whitespace-nowrap">
-                    {minQty}+
-                  </span>
-                  <span className="text-[10px] text-accent-foreground font-bold leading-tight">
-                    {tier.price}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Quantity Selector */}
-        <div className="flex items-center gap-2 pt-1">
-          <div className="flex items-center border rounded-md">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={decrementQuantity}
-              disabled={quantity <= 1}
+          {/* Quick View Button - Shows on hover */}
+          {onQuickView && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <Minus className="h-3 w-3" />
-            </Button>
-            <span className="w-8 text-center text-sm font-medium">{quantity}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={incrementQuantity}
-              disabled={!selectedVariant || quantity >= selectedVariant.stock}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shadow-lg backdrop-blur-sm bg-background/90"
+                onClick={onQuickView}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Ver
+              </Button>
+            </motion.div>
+          )}
 
-          {/* Add to Cart Button */}
-          <Button
-            onClick={handleAddToCart}
-            disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
-            className="flex-1 h-8 text-xs"
-            size="sm"
-            variant={justAdded ? 'outline' : 'default'}
-          >
-            {justAdded ? (
-              <>
-                <Check className="mr-1 h-3 w-3" />
-                Agregado
-              </>
-            ) : isAdding ? (
-              <>
-                <div className="mr-1 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ...
-              </>
-            ) : isOutOfStock ? (
-              'Agotado'
-            ) : (
-              <>
-                <ShoppingCart className="mr-1 h-3 w-3" />
-                Agregar
-              </>
+          {/* Badges */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {product.featured && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+              >
+                <Badge className="bg-gradient-sunset text-white shadow-md">
+                  ⭐ Destacado
+                </Badge>
+              </motion.div>
             )}
-          </Button>
+            {isNew && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}
+              >
+                <Badge className="bg-green-500 text-white shadow-md">🆕 Nuevo</Badge>
+              </motion.div>
+            )}
+            {isOutOfStock && (
+              <Badge variant="destructive" className="shadow-md">
+                Agotado
+              </Badge>
+            )}
+            {hasDiscount && !isOutOfStock && discountBadge && (
+              <motion.div
+                animate={{
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              >
+                <Badge className="gradient-primary text-white pulse-badge shadow-md">
+                  {discountBadge}
+                </Badge>
+              </motion.div>
+            )}
+          </div>
         </div>
 
-        {/* Stock info */}
-        {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
-          <p className="text-[10px] text-amber-600 font-medium">
-            ¡Solo quedan {selectedVariant.stock}!
-          </p>
-        )}
-      </CardContent>
-    </Card>
+        {/* Content Section */}
+        <CardContent className="p-3 space-y-2">
+          {/* Product Name */}
+          <Link href={`/productos/${product.slug}`}>
+            <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors">
+              {product.name}
+            </h3>
+          </Link>
+
+          {/* Variant Selector */}
+          {product.hasVariants && variants.length > 0 && (
+            <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue placeholder="Seleccionar" />
+              </SelectTrigger>
+              <SelectContent>
+                {variants.map((variant) => (
+                  <SelectItem key={variant._id} value={variant._id}>
+                    {variant.displayName}
+                    {variant.stock === 0 && ' (Agotado)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Price */}
+          {selectedVariant && (
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-2">
+                <motion.span
+                  key={displayPrice}
+                  initial={{ scale: 1.2, color: 'rgb(249, 115, 22)' }}
+                  animate={{ scale: 1, color: 'rgb(249, 115, 22)' }}
+                  className="text-xl font-bold"
+                >
+                  ${displayPrice.toLocaleString()}
+                </motion.span>
+                {hasFixedDiscountApplied && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-muted-foreground line-through"
+                  >
+                    ${originalPrice.toLocaleString()}
+                  </motion.span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Rating */}
+          <div className="flex items-center gap-1">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 260,
+                    damping: 20,
+                    delay: i * 0.05,
+                  }}
+                >
+                  <Star
+                    className={cn(
+                      'h-3 w-3',
+                      i < Math.floor(rating)
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300'
+                    )}
+                  />
+                </motion.div>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {rating} ({reviewCount})
+            </span>
+          </div>
+
+          {/* Tier Discount Badges - Horizontal Scroll */}
+          {discountTiers && discountTiers.length > 0 && (
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+              {discountTiers.map((tier, index) => {
+                const minQty = tier.range.split('-')[0].split('+')[0].trim();
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex-shrink-0 flex flex-col items-center justify-center px-2 py-1 rounded-md border border-accent/30 bg-accent/5 min-w-[55px] cursor-default"
+                  >
+                    <span className="text-[9px] text-accent-foreground/60 font-medium leading-tight whitespace-nowrap">
+                      {minQty}+
+                    </span>
+                    <span className="text-[10px] text-accent-foreground font-bold leading-tight">
+                      {tier.price}
+                    </span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Quantity Selector */}
+          <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center border rounded-md">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-primary/10"
+                onClick={decrementQuantity}
+                disabled={quantity <= 1}
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <motion.span
+                key={quantity}
+                initial={{ scale: 1.3 }}
+                animate={{ scale: 1 }}
+                className="w-8 text-center text-sm font-medium"
+              >
+                {quantity}
+              </motion.span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-primary/10"
+                onClick={incrementQuantity}
+                disabled={!selectedVariant || quantity >= selectedVariant.stock}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+
+            {/* Add to Cart Button */}
+            <motion.div className="flex-1" whileTap={{ scale: 0.95 }}>
+              <Button
+                ref={addButtonRef}
+                onClick={handleAddToCart}
+                disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+                className={cn(
+                  "w-full h-8 text-xs relative overflow-hidden",
+                  justAdded && "gradient-primary"
+                )}
+                size="sm"
+                variant={justAdded ? 'default' : 'default'}
+              >
+                {justAdded && (
+                  <motion.div
+                    className="absolute inset-0 bg-white/20"
+                    initial={{ scale: 0, opacity: 1 }}
+                    animate={{ scale: 2, opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                  />
+                )}
+                {justAdded ? (
+                  <>
+                    <Check className="mr-1 h-3 w-3" />
+                    Agregado
+                  </>
+                ) : isAdding ? (
+                  <>
+                    <div className="mr-1 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ...
+                  </>
+                ) : isOutOfStock ? (
+                  'Agotado'
+                ) : (
+                  <>
+                    <ShoppingCart className="mr-1 h-3 w-3" />
+                    Agregar
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Stock info */}
+          {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[10px] text-amber-600 font-medium"
+            >
+              ¡Solo quedan {selectedVariant.stock}!
+            </motion.p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Flying Cart Particles */}
+      <FlyingCartParticles particles={particles} onParticleComplete={removeParticle} />
+    </motion.div>
   );
 }

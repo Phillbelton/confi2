@@ -6,8 +6,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
-  --font-display: ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), "Playfair Display", serif;
+  --font-handwriting: var(--font-handwriting), "Caveat", cursive;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -104,6 +105,66 @@
   --sidebar-accent-foreground: oklch(0.205 0 0); /* Dark */
   --sidebar-border: oklch(0.922 0 0); /* Light border */
   --sidebar-ring: oklch(0.685 0.203 27.33); /* Orange */
+
+  /* Premium Gradients - Warm Confectionery Theme */
+  --gradient-primary: linear-gradient(135deg,
+    oklch(0.685 0.203 27.33) 0%,     /* Orange */
+    oklch(0.568 0.232 13.18) 100%);  /* Pink */
+
+  --gradient-golden: linear-gradient(135deg,
+    oklch(0.843 0.154 85.87) 0%,     /* Yellow */
+    oklch(0.785 0.183 57.44) 100%);  /* Orange-Yellow */
+
+  --gradient-sunset: linear-gradient(135deg,
+    oklch(0.568 0.232 13.18) 0%,     /* Pink */
+    oklch(0.685 0.203 27.33) 50%,    /* Orange */
+    oklch(0.843 0.154 85.87) 100%);  /* Yellow */
+
+  --gradient-candy: linear-gradient(135deg,
+    oklch(0.627 0.265 303.9) 0%,     /* Purple */
+    oklch(0.568 0.232 13.18) 100%);  /* Pink */
+
+  --gradient-subtle: linear-gradient(135deg,
+    oklch(0.97 0 0) 0%,              /* Very light gray */
+    oklch(0.985 0 0) 100%);          /* Almost white */
+
+  --gradient-overlay: linear-gradient(135deg,
+    oklch(1 0 0 / 95%) 0%,           /* White with slight transparency */
+    oklch(0.985 0 0 / 90%) 100%);    /* Very light with more transparency */
+
+  /* Extended Color Palette - Tints & Shades */
+  --primary-50: oklch(0.95 0.04 27.33);    /* Very light orange */
+  --primary-100: oklch(0.90 0.08 27.33);   /* Light orange */
+  --primary-200: oklch(0.80 0.12 27.33);   /* Lighter orange */
+  --primary-300: oklch(0.75 0.16 27.33);   /* Medium-light orange */
+  --primary-400: oklch(0.70 0.19 27.33);   /* Medium orange */
+  --primary-500: oklch(0.685 0.203 27.33); /* Base primary */
+  --primary-600: oklch(0.60 0.20 27.33);   /* Dark orange */
+  --primary-700: oklch(0.50 0.18 27.33);   /* Darker orange */
+  --primary-800: oklch(0.40 0.15 27.33);   /* Very dark orange */
+  --primary-900: oklch(0.30 0.12 27.33);   /* Darkest orange */
+
+  --secondary-50: oklch(0.95 0.05 13.18);
+  --secondary-100: oklch(0.90 0.10 13.18);
+  --secondary-200: oklch(0.80 0.15 13.18);
+  --secondary-300: oklch(0.70 0.19 13.18);
+  --secondary-400: oklch(0.62 0.22 13.18);
+  --secondary-500: oklch(0.568 0.232 13.18); /* Base secondary */
+  --secondary-600: oklch(0.50 0.22 13.18);
+  --secondary-700: oklch(0.42 0.19 13.18);
+  --secondary-800: oklch(0.34 0.15 13.18);
+  --secondary-900: oklch(0.26 0.12 13.18);
+
+  --accent-50: oklch(0.97 0.03 85.87);
+  --accent-100: oklch(0.93 0.06 85.87);
+  --accent-200: oklch(0.90 0.10 85.87);
+  --accent-300: oklch(0.87 0.13 85.87);
+  --accent-400: oklch(0.85 0.15 85.87);
+  --accent-500: oklch(0.843 0.154 85.87); /* Base accent */
+  --accent-600: oklch(0.75 0.15 85.87);
+  --accent-700: oklch(0.65 0.14 85.87);
+  --accent-800: oklch(0.55 0.12 85.87);
+  --accent-900: oklch(0.45 0.10 85.87);
 }
 
 .dark {
@@ -154,6 +215,66 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.685 0.203 27.33);
+
+  /* Premium Gradients - Dark Mode (more subtle, lower luminance) */
+  --gradient-primary: linear-gradient(135deg,
+    oklch(0.60 0.20 27.33) 0%,       /* Darker orange */
+    oklch(0.50 0.22 13.18) 100%);    /* Darker pink */
+
+  --gradient-golden: linear-gradient(135deg,
+    oklch(0.75 0.15 85.87) 0%,       /* Darker yellow */
+    oklch(0.65 0.18 57.44) 100%);    /* Darker orange-yellow */
+
+  --gradient-sunset: linear-gradient(135deg,
+    oklch(0.50 0.22 13.18) 0%,       /* Darker pink */
+    oklch(0.60 0.20 27.33) 50%,      /* Darker orange */
+    oklch(0.75 0.15 85.87) 100%);    /* Darker yellow */
+
+  --gradient-candy: linear-gradient(135deg,
+    oklch(0.55 0.25 303.9) 0%,       /* Darker purple */
+    oklch(0.50 0.22 13.18) 100%);    /* Darker pink */
+
+  --gradient-subtle: linear-gradient(135deg,
+    oklch(0.269 0 0) 0%,             /* Dark muted */
+    oklch(0.205 0 0) 100%);          /* Darker */
+
+  --gradient-overlay: linear-gradient(135deg,
+    oklch(0.205 0 0 / 95%) 0%,       /* Dark with slight transparency */
+    oklch(0.145 0 0 / 90%) 100%);    /* Darker with more transparency */
+
+  /* Extended Color Palette - Same as light mode (auto-adjusts with OKLCH) */
+  --primary-50: oklch(0.95 0.04 27.33);
+  --primary-100: oklch(0.90 0.08 27.33);
+  --primary-200: oklch(0.80 0.12 27.33);
+  --primary-300: oklch(0.75 0.16 27.33);
+  --primary-400: oklch(0.70 0.19 27.33);
+  --primary-500: oklch(0.685 0.203 27.33);
+  --primary-600: oklch(0.60 0.20 27.33);
+  --primary-700: oklch(0.50 0.18 27.33);
+  --primary-800: oklch(0.40 0.15 27.33);
+  --primary-900: oklch(0.30 0.12 27.33);
+
+  --secondary-50: oklch(0.95 0.05 13.18);
+  --secondary-100: oklch(0.90 0.10 13.18);
+  --secondary-200: oklch(0.80 0.15 13.18);
+  --secondary-300: oklch(0.70 0.19 13.18);
+  --secondary-400: oklch(0.62 0.22 13.18);
+  --secondary-500: oklch(0.568 0.232 13.18);
+  --secondary-600: oklch(0.50 0.22 13.18);
+  --secondary-700: oklch(0.42 0.19 13.18);
+  --secondary-800: oklch(0.34 0.15 13.18);
+  --secondary-900: oklch(0.26 0.12 13.18);
+
+  --accent-50: oklch(0.97 0.03 85.87);
+  --accent-100: oklch(0.93 0.06 85.87);
+  --accent-200: oklch(0.90 0.10 85.87);
+  --accent-300: oklch(0.87 0.13 85.87);
+  --accent-400: oklch(0.85 0.15 85.87);
+  --accent-500: oklch(0.843 0.154 85.87);
+  --accent-600: oklch(0.75 0.15 85.87);
+  --accent-700: oklch(0.65 0.14 85.87);
+  --accent-800: oklch(0.55 0.12 85.87);
+  --accent-900: oklch(0.45 0.10 85.87);
 }
 
 @layer base {
@@ -254,6 +375,68 @@
 
 .hover-scale:hover {
   transform: scale(1.02);
+}
+
+/* Premium Gradient Utilities */
+.gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.gradient-golden {
+  background: var(--gradient-golden);
+}
+
+.gradient-sunset {
+  background: var(--gradient-sunset);
+}
+
+.gradient-candy {
+  background: var(--gradient-candy);
+}
+
+.gradient-subtle {
+  background: var(--gradient-subtle);
+}
+
+.gradient-overlay {
+  background: var(--gradient-overlay);
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Gradient border effect */
+.gradient-border {
+  position: relative;
+  background: var(--background);
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--gradient-primary);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* 3D Transform Perspective */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-gpu {
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Reduce motion for accessibility */

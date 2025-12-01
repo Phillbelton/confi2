@@ -1,24 +1,32 @@
 import type { Metadata } from "next";
-// TODO: Enable Google Fonts in production environment
-// For development, using system fonts due to build environment TLS constraints
-// Uncomment below when deploying to production:
-// import { DM_Sans, Comfortaa } from "next/font/google";
+// Fuentes Google premium para UI/UX mejorada
+import { Playfair_Display, Inter, Caveat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { Toaster } from "@/components/ui/toaster";
 
-// const dmSans = DM_Sans({
-//   subsets: ["latin"],
-//   variable: "--font-dm-sans",
-//   display: "swap",
-// });
+// Playfair Display: Headings elegantes (serif premium)
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "600", "700"],
+  display: "swap",
+});
 
-// const comfortaa = Comfortaa({
-//   subsets: ["latin"],
-//   variable: "--font-comfortaa",
-//   weight: ["400", "700"],
-//   display: "swap",
-// });
+// Inter: Body text moderna y legible (sans-serif)
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+// Caveat: Acentos manuscritos (opcional para detalles especiales)
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-handwriting",
+  weight: ["400", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Confitería Quelita - Productos de Confitería Premium",
@@ -32,7 +40,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body
+        className={`${inter.variable} ${playfairDisplay.variable} ${caveat.variable} font-sans antialiased`}
+      >
         <Providers>
           {children}
           <Toaster />

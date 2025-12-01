@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import {
   Package,
   ChevronLeft,
@@ -75,8 +76,44 @@ export default function OrderDetailPage({
   const { data: order, isLoading, error, refetch } = useOrderDetail(orderNumber);
   const addItem = useCartStore((state) => state.addItem);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [confettiShown, setConfettiShown] = useState(false);
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
 
+  // Trigger confetti when order is completed
+  useEffect(() => {
+    if (order?.status === 'completed' && !confettiShown) {
+      setConfettiShown(true);
+
+      // Main confetti burst
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#F97316', '#E11D48', '#FBBF24', '#10B981'],
+      });
+
+      // Side bursts after a delay
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.6 },
+          colors: ['#F97316', '#E11D48', '#FBBF24'],
+        });
+      }, 250);
+
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.6 },
+          colors: ['#F97316', '#E11D48', '#FBBF24'],
+        });
+      }, 400);
+    }
+  }, [order?.status, confettiShown]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
