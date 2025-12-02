@@ -59,10 +59,17 @@ export function ProductCardEnhanced({
 
   // Update selectedVariantId when variants are loaded
   useEffect(() => {
+    console.log('ProductCardEnhanced DEBUG:', {
+      productName: product.name,
+      variantsLength: variants.length,
+      variants: variants,
+      selectedVariantId,
+      firstVariantId: variants[0]?._id
+    });
     if (variants.length > 0 && !selectedVariantId) {
       setSelectedVariantId(variants[0]._id);
     }
-  }, [variants, selectedVariantId]);
+  }, [variants, selectedVariantId, product.name]);
 
   // 3D Hover Effect
   const x = useMotionValue(0);
@@ -109,10 +116,20 @@ export function ProductCardEnhanced({
 
   // Get first image: use variant image if available, otherwise use parent image
   // ✅ OPTIMIZACIÓN: Cargar imagen optimizada de Cloudinary (400x400px)
+  const rawImageUrl = selectedVariant?.images?.[0] || product.images?.[0];
   const mainImage = getSafeImageUrl(
-    selectedVariant?.images?.[0] || product.images?.[0],
+    rawImageUrl,
     { width: 400, height: 400, quality: 'auto' }
   );
+
+  console.log('Image URL DEBUG:', {
+    productName: product.name,
+    selectedVariant: selectedVariant?._id,
+    variantImage: selectedVariant?.images?.[0],
+    parentImage: product.images?.[0],
+    rawImageUrl,
+    mainImage
+  });
 
   // Use unified discount calculator
   const hasDiscount = selectedVariant ? hasActiveDiscount(selectedVariant, product) : false;
