@@ -235,6 +235,7 @@ export function ProductCardEnhanced({
         <div className="aspect-square relative overflow-hidden bg-muted">
           <Link href={`/productos/${product.slug}`}>
             <motion.div
+              className="relative w-full h-full"
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
               style={{
