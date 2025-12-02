@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ShoppingCart, Check, Eye, Plus, Minus, Star } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { useFlyToCart } from '@/hooks/useFlyToCart';
 import { FlyingCartParticles } from '@/components/cart/FlyingCartParticle';
 import { Card, CardContent } from '@/components/ui/card';
@@ -149,6 +150,23 @@ export function ProductCardEnhanced({
         if (cartIcon) {
           triggerFly(addButtonRef.current, cartIcon as Element);
         }
+      }
+
+      // 🎉 Trigger confetti animation from button position
+      if (addButtonRef.current) {
+        const rect = addButtonRef.current.getBoundingClientRect();
+        const x = (rect.left + rect.width / 2) / window.innerWidth;
+        const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+        confetti({
+          particleCount: 30,
+          spread: 60,
+          origin: { x, y },
+          colors: ['#F97316', '#E11D48', '#FBBF24'], // primary, secondary, accent
+          ticks: 200,
+          gravity: 1.2,
+          scalar: 0.8,
+        });
       }
 
       // Show success state

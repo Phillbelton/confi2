@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
   Search,
   X,
@@ -153,6 +154,12 @@ function ProductsContent() {
   const [quickViewProduct, setQuickViewProduct] = useState<ProductParent | null>(null);
   const [quickViewVariants, setQuickViewVariants] = useState<ProductVariant[]>([]);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Auto-animate for smooth transitions
+  const [parentRef] = useAutoAnimate<HTMLDivElement>({
+    duration: 300,
+    easing: 'ease-out',
+  });
 
   // Fetch data
   const { data: productsData, isLoading: productsLoading } = useProducts({
@@ -413,6 +420,7 @@ function ProductsContent() {
             </div>
           ) : (
             <div
+              ref={parentRef}
               className={cn(
                 'grid gap-4 sm:gap-6',
                 viewMode === 'grid'
