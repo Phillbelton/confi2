@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ProductCardWithVariants } from '@/components/products/ProductCardWithVariants';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,35 @@ interface ProductCarouselProps {
 
 export function ProductCarousel({ products, title, className }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Check scroll position
+  const checkScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+
+    // Calculate scroll progress (0 to 1)
+    const maxScroll = scrollWidth - clientWidth;
+    setScrollProgress(maxScroll > 0 ? scrollLeft / maxScroll : 0);
+  };
+
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    checkScroll();
+    scrollContainer.addEventListener('scroll', checkScroll);
+    window.addEventListener('resize', checkScroll);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [products]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -35,19 +65,31 @@ export function ProductCarousel({ products, title, className }: ProductCarouselP
 
       <div className="relative group">
         {/* Left Arrow */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => scroll('left')}
+        <motion.div
+          initial={{ opacity: 0, x: 10 }}
+          animate={{
+            opacity: canScrollLeft ? 1 : 0,
+            x: canScrollLeft ? 0 : 10,
+          }}
           className={cn(
             'absolute left-0 top-1/2 -translate-y-1/2 z-10',
-            'hidden sm:flex',
-            'opacity-0 group-hover:opacity-100 transition-opacity',
-            '-translate-x-1/2 bg-background shadow-lg'
+            'hidden sm:block',
+            '-translate-x-1/2',
+            !canScrollLeft && 'pointer-events-none'
           )}
         >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => scroll('left')}
+              disabled={!canScrollLeft}
+              className="bg-background shadow-lg hover:shadow-xl transition-shadow"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        </motion.div>
 
         {/* Scrollable Container */}
         <div
@@ -69,20 +111,56 @@ export function ProductCarousel({ products, title, className }: ProductCarouselP
         </div>
 
         {/* Right Arrow */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => scroll('right')}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{
+            opacity: canScrollRight ? 1 : 0,
+            x: canScrollRight ? 0 : -10,
+          }}
           className={cn(
             'absolute right-0 top-1/2 -translate-y-1/2 z-10',
-            'hidden sm:flex',
-            'opacity-0 group-hover:opacity-100 transition-opacity',
-            'translate-x-1/2 bg-background shadow-lg'
+            'hidden sm:block',
+            'translate-x-1/2',
+            !canScrollRight && 'pointer-events-none'
           )}
         >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => scroll('right')}
+              disabled={!canScrollRight}
+              className="bg-background shadow-lg hover:shadow-xl transition-shadow"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        </motion.div>
       </div>
+
+      {/* Progress Indicator - Subtle dot style */}
+      {(canScrollLeft || canScrollRight) && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex justify-center gap-1.5 mt-4"
+        >
+          <div className="relative w-16 h-1 bg-muted/30 rounded-full overflow-hidden">
+            <motion.div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-secondary rounded-full"
+              style={{
+                width: `${Math.max(10, scrollProgress * 100)}%`,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 300,
+                damping: 30,
+              }}
+            />
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

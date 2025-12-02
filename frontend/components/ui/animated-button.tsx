@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import type { ButtonProps } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import type { VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 /**
@@ -23,7 +23,10 @@ import { cn } from '@/lib/utils';
  * ```
  */
 
-interface AnimatedButtonProps extends ButtonProps {
+interface AnimatedButtonProps
+  extends React.ComponentProps<'button'>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
   /**
    * Enable shimmer effect
    * @default false
