@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
   Search,
   X,
@@ -21,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonGrid } from '@/components/ui/skeleton-card';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -153,6 +155,12 @@ function ProductsContent() {
   const [quickViewProduct, setQuickViewProduct] = useState<ProductParent | null>(null);
   const [quickViewVariants, setQuickViewVariants] = useState<ProductVariant[]>([]);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Auto-animate for smooth transitions
+  const [parentRef] = useAutoAnimate<HTMLDivElement>({
+    duration: 300,
+    easing: 'ease-out',
+  });
 
   // Fetch data
   const { data: productsData, isLoading: productsLoading } = useProducts({
@@ -386,16 +394,10 @@ function ProductsContent() {
 
           {/* Products Grid */}
           {productsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="space-y-3">
-                  <Skeleton className="aspect-square rounded-lg" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ))}
-            </div>
+            <SkeletonGrid
+              count={ITEMS_PER_PAGE}
+              columns="grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            />
           ) : products.length === 0 ? (
             <div className="text-center py-16 px-4">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
@@ -413,6 +415,7 @@ function ProductsContent() {
             </div>
           ) : (
             <div
+              ref={parentRef}
               className={cn(
                 'grid gap-4 sm:gap-6',
                 viewMode === 'grid'

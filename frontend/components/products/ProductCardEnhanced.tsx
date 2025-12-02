@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ShoppingCart, Check, Eye, Plus, Minus, Star } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { useFlyToCart } from '@/hooks/useFlyToCart';
 import { FlyingCartParticles } from '@/components/cart/FlyingCartParticle';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,17 +60,10 @@ export function ProductCardEnhanced({
 
   // Update selectedVariantId when variants are loaded
   useEffect(() => {
-    console.log('ProductCardEnhanced DEBUG:', {
-      productName: product.name,
-      variantsLength: variants.length,
-      variants: variants,
-      selectedVariantId,
-      firstVariantId: variants[0]?._id
-    });
     if (variants.length > 0 && !selectedVariantId) {
       setSelectedVariantId(variants[0]._id);
     }
-  }, [variants, selectedVariantId, product.name]);
+  }, [variants, selectedVariantId]);
 
   // 3D Hover Effect
   const x = useMotionValue(0);
@@ -116,20 +110,10 @@ export function ProductCardEnhanced({
 
   // Get first image: use variant image if available, otherwise use parent image
   // ✅ OPTIMIZACIÓN: Cargar imagen optimizada de Cloudinary (400x400px)
-  const rawImageUrl = selectedVariant?.images?.[0] || product.images?.[0];
   const mainImage = getSafeImageUrl(
-    rawImageUrl,
+    selectedVariant?.images?.[0] || product.images?.[0],
     { width: 400, height: 400, quality: 'auto' }
   );
-
-  console.log('Image URL DEBUG:', {
-    productName: product.name,
-    selectedVariant: selectedVariant?._id,
-    variantImage: selectedVariant?.images?.[0],
-    parentImage: product.images?.[0],
-    rawImageUrl,
-    mainImage
-  });
 
   // Use unified discount calculator
   const hasDiscount = selectedVariant ? hasActiveDiscount(selectedVariant, product) : false;
@@ -166,6 +150,23 @@ export function ProductCardEnhanced({
         if (cartIcon) {
           triggerFly(addButtonRef.current, cartIcon as Element);
         }
+      }
+
+      // 🎉 Trigger confetti animation from button position
+      if (addButtonRef.current) {
+        const rect = addButtonRef.current.getBoundingClientRect();
+        const x = (rect.left + rect.width / 2) / window.innerWidth;
+        const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+        confetti({
+          particleCount: 30,
+          spread: 60,
+          origin: { x, y },
+          colors: ['#F97316', '#E11D48', '#FBBF24'], // primary, secondary, accent
+          ticks: 200,
+          gravity: 1.2,
+          scalar: 0.8,
+        });
       }
 
       // Show success state
