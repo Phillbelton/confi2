@@ -5,7 +5,7 @@
 Lee este archivo PRIMERO antes de continuar con implementaciones.
 
 **Última actualización:** 2 de Diciembre, 2025
-**Versión:** 1.4.0
+**Versión:** 1.5.0
 **Branch actual:** `beautiful-spence`
 
 ---
@@ -62,7 +62,7 @@ Transformar la UI de estándar/genérica a **premium y memorable** usando:
 #### 2. **`TODO-COMPLETO-UIUX.md`** ⭐ SEGUNDO
 **Propósito:** Lista detallada de 34 tareas con código
 **Usar:** Para saber QUÉ hacer siguiente
-**Estado:** 15/34 completadas (44%)
+**Estado:** 21/34 completadas (62%)
 
 #### 3. **`ANALISIS-UIUX-Y-PROPUESTA-MEJORAS.md`** ⭐ TERCERO
 **Propósito:** Análisis completo + código de implementación
@@ -89,13 +89,13 @@ Transformar la UI de estándar/genérica a **premium y memorable** usando:
 
 ```
 ┌─────────────────────────────────────┐
-│  PROGRESO GLOBAL: 15/34 (44%)      │
-│  ████████████████░░░░░░░░░░░░░░░░  │
+│  PROGRESO GLOBAL: 21/34 (62%)      │
+│  ███████████████████████░░░░░░░░░░  │
 │                                     │
 │  Fase 1: 7/7   (100%) ✅            │
 │  Fase 2: 4/4   (100%) ✅            │
 │  Fase 3: 2/2   (100%) ✅            │
-│  Fase 4: 2/8   (25%)  🔄            │
+│  Fase 4: 8/8   (100%) ✅            │
 │  Fase 5: 0/3   (0%)                 │
 │  Fase 6: 0/7   (0%)                 │
 │  Fase 7: 0/3   (0%)                 │
@@ -247,6 +247,20 @@ Transformar la UI de estándar/genérica a **premium y memorable** usando:
     - ✅ Empty state animado con fade-in
     - ✅ Spring physics en hover (stiffness: 300, damping: 20)
   - Resultado: Sección destacada con skeleton loaders de lujo
+
+- [x] **Tarea 16-21:** Completar ProductCarousel con features avanzadas
+  - Fecha: 2 de Diciembre, 2025
+  - Archivo: frontend/components/home/ProductCarousel.tsx (versión completa)
+  - Cambios Adicionales:
+    - ✅ **Lazy Loading**: IntersectionObserver para animaciones on-scroll
+    - ✅ **Keyboard Navigation**: Arrow keys (← →) para navegar
+    - ✅ **Drag-to-Scroll**: Click & drag con cursor grab/grabbing
+    - ✅ **Dot Indicators**: Clickeables con animaciones (w: 2px → 8px)
+    - ✅ **Auto-play**: Opcional con intervalo configurable (default: 5000ms)
+    - ✅ **Parallax Effects**: Cards con hover lift (-4px) y stagger fadeIn
+    - ✅ **Accesibilidad**: role="tablist", aria-selected, aria-label
+    - ✅ **Smart States**: Auto-pausa en drag, loop automático al final
+  - Resultado: Carrusel de productos profesional nivel e-commerce premium
 
 ### Tareas En Progreso 🔄
 
