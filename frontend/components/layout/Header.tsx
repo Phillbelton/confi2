@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ShoppingCart, Search, Menu, User, Package, MapPin, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -73,23 +74,63 @@ export function Header() {
           </Button>
 
           {/* Cart Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 touch-target relative"
-            aria-label="Ver carrito"
-            onClick={() => setCartOpen(true)}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {itemCount > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs flex items-center justify-center pulse-badge"
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 touch-target relative"
+              aria-label="Ver carrito"
+              onClick={() => setCartOpen(true)}
+            >
+              <motion.div
+                animate={itemCount > 0 ? { rotate: [0, -10, 10, -10, 0] } : {}}
+                transition={{ duration: 0.5 }}
               >
-                {itemCount > 99 ? '99+' : itemCount}
-              </Badge>
-            )}
-          </Button>
+                <ShoppingCart className="h-5 w-5" />
+              </motion.div>
+              <AnimatePresence>
+                {itemCount > 0 && (
+                  <motion.div
+                    className="absolute -right-1 -top-1"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{
+                      scale: 1,
+                      opacity: 1,
+                      y: [0, -4, 0],
+                    }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 500,
+                      damping: 15,
+                      y: {
+                        duration: 0.4,
+                        repeat: 1,
+                        ease: 'easeOut' as const,
+                      }
+                    }}
+                  >
+                    <Badge
+                      variant="destructive"
+                      className="h-5 min-w-5 px-1 text-xs flex items-center justify-center"
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={itemCount}
+                          initial={{ y: -10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          exit={{ y: 10, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {itemCount > 99 ? '99+' : itemCount}
+                        </motion.span>
+                      </AnimatePresence>
+                    </Badge>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Button>
+          </motion.div>
 
           {/* Auth: Desktop */}
           <div className="hidden md:block">

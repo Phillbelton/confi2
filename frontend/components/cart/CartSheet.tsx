@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -26,6 +28,7 @@ interface CartSheetProps {
 
 export function CartSheet({ open, onOpenChange }: CartSheetProps) {
   const { items, subtotal, totalDiscount, total, updateQuantity, removeItem } = useCartStore();
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
 
   const handleQuantityChange = (item: CartItem, delta: number) => {
     const newQuantity = item.quantity + delta;
@@ -36,6 +39,25 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
 
   const handleRemove = (variantId: string) => {
     removeItem(variantId);
+  };
+
+  const handleCheckoutClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Ripple effect
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rippleId = Date.now();
+    setRipples((prev) => [...prev, { id: rippleId, x, y }]);
+    setTimeout(() => setRipples((prev) => prev.filter((r) => r.id !== rippleId)), 600);
+
+    // Mini confetti
+    confetti({
+      particleCount: 20,
+      spread: 50,
+      origin: { x: 0.5, y: 0.8 },
+      colors: ['#F97316', '#E11D48', '#FBBF24'],
+      ticks: 150,
+    });
   };
 
   return (
@@ -54,21 +76,52 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
         </SheetHeader>
 
         {items.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-            <ShoppingBag className="h-16 w-16 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
+          <motion.div
+            className="flex-1 flex flex-col items-center justify-center gap-4 px-6"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div
+              animate={{
+                y: [0, -10, 0],
+                rotate: [0, 5, -5, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut' as const,
+              }}
+            >
+              <ShoppingBag className="h-16 w-16 text-muted-foreground" />
+            </motion.div>
+            <motion.p
+              className="text-muted-foreground text-center"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               No hay productos en tu carrito
-            </p>
-            <Button onClick={() => onOpenChange(false)} asChild>
-              <Link href="/productos">Ver productos</Link>
-            </Button>
-          </div>
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button onClick={() => onOpenChange(false)} asChild>
+                  <Link href="/productos">Ver productos</Link>
+                </Button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         ) : (
           <>
             {/* Cart Items */}
             <ScrollArea className="flex-1 px-6">
               <div className="space-y-4 pb-4">
-                {items.map((item) => {
+                <AnimatePresence mode="popLayout">
+                  {items.map((item, index) => {
                   const product = item.productParent;
                   const variant = item.variant;
                   const rawImage =
@@ -78,7 +131,18 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                   const image = getSafeImageUrl(rawImage, { width: 100, height: 100, quality: 'auto' });
 
                   return (
-                    <div key={item.variantId} className="flex gap-4">
+                    <motion.div
+                      key={item.variantId}
+                      className="flex gap-4"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20, height: 0 }}
+                      transition={{
+                        duration: 0.3,
+                        delay: index * 0.05,
+                      }}
+                      layout
+                    >
                       {/* Image */}
                       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border">
                         <Image
@@ -115,69 +179,143 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
 
                         {/* Quantity Controls */}
                         <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleQuantityChange(item, -1)}
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleQuantityChange(item, -1)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                          </motion.div>
+                          <div className="w-8 text-center overflow-hidden">
+                            <AnimatePresence mode="wait">
+                              <motion.span
+                                key={item.quantity}
+                                className="text-sm font-medium inline-block"
+                                initial={{ y: -20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 20, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {item.quantity}
+                              </motion.span>
+                            </AnimatePresence>
+                          </div>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleQuantityChange(item, 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </motion.div>
+                          <motion.div
+                            whileHover={{ scale: 1.1, rotate: 10 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="ml-auto"
                           >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="text-sm font-medium w-8 text-center">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleQuantityChange(item, 1)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 ml-auto"
-                            onClick={() => handleRemove(item.variantId)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleRemove(item.variantId)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </motion.div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
+                </AnimatePresence>
               </div>
             </ScrollArea>
 
             <Separator />
 
             {/* Summary */}
-            <div className="px-6 py-4 space-y-2">
+            <motion.div
+              className="px-6 py-4 space-y-2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>${subtotal.toLocaleString()}</span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={subtotal}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    ${subtotal.toLocaleString()}
+                  </motion.span>
+                </AnimatePresence>
               </div>
               {totalDiscount > 0 && (
-                <div className="flex justify-between text-sm">
+                <motion.div
+                  className="flex justify-between text-sm"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                >
                   <span className="text-muted-foreground">Descuentos</span>
                   <span className="text-success">-${totalDiscount.toLocaleString()}</span>
-                </div>
+                </motion.div>
               )}
               <Separator />
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <span className="text-primary">${total.toLocaleString()}</span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={total}
+                    className="text-primary inline-block"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.2 }}
+                    transition={{ duration: 0.3, type: 'spring', stiffness: 300 }}
+                  >
+                    ${total.toLocaleString()}
+                  </motion.span>
+                </AnimatePresence>
               </div>
-            </div>
+            </motion.div>
 
             {/* Footer */}
             <SheetFooter className="px-6 pb-6">
-              <Button asChild className="w-full" size="lg">
-                <Link href="/checkout" onClick={() => onOpenChange(false)}>
-                  Proceder al Checkout
-                </Link>
-              </Button>
+              <motion.div
+                className="w-full relative overflow-hidden"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button asChild className="w-full relative" size="lg">
+                  <Link href="/checkout" onClick={(e) => {
+                    handleCheckoutClick(e);
+                    onOpenChange(false);
+                  }}>
+                    {ripples.map((ripple) => (
+                      <motion.span
+                        key={ripple.id}
+                        className="absolute rounded-full bg-white/30 pointer-events-none"
+                        style={{
+                          left: ripple.x - 100,
+                          top: ripple.y - 100,
+                        }}
+                        initial={{ width: 0, height: 0, opacity: 1 }}
+                        animate={{ width: 200, height: 200, opacity: 0 }}
+                        transition={{ duration: 0.6 }}
+                      />
+                    ))}
+                    Proceder al Checkout
+                  </Link>
+                </Button>
+              </motion.div>
             </SheetFooter>
           </>
         )}
