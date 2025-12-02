@@ -39,7 +39,7 @@ import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, useProductVariants } from '@/hooks/useProducts';
 import { useCategoriesHierarchical, useMainCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
 import { cn } from '@/lib/utils';
