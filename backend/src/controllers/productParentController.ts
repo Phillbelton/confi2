@@ -297,7 +297,7 @@ export const getProductParents = asyncHandler(
     return res.status(200).json({
       success: true,
       data: {
-        data: productsWithVariants,
+        data: productsWithVariants as any, // Extended with variants array
         pagination: {
           page: pageNum,
           limit: limitNum,
