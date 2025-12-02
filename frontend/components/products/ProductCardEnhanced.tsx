@@ -57,6 +57,13 @@ export function ProductCardEnhanced({
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const { triggerFly, particles, removeParticle } = useFlyToCart();
 
+  // Update selectedVariantId when variants are loaded
+  useEffect(() => {
+    if (variants.length > 0 && !selectedVariantId) {
+      setSelectedVariantId(variants[0]._id);
+    }
+  }, [variants, selectedVariantId]);
+
   // 3D Hover Effect
   const x = useMotionValue(0);
   const y = useMotionValue(0);
