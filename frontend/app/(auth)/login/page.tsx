@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
+import { AnimatedButton } from '@/components/ui/animated-button';
 import { AnimatedInput } from '@/components/ui/animated-input';
 import {
   Card,
@@ -178,20 +179,15 @@ function LoginContent() {
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <Button
+                  <AnimatedButton
                     type="submit"
                     className="w-full h-12 text-base font-semibold"
-                    disabled={loginMutation.isPending}
+                    loading={loginMutation.isPending}
+                    loadingText="Iniciando sesión..."
+                    showShine
                   >
-                    {loginMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Iniciando sesión...
-                      </>
-                    ) : (
-                      'Iniciar sesión'
-                    )}
-                  </Button>
+                    Iniciar sesión
+                  </AnimatedButton>
                 </motion.div>
               </form>
             </CardContent>

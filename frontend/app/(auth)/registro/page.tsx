@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
+import { AnimatedButton } from '@/components/ui/animated-button';
 import { AnimatedInput } from '@/components/ui/animated-input';
 import { PasswordStrength } from '@/components/ui/password-strength';
 import { Label } from '@/components/ui/label';
@@ -273,20 +274,15 @@ function RegisterContent() {
                 )}
 
                 <motion.div variants={itemVariants}>
-                  <Button
+                  <AnimatedButton
                     type="submit"
                     className="w-full h-12 text-base font-semibold"
-                    disabled={registerMutation.isPending}
+                    loading={registerMutation.isPending}
+                    loadingText="Creando cuenta..."
+                    showShine
                   >
-                    {registerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Creando cuenta...
-                      </>
-                    ) : (
-                      'Crear cuenta'
-                    )}
-                  </Button>
+                    Crear cuenta
+                  </AnimatedButton>
                 </motion.div>
               </form>
             </CardContent>

@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion, HTMLMotionProps, AnimatePresence } from 'framer-motion';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import type { VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
@@ -14,10 +15,12 @@ import { cn } from '@/lib/utils';
  * - Ripple effect on click
  * - Shimmer effect (optional)
  * - Glow effect (optional)
+ * - Loading states with pulse animation
+ * - Shine animation on hover
  *
  * @example
  * ```tsx
- * <AnimatedButton shimmer>
+ * <AnimatedButton shimmer loading>
  *   Click me
  * </AnimatedButton>
  * ```
@@ -50,6 +53,24 @@ interface AnimatedButtonProps
    * @default false
    */
   noAnimation?: boolean;
+
+  /**
+   * Loading state
+   * @default false
+   */
+  loading?: boolean;
+
+  /**
+   * Loading text to display
+   * @default "Cargando..."
+   */
+  loadingText?: string;
+
+  /**
+   * Enable shine effect on hover
+   * @default true
+   */
+  showShine?: boolean;
 }
 
 const intensityConfig = {
@@ -79,6 +100,9 @@ export const AnimatedButton = React.forwardRef<
       glow = false,
       intensity = 'medium',
       noAnimation = false,
+      loading = false,
+      loadingText = 'Cargando...',
+      showShine = true,
       disabled,
       ...props
     },
@@ -90,9 +114,10 @@ export const AnimatedButton = React.forwardRef<
     >([]);
 
     const config = intensityConfig[intensity];
+    const isDisabled = disabled || loading;
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (!noAnimation && !disabled) {
+      if (!noAnimation && !isDisabled) {
         const button = e.currentTarget;
         const rect = button.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -108,12 +133,12 @@ export const AnimatedButton = React.forwardRef<
       }
 
       // Call original onClick if provided
-      if (props.onClick) {
+      if (props.onClick && !loading) {
         props.onClick(e);
       }
     };
 
-    if (noAnimation || disabled) {
+    if (noAnimation || (disabled && !loading)) {
       return (
         <Button ref={ref} className={className} disabled={disabled} {...props}>
           {children}
@@ -134,12 +159,12 @@ export const AnimatedButton = React.forwardRef<
         <Button
           ref={ref}
           className={cn('relative overflow-hidden', className)}
-          disabled={disabled}
+          disabled={isDisabled}
           {...props}
           onClick={handleClick}
         >
           {/* Shimmer effect */}
-          {shimmer && (
+          {shimmer && !loading && (
             <motion.div
               className="absolute inset-0 shimmer pointer-events-none"
               animate={{
@@ -154,7 +179,7 @@ export const AnimatedButton = React.forwardRef<
           )}
 
           {/* Glow effect */}
-          {glow && (
+          {glow && !loading && (
             <motion.div
               className="absolute inset-0 rounded-[inherit] pointer-events-none"
               initial={{ opacity: 0 }}
@@ -163,6 +188,18 @@ export const AnimatedButton = React.forwardRef<
                 boxShadow: '0 0 20px 2px rgba(249, 115, 22, 0.5)',
               }}
               transition={{ duration: 0.3 }}
+            />
+          )}
+
+          {/* Shine effect on hover */}
+          {showShine && !loading && (
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"
+              initial={{ x: '-100%' }}
+              whileHover={{
+                x: '100%',
+                transition: { duration: 0.6, ease: 'easeInOut' },
+              }}
             />
           )}
 
@@ -196,9 +233,58 @@ export const AnimatedButton = React.forwardRef<
             />
           ))}
 
-          {/* Button content */}
+          {/* Pulse effect during loading */}
+          {loading && (
+            <motion.div
+              className="absolute inset-0 rounded-md bg-primary/10 pointer-events-none"
+              animate={{
+                opacity: [0.3, 0.6, 0.3],
+                scale: [1, 1.02, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+          )}
+
+          {/* Button content with loading state */}
           <span className="relative z-10 flex items-center justify-center gap-2">
-            {children}
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <motion.span
+                  key="loading"
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: 'linear',
+                    }}
+                  >
+                    <Loader2 className="h-4 w-4" />
+                  </motion.div>
+                  {loadingText}
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="content"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {children}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </span>
         </Button>
       </motion.div>
