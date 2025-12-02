@@ -1,17 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { AnimatedInput } from '@/components/ui/animated-input';
 import {
   Card,
   CardContent,
@@ -60,7 +59,6 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/perfil';
-  const [showPassword, setShowPassword] = useState(false);
   const { isAuthenticated, _hasHydrated } = useClientStore();
   const loginMutation = useClientLogin(redirectTo);
 
@@ -145,57 +143,29 @@ function LoginContent() {
             </CardHeader>
 
             <CardContent className="pt-4">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <motion.div variants={itemVariants} className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <motion.div variants={itemVariants}>
+                  <AnimatedInput
                     id="email"
                     type="email"
+                    label="Email"
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="tu@email.com"
-                    className={cn(
-                      'h-12',
-                      errors.email && 'border-destructive focus-visible:ring-destructive'
-                    )}
+                    error={errors.email?.message}
                     {...register('email')}
                   />
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email.message}</p>
-                  )}
                 </motion.div>
 
-                <motion.div variants={itemVariants} className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      placeholder="••••••••"
-                      className={cn(
-                        'h-12 pr-10',
-                        errors.password && 'border-destructive focus-visible:ring-destructive'
-                      )}
-                      {...register('password')}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-12 w-12 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password.message}</p>
-                  )}
+                <motion.div variants={itemVariants}>
+                  <AnimatedInput
+                    id="password"
+                    type="password"
+                    label="Contraseña"
+                    autoComplete="current-password"
+                    showPasswordToggle
+                    error={errors.password?.message}
+                    {...register('password')}
+                  />
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="text-right">
