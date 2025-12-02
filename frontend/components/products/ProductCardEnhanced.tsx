@@ -35,6 +35,7 @@ interface ProductCardEnhancedProps {
   variants?: ProductVariant[];
   className?: string;
   onQuickView?: () => void;
+  index?: number; // Para lazy loading inteligente
 }
 
 export function ProductCardEnhanced({
@@ -42,6 +43,7 @@ export function ProductCardEnhanced({
   variants = [],
   className,
   onQuickView,
+  index = 0,
 }: ProductCardEnhancedProps) {
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
     variants[0]?._id || ''
@@ -99,8 +101,10 @@ export function ProductCardEnhanced({
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
 
   // Get first image: use variant image if available, otherwise use parent image
+  // ✅ OPTIMIZACIÓN: Cargar imagen optimizada de Cloudinary (400x400px)
   const mainImage = getSafeImageUrl(
-    selectedVariant?.images?.[0] || product.images?.[0]
+    selectedVariant?.images?.[0] || product.images?.[0],
+    { width: 400, height: 400, quality: 'auto' }
   );
 
   // Use unified discount calculator
@@ -221,7 +225,8 @@ export function ProductCardEnhanced({
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                priority={false}
+                loading={index < 8 ? 'eager' : 'lazy'}
+                priority={index < 4}
               />
             </motion.div>
           </Link>

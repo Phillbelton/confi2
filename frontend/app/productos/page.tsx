@@ -42,7 +42,6 @@ import { Footer } from '@/components/layout/Footer';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategoriesHierarchical, useMainCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
-import { useProductVariants } from '@/hooks/useProducts';
 import { cn } from '@/lib/utils';
 import type { ProductFilters as Filters, ProductParent, Category, ProductVariant } from '@/types';
 
@@ -421,11 +420,13 @@ function ProductsContent() {
                   : 'grid-cols-1'
               )}
             >
-              {products.map((product: ProductParent) => (
-                <ProductCardEnhancedWithVariants
+              {products.map((product: ProductParent, index: number) => (
+                <ProductCardEnhanced
                   key={product._id}
                   product={product}
+                  variants={(product as any).variants || []}
                   onQuickView={() => setQuickViewProduct(product)}
+                  index={index}
                 />
               ))}
             </div>
@@ -517,26 +518,6 @@ function ProductsContent() {
         onOpenChange={(open) => !open && setQuickViewProduct(null)}
       />
     </>
-  );
-}
-
-// Wrapper to fetch variants for each product
-function ProductCardEnhancedWithVariants({
-  product,
-  onQuickView,
-}: {
-  product: ProductParent;
-  onQuickView: () => void;
-}) {
-  const { data: variantsData } = useProductVariants(product._id);
-  const variants = variantsData?.data || [];
-
-  return (
-    <ProductCardEnhanced
-      product={product}
-      variants={variants}
-      onQuickView={onQuickView}
-    />
   );
 }
 

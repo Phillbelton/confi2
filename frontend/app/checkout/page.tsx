@@ -500,7 +500,8 @@ export default function CheckoutPage() {
                         const rawImage =
                           variant.images?.[0] ||
                           (typeof product !== 'string' ? product.images?.[0] : null);
-                        const image = getSafeImageUrl(rawImage);
+                        // ✅ OPTIMIZACIÓN: Thumbnail muy pequeño en checkout (80x80px)
+                        const image = getSafeImageUrl(rawImage, { width: 80, height: 80, quality: 'auto' });
 
                         return (
                           <div key={item.variantId} className="flex gap-3">

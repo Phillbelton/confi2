@@ -59,8 +59,10 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
 
   // Get first image: use variant image if available, otherwise use parent image
+  // ✅ OPTIMIZACIÓN: Cargar imagen optimizada de Cloudinary (400x400px)
   const mainImage = getSafeImageUrl(
-    selectedVariant?.images?.[0] || product.images?.[0]
+    selectedVariant?.images?.[0] || product.images?.[0],
+    { width: 400, height: 400, quality: 'auto' }
   );
 
   // Use unified discount calculator

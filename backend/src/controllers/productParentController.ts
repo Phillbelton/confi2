@@ -244,40 +244,52 @@ export const getProductParents = asyncHandler(
     // Contar total
     const total = await ProductParent.countDocuments(filter);
 
-    // Si se filtra por precio, necesitamos obtener las variantes
+    // ✅ OPTIMIZACIÓN: Eager loading de variantes (elimina N+1 queries)
+    // Fetch todas las variantes de una sola vez en lugar de 1 query por producto
+    const productIds = products.map((p) => p._id);
+
+    const variantFilter: any = {
+      parentProduct: { $in: productIds },
+      active: true,
+    };
+
+    // Aplicar filtro de precio a variantes si existe
+    if (minPrice) {
+      variantFilter.price = { $gte: parseFloat(minPrice) };
+    }
+    if (maxPrice) {
+      if (variantFilter.price) {
+        variantFilter.price.$lte = parseFloat(maxPrice);
+      } else {
+        variantFilter.price = { $lte: parseFloat(maxPrice) };
+      }
+    }
+
+    // Obtener todas las variantes en 1 sola query
+    const allVariants = await ProductVariant.find(variantFilter).sort({ order: 1 }).lean();
+
+    // Agrupar variantes por parentProduct
+    const variantsByProduct = allVariants.reduce((acc, variant) => {
+      const parentId = variant.parentProduct.toString();
+      if (!acc[parentId]) acc[parentId] = [];
+      acc[parentId].push(variant);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Filtrar productos si hay filtro de precio
     let filteredProducts = products;
-
     if (minPrice || maxPrice) {
-      const productIds = products.map((p) => p._id);
-
-      // Construir filtro de precio para variantes
-      const priceFilter: any = {
-        parentProduct: { $in: productIds },
-        active: true,
-      };
-
-      if (minPrice) {
-        priceFilter.price = { $gte: parseFloat(minPrice) };
-      }
-
-      if (maxPrice) {
-        if (priceFilter.price) {
-          priceFilter.price.$lte = parseFloat(maxPrice);
-        } else {
-          priceFilter.price = { $lte: parseFloat(maxPrice) };
-        }
-      }
-
-      // Obtener IDs de productos que tienen variantes en el rango de precio
-      const variantsInRange = await ProductVariant.find(priceFilter).distinct(
-        'parentProduct'
-      );
-
-      // Filtrar productos
+      const productIdsWithVariantsInRange = Object.keys(variantsByProduct);
       filteredProducts = products.filter((p) =>
-        variantsInRange.some((v) => v.equals(p._id))
+        productIdsWithVariantsInRange.includes(p._id.toString())
       );
     }
+
+    // Adjuntar variantes a cada producto
+    const productsWithVariants = filteredProducts.map((product) => ({
+      ...product.toObject(),
+      variants: variantsByProduct[product._id.toString()] || [],
+    }));
 
     // Calcular paginación
     const totalPages = Math.ceil(total / limitNum);
@@ -285,7 +297,7 @@ export const getProductParents = asyncHandler(
     return res.status(200).json({
       success: true,
       data: {
-        data: filteredProducts,
+        data: productsWithVariants,
         pagination: {
           page: pageNum,
           limit: limitNum,

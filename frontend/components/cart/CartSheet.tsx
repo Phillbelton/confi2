@@ -74,7 +74,8 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                   const rawImage =
                     variant.images?.[0] ||
                     (typeof product !== 'string' ? product.images?.[0] : null);
-                  const image = getSafeImageUrl(rawImage);
+                  // ✅ OPTIMIZACIÓN: Thumbnail pequeño en carrito (100x100px)
+                  const image = getSafeImageUrl(rawImage, { width: 100, height: 100, quality: 'auto' });
 
                   return (
                     <div key={item.variantId} className="flex gap-4">
