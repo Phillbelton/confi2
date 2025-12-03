@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Plus, RefreshCw, Package, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,9 +17,26 @@ import {
 } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductFilters } from '@/components/admin/products/ProductFilters';
-import { ProductsTable } from '@/components/admin/products/ProductsTable';
 import { useAdminProducts } from '@/hooks/admin/useAdminProducts';
 import type { ProductQueryParams } from '@/types';
+
+// Dynamic import para la tabla pesada
+const ProductsTable = dynamic(
+  () => import('@/components/admin/products/ProductsTable').then(mod => ({ default: mod.ProductsTable })),
+  { loading: () => <TableLoadingSkeleton /> }
+);
+
+function TableLoadingSkeleton() {
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full" />
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ProductosPage() {
   const router = useRouter();
@@ -98,13 +116,7 @@ export default function ProductosPage() {
 
       {/* Table */}
       {isLoading ? (
-        <Card>
-          <CardContent className="pt-6 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full" />
-            ))}
-          </CardContent>
-        </Card>
+        <TableLoadingSkeleton />
       ) : (
         <ProductsTable
           products={products}

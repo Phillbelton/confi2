@@ -1,13 +1,31 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { DollarSign, ShoppingCart, Package, Users, TrendingUp } from 'lucide-react';
 import { StatsCard } from '@/components/admin/dashboard/StatsCard';
-import { SalesChart } from '@/components/admin/dashboard/SalesChart';
-import { RecentOrders } from '@/components/admin/dashboard/RecentOrders';
-import { TopProducts } from '@/components/admin/dashboard/TopProducts';
-import { LowStockAlert } from '@/components/admin/dashboard/LowStockAlert';
 import { useAdminDashboard } from '@/hooks/admin/useAdminDashboard';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamic imports para componentes pesados (con recharts)
+const SalesChart = dynamic(
+  () => import('@/components/admin/dashboard/SalesChart').then(mod => ({ default: mod.SalesChart })),
+  { loading: () => <Skeleton className="h-[400px]" /> }
+);
+
+const RecentOrders = dynamic(
+  () => import('@/components/admin/dashboard/RecentOrders').then(mod => ({ default: mod.RecentOrders })),
+  { loading: () => <Skeleton className="h-[400px]" /> }
+);
+
+const TopProducts = dynamic(
+  () => import('@/components/admin/dashboard/TopProducts').then(mod => ({ default: mod.TopProducts })),
+  { loading: () => <Skeleton className="h-[400px]" /> }
+);
+
+const LowStockAlert = dynamic(
+  () => import('@/components/admin/dashboard/LowStockAlert').then(mod => ({ default: mod.LowStockAlert })),
+  { loading: () => <Skeleton className="h-[300px]" /> }
+);
 
 export default function AdminDashboardPage() {
   const {

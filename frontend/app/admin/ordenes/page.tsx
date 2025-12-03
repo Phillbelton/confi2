@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,9 +16,24 @@ import {
 } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrderFilters } from '@/components/admin/orders/OrderFilters';
-import { OrdersTable } from '@/components/admin/orders/OrdersTable';
 import { useAdminOrders } from '@/hooks/admin/useAdminOrders';
 import type { OrderFilters as Filters } from '@/types/order';
+
+// Dynamic import para tabla
+const OrdersTable = dynamic(
+  () => import('@/components/admin/orders/OrdersTable').then(mod => ({ default: mod.OrdersTable })),
+  {
+    loading: () => (
+      <Card>
+        <CardContent className="pt-6 space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </CardContent>
+      </Card>
+    )
+  }
+);
 
 export default function OrdenesPage() {
   const [page, setPage] = useState(1);
