@@ -29,8 +29,52 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "Confitería Quelita - Productos de Confitería Premium",
-  description: "Descubre nuestra selección de productos de confitería premium. Compra online y recibe en tu domicilio o retira en tienda.",
+  title: {
+    default: "Confitería Quelita - Productos de Confitería Premium",
+    template: "%s | Confitería Quelita"
+  },
+  description: "Descubre nuestra selección de productos de confitería premium. Dulces, chocolates, snacks y más. Compra online y recibe en tu domicilio o retira en tienda.",
+  keywords: ["confitería", "dulces", "chocolates", "snacks", "golosinas", "productos premium", "tienda online"],
+  authors: [{ name: "Confitería Quelita" }],
+  creator: "Confitería Quelita",
+  publisher: "Confitería Quelita",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+    siteName: "Confitería Quelita",
+    title: "Confitería Quelita - Productos de Confitería Premium",
+    description: "Descubre nuestra selección de productos de confitería premium. Dulces, chocolates, snacks y más.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Confitería Quelita - Productos Premium"
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Confitería Quelita - Productos de Confitería Premium",
+    description: "Descubre nuestra selección de productos de confitería premium.",
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    // google: "your-google-verification-code", // Agregar cuando se configure Google Search Console
+  },
 };
 
 export default function RootLayout({
