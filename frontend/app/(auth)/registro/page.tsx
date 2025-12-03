@@ -6,11 +6,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, ArrowLeft, Loader2, Check, X } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { AnimatedButton } from '@/components/ui/animated-button';
+import { AnimatedInput } from '@/components/ui/animated-input';
+import { PasswordStrength } from '@/components/ui/password-strength';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -72,19 +74,10 @@ const itemVariants = {
   },
 } as const;
 
-// Password requirements
-const passwordRequirements = [
-  { label: 'Mínimo 6 caracteres', test: (p: string) => p.length >= 6 },
-  { label: 'Una letra mayúscula', test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'Un número', test: (p: string) => /[0-9]/.test(p) },
-];
-
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/perfil';
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { isAuthenticated, _hasHydrated } = useClientStore();
   const registerMutation = useClientRegister(redirectTo);
 
@@ -107,7 +100,9 @@ function RegisterContent() {
   });
 
   const password = watch('password');
+  const confirmPassword = watch('confirmPassword');
   const acceptTerms = watch('acceptTerms');
+  const passwordsMatch = password && confirmPassword && password === confirmPassword ? true : undefined;
 
   // Redirigir si ya está autenticado
   useEffect(() => {
@@ -186,163 +181,69 @@ function RegisterContent() {
             <CardContent className="pt-4">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 {/* Nombre */}
-                <motion.div variants={itemVariants} className="space-y-2">
-                  <Label htmlFor="name">Nombre completo</Label>
-                  <Input
+                <motion.div variants={itemVariants}>
+                  <AnimatedInput
                     id="name"
                     type="text"
+                    label="Nombre completo"
                     autoComplete="name"
-                    placeholder="Juan Pérez"
-                    className={cn(
-                      'h-12',
-                      errors.name && 'border-destructive focus-visible:ring-destructive'
-                    )}
+                    error={errors.name?.message}
                     {...register('name')}
                   />
-                  {errors.name && (
-                    <p className="text-sm text-destructive">{errors.name.message}</p>
-                  )}
                 </motion.div>
 
                 {/* Email */}
-                <motion.div variants={itemVariants} className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
+                <motion.div variants={itemVariants}>
+                  <AnimatedInput
                     id="email"
                     type="email"
+                    label="Email"
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="tu@email.com"
-                    className={cn(
-                      'h-12',
-                      errors.email && 'border-destructive focus-visible:ring-destructive'
-                    )}
+                    error={errors.email?.message}
                     {...register('email')}
                   />
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email.message}</p>
-                  )}
                 </motion.div>
 
                 {/* Teléfono */}
-                <motion.div variants={itemVariants} className="space-y-2">
-                  <Label htmlFor="phone">Teléfono (WhatsApp)</Label>
-                  <div className="flex">
-                    <div className="flex items-center justify-center px-3 h-12 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground font-medium">
-                      +56
-                    </div>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder="9 1234 5678"
-                      className={cn(
-                        'h-12 rounded-l-none',
-                        errors.phone && 'border-destructive focus-visible:ring-destructive'
-                      )}
-                      {...register('phone')}
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p className="text-sm text-destructive">{errors.phone.message}</p>
-                  )}
+                <motion.div variants={itemVariants}>
+                  <AnimatedInput
+                    id="phone"
+                    type="tel"
+                    label="Teléfono (WhatsApp +56)"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    error={errors.phone?.message}
+                    {...register('phone')}
+                  />
                 </motion.div>
 
                 {/* Contraseña */}
-                <motion.div variants={itemVariants} className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      placeholder="••••••••"
-                      className={cn(
-                        'h-12 pr-10',
-                        errors.password && 'border-destructive focus-visible:ring-destructive'
-                      )}
-                      {...register('password')}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-12 w-12 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password.message}</p>
-                  )}
-
-                  {/* Password requirements */}
-                  {password && (
-                    <div className="space-y-1 pt-1">
-                      {passwordRequirements.map(({ label, test }) => {
-                        const passed = test(password);
-                        return (
-                          <div
-                            key={label}
-                            className={cn(
-                              'flex items-center gap-2 text-xs transition-colors',
-                              passed ? 'text-green-600' : 'text-muted-foreground'
-                            )}
-                          >
-                            {passed ? (
-                              <Check className="h-3 w-3" />
-                            ) : (
-                              <X className="h-3 w-3" />
-                            )}
-                            {label}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                <motion.div variants={itemVariants}>
+                  <AnimatedInput
+                    id="password"
+                    type="password"
+                    label="Contraseña"
+                    autoComplete="new-password"
+                    showPasswordToggle
+                    error={errors.password?.message}
+                    {...register('password')}
+                  />
+                  <PasswordStrength password={password || ''} />
                 </motion.div>
 
                 {/* Confirmar contraseña */}
-                <motion.div variants={itemVariants} className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      placeholder="••••••••"
-                      className={cn(
-                        'h-12 pr-10',
-                        errors.confirmPassword &&
-                          'border-destructive focus-visible:ring-destructive'
-                      )}
-                      {...register('confirmPassword')}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-12 w-12 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-sm text-destructive">
-                      {errors.confirmPassword.message}
-                    </p>
-                  )}
+                <motion.div variants={itemVariants}>
+                  <AnimatedInput
+                    id="confirmPassword"
+                    type="password"
+                    label="Confirmar contraseña"
+                    autoComplete="new-password"
+                    showPasswordToggle
+                    success={passwordsMatch}
+                    error={errors.confirmPassword?.message}
+                    {...register('confirmPassword')}
+                  />
                 </motion.div>
 
                 {/* Términos */}
@@ -373,20 +274,15 @@ function RegisterContent() {
                 )}
 
                 <motion.div variants={itemVariants}>
-                  <Button
+                  <AnimatedButton
                     type="submit"
                     className="w-full h-12 text-base font-semibold"
-                    disabled={registerMutation.isPending}
+                    loading={registerMutation.isPending}
+                    loadingText="Creando cuenta..."
+                    showShine
                   >
-                    {registerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Creando cuenta...
-                      </>
-                    ) : (
-                      'Crear cuenta'
-                    )}
-                  </Button>
+                    Crear cuenta
+                  </AnimatedButton>
                 </motion.div>
               </form>
             </CardContent>

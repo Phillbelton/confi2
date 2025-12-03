@@ -49,7 +49,7 @@ export function Logo({ variant = "full", size = "default", className }: LogoProp
       rotate: [0, -5, 5, -5, 0],
       transition: {
         duration: 0.5,
-        ease: "easeInOut",
+        ease: "easeInOut" as const,
       },
     },
   };
@@ -71,7 +71,7 @@ export function Logo({ variant = "full", size = "default", className }: LogoProp
       y: -3,
       transition: {
         duration: 0.2,
-        ease: "easeOut",
+        ease: "easeOut" as const,
       },
     },
   };
@@ -86,7 +86,7 @@ export function Logo({ variant = "full", size = "default", className }: LogoProp
       scale: [0.8, 1.2, 1.4],
       transition: {
         duration: 1.5,
-        ease: "easeOut",
+        ease: "easeOut" as const,
         repeat: Infinity,
       },
     },

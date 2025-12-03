@@ -28,7 +28,9 @@
       "Edit(C:/Users/sk/.claude-worktrees/confi2-recuperado/**)",
       "Write(C:/Users/sk/.claude-worktrees/confi2-recuperado/**)",
       "Read(/tmp/**)",
-      "Write(/tmp/**)"
+      "Write(/tmp/**)",
+      "Bash(sort:*)",
+      "Bash(npx lighthouse:*)"
     ],
     "deny": [
       "Bash(rm -rf /*)",
