@@ -174,7 +174,7 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
   const handleSave = () => {
     const data: { fixedDiscount?: FixedDiscount; tieredDiscount?: TieredDiscountVariant } = {};
 
-    // Fixed discount
+    // Fixed discount - only send if enabled with valid value
     if (fixedEnabled && fixedValue && parseFloat(fixedValue) > 0) {
       data.fixedDiscount = {
         enabled: true,
@@ -184,13 +184,8 @@ export function VariantDiscountManager({ variant, onSave, isSaving = false }: Va
         endDate: fixedEndDate || undefined,
         badge: fixedBadge || undefined,
       };
-    } else {
-      data.fixedDiscount = {
-        enabled: false,
-        type: 'percentage',
-        value: 0,
-      };
     }
+    // Don't send fixedDiscount at all when disabled
 
     // Tiered discount
     if (tieredActive && tiers.length > 0) {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // Fuentes Google premium para UI/UX mejorada
 import { Playfair_Display, Inter, Caveat } from "next/font/google";
 import "./globals.css";
+import "@/styles/premium.css";
 import { Providers } from "@/lib/providers";
 import { Toaster } from "@/components/ui/toaster";
 

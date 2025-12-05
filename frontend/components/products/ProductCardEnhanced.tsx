@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { ShoppingCart, Check, Eye, Plus, Minus, Star } from 'lucide-react';
+import { ShoppingCart, Check, Eye, Plus, Minus } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useFlyToCart } from '@/hooks/useFlyToCart';
 import { FlyingCartParticles } from '@/components/cart/FlyingCartParticle';
@@ -129,9 +129,9 @@ export function ProductCardEnhanced({
   const originalPrice = priceInfo?.originalPrice || selectedVariant?.price || 0;
   const hasFixedDiscountApplied = priceInfo?.appliedFixedDiscount !== null;
 
-  // Mock rating (you can replace with actual rating from backend)
-  const rating = 4.5;
-  const reviewCount = 234;
+  // Rating removed as per requirements
+  // const rating = 4.5;
+  // const reviewCount = 234;
 
   const handleAddToCart = async () => {
     if (!selectedVariant || isOutOfStock) return;
@@ -373,36 +373,7 @@ export function ProductCardEnhanced({
             </div>
           )}
 
-          {/* Rating */}
-          <div className="flex items-center gap-1">
-            <div className="flex">
-              {[...Array(5)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{
-                    type: 'spring',
-                    stiffness: 260,
-                    damping: 20,
-                    delay: i * 0.05,
-                  }}
-                >
-                  <Star
-                    className={cn(
-                      'h-3 w-3',
-                      i < Math.floor(rating)
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300'
-                    )}
-                  />
-                </motion.div>
-              ))}
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {rating} ({reviewCount})
-            </span>
-          </div>
+          {/* Rating section removed */}
 
           {/* Tier Discount Badges - Horizontal Scroll */}
           {discountTiers && discountTiers.length > 0 && (

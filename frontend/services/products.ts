@@ -1,4 +1,5 @@
 import { api } from '@/lib/axios';
+import { adminApi } from '@/lib/adminApi';
 import type {
   ProductParent,
   ProductVariant,
@@ -87,7 +88,7 @@ export const productService = {
 
   // Get low stock variants (admin only)
   getLowStockVariants: async () => {
-    const { data } = await api.get<ApiResponse<ProductVariant[]>>(
+    const { data } = await adminApi.get<ApiResponse<ProductVariant[]>>(
       '/products/variants/stock/low'
     );
     return data;
@@ -95,7 +96,7 @@ export const productService = {
 
   // Get out of stock variants (admin only)
   getOutOfStockVariants: async () => {
-    const { data } = await api.get<ApiResponse<ProductVariant[]>>(
+    const { data } = await adminApi.get<ApiResponse<ProductVariant[]>>(
       '/products/variants/stock/out'
     );
     return data;

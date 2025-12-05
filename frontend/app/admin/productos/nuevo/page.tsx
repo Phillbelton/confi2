@@ -6,6 +6,7 @@ import { SimpleProductForm } from '@/components/admin/products/SimpleProductForm
 import { VariantProductForm } from '@/components/admin/products/VariantProductForm';
 import { useToast } from '@/hooks/use-toast';
 import type { VariantCombination } from '@/components/admin/products/VariantConfigurationTable';
+import { normalizeVariantValue } from '@/lib/normalizeVariantValue';
 
 type ProductType = 'simple' | 'variantes';
 
@@ -246,6 +247,10 @@ export default function NuevoProductoPage() {
           order: valIndex,
         })),
       }));
+
+      console.log('Original variantAttributes:', variantAttributes);
+      console.log('Transformed variantAttributes:', transformedAttributes);
+
       parentFormData.append('variantAttributes', JSON.stringify(transformedAttributes));
 
       // Add parent images
@@ -265,19 +270,32 @@ export default function NuevoProductoPage() {
 
       if (!parentResponse.ok) {
         const errorData = await parentResponse.json();
+        console.error('Error creating parent:', errorData);
         throw new Error(errorData.message || 'Error al crear el producto padre');
       }
 
       const parentResult = await parentResponse.json();
+      console.log('Parent creation result:', parentResult);
       const parentId = parentResult.data.productParent._id;
 
       // Step 2: Create variants in batch
-      const variantsPayload = variantCombinations.map((combo) => ({
-        attributes: combo.attributes,
-        price: combo.price,
-        stock: combo.stock,
-        ...(combo.sku && { sku: combo.sku }),
-      }));
+      // Normalize attribute keys to lowercase to match backend format
+      const variantsPayload = variantCombinations.map((combo) => {
+        const normalizedAttributes: Record<string, string> = {};
+        Object.entries(combo.attributes).forEach(([key, value]) => {
+          normalizedAttributes[key.toLowerCase()] = value;
+        });
+
+        return {
+          attributes: normalizedAttributes,
+          price: combo.price,
+          stock: combo.stock,
+          ...(combo.sku && { sku: combo.sku }),
+        };
+      });
+
+      console.log('Creating variants for parent:', parentId);
+      console.log('Variants payload:', JSON.stringify(variantsPayload, null, 2));
 
       const variantsResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/products/parents/${parentId}/variants/batch`,
@@ -293,10 +311,12 @@ export default function NuevoProductoPage() {
 
       if (!variantsResponse.ok) {
         const errorData = await variantsResponse.json();
+        console.error('Error creating variants:', errorData);
         throw new Error(errorData.message || 'Error al crear las variantes');
       }
 
       const variantsResult = await variantsResponse.json();
+      console.log('Variants creation result:', variantsResult);
 
       // Step 3: Upload variant images if any
       const createdVariants = variantsResult.data.created || [];
@@ -305,17 +325,38 @@ export default function NuevoProductoPage() {
 
       for (const createdVariant of createdVariants) {
         // Find matching combination by attributes
+        // Apply the same normalization that the backend uses
         const matchingCombo = variantCombinations.find((combo) => {
-          const comboAttrs = JSON.stringify(combo.attributes);
-          const variantAttrs = JSON.stringify(createdVariant.attributes);
+          // Normalize combo attributes using backend's normalization logic
+          const normalizedComboAttrs: Record<string, string> = {};
+          Object.entries(combo.attributes).forEach(([key, value]) => {
+            const normalizedValue = normalizeVariantValue(String(value));
+            // Lowercase for comparison and remove all spaces
+            normalizedComboAttrs[key.toLowerCase()] = normalizedValue.toLowerCase().replace(/\s+/g, '');
+          });
+
+          // Normalize variant attributes the same way
+          const normalizedVariantAttrs: Record<string, string> = {};
+          Object.entries(createdVariant.attributes).forEach(([key, value]) => {
+            const normalizedValue = normalizeVariantValue(String(value));
+            // Lowercase for comparison and remove all spaces
+            normalizedVariantAttrs[key.toLowerCase()] = normalizedValue.toLowerCase().replace(/\s+/g, '');
+          });
+
+          const comboAttrs = JSON.stringify(normalizedComboAttrs);
+          const variantAttrs = JSON.stringify(normalizedVariantAttrs);
+
+          console.log('Comparing (normalized):', { comboAttrs, variantAttrs });
           return comboAttrs === variantAttrs;
         });
 
         // If this combination has images, upload them
         if (matchingCombo?.images && matchingCombo.images.length > 0) {
+          console.log(`Uploading ${matchingCombo.images.length} image(s) for variant:`, createdVariant._id);
           try {
             const variantImagesFormData = new FormData();
             matchingCombo.images.forEach((imageFile) => {
+              console.log('Adding image to FormData:', imageFile);
               variantImagesFormData.append('images', imageFile.file);
             });
 
@@ -331,14 +372,20 @@ export default function NuevoProductoPage() {
             );
 
             if (uploadResponse.ok) {
+              const uploadResult = await uploadResponse.json();
+              console.log('Upload successful:', uploadResult);
               imagesUploadedCount += matchingCombo.images.length;
             } else {
+              const errorData = await uploadResponse.json();
+              console.error('Upload failed:', errorData);
               imagesFailedCount += matchingCombo.images.length;
             }
           } catch (error) {
             console.error('Error uploading variant images:', error);
             imagesFailedCount += matchingCombo.images.length;
           }
+        } else {
+          console.log('No images to upload for variant:', createdVariant._id);
         }
       }
 
@@ -425,6 +472,10 @@ export default function NuevoProductoPage() {
           order: valIndex,
         })),
       }));
+
+      console.log('Original variantAttributes:', variantAttributes);
+      console.log('Transformed variantAttributes:', transformedAttributes);
+
       parentFormData.append('variantAttributes', JSON.stringify(transformedAttributes));
 
       // Add parent images
@@ -444,19 +495,32 @@ export default function NuevoProductoPage() {
 
       if (!parentResponse.ok) {
         const errorData = await parentResponse.json();
+        console.error('Error creating parent:', errorData);
         throw new Error(errorData.message || 'Error al crear el producto padre');
       }
 
       const parentResult = await parentResponse.json();
+      console.log('Parent creation result:', parentResult);
       const parentId = parentResult.data.productParent._id;
 
       // Step 2: Create variants in batch
-      const variantsPayload = variantCombinations.map((combo) => ({
-        attributes: combo.attributes,
-        price: combo.price,
-        stock: combo.stock,
-        ...(combo.sku && { sku: combo.sku }),
-      }));
+      // Normalize attribute keys to lowercase to match backend format
+      const variantsPayload = variantCombinations.map((combo) => {
+        const normalizedAttributes: Record<string, string> = {};
+        Object.entries(combo.attributes).forEach(([key, value]) => {
+          normalizedAttributes[key.toLowerCase()] = value;
+        });
+
+        return {
+          attributes: normalizedAttributes,
+          price: combo.price,
+          stock: combo.stock,
+          ...(combo.sku && { sku: combo.sku }),
+        };
+      });
+
+      console.log('Creating variants for parent:', parentId);
+      console.log('Variants payload:', JSON.stringify(variantsPayload, null, 2));
 
       const variantsResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/products/parents/${parentId}/variants/batch`,
@@ -472,10 +536,12 @@ export default function NuevoProductoPage() {
 
       if (!variantsResponse.ok) {
         const errorData = await variantsResponse.json();
+        console.error('Error creating variants:', errorData);
         throw new Error(errorData.message || 'Error al crear las variantes');
       }
 
       const variantsResult = await variantsResponse.json();
+      console.log('Variants creation result:', variantsResult);
 
       // Step 3: Upload variant images if any
       const createdVariants = variantsResult.data.created || [];
@@ -484,17 +550,38 @@ export default function NuevoProductoPage() {
 
       for (const createdVariant of createdVariants) {
         // Find matching combination by attributes
+        // Apply the same normalization that the backend uses
         const matchingCombo = variantCombinations.find((combo) => {
-          const comboAttrs = JSON.stringify(combo.attributes);
-          const variantAttrs = JSON.stringify(createdVariant.attributes);
+          // Normalize combo attributes using backend's normalization logic
+          const normalizedComboAttrs: Record<string, string> = {};
+          Object.entries(combo.attributes).forEach(([key, value]) => {
+            const normalizedValue = normalizeVariantValue(String(value));
+            // Lowercase for comparison and remove all spaces
+            normalizedComboAttrs[key.toLowerCase()] = normalizedValue.toLowerCase().replace(/\s+/g, '');
+          });
+
+          // Normalize variant attributes the same way
+          const normalizedVariantAttrs: Record<string, string> = {};
+          Object.entries(createdVariant.attributes).forEach(([key, value]) => {
+            const normalizedValue = normalizeVariantValue(String(value));
+            // Lowercase for comparison and remove all spaces
+            normalizedVariantAttrs[key.toLowerCase()] = normalizedValue.toLowerCase().replace(/\s+/g, '');
+          });
+
+          const comboAttrs = JSON.stringify(normalizedComboAttrs);
+          const variantAttrs = JSON.stringify(normalizedVariantAttrs);
+
+          console.log('Comparing (normalized):', { comboAttrs, variantAttrs });
           return comboAttrs === variantAttrs;
         });
 
         // If this combination has images, upload them
         if (matchingCombo?.images && matchingCombo.images.length > 0) {
+          console.log(`Uploading ${matchingCombo.images.length} image(s) for variant:`, createdVariant._id);
           try {
             const variantImagesFormData = new FormData();
             matchingCombo.images.forEach((imageFile) => {
+              console.log('Adding image to FormData:', imageFile);
               variantImagesFormData.append('images', imageFile.file);
             });
 
@@ -510,14 +597,20 @@ export default function NuevoProductoPage() {
             );
 
             if (uploadResponse.ok) {
+              const uploadResult = await uploadResponse.json();
+              console.log('Upload successful:', uploadResult);
               imagesUploadedCount += matchingCombo.images.length;
             } else {
+              const errorData = await uploadResponse.json();
+              console.error('Upload failed:', errorData);
               imagesFailedCount += matchingCombo.images.length;
             }
           } catch (error) {
             console.error('Error uploading variant images:', error);
             imagesFailedCount += matchingCombo.images.length;
           }
+        } else {
+          console.log('No images to upload for variant:', createdVariant._id);
         }
       }
 

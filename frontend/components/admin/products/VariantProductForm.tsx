@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { VariantAttributeBuilder, type VariantAttribute as BuilderVariantAttribute } from './VariantAttributeBuilder';
 
 const variantProductSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
@@ -39,11 +40,8 @@ const variantProductSchema = z.object({
 
 type VariantProductFormValues = z.infer<typeof variantProductSchema>;
 
-interface VariantAttribute {
-  id: string;
-  name: string;
-  values: string[];
-}
+// Usar la interfaz del builder que incluye type, displayName, etc.
+type VariantAttribute = BuilderVariantAttribute;
 
 interface ImageFile {
   file: File;
@@ -77,8 +75,6 @@ export function VariantProductForm({
   const [images, setImages] = useState<ImageFile[]>([]);
   const [variantAttributes, setVariantAttributes] = useState<VariantAttribute[]>([]);
   const [variantCombinations, setVariantCombinations] = useState<VariantCombination[]>([]);
-  const [newAttrName, setNewAttrName] = useState('');
-  const [newAttrValues, setNewAttrValues] = useState('');
 
   const form = useForm<VariantProductFormValues>({
     resolver: zodResolver(variantProductSchema),
@@ -122,40 +118,12 @@ export function VariantProductForm({
     return combinations;
   };
 
-  const handleAddAttribute = () => {
-    if (!newAttrName.trim() || !newAttrValues.trim()) return;
-
-    const values = newAttrValues
-      .split(',')
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0);
-
-    if (values.length === 0) return;
-
-    const newAttr: VariantAttribute = {
-      id: `attr-${Date.now()}`,
-      name: newAttrName.trim(),
-      values,
-    };
-
-    const updatedAttributes = [...variantAttributes, newAttr];
-    setVariantAttributes(updatedAttributes);
+  // Handler when attributes change from the builder
+  const handleAttributesChange = (newAttributes: VariantAttribute[]) => {
+    setVariantAttributes(newAttributes);
 
     // Regenerate combinations
-    const newCombinations = generateCombinations(updatedAttributes);
-    setVariantCombinations(newCombinations);
-
-    // Reset inputs
-    setNewAttrName('');
-    setNewAttrValues('');
-  };
-
-  const handleRemoveAttribute = (id: string) => {
-    const updatedAttributes = variantAttributes.filter((attr) => attr.id !== id);
-    setVariantAttributes(updatedAttributes);
-
-    // Regenerate combinations
-    const newCombinations = generateCombinations(updatedAttributes);
+    const newCombinations = generateCombinations(newAttributes);
     setVariantCombinations(newCombinations);
   };
 
@@ -326,96 +294,12 @@ export function VariantProductForm({
               </CardContent>
             </Card>
 
-            {/* Atributos de Variantes */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>Atributos de Variantes *</CardTitle>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-sm">
-                        <p className="font-semibold mb-1">Importante: Inmutabilidad de Atributos</p>
-                        <p className="text-sm">
-                          Los atributos que definas aquí son la identidad de cada variante. Una vez creadas,
-                          los atributos son inmutables para garantizar trazabilidad e integridad en órdenes.
-                          Elige cuidadosamente los valores antes de continuar.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="attrName">Nombre del Atributo</Label>
-                    <Input
-                      id="attrName"
-                      placeholder="Ej: Tamaño"
-                      value={newAttrName}
-                      onChange={(e) => setNewAttrName(e.target.value)}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="attrValues">Valores (separados por comas)</Label>
-                    <Input
-                      id="attrValues"
-                      placeholder="Ej: 350ml, 500ml, 1L"
-                      value={newAttrValues}
-                      onChange={(e) => setNewAttrValues(e.target.value)}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      type="button"
-                      onClick={handleAddAttribute}
-                      disabled={isSubmitting || !newAttrName.trim() || !newAttrValues.trim()}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar Atributo
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Current Attributes */}
-                {variantAttributes.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Atributos Definidos</Label>
-                    {variantAttributes.map((attr) => (
-                      <div
-                        key={attr.id}
-                        className="flex items-center justify-between p-3 bg-muted rounded-md"
-                      >
-                        <div>
-                          <p className="font-medium">{attr.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {attr.values.join(', ')}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveAttribute(attr.id)}
-                          disabled={isSubmitting}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    ))}
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Esto generará {variantCombinations.length} variante(s)
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Atributos de Variantes - Nuevo Componente */}
+            <VariantAttributeBuilder
+              attributes={variantAttributes}
+              onChange={handleAttributesChange}
+              disabled={isSubmitting}
+            />
 
             {/* Imágenes del Producto Padre */}
             <Card>

@@ -157,7 +157,11 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                       {/* Details */}
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium line-clamp-1">
-                          {typeof product !== 'string' ? product.name : 'Producto'}
+                          {typeof product !== 'string' && product.hasVariants
+                            ? variant.name
+                            : typeof product !== 'string'
+                            ? product.name
+                            : 'Producto'}
                         </h4>
                         {typeof product !== 'string' && product.hasVariants && (
                           <p className="text-xs text-muted-foreground line-clamp-1">
