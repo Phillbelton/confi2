@@ -23,7 +23,7 @@ import {
   SheetTrigger,
   SheetFooter,
 } from '@/components/ui/sheet';
-import { HierarchicalCategoryFilter } from '../HierarchicalCategoryFilter';
+import { CategoryFilterPremium } from './CategoryFilterPremium';
 import type { ProductFilters as Filters, Brand } from '@/types';
 import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 import { cn } from '@/lib/utils';
@@ -197,7 +197,7 @@ function FiltersContent({
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <HierarchicalCategoryFilter
+            <CategoryFilterPremium
               categories={categories}
               selectedCategories={filters.categories || []}
               onSelectionChange={handleCategorySelectionChange}
