@@ -208,6 +208,7 @@ function ProductsContent() {
                 onFilterChange={handleFilterChange}
                 categories={categories}
                 brands={brands}
+                productCount={pagination?.totalItems}
               />
             )}
           </div>
@@ -223,6 +224,7 @@ function ProductsContent() {
                 onFilterChange={handleFilterChange}
                 categories={categories}
                 brands={brands}
+                productCount={pagination?.totalItems}
                 isMobile
               />
             )}

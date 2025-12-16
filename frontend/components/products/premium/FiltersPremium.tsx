@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Accordion,
   AccordionContent,
@@ -24,6 +25,9 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { CategoryFilterPremium } from './CategoryFilterPremium';
+import { FiltersHeaderPremium } from './FiltersHeaderPremium';
+import { QuickFilterCardPremium } from './QuickFilterCardPremium';
+import { ActiveFiltersPanelPremium } from './ActiveFiltersPanelPremium';
 import type { ProductFilters as Filters, Brand } from '@/types';
 import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 import { cn } from '@/lib/utils';
@@ -33,6 +37,7 @@ interface FiltersPremiumProps {
   onFilterChange: (filters: Filters) => void;
   categories: CategoryWithSubcategories[];
   brands: Brand[];
+  productCount?: number;
   className?: string;
   isMobile?: boolean;
 }
@@ -42,7 +47,9 @@ function FiltersContent({
   onFilterChange,
   categories,
   brands,
-}: Omit<FiltersPremiumProps, 'className' | 'isMobile'>) {
+  productCount,
+  isMobile = false,
+}: Omit<FiltersPremiumProps, 'className'>) {
   const [priceRange, setPriceRange] = useState<[number, number]>([
     filters.minPrice || 0,
     filters.maxPrice || 100000,
@@ -78,6 +85,44 @@ function FiltersContent({
     onFilterChange({});
   };
 
+  const handleRemoveFilter = (
+    type: 'category' | 'brand' | 'price' | 'featured' | 'onSale',
+    value?: string
+  ) => {
+    switch (type) {
+      case 'category':
+        if (value) {
+          onFilterChange({
+            ...filters,
+            categories: filters.categories?.filter((id) => id !== value),
+          });
+        }
+        break;
+      case 'brand':
+        if (value) {
+          onFilterChange({
+            ...filters,
+            brands: filters.brands?.filter((id) => id !== value),
+          });
+        }
+        break;
+      case 'price':
+        setPriceRange([0, 100000]);
+        onFilterChange({
+          ...filters,
+          minPrice: undefined,
+          maxPrice: undefined,
+        });
+        break;
+      case 'featured':
+        onFilterChange({ ...filters, featured: false });
+        break;
+      case 'onSale':
+        onFilterChange({ ...filters, onSale: false });
+        break;
+    }
+  };
+
   const getActiveFilterCount = () => {
     let count = 0;
     if (filters.categories?.length) count += filters.categories.length;
@@ -91,92 +136,28 @@ function FiltersContent({
   const activeCount = getActiveFilterCount();
 
   return (
-    <div className="space-y-6">
-      {/* Header with Clear */}
-      {activeCount > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm font-medium text-foreground">
-              {activeCount} filtro{activeCount !== 1 ? 's' : ''} activo{activeCount !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearAllFilters}
-            className="h-8 text-xs hover:bg-primary/10"
-          >
-            <X className="h-3 w-3 mr-1" />
-            Limpiar
-          </Button>
-        </motion.div>
-      )}
-
-      {/* Quick Filters */}
+    <div className="space-y-4 sm:space-y-6">
+      {/* Quick Filters - Grid en mobile */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
           <Sparkles className="h-4 w-4 text-primary" />
           Filtros Rápidos
         </div>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className={cn(
-            'flex items-center space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer',
-            filters.featured
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50 hover:bg-muted'
-          )}
-          onClick={() => onFilterChange({ ...filters, featured: !filters.featured })}
-        >
-          <Checkbox
-            id="featured-premium"
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <QuickFilterCardPremium
             checked={filters.featured || false}
-            onCheckedChange={(checked) =>
-              onFilterChange({ ...filters, featured: checked as boolean })
-            }
+            onChange={(checked) => onFilterChange({ ...filters, featured: checked })}
+            icon={Sparkles}
+            label="Destacados"
           />
-          <Label
-            htmlFor="featured-premium"
-            className="flex-1 text-sm font-medium cursor-pointer flex items-center gap-2"
-          >
-            <Sparkles className="h-4 w-4 text-primary" />
-            Destacados
-          </Label>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className={cn(
-            'flex items-center space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer',
-            filters.onSale
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50 hover:bg-muted'
-          )}
-          onClick={() => onFilterChange({ ...filters, onSale: !filters.onSale })}
-        >
-          <Checkbox
-            id="onSale-premium"
+          <QuickFilterCardPremium
             checked={filters.onSale || false}
-            onCheckedChange={(checked) =>
-              onFilterChange({ ...filters, onSale: checked as boolean })
-            }
+            onChange={(checked) => onFilterChange({ ...filters, onSale: checked })}
+            icon={Tag}
+            label="En Oferta"
           />
-          <Label
-            htmlFor="onSale-premium"
-            className="flex-1 text-sm font-medium cursor-pointer flex items-center gap-2"
-          >
-            <Tag className="h-4 w-4 text-primary" />
-            En Oferta
-          </Label>
-        </motion.div>
+        </div>
       </div>
 
       <Separator />
@@ -201,6 +182,8 @@ function FiltersContent({
               categories={categories}
               selectedCategories={filters.categories || []}
               onSelectionChange={handleCategorySelectionChange}
+              isMobile={isMobile}
+              showDescriptions={isMobile}
             />
           </AccordionContent>
         </AccordionItem>
@@ -281,6 +264,16 @@ function FiltersContent({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Active Filters Panel */}
+      {activeCount > 0 && (
+        <ActiveFiltersPanelPremium
+          filters={filters}
+          categories={categories}
+          brands={brands}
+          onRemoveFilter={handleRemoveFilter}
+        />
+      )}
     </div>
   );
 }
@@ -290,6 +283,7 @@ export function FiltersPremium({
   onFilterChange,
   categories,
   brands,
+  productCount,
   className,
   isMobile = false,
 }: FiltersPremiumProps) {
@@ -302,61 +296,87 @@ export function FiltersPremium({
     (filters.featured ? 1 : 0) +
     (filters.onSale ? 1 : 0);
 
+  const clearAllFilters = () => {
+    onFilterChange({});
+  };
+
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="outline" className="w-full relative">
+          <Button variant="outline" className="w-full relative touch-target">
             <Filter className="mr-2 h-4 w-4" />
             Filtros
             {activeCount > 0 && (
               <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold"
+                className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold shadow-md"
               >
                 {activeCount}
               </motion.span>
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-primary" />
-              Filtrar Productos
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
-            <FiltersContent
-              filters={filters}
-              onFilterChange={onFilterChange}
-              categories={categories}
-              brands={brands}
+        <SheetContent side="bottom" className="h-[90vh] p-0">
+          {/* Header con gradiente sticky */}
+          <div className="sticky top-0 z-10">
+            <FiltersHeaderPremium
+              productCount={productCount}
+              activeFilterCount={activeCount}
+              onClearFilters={clearAllFilters}
+              isMobile
             />
           </div>
-          <SheetFooter className="sticky bottom-0 bg-background pt-4 pb-2 border-t mt-6">
-            <Button onClick={() => setOpen(false)} className="w-full gradient-primary text-white">
-              Ver Resultados
-            </Button>
+
+          {/* Contenido scrollable */}
+          <ScrollArea className="h-[calc(90vh-180px)]">
+            <div className="p-4">
+              <FiltersContent
+                filters={filters}
+                onFilterChange={onFilterChange}
+                categories={categories}
+                brands={brands}
+                productCount={productCount}
+                isMobile
+              />
+            </div>
+          </ScrollArea>
+
+          {/* Footer sticky con gradiente */}
+          <SheetFooter className="sticky bottom-0 bg-white/95 backdrop-blur-md pt-4 pb-safe border-t shadow-premium-lg">
+            <div className="w-full px-4">
+              <Button
+                onClick={() => setOpen(false)}
+                className="w-full h-14 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold shadow-lg hover:shadow-xl transition-shadow"
+                size="lg"
+              >
+                Ver {productCount || 0} Productos
+              </Button>
+            </div>
           </SheetFooter>
         </SheetContent>
       </Sheet>
     );
   }
 
+  // Desktop version
   return (
-    <div className={cn('bg-card rounded-xl border border-border p-6 shadow-sm', className)}>
-      <div className="flex items-center gap-2 mb-6">
-        <Filter className="h-5 w-5 text-primary" />
-        <h2 className="font-semibold text-lg">Filtros</h2>
-      </div>
-      <FiltersContent
-        filters={filters}
-        onFilterChange={onFilterChange}
-        categories={categories}
-        brands={brands}
+    <div className={cn('bg-white rounded-2xl shadow-lg border border-pink-100 overflow-hidden', className)}>
+      <FiltersHeaderPremium
+        productCount={productCount}
+        activeFilterCount={activeCount}
+        onClearFilters={clearAllFilters}
       />
+      <div className="p-6">
+        <FiltersContent
+          filters={filters}
+          onFilterChange={onFilterChange}
+          categories={categories}
+          brands={brands}
+          productCount={productCount}
+        />
+      </div>
     </div>
   );
 }

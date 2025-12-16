@@ -12,11 +12,16 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
+import { getCategoryVisualConfig } from '@/lib/categoryVisualConfig';
+import { CategoryCardPremium, type CategoryCardSize } from './CategoryCardPremium';
 
 interface CategoryFilterPremiumProps {
   categories: CategoryWithSubcategories[];
   selectedCategories: string[];
   onSelectionChange: (selectedIds: string[]) => void;
+  isMobile?: boolean;
+  size?: CategoryCardSize;
+  showDescriptions?: boolean;
 }
 
 // Iconos por defecto para categorías comunes de confitería
@@ -261,7 +266,7 @@ function ParentCategory({
   );
 }
 
-// Componente de subcategoría
+// Componente de subcategoría mejorado
 function SubCategory({
   category,
   parentColorIndex,
@@ -276,7 +281,7 @@ function SubCategory({
   index: number;
 }) {
   const colorScheme = getColorScheme(parentColorIndex);
-  const icon = getCategoryIcon(category.name, category.icon);
+  const visualConfig = getCategoryVisualConfig(category.name);
 
   return (
     <motion.div
@@ -287,26 +292,27 @@ function SubCategory({
     >
       <motion.div
         className={cn(
-          'group flex items-center gap-3 p-2.5 pl-4 rounded-lg cursor-pointer ml-4',
-          'border transition-all duration-200',
+          'group flex items-center gap-2 sm:gap-3 p-2.5 pl-4 rounded-lg cursor-pointer ml-4',
+          'border-2 transition-all duration-200',
+          'min-h-[48px] touch-target',
           isSelected
-            ? `${colorScheme.active} ${colorScheme.border}`
-            : `bg-background/50 border-transparent ${colorScheme.hover}`
+            ? `${visualConfig.bgColor} ${visualConfig.borderColor} shadow-sm`
+            : `bg-background/50 border-transparent ${visualConfig.hoverBg}`
         )}
         onClick={onToggle}
-        whileHover={{ x: 4 }}
+        whileHover={{ x: 4, scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
       >
         {/* Línea conectora decorativa */}
         <div className="absolute left-6 -ml-0.5 w-px h-full bg-border" />
 
-        {/* Icono pequeño */}
-        <span className="text-base flex-shrink-0">{icon}</span>
+        {/* Emoji Icon */}
+        <span className="text-base sm:text-lg flex-shrink-0">{visualConfig.emoji}</span>
 
         {/* Nombre */}
         <span className={cn(
-          'flex-1 text-sm truncate',
-          isSelected ? `font-medium ${colorScheme.text}` : 'text-muted-foreground'
+          'flex-1 text-xs sm:text-sm truncate transition-colors',
+          isSelected ? `font-medium ${visualConfig.textColor}` : 'text-muted-foreground group-hover:text-foreground'
         )}>
           {category.name}
         </span>
@@ -318,14 +324,17 @@ function SubCategory({
           colorScheme={colorScheme}
         />
 
-        {/* Badge de selección */}
+        {/* Selection indicator */}
         <AnimatePresence>
           {isSelected && (
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className="absolute right-2 w-1.5 h-1.5 rounded-full bg-primary"
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: 1 }}
+              exit={{ scaleY: 0 }}
+              className={cn(
+                'absolute left-0 top-1 bottom-1 w-1 rounded-r-full',
+                `bg-gradient-to-b ${visualConfig.gradient}`
+              )}
             />
           )}
         </AnimatePresence>
@@ -338,10 +347,16 @@ export function CategoryFilterPremium({
   categories,
   selectedCategories,
   onSelectionChange,
+  isMobile = false,
+  size,
+  showDescriptions = false,
 }: CategoryFilterPremiumProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+
+  // Auto-determine size based on mobile if not specified
+  const cardSize = size || (isMobile ? 'large' : 'medium');
 
   // Filtrar categorías por búsqueda
   const filteredCategories = useMemo(() => {
@@ -525,15 +540,19 @@ export function CategoryFilterPremium({
 
             return (
               <div key={parent._id}>
-                <ParentCategory
+                <CategoryCardPremium
                   category={parent}
-                  colorIndex={index}
+                  isSelected={checkState !== 'unchecked'}
+                  isIndeterminate={checkState === 'indeterminate'}
+                  selectedChildCount={selectedChildCount}
+                  totalChildCount={parent.subcategories?.length || 0}
+                  visualConfig={getCategoryVisualConfig(parent.name)}
+                  onToggle={() => handleParentToggle(parent)}
+                  onExpand={hasChildren ? () => toggleExpand(parent._id) : undefined}
                   isExpanded={isExpanded}
-                  checkState={checkState}
-                  selectedCount={selectedChildCount}
-                  totalCount={parent.subcategories?.length || 0}
-                  onToggleExpand={() => toggleExpand(parent._id)}
-                  onToggleSelect={() => handleParentToggle(parent)}
+                  size={cardSize}
+                  showDescription={showDescriptions || (isMobile && !hasChildren)}
+                  index={index}
                 />
 
                 {/* Subcategorías */}
