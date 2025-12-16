@@ -17,6 +17,7 @@ import {
   ProductGridPremium,
   EmptyState,
 } from '@/components/products/premium';
+import { PremiumSection } from '@/components/ui/premium-section';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -149,7 +150,7 @@ function ProductsContent() {
       <HeroSection onExploreClick={handleExploreClick} />
 
       {/* ===== SEARCH BAR ===== */}
-      <div className="mb-8">
+      <PremiumSection decorative={false} className="mb-8">
         <SearchBarPremium
           value={searchInput}
           onChange={setSearchInput}
@@ -159,7 +160,7 @@ function ProductsContent() {
             handleFilterChange({ ...filters, search: undefined });
           }}
         />
-      </div>
+      </PremiumSection>
 
       {/* ===== CATEGORY PILLS ===== */}
       {mainCategories && mainCategories.length > 0 && (
@@ -193,130 +194,138 @@ function ProductsContent() {
       />
 
       {/* ===== MAIN CONTENT: FILTERS + PRODUCTS ===== */}
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-        {/* FILTERS SIDEBAR (Desktop) */}
-        <aside className="hidden lg:block w-72 flex-shrink-0">
-          <div className="sticky top-20">
-            {categoriesLoading || brandsLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-64 w-full" />
-              </div>
+      <PremiumSection waveBottom>
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* FILTERS SIDEBAR (Desktop) */}
+          <aside className="hidden lg:block w-72 flex-shrink-0">
+            <div className="sticky top-20">
+              {categoriesLoading || brandsLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              ) : (
+                <FiltersPremium
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                  categories={categories}
+                  brands={brands}
+                  productCount={pagination?.totalItems}
+                />
+              )}
+            </div>
+          </aside>
+
+          {/* PRODUCTS GRID */}
+          <div className="flex-1 min-w-0">
+            {/* Mobile Filters */}
+            <div className="lg:hidden mb-6">
+              {!categoriesLoading && !brandsLoading && (
+                <FiltersPremium
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                  categories={categories}
+                  brands={brands}
+                  productCount={pagination?.totalItems}
+                  isMobile
+                />
+              )}
+            </div>
+
+            {/* Products or Loading/Empty */}
+            {productsLoading ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <SkeletonGrid
+                  count={ITEMS_PER_PAGE}
+                  columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                />
+              </motion.div>
+            ) : products.length === 0 ? (
+              <EmptyState
+                type="no-results"
+                onReset={() => handleFilterChange({})}
+              />
             ) : (
-              <FiltersPremium
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                categories={categories}
-                brands={brands}
-                productCount={pagination?.totalItems}
+              <ProductGridPremium
+                products={products}
+                viewMode={viewMode}
+                onQuickView={setQuickViewProduct}
+                loading={productsLoading}
               />
             )}
-          </div>
-        </aside>
 
-        {/* PRODUCTS GRID */}
-        <div className="flex-1 min-w-0">
-          {/* Mobile Filters */}
-          <div className="lg:hidden mb-6">
-            {!categoriesLoading && !brandsLoading && (
-              <FiltersPremium
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                categories={categories}
-                brands={brands}
-                productCount={pagination?.totalItems}
-                isMobile
-              />
+            {/* ===== PAGINATION ===== */}
+            {pagination && pagination.totalPages > 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="flex items-center justify-center gap-2 mt-12"
+              >
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={!pagination.hasPrevPage}
+                  className="shadow-sm hover:shadow-premium hover:scale-105 transition-all"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Anterior</span>
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }).map((_, i) => {
+                    let pageNum: number;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <motion.div
+                        key={pageNum}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          size="lg"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={cn(
+                            'w-10 h-10 p-0 transition-all',
+                            currentPage === pageNum && 'gradient-primary text-white shadow-premium'
+                          )}
+                        >
+                          {pageNum}
+                        </Button>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  disabled={!pagination.hasNextPage}
+                  className="shadow-sm hover:shadow-premium hover:scale-105 transition-all"
+                >
+                  <span className="hidden sm:inline">Siguiente</span>
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </motion.div>
             )}
           </div>
-
-          {/* Products or Loading/Empty */}
-          {productsLoading ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <SkeletonGrid
-                count={ITEMS_PER_PAGE}
-                columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-              />
-            </motion.div>
-          ) : products.length === 0 ? (
-            <EmptyState
-              type="no-results"
-              onReset={() => handleFilterChange({})}
-            />
-          ) : (
-            <ProductGridPremium
-              products={products}
-              viewMode={viewMode}
-              onQuickView={setQuickViewProduct}
-              loading={productsLoading}
-            />
-          )}
-
-          {/* ===== PAGINATION ===== */}
-          {pagination && pagination.totalPages > 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center gap-2 mt-12"
-            >
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={!pagination.hasPrevPage}
-                className="shadow-sm hover:shadow-premium transition-shadow"
-              >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Anterior</span>
-              </Button>
-
-              <div className="flex items-center gap-2">
-                {Array.from({ length: Math.min(5, pagination.totalPages) }).map((_, i) => {
-                  let pageNum: number;
-                  if (pagination.totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= pagination.totalPages - 2) {
-                    pageNum = pagination.totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? 'default' : 'outline'}
-                      size="lg"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={cn(
-                        'w-10 h-10 p-0',
-                        currentPage === pageNum && 'gradient-primary text-white shadow-premium'
-                      )}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
-                disabled={!pagination.hasNextPage}
-                className="shadow-sm hover:shadow-premium transition-shadow"
-              >
-                <span className="hidden sm:inline">Siguiente</span>
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            </motion.div>
-          )}
         </div>
-      </div>
+      </PremiumSection>
 
       {/* ===== STICKY BOTTOM ACTIONS ===== */}
       <motion.div
