@@ -348,7 +348,7 @@ export function FiltersPremium({
             <div className="w-full px-4">
               <Button
                 onClick={() => setOpen(false)}
-                className="w-full h-14 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold shadow-lg hover:shadow-xl transition-shadow"
+                className="w-full h-14 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold shadow-lg hover:shadow-xl transition-shadow"
                 size="lg"
               >
                 Ver {productCount || 0} Productos
@@ -362,7 +362,7 @@ export function FiltersPremium({
 
   // Desktop version
   return (
-    <div className={cn('bg-white rounded-2xl shadow-lg border border-pink-100 overflow-hidden', className)}>
+    <div className={cn('bg-card rounded-2xl shadow-lg border border-orange-100 overflow-hidden', className)}>
       <FiltersHeaderPremium
         productCount={productCount}
         activeFilterCount={activeCount}

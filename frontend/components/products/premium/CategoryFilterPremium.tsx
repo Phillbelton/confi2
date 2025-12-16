@@ -62,7 +62,7 @@ const getCategoryIcon = (name: string, icon?: string): string => {
 
 // Colores pastel para las categorías
 const categoryColors = [
-  { bg: 'bg-pink-50', border: 'border-pink-200', hover: 'hover:bg-pink-100', active: 'bg-pink-100', ring: 'ring-pink-300', text: 'text-pink-700' },
+  { bg: 'bg-orange-50', border: 'border-orange-200', hover: 'hover:bg-orange-100', active: 'bg-orange-100', ring: 'ring-orange-300', text: 'text-orange-700' },
   { bg: 'bg-purple-50', border: 'border-purple-200', hover: 'hover:bg-purple-100', active: 'bg-purple-100', ring: 'ring-purple-300', text: 'text-purple-700' },
   { bg: 'bg-blue-50', border: 'border-blue-200', hover: 'hover:bg-blue-100', active: 'bg-blue-100', ring: 'ring-blue-300', text: 'text-blue-700' },
   { bg: 'bg-cyan-50', border: 'border-cyan-200', hover: 'hover:bg-cyan-100', active: 'bg-cyan-100', ring: 'ring-cyan-300', text: 'text-cyan-700' },

@@ -55,8 +55,8 @@ export function ActiveFiltersPanelPremium({
       exit={{ opacity: 0, y: 10 }}
       className={cn(
         'p-4 rounded-xl',
-        'bg-gradient-to-r from-pink-50 to-purple-50',
-        'border border-pink-100',
+        'bg-gradient-to-r from-orange-50 to-amber-50',
+        'border border-orange-100',
         'shadow-sm',
         className
       )}
@@ -120,7 +120,7 @@ export function ActiveFiltersPanelPremium({
                   onClick={() => onRemoveFilter('category', catId)}
                   className={cn(
                     'p-1.5 rounded-full transition-colors flex-shrink-0',
-                    'hover:bg-pink-100 text-pink-500 hover:text-pink-700',
+                    'hover:bg-orange-100 text-orange-500 hover:text-orange-700',
                     'touch-target'
                   )}
                   aria-label={`Remover filtro ${cat.name}`}

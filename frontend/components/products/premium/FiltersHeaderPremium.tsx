@@ -24,7 +24,7 @@ export function FiltersHeaderPremium({
     <div
       className={cn(
         'relative overflow-hidden',
-        'bg-gradient-to-r from-pink-500 to-purple-500',
+        'bg-gradient-to-r from-orange-500 to-amber-500',
         isMobile ? 'p-4' : 'p-6',
         'text-white',
         className
@@ -146,7 +146,7 @@ export function FiltersHeaderPremium({
 
       {/* Decorative bottom wave */}
       <div className="absolute bottom-0 left-0 right-0 h-1">
-        <div className="absolute inset-0 bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 opacity-50" />
       </div>
     </div>
   );

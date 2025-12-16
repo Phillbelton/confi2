@@ -48,22 +48,23 @@
 
 /*
   CONFITERÍA QUELITA - PREMIUM DESIGN SYSTEM
-  Paleta pastel suave con rosados delicados para ambiente de confitería
+  Paleta vibrante dark-first con naranjas, amarillos y morados
+  Inspirada en dulces energéticos y colores cálidos
 */
 
 :root {
   /* Border radius system */
   --radius: 0.5rem; /* 8px - medium default */
 
-  /* Brand Colors - Soft Pastel Palette for Confectionery */
-  --primary: oklch(0.85 0.10 345); /* Soft pastel pink #F5B8D0 */
-  --primary-foreground: oklch(0.30 0.05 345); /* Dark pink text */
+  /* Brand Colors - Vibrant Warm Palette (Dark Mode Base) */
+  --primary: oklch(0.685 0.203 27.33); /* Vibrant orange */
+  --primary-foreground: oklch(0.985 0 0); /* White */
 
-  --secondary: oklch(0.90 0.08 340); /* Very light pastel pink #FAE1E8 */
-  --secondary-foreground: oklch(0.30 0.05 340); /* Dark text */
+  --secondary: oklch(0.568 0.232 13.18); /* Vibrant pink-red */
+  --secondary-foreground: oklch(0.985 0 0); /* White */
 
-  --accent: oklch(0.88 0.07 350); /* Soft pink accent #F9D5E1 */
-  --accent-foreground: oklch(0.30 0.04 350); /* Dark text */
+  --accent: oklch(0.843 0.154 85.87); /* Vibrant yellow */
+  --accent-foreground: oklch(0.205 0 0); /* Dark */
 
   /* State colors */
   --success: oklch(0.587 0.178 155.41); /* Green #10B981 */
@@ -72,102 +73,7 @@
   --destructive: oklch(0.577 0.245 27.325); /* Red */
   --destructive-foreground: oklch(0.985 0 0); /* White */
 
-  /* Neutral colors - Very light, near white */
-  --background: oklch(0.99 0.01 345); /* Off-white with subtle pink tint #FEFBFC */
-  --foreground: oklch(0.25 0.02 345); /* Dark text with pink undertone */
-
-  --card: oklch(1 0 0); /* Pure white for cards */
-  --card-foreground: oklch(0.25 0.02 345); /* Dark text */
-
-  --popover: oklch(1 0 0); /* Pure white */
-  --popover-foreground: oklch(0.25 0.02 345); /* Dark text */
-
-  --muted: oklch(0.96 0.02 345); /* Very light pink-gray #F9F5F7 */
-  --muted-foreground: oklch(0.55 0.02 345); /* Medium gray with pink hint */
-
-  --border: oklch(0.93 0.02 345); /* Light pink-gray border #F2EAF0 */
-  --input: oklch(0.93 0.02 345); /* Light pink-gray input */
-  --ring: oklch(0.85 0.10 345); /* Soft pink for focus rings */
-
-  /* Charts */
-  --chart-1: oklch(0.685 0.203 27.33); /* Orange */
-  --chart-2: oklch(0.568 0.232 13.18); /* Pink */
-  --chart-3: oklch(0.843 0.154 85.87); /* Yellow */
-  --chart-4: oklch(0.587 0.178 155.41); /* Green */
-  --chart-5: oklch(0.627 0.265 303.9); /* Purple */
-
-  /* Sidebar (admin) */
-  --sidebar: oklch(0.985 0 0); /* Very light */
-  --sidebar-foreground: oklch(0.205 0 0); /* Dark */
-  --sidebar-primary: oklch(0.685 0.203 27.33); /* Orange */
-  --sidebar-primary-foreground: oklch(0.985 0 0); /* White */
-  --sidebar-accent: oklch(0.97 0 0); /* Light */
-  --sidebar-accent-foreground: oklch(0.205 0 0); /* Dark */
-  --sidebar-border: oklch(0.922 0 0); /* Light border */
-  --sidebar-ring: oklch(0.685 0.203 27.33); /* Orange */
-
-  /* Premium Gradients - Soft Pastel Confectionery Theme */
-  --gradient-primary: linear-gradient(135deg,
-    oklch(0.88 0.08 345) 0%,     /* Soft pink */
-    oklch(0.90 0.06 350) 100%);  /* Lighter pink */
-
-  --gradient-golden: linear-gradient(135deg,
-    oklch(0.92 0.05 355) 0%,     /* Very light pink */
-    oklch(0.88 0.07 340) 100%);  /* Soft pink */
-
-  --gradient-sunset: linear-gradient(135deg,
-    oklch(0.85 0.10 345) 0%,     /* Pastel pink */
-    oklch(0.88 0.08 350) 50%,    /* Soft pink */
-    oklch(0.92 0.05 355) 100%);  /* Very light pink */
-
-  --gradient-candy: linear-gradient(135deg,
-    oklch(0.87 0.08 320) 0%,     /* Pink-purple */
-    oklch(0.90 0.06 340) 100%);  /* Light pink */
-
-  --gradient-subtle: linear-gradient(135deg,
-    oklch(0.97 0.02 345) 0%,              /* Very light pink-gray */
-    oklch(0.99 0.01 345) 100%);          /* Almost white with pink tint */
-
-  --gradient-overlay: linear-gradient(135deg,
-    oklch(1 0 0 / 95%) 0%,           /* White with slight transparency */
-    oklch(0.98 0.01 345 / 90%) 100%);    /* Very light pink with more transparency */
-
-  /* Extended Color Palette - Pastel Pink Tints & Shades */
-  --primary-50: oklch(0.98 0.02 345);    /* Lightest pastel pink */
-  --primary-100: oklch(0.95 0.04 345);   /* Very light pastel pink */
-  --primary-200: oklch(0.92 0.06 345);   /* Light pastel pink */
-  --primary-300: oklch(0.89 0.08 345);   /* Medium-light pastel pink */
-  --primary-400: oklch(0.87 0.09 345);   /* Medium pastel pink */
-  --primary-500: oklch(0.85 0.10 345);   /* Base primary - Soft pastel pink */
-  --primary-600: oklch(0.75 0.12 345);   /* Darker pastel pink */
-  --primary-700: oklch(0.65 0.14 345);   /* Dark pink */
-  --primary-800: oklch(0.55 0.12 345);   /* Very dark pink */
-  --primary-900: oklch(0.45 0.10 345);   /* Darkest pink */
-
-  --secondary-50: oklch(0.98 0.02 340);
-  --secondary-100: oklch(0.95 0.04 340);
-  --secondary-200: oklch(0.92 0.06 340);
-  --secondary-300: oklch(0.90 0.07 340);
-  --secondary-400: oklch(0.88 0.08 340);
-  --secondary-500: oklch(0.90 0.08 340); /* Base secondary - Very light pink */
-  --secondary-600: oklch(0.80 0.10 340);
-  --secondary-700: oklch(0.70 0.11 340);
-  --secondary-800: oklch(0.60 0.10 340);
-  --secondary-900: oklch(0.50 0.09 340);
-
-  --accent-50: oklch(0.98 0.02 350);
-  --accent-100: oklch(0.95 0.03 350);
-  --accent-200: oklch(0.92 0.05 350);
-  --accent-300: oklch(0.90 0.06 350);
-  --accent-400: oklch(0.89 0.07 350);
-  --accent-500: oklch(0.88 0.07 350); /* Base accent - Soft pink */
-  --accent-600: oklch(0.78 0.08 350);
-  --accent-700: oklch(0.68 0.09 350);
-  --accent-800: oklch(0.58 0.08 350);
-  --accent-900: oklch(0.48 0.07 350);
-}
-
-.dark {
+  /* Neutral colors - Dark theme */
   --background: oklch(0.145 0 0); /* Dark background */
   --foreground: oklch(0.985 0 0); /* Light text */
 
@@ -177,21 +83,6 @@
   --popover: oklch(0.205 0 0); /* Dark popover */
   --popover-foreground: oklch(0.985 0 0); /* Light text */
 
-  --primary: oklch(0.685 0.203 27.33); /* Orange (same) */
-  --primary-foreground: oklch(0.985 0 0); /* White */
-
-  --secondary: oklch(0.568 0.232 13.18); /* Pink (same) */
-  --secondary-foreground: oklch(0.985 0 0); /* White */
-
-  --accent: oklch(0.843 0.154 85.87); /* Yellow (same) */
-  --accent-foreground: oklch(0.205 0 0); /* Dark */
-
-  --success: oklch(0.587 0.178 155.41); /* Green (same) */
-  --success-foreground: oklch(0.985 0 0); /* White */
-
-  --destructive: oklch(0.704 0.191 22.216); /* Lighter red */
-  --destructive-foreground: oklch(0.985 0 0); /* White */
-
   --muted: oklch(0.269 0 0); /* Dark muted */
   --muted-foreground: oklch(0.708 0 0); /* Light muted text */
 
@@ -199,14 +90,14 @@
   --input: oklch(1 0 0 / 15%); /* Subtle input */
   --ring: oklch(0.685 0.203 27.33); /* Orange focus */
 
-  /* Charts (dark mode variants) */
-  --chart-1: oklch(0.685 0.203 27.33);
-  --chart-2: oklch(0.568 0.232 13.18);
-  --chart-3: oklch(0.843 0.154 85.87);
-  --chart-4: oklch(0.587 0.178 155.41);
-  --chart-5: oklch(0.645 0.246 16.439);
+  /* Charts */
+  --chart-1: oklch(0.685 0.203 27.33); /* Orange */
+  --chart-2: oklch(0.568 0.232 13.18); /* Pink-red */
+  --chart-3: oklch(0.843 0.154 85.87); /* Yellow */
+  --chart-4: oklch(0.587 0.178 155.41); /* Green */
+  --chart-5: oklch(0.627 0.265 303.9); /* Purple */
 
-  /* Sidebar (dark mode) */
+  /* Sidebar (admin) */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.685 0.203 27.33);
@@ -216,23 +107,23 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.685 0.203 27.33);
 
-  /* Premium Gradients - Dark Mode (more subtle, lower luminance) */
+  /* Premium Gradients - Vibrant Dark Theme */
   --gradient-primary: linear-gradient(135deg,
     oklch(0.60 0.20 27.33) 0%,       /* Darker orange */
-    oklch(0.50 0.22 13.18) 100%);    /* Darker pink */
+    oklch(0.50 0.22 13.18) 100%);    /* Darker pink-red */
 
   --gradient-golden: linear-gradient(135deg,
     oklch(0.75 0.15 85.87) 0%,       /* Darker yellow */
     oklch(0.65 0.18 57.44) 100%);    /* Darker orange-yellow */
 
   --gradient-sunset: linear-gradient(135deg,
-    oklch(0.50 0.22 13.18) 0%,       /* Darker pink */
+    oklch(0.50 0.22 13.18) 0%,       /* Darker pink-red */
     oklch(0.60 0.20 27.33) 50%,      /* Darker orange */
     oklch(0.75 0.15 85.87) 100%);    /* Darker yellow */
 
   --gradient-candy: linear-gradient(135deg,
     oklch(0.55 0.25 303.9) 0%,       /* Darker purple */
-    oklch(0.50 0.22 13.18) 100%);    /* Darker pink */
+    oklch(0.50 0.22 13.18) 100%);    /* Darker pink-red */
 
   --gradient-subtle: linear-gradient(135deg,
     oklch(0.269 0 0) 0%,             /* Dark muted */
@@ -242,13 +133,13 @@
     oklch(0.205 0 0 / 95%) 0%,       /* Dark with slight transparency */
     oklch(0.145 0 0 / 90%) 100%);    /* Darker with more transparency */
 
-  /* Extended Color Palette - Same as light mode (auto-adjusts with OKLCH) */
+  /* Extended Color Palette - Vibrant Orange/Yellow/Purple Scale */
   --primary-50: oklch(0.95 0.04 27.33);
   --primary-100: oklch(0.90 0.08 27.33);
   --primary-200: oklch(0.80 0.12 27.33);
   --primary-300: oklch(0.75 0.16 27.33);
   --primary-400: oklch(0.70 0.19 27.33);
-  --primary-500: oklch(0.685 0.203 27.33);
+  --primary-500: oklch(0.685 0.203 27.33); /* Base - Vibrant orange */
   --primary-600: oklch(0.60 0.20 27.33);
   --primary-700: oklch(0.50 0.18 27.33);
   --primary-800: oklch(0.40 0.15 27.33);
@@ -259,7 +150,7 @@
   --secondary-200: oklch(0.80 0.15 13.18);
   --secondary-300: oklch(0.70 0.19 13.18);
   --secondary-400: oklch(0.62 0.22 13.18);
-  --secondary-500: oklch(0.568 0.232 13.18);
+  --secondary-500: oklch(0.568 0.232 13.18); /* Base - Vibrant pink-red */
   --secondary-600: oklch(0.50 0.22 13.18);
   --secondary-700: oklch(0.42 0.19 13.18);
   --secondary-800: oklch(0.34 0.15 13.18);
@@ -270,11 +161,149 @@
   --accent-200: oklch(0.90 0.10 85.87);
   --accent-300: oklch(0.87 0.13 85.87);
   --accent-400: oklch(0.85 0.15 85.87);
-  --accent-500: oklch(0.843 0.154 85.87);
+  --accent-500: oklch(0.843 0.154 85.87); /* Base - Vibrant yellow */
   --accent-600: oklch(0.75 0.15 85.87);
   --accent-700: oklch(0.65 0.14 85.87);
   --accent-800: oklch(0.55 0.12 85.87);
   --accent-900: oklch(0.45 0.10 85.87);
+}
+
+/* MOBILE THEME VARIANTS */
+
+/* Clara - Light & Airy (Bright background, vibrant colors pop) */
+.theme-clara {
+  --background: oklch(0.99 0.01 60); /* Near white with warm tint */
+  --foreground: oklch(0.20 0.02 27.33); /* Dark text */
+
+  --card: oklch(1 0 0); /* Pure white */
+  --card-foreground: oklch(0.20 0.02 27.33);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.02 27.33);
+
+  --primary: oklch(0.685 0.203 27.33); /* Vibrant orange (same) */
+  --primary-foreground: oklch(0.985 0 0);
+
+  --secondary: oklch(0.568 0.232 13.18); /* Vibrant pink-red (same) */
+  --secondary-foreground: oklch(0.985 0 0);
+
+  --accent: oklch(0.843 0.154 85.87); /* Vibrant yellow (same) */
+  --accent-foreground: oklch(0.205 0 0);
+
+  --muted: oklch(0.96 0.01 60); /* Very light gray */
+  --muted-foreground: oklch(0.50 0.02 27.33);
+
+  --border: oklch(0.90 0.01 60); /* Light border */
+  --input: oklch(0.92 0.01 60);
+  --ring: oklch(0.685 0.203 27.33);
+
+  --gradient-primary: linear-gradient(135deg,
+    oklch(0.70 0.21 27.33) 0%,
+    oklch(0.60 0.24 13.18) 100%);
+
+  --gradient-sunset: linear-gradient(135deg,
+    oklch(0.60 0.24 13.18) 0%,
+    oklch(0.70 0.21 27.33) 50%,
+    oklch(0.85 0.16 85.87) 100%);
+
+  --gradient-subtle: linear-gradient(135deg,
+    oklch(0.98 0.01 60) 0%,
+    oklch(1 0 0) 100%);
+}
+
+/* Suave - Soft & Muted (Reduced saturation, gentle on eyes) */
+.theme-suave {
+  --background: oklch(0.25 0.01 27.33); /* Soft dark gray */
+  --foreground: oklch(0.92 0.02 60); /* Soft light text */
+
+  --card: oklch(0.30 0.01 27.33); /* Soft dark card */
+  --card-foreground: oklch(0.92 0.02 60);
+
+  --popover: oklch(0.30 0.01 27.33);
+  --popover-foreground: oklch(0.92 0.02 60);
+
+  --primary: oklch(0.65 0.12 27.33); /* Muted orange */
+  --primary-foreground: oklch(0.98 0 0);
+
+  --secondary: oklch(0.55 0.14 13.18); /* Muted pink-red */
+  --secondary-foreground: oklch(0.98 0 0);
+
+  --accent: oklch(0.80 0.09 85.87); /* Muted yellow */
+  --accent-foreground: oklch(0.25 0 0);
+
+  --muted: oklch(0.35 0.01 27.33);
+  --muted-foreground: oklch(0.65 0.02 60);
+
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.65 0.12 27.33);
+
+  --gradient-primary: linear-gradient(135deg,
+    oklch(0.55 0.15 27.33) 0%,
+    oklch(0.48 0.16 13.18) 100%);
+
+  --gradient-sunset: linear-gradient(135deg,
+    oklch(0.48 0.16 13.18) 0%,
+    oklch(0.55 0.15 27.33) 50%,
+    oklch(0.70 0.11 85.87) 100%);
+
+  --gradient-subtle: linear-gradient(135deg,
+    oklch(0.35 0.01 27.33) 0%,
+    oklch(0.30 0.01 27.33) 100%);
+}
+
+/* Viva - Maximum Saturation (Bold, energetic, candy-like) */
+.theme-viva {
+  --background: oklch(0.12 0.02 270); /* Deep dark with purple hint */
+  --foreground: oklch(0.99 0.01 85.87); /* Bright text */
+
+  --card: oklch(0.18 0.03 270); /* Dark card with color */
+  --card-foreground: oklch(0.99 0.01 85.87);
+
+  --popover: oklch(0.18 0.03 270);
+  --popover-foreground: oklch(0.99 0.01 85.87);
+
+  --primary: oklch(0.75 0.28 27.33); /* SUPER vibrant orange */
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.62 0.32 13.18); /* SUPER vibrant pink-red */
+  --secondary-foreground: oklch(0.99 0 0);
+
+  --accent: oklch(0.88 0.20 85.87); /* SUPER vibrant yellow */
+  --accent-foreground: oklch(0.15 0 0);
+
+  --muted: oklch(0.25 0.03 270);
+  --muted-foreground: oklch(0.75 0.02 85.87);
+
+  --border: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 20%);
+  --ring: oklch(0.75 0.28 27.33);
+
+  --gradient-primary: linear-gradient(135deg,
+    oklch(0.68 0.28 27.33) 0%,
+    oklch(0.58 0.30 13.18) 100%);
+
+  --gradient-golden: linear-gradient(135deg,
+    oklch(0.82 0.18 85.87) 0%,
+    oklch(0.72 0.24 57.44) 100%);
+
+  --gradient-sunset: linear-gradient(135deg,
+    oklch(0.58 0.30 13.18) 0%,
+    oklch(0.68 0.28 27.33) 50%,
+    oklch(0.82 0.20 85.87) 100%);
+
+  --gradient-candy: linear-gradient(135deg,
+    oklch(0.62 0.35 303.9) 0%,
+    oklch(0.58 0.30 13.18) 100%);
+
+  --gradient-subtle: linear-gradient(135deg,
+    oklch(0.25 0.03 270) 0%,
+    oklch(0.18 0.03 270) 100%);
+}
+
+/* .dark class is now redundant since :root is already dark, but keeping for compatibility */
+.dark {
+  /* Same as :root - already dark */
 }
 
 @layer base {
