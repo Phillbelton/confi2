@@ -8,6 +8,7 @@ interface PremiumSectionProps {
   children: ReactNode;
   decorative?: boolean;
   waveBottom?: boolean;
+  transparent?: boolean; // Si usar fondo transparente (hereda del parent)
   className?: string;
   contentClassName?: string;
   centered?: boolean;
@@ -29,6 +30,7 @@ export function PremiumSection({
   children,
   decorative = true,
   waveBottom = false,
+  transparent = false,
   className,
   contentClassName,
   centered = false,
@@ -37,12 +39,14 @@ export function PremiumSection({
     <section
       className={cn(
         'relative w-full overflow-hidden',
-        'bg-gradient-subtle rounded-2xl mb-8 shadow-premium',
+        transparent
+          ? 'bg-transparent' // Modo transparente: hereda del parent
+          : 'bg-gradient-subtle rounded-2xl mb-8 shadow-premium', // Modo con fondo propio
         className
       )}
     >
       {/* Decorative Background Elements */}
-      {decorative && (
+      {decorative && !transparent && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Gradient Orbs */}
           <motion.div

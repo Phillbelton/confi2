@@ -18,6 +18,7 @@ import {
   EmptyState,
 } from '@/components/products/premium';
 import { PremiumSection } from '@/components/ui/premium-section';
+import { DecorativeBackground } from '@/components/ui/decorative-background';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -145,12 +146,12 @@ function ProductsContent() {
     (filters.onSale ? 1 : 0);
 
   return (
-    <>
+    <DecorativeBackground intensity="medium">
       {/* ===== HERO SECTION ===== */}
       <HeroSection onExploreClick={handleExploreClick} />
 
       {/* ===== SEARCH BAR ===== */}
-      <PremiumSection decorative={false} className="mb-8">
+      <PremiumSection transparent className="mb-8">
         <SearchBarPremium
           value={searchInput}
           onChange={setSearchInput}
@@ -194,7 +195,7 @@ function ProductsContent() {
       />
 
       {/* ===== MAIN CONTENT: FILTERS + PRODUCTS ===== */}
-      <PremiumSection waveBottom>
+      <PremiumSection transparent waveBottom={false}>
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* FILTERS SIDEBAR (Desktop) */}
           <aside className="hidden lg:block w-72 flex-shrink-0">
@@ -362,7 +363,7 @@ function ProductsContent() {
         open={!!quickViewProduct}
         onOpenChange={(open) => !open && setQuickViewProduct(null)}
       />
-    </>
+    </DecorativeBackground>
   );
 }
 
