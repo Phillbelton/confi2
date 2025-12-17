@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -59,6 +59,13 @@ export function ProductCardPremium({
   const cardRef = useRef<HTMLDivElement>(null);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const { triggerFly, particles, removeParticle } = useFlyToCart();
+
+  // Auto-select first variant on mount
+  useEffect(() => {
+    if (variants.length > 0 && !selectedVariantId) {
+      setSelectedVariantId(variants[0]._id);
+    }
+  }, [variants, selectedVariantId]);
 
   // Get selected variant
   const selectedVariant = selectedVariantId
