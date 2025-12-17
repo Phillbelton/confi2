@@ -126,7 +126,7 @@ export function CategoriesDropdown() {
                                   return (
                                     <Link
                                       key={subcat._id}
-                                      href={`/productos?subcategoria=${subcat._id}`}
+                                      href={`/productos?categoria=${category._id}&subcategoria=${subcat._id}`}
                                       className="group flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                                     >
                                       <div

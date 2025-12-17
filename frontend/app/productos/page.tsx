@@ -52,6 +52,24 @@ function ProductsContent() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  // Sync filters with URL params when they change (e.g., from navbar navigation)
+  useEffect(() => {
+    const newFilters: Filters = {
+      search: searchParams.get('search') || undefined,
+      category: searchParams.get('categoria') || searchParams.get('category') || undefined,
+      subcategory: searchParams.get('subcategoria') || searchParams.get('subcategory') || undefined,
+      brands: searchParams.get('brands')?.split(',').filter(Boolean) || undefined,
+      minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
+      maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
+      featured: searchParams.get('featured') === 'true' || undefined,
+      onSale: searchParams.get('onSale') === 'true' || undefined,
+    };
+
+    setFilters(newFilters);
+    setCurrentPage(Number(searchParams.get('page')) || 1);
+    setSortBy(searchParams.get('sort') || 'newest');
+  }, [searchParams]);
+
   // Scroll to products grid when category/subcategory filter is applied
   useEffect(() => {
     if (filters.category || filters.subcategory) {
