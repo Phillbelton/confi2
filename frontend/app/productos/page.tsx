@@ -16,7 +16,6 @@ import {
   EmptyState,
 } from '@/components/products/premium';
 import { PremiumSection } from '@/components/ui/premium-section';
-import { DecorativeBackground } from '@/components/ui/decorative-background';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -154,12 +153,12 @@ function ProductsContent() {
     (filters.onSale ? 1 : 0);
 
   return (
-    <DecorativeBackground intensity="medium">
+    <>
       {/* ===== HERO SECTION ===== */}
       <HeroSection onExploreClick={handleExploreClick} />
 
       {/* ===== PRODUCTS GRID SECTION ===== */}
-      <div ref={productsGridRef} className="scroll-mt-20">
+      <div ref={productsGridRef} className="scroll-mt-20 container mx-auto px-4">
         {/* ===== APPLIED FILTERS ===== */}
         <AppliedFilters
           filters={filters}
@@ -351,7 +350,7 @@ function ProductsContent() {
           onOpenChange={(open) => !open && setQuickViewProduct(null)}
         />
       </div>
-    </DecorativeBackground>
+    </>
   );
 }
 

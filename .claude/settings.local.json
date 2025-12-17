@@ -30,7 +30,9 @@
       "Read(/tmp/**)",
       "Write(/tmp/**)",
       "Bash(sort:*)",
-      "Bash(npx lighthouse:*)"
+      "Bash(npx lighthouse:*)",
+      "Bash(curl:*)",
+      "Bash(npx next:*)"
     ],
     "deny": [
       "Bash(rm -rf /*)",
