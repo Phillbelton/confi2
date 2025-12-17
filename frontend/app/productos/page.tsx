@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowUp, MessageCircle } from 'lucide-react';
@@ -9,10 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SkeletonGrid } from '@/components/ui/skeleton-card';
 import {
   HeroSection,
-  SearchBarPremium,
-  CategoryPillsPremium,
   AppliedFilters,
-  FiltersPremium,
+  FiltersSimplified,
   ToolbarPremium,
   ProductGridPremium,
   EmptyState,
@@ -23,7 +21,7 @@ import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useProducts, useProductVariants } from '@/hooks/useProducts';
-import { useCategoriesHierarchical, useMainCategories } from '@/hooks/useCategories';
+import { useCategoriesHierarchical } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
 import { cn } from '@/lib/utils';
 import type { ProductFilters as Filters, ProductParent, ProductVariant } from '@/types';
@@ -34,11 +32,12 @@ function ProductsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const productsGridRef = useRef<HTMLDivElement>(null);
 
-  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [filters, setFilters] = useState<Filters>({
     search: searchParams.get('search') || undefined,
-    categories: searchParams.get('categories')?.split(',').filter(Boolean) || undefined,
+    categoria: searchParams.get('categoria') || undefined,
+    subcategoria: searchParams.get('subcategoria') || undefined,
     brands: searchParams.get('brands')?.split(',').filter(Boolean) || undefined,
     minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
     maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
@@ -54,6 +53,16 @@ function ProductsContent() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  // Scroll to products grid when category/subcategory filter is applied
+  useEffect(() => {
+    if (filters.categoria || filters.subcategoria) {
+      // Wait for next tick to ensure DOM is updated
+      setTimeout(() => {
+        productsGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [filters.categoria, filters.subcategoria]);
+
   // Fetch data
   const { data: productsData, isLoading: productsLoading } = useProducts({
     ...filters,
@@ -63,7 +72,6 @@ function ProductsContent() {
   });
 
   const { data: categoriesData, isLoading: categoriesLoading } = useCategoriesHierarchical();
-  const { data: mainCategories } = useMainCategories();
   const { data: brandsData, isLoading: brandsLoading } = useBrands();
 
   // Fetch variants for quick view
@@ -89,7 +97,8 @@ function ProductsContent() {
     const params = new URLSearchParams();
 
     if (filters.search) params.set('search', filters.search);
-    if (filters.categories?.length) params.set('categories', filters.categories.join(','));
+    if (filters.categoria) params.set('categoria', filters.categoria);
+    if (filters.subcategoria) params.set('subcategoria', filters.subcategoria);
     if (filters.brands?.length) params.set('brands', filters.brands.join(','));
     if (filters.minPrice) params.set('minPrice', String(filters.minPrice));
     if (filters.maxPrice) params.set('maxPrice', String(filters.maxPrice));
@@ -112,16 +121,9 @@ function ProductsContent() {
     setCurrentPage(1);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleFilterChange({ ...filters, search: searchInput || undefined });
-  };
-
-  const handleCategoryPillSelect = (categoryId?: string) => {
-    handleFilterChange({
-      ...filters,
-      categories: categoryId ? [categoryId] : undefined,
-    });
+  const handleClearFilters = () => {
+    setFilters({});
+    setCurrentPage(1);
   };
 
   const scrollToTop = () => {
@@ -129,17 +131,23 @@ function ProductsContent() {
   };
 
   const handleExploreClick = () => {
-    window.scrollTo({ top: 600, behavior: 'smooth' });
+    productsGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const categories = categoriesData || [];
   const brands = brandsData?.data || [];
   const products = productsData?.data || [];
   const pagination = productsData?.pagination;
-  const selectedCategoryId = filters.categories?.[0];
+
+  // Get subcategories of selected category
+  const selectedCategory = filters.categoria
+    ? categories.find((cat) => cat._id === filters.categoria)
+    : undefined;
+  const subcategories = selectedCategory?.subcategories || [];
 
   const activeFilterCount =
-    (filters.categories?.length || 0) +
+    (filters.categoria ? 1 : 0) +
+    (filters.subcategoria ? 1 : 0) +
     (filters.brands?.length || 0) +
     (filters.minPrice || filters.maxPrice ? 1 : 0) +
     (filters.featured ? 1 : 0) +
@@ -150,52 +158,30 @@ function ProductsContent() {
       {/* ===== HERO SECTION ===== */}
       <HeroSection onExploreClick={handleExploreClick} />
 
-      {/* ===== SEARCH BAR ===== */}
-      <PremiumSection transparent className="mb-8">
-        <SearchBarPremium
-          value={searchInput}
-          onChange={setSearchInput}
-          onSubmit={handleSearch}
-          onClear={() => {
-            setSearchInput('');
-            handleFilterChange({ ...filters, search: undefined });
-          }}
+      {/* ===== PRODUCTS GRID SECTION ===== */}
+      <div ref={productsGridRef} className="scroll-mt-20">
+        {/* ===== APPLIED FILTERS ===== */}
+        <AppliedFilters
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          categories={categories}
+          brands={brands}
         />
-      </PremiumSection>
 
-      {/* ===== CATEGORY PILLS ===== */}
-      {mainCategories && mainCategories.length > 0 && (
-        <div className="mb-8">
-          <CategoryPillsPremium
-            categories={mainCategories}
-            selectedCategory={selectedCategoryId}
-            onSelect={handleCategoryPillSelect}
-          />
-        </div>
-      )}
+        {/* ===== TOOLBAR ===== */}
+        <ToolbarPremium
+          totalItems={pagination?.totalItems}
+          sortBy={sortBy}
+          onSortChange={handleSortChange}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onFiltersClick={() => setShowMobileFilters(true)}
+          showFiltersButton={true}
+          activeFiltersCount={activeFilterCount}
+        />
 
-      {/* ===== APPLIED FILTERS ===== */}
-      <AppliedFilters
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        categories={categories}
-        brands={brands}
-      />
-
-      {/* ===== TOOLBAR ===== */}
-      <ToolbarPremium
-        totalItems={pagination?.totalItems}
-        sortBy={sortBy}
-        onSortChange={handleSortChange}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onFiltersClick={() => setShowMobileFilters(true)}
-        showFiltersButton={true}
-        activeFiltersCount={activeFilterCount}
-      />
-
-      {/* ===== MAIN CONTENT: FILTERS + PRODUCTS ===== */}
-      <PremiumSection transparent waveBottom={false}>
+        {/* ===== MAIN CONTENT: FILTERS + PRODUCTS ===== */}
+        <PremiumSection transparent waveBottom={false}>
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* FILTERS SIDEBAR (Desktop) */}
           <aside className="hidden lg:block w-72 flex-shrink-0">
@@ -206,11 +192,12 @@ function ProductsContent() {
                   <Skeleton className="h-64 w-full" />
                 </div>
               ) : (
-                <FiltersPremium
+                <FiltersSimplified
                   filters={filters}
                   onFilterChange={handleFilterChange}
-                  categories={categories}
+                  onClearFilters={handleClearFilters}
                   brands={brands}
+                  subcategories={subcategories}
                   productCount={pagination?.totalItems}
                 />
               )}
@@ -222,13 +209,13 @@ function ProductsContent() {
             {/* Mobile Filters */}
             <div className="lg:hidden mb-6">
               {!categoriesLoading && !brandsLoading && (
-                <FiltersPremium
+                <FiltersSimplified
                   filters={filters}
                   onFilterChange={handleFilterChange}
-                  categories={categories}
+                  onClearFilters={handleClearFilters}
                   brands={brands}
+                  subcategories={subcategories}
                   productCount={pagination?.totalItems}
-                  isMobile
                 />
               )}
             </div>
@@ -356,13 +343,14 @@ function ProductsContent() {
         </div>
       </motion.div>
 
-      {/* ===== QUICK VIEW MODAL ===== */}
-      <QuickViewModal
-        product={quickViewProduct}
-        variants={quickViewVariants}
-        open={!!quickViewProduct}
-        onOpenChange={(open) => !open && setQuickViewProduct(null)}
-      />
+        {/* ===== QUICK VIEW MODAL ===== */}
+        <QuickViewModal
+          product={quickViewProduct}
+          variants={quickViewVariants}
+          open={!!quickViewProduct}
+          onOpenChange={(open) => !open && setQuickViewProduct(null)}
+        />
+      </div>
     </DecorativeBackground>
   );
 }

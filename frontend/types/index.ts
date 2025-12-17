@@ -307,7 +307,9 @@ export interface ApiError {
 
 export interface ProductFilters {
   search?: string;
-  categories?: string[];
+  categories?: string[]; // Deprecated: use categoria instead
+  categoria?: string; // Single category filter from navbar
+  subcategoria?: string; // Single subcategory filter
   brands?: string[];
   tags?: string[];
   minPrice?: number;
