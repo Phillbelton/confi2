@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { CategorySelector } from './CategorySelector';
+import { CategoryWithSubcategorySelector } from './CategoryWithSubcategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { TagSelector } from './TagSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
@@ -269,7 +269,7 @@ export function VariantProductForm({
                   )}
                 </div>
 
-                <CategorySelector
+                <CategoryWithSubcategorySelector
                   selectedIds={form.watch('categories') || []}
                   onChange={(ids) => form.setValue('categories', ids)}
                   disabled={isSubmitting}

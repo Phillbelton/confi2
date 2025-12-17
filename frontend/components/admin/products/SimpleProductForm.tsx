@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { FormFieldWithHelp } from '@/components/ui/form-field-with-help';
 import { InlineHelp } from '@/components/ui/inline-help';
-import { CategorySelector } from './CategorySelector';
+import { CategoryWithSubcategorySelector } from './CategoryWithSubcategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { TagSelector } from './TagSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
@@ -181,7 +181,7 @@ export function SimpleProductForm({
               )}
             </div>
 
-            <CategorySelector
+            <CategoryWithSubcategorySelector
               selectedIds={form.watch('categories') || []}
               onChange={(ids) => form.setValue('categories', ids)}
               disabled={isSubmitting}
