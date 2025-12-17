@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { ShoppingCart, Check, Eye, Plus, Minus, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ShoppingCart, Check, Heart } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useFlyToCart } from '@/hooks/useFlyToCart';
 import { FlyingCartParticles } from '@/components/cart/FlyingCartParticle';
@@ -48,7 +48,6 @@ export function ProductCardPremium({
   index = 0,
   priority = false,
 }: ProductCardPremiumProps) {
-  // Start with no variant selected (will show parent product data)
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
@@ -61,47 +60,10 @@ export function ProductCardPremium({
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const { triggerFly, particles, removeParticle } = useFlyToCart();
 
-  // 3D Hover Effect - More subtle
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
-  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
-
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['5deg', '-5deg']);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-5deg', '5deg']);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-
-    const rect = cardRef.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-
-    x.set(xPct);
-    y.set(yPct);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  // Get selected variant (null if none selected - shows parent data)
+  // Get selected variant
   const selectedVariant = selectedVariantId
     ? variants.find((v) => v._id === selectedVariantId)
     : null;
-
-  // Check if product is new (created in last 7 days)
-  const isNew =
-    new Date().getTime() - new Date(product.createdAt).getTime() <
-    7 * 24 * 60 * 60 * 1000;
 
   // Check if out of stock
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
@@ -109,12 +71,7 @@ export function ProductCardPremium({
   // Get images
   const mainImage = getSafeImageUrl(
     selectedVariant?.images?.[0] || product.images?.[0],
-    { width: 400, height: 400, quality: 'auto' }
-  );
-
-  const secondaryImage = getSafeImageUrl(
-    selectedVariant?.images?.[1] || product.images?.[1],
-    { width: 400, height: 400, quality: 'auto' }
+    { width: 500, height: 500, quality: 'auto' }
   );
 
   // Discount calculations
@@ -129,6 +86,43 @@ export function ProductCardPremium({
   const displayPrice = priceInfo?.finalPrice || selectedVariant?.price || 0;
   const originalPrice = priceInfo?.originalPrice || selectedVariant?.price || 0;
   const hasFixedDiscountApplied = priceInfo?.appliedFixedDiscount !== null;
+
+  // Calculate price per unit (if variant has size/volume attribute)
+  const getPricePerUnit = () => {
+    if (!selectedVariant) return null;
+
+    // Try to find size/volume attribute
+    const sizeAttr = Object.entries(selectedVariant.attributes || {}).find(([key]) =>
+      key.toLowerCase().includes('tamaño') ||
+      key.toLowerCase().includes('size') ||
+      key.toLowerCase().includes('volumen')
+    );
+
+    if (!sizeAttr) return null;
+
+    const value = sizeAttr[1];
+    // Extract number from string like "3L" or "500ml"
+    const match = value.match(/(\d+(?:\.\d+)?)\s*(ml|l|lt|litro|litros|g|gr|kg)/i);
+
+    if (!match) return null;
+
+    let amount = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+
+    // Convert to liters
+    if (unit === 'ml') amount = amount / 1000;
+    if (unit === 'g' || unit === 'gr') amount = amount / 1000;
+
+    const pricePerLiter = displayPrice / amount;
+    const unitLabel = unit.includes('l') || unit.includes('litro') ? 'LT' : 'KG';
+
+    return {
+      price: Math.round(pricePerLiter),
+      unit: unitLabel
+    };
+  };
+
+  const pricePerUnit = getPricePerUnit();
 
   const handleAddToCart = async () => {
     if (!selectedVariant || isOutOfStock) return;
@@ -183,16 +177,6 @@ export function ProductCardPremium({
     }
   };
 
-  const incrementQuantity = () => {
-    if (selectedVariant && quantity < selectedVariant.stock) {
-      setQuantity((prev) => prev + 1);
-    }
-  };
-
-  const decrementQuantity = () => {
-    setQuantity((prev) => Math.max(1, prev - 1));
-  };
-
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
     toast.success(isFavorite ? 'Eliminado de favoritos' : 'Agregado a favoritos');
@@ -206,277 +190,123 @@ export function ProductCardPremium({
       viewport={{ once: true, margin: "-50px" }}
       variants={motionVariants.fadeInUp}
       transition={motionTransitions.smooth}
-      style={{
-        rotateX,
-        rotateY,
-        transformStyle: 'preserve-3d',
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       className={cn('perspective-1000', className)}
     >
       <Card
         className={cn(
           'group relative overflow-hidden transition-all duration-300',
-          'hover:shadow-premium-lg border-border/50 bg-card',
-          'transform-gpu backface-hidden',
+          'hover:shadow-2xl border-border/50 bg-card',
+          'transform-gpu backface-hidden h-full flex flex-col',
           isOutOfStock && 'opacity-60'
         )}
       >
-        {/* Gradient overlay on hover */}
-        <motion.div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none z-10"
-          style={{
-            background: 'radial-gradient(circle at center, rgba(245, 184, 208, 0.08) 0%, transparent 70%)',
-          }}
-          transition={{ duration: 0.3 }}
-        />
+        {/* Image Section - Larger */}
+        <Link href={`/productos/${product.slug}`} className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-muted/30 to-muted/60">
+          <motion.div
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: imageLoaded ? 1 : 0 }}
+          >
+            <Image
+              src={mainImage}
+              alt={product.name}
+              fill
+              className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              loading={priority ? 'eager' : 'lazy'}
+              priority={priority}
+              onLoad={() => setImageLoaded(true)}
+            />
+          </motion.div>
 
-        {/* Image Section */}
-        <div className="aspect-square relative overflow-hidden bg-muted/30">
-          <Link href={`/productos/${product.slug}`}>
-            <div className="relative w-full h-full">
-              {/* Main Image */}
-              <motion.div
-                className="absolute inset-0"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: imageLoaded ? 1 : 0 }}
-              >
-                <Image
-                  src={mainImage}
-                  alt={product.name}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-                  loading={priority ? 'eager' : 'lazy'}
-                  priority={priority}
-                  onLoad={() => setImageLoaded(true)}
-                />
-              </motion.div>
+          {/* Loading Skeleton */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 skeleton" />
+          )}
 
-              {/* Secondary Image (hover) */}
-              {secondaryImage && secondaryImage !== mainImage && (
-                <motion.div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                >
-                  <Image
-                    src={secondaryImage}
-                    alt={`${product.name} - Vista alternativa`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-                    loading="lazy"
-                  />
-                </motion.div>
-              )}
-
-              {/* Loading Skeleton */}
-              {!imageLoaded && (
-                <div className="absolute inset-0 skeleton" />
-              )}
-            </div>
-          </Link>
-
-          {/* Quick Actions - Top Right */}
-          <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-            {/* Quick View */}
-            {onQuickView && (
-              <motion.div
-                initial={{ y: -10, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-              >
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="h-10 w-10 rounded-full shadow-premium backdrop-blur-sm bg-card/90 hover:bg-card"
-                  onClick={onQuickView}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </motion.div>
+          {/* Favorite Heart - Top Right on Image */}
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={(e) => {
+              e.preventDefault();
+              toggleFavorite();
+            }}
+            className={cn(
+              'absolute top-3 right-3 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all',
+              'backdrop-blur-sm shadow-lg',
+              isFavorite
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-card/90 text-foreground hover:bg-card'
             )}
+          >
+            <Heart className={cn('h-5 w-5', isFavorite && 'fill-current')} />
+          </motion.button>
 
-            {/* Favorite */}
+          {/* Discount Badge - Top Left */}
+          {hasDiscount && !isOutOfStock && discountBadge && (
             <motion.div
-              initial={{ y: -10, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.15 }}
+              initial={{ scale: 0, rotate: -12 }}
+              animate={{ scale: 1, rotate: 0 }}
+              className="absolute top-3 left-3 z-10"
             >
-              <Button
-                variant="secondary"
-                size="icon"
-                className={cn(
-                  'h-10 w-10 rounded-full shadow-premium backdrop-blur-sm',
-                  isFavorite ? 'bg-primary text-primary-foreground' : 'bg-card/90 hover:bg-card'
-                )}
-                onClick={toggleFavorite}
-              >
-                <Heart className={cn('h-4 w-4', isFavorite && 'fill-current')} />
-              </Button>
-            </motion.div>
-          </div>
-
-          {/* Badges - Top Left */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-20">
-            {product.featured && (
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={motionTransitions.spring}
-              >
-                <Badge className="gradient-sunset text-white shadow-premium backdrop-blur-sm">
-                  ⭐ Destacado
-                </Badge>
-              </motion.div>
-            )}
-            {isNew && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ ...motionTransitions.spring, delay: 0.1 }}
-              >
-                <Badge className="bg-accent text-accent-foreground shadow-premium backdrop-blur-sm">
-                  🆕 Nuevo
-                </Badge>
-              </motion.div>
-            )}
-            {isOutOfStock && (
-              <Badge variant="destructive" className="shadow-premium backdrop-blur-sm">
-                Agotado
+              <Badge className="bg-red-600 text-white text-base font-bold px-3 py-1.5 shadow-lg">
+                {discountBadge}
               </Badge>
-            )}
-            {hasDiscount && !isOutOfStock && discountBadge && (
-              <motion.div
-                animate={{
-                  scale: [1, 1.05, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
+            </motion.div>
+          )}
+        </Link>
+
+        {/* Content Section - Dark Background like Coca Cola */}
+        <CardContent className="flex-1 flex flex-col p-4 space-y-3 bg-gradient-to-b from-card to-card/95">
+          {/* Price - Large and Prominent */}
+          <div className="space-y-0.5">
+            <div className="flex items-baseline gap-2">
+              <motion.span
+                key={displayPrice}
+                initial={{ scale: 1.05 }}
+                animate={{ scale: 1 }}
+                className="text-3xl font-bold text-primary"
               >
-                <Badge className="gradient-primary text-white pulse-glow-soft shadow-premium backdrop-blur-sm">
-                  {discountBadge}
-                </Badge>
-              </motion.div>
+                ${displayPrice.toLocaleString()}
+              </motion.span>
+            </div>
+
+            {/* Price per unit (like $780 por LT) */}
+            {pricePerUnit && (
+              <p className="text-sm text-muted-foreground">
+                ${pricePerUnit.price.toLocaleString()} por {pricePerUnit.unit}
+              </p>
             )}
           </div>
-        </div>
 
-        {/* Content Section */}
-        <CardContent className="p-4 space-y-3">
           {/* Product Name */}
           <Link href={`/productos/${product.slug}`}>
-            <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors leading-snug">
+            <h3 className="font-bold text-base line-clamp-2 group-hover:text-primary transition-colors leading-tight">
               {selectedVariant ? selectedVariant.name : product.name}
             </h3>
           </Link>
 
-          {/* Category Badge */}
-          {product.categories && product.categories.length > 0 && (
-            <div className="flex items-center gap-1">
-              <Badge variant="outline" className="text-xs font-normal">
-                {typeof product.categories[0] === 'string'
-                  ? product.categories[0]
-                  : product.categories[0].name}
-              </Badge>
-            </div>
-          )}
-
-          {/* Variant Selector */}
-          {product.hasVariants && variants.length > 0 && (
-            <Select value={selectedVariantId || undefined} onValueChange={setSelectedVariantId}>
-              <SelectTrigger className="h-9 text-xs w-full">
-                <SelectValue
-                  placeholder={
-                    product.variantAttributes?.[0]?.displayName ||
-                    product.variantAttributes?.[0]?.name ||
-                    'Seleccionar'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {variants.map((variant) => {
-                  // Debug: Log variant data
-                  if (!variant.displayName) {
-                    console.log('Variant missing displayName:', variant);
-                  }
-
-                  return (
-                    <SelectItem key={variant._id} value={variant._id}>
-                      {variant.displayName || Object.values(variant.attributes || {}).join(' ') || 'Sin nombre'}
-                      {variant.stock === 0 && ' (Agotado)'}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Price */}
-          <div className="space-y-1">
-            <div className="flex items-baseline gap-2">
-              {selectedVariant ? (
-                <>
-                  <motion.span
-                    key={displayPrice}
-                    initial={{ scale: 1.1, color: 'var(--primary)' }}
-                    animate={{ scale: 1 }}
-                    className="text-2xl font-bold text-primary"
-                  >
-                    ${displayPrice.toLocaleString()}
-                  </motion.span>
-                  {hasFixedDiscountApplied && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-sm text-muted-foreground line-through"
-                    >
-                      ${originalPrice.toLocaleString()}
-                    </motion.span>
-                  )}
-                </>
-              ) : (
-                // Show parent product price range when no variant selected
-                <span className="text-2xl font-bold text-primary">
-                  {variants.length > 0 ? (
-                    (() => {
-                      const prices = variants.map((v) => v.price);
-                      const minPrice = Math.min(...prices);
-                      const maxPrice = Math.max(...prices);
-                      return minPrice === maxPrice
-                        ? `$${minPrice.toLocaleString()}`
-                        : `$${minPrice.toLocaleString()} - $${maxPrice.toLocaleString()}`;
-                    })()
-                  ) : (
-                    '$0'
-                  )}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Tier Discount Badges */}
+          {/* Tier Discount Badges - Like "Desde 3 un $2.340 c/u" */}
           {discountTiers && discountTiers.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+            <div className="flex flex-wrap gap-2">
               {discountTiers.map((tier, i) => {
                 const minQty = tier.range.split('-')[0].split('+')[0].trim();
                 return (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    whileHover={{ scale: 1.05 }}
-                    className="flex-shrink-0 flex flex-col items-center justify-center px-2 py-1 rounded-md border border-accent/30 bg-accent/5 min-w-[55px]"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-accent/10 border border-accent/30"
                   >
-                    <span className="text-[9px] text-accent-foreground/60 font-medium leading-tight">
-                      {minQty}+
+                    <span className="text-xs text-foreground font-medium">
+                      Desde {minQty} un
                     </span>
-                    <span className="text-[10px] text-accent-foreground font-bold leading-tight">
-                      {tier.price}
+                    <span className="text-sm text-primary font-bold">
+                      {tier.price} c/u
                     </span>
                   </motion.div>
                 );
@@ -484,90 +314,90 @@ export function ProductCardPremium({
             </div>
           )}
 
-          {/* Quantity & Add to Cart */}
-          <div className="flex items-center gap-2 pt-1">
-            {/* Quantity Selector */}
-            <div className="flex items-center border rounded-lg overflow-hidden">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 w-9 p-0 rounded-none hover:bg-primary/10"
-                onClick={decrementQuantity}
-                disabled={!selectedVariant || quantity <= 1}
-              >
-                <Minus className="h-3 w-3" />
-              </Button>
-              <motion.span
-                key={quantity}
-                initial={{ scale: 1.2 }}
-                animate={{ scale: 1 }}
-                className="w-10 text-center text-sm font-semibold"
-              >
-                {quantity}
-              </motion.span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 w-9 p-0 rounded-none hover:bg-primary/10"
-                onClick={incrementQuantity}
-                disabled={!selectedVariant || quantity >= selectedVariant.stock}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
+          {/* Minimum Purchase Info */}
+          {discountTiers && discountTiers.length > 0 && (
+            <p className="text-xs text-muted-foreground text-center">
+              Compra mínima {discountTiers[0].range.split('-')[0].split('+')[0].trim()} un
+            </p>
+          )}
 
-            {/* Add to Cart Button */}
-            <motion.div className="flex-1" whileTap={{ scale: 0.97 }}>
-              <Button
-                ref={addButtonRef}
-                onClick={handleAddToCart}
-                disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
-                className={cn(
-                  "w-full h-9 text-xs relative overflow-hidden font-medium",
-                  justAdded && "gradient-primary"
-                )}
-                size="sm"
-              >
-                {justAdded && (
-                  <motion.div
-                    className="absolute inset-0 bg-white/20"
-                    initial={{ scale: 0, opacity: 1 }}
-                    animate={{ scale: 2, opacity: 0 }}
-                    transition={{ duration: 0.5 }}
-                  />
-                )}
-                {justAdded ? (
-                  <>
-                    <Check className="mr-1.5 h-4 w-4" />
-                    Agregado
-                  </>
-                ) : isAdding ? (
-                  <>
-                    <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    ...
-                  </>
-                ) : isOutOfStock ? (
-                  'Agotado'
-                ) : !selectedVariant ? (
-                  'Seleccionar variante'
-                ) : (
-                  <>
-                    <ShoppingCart className="mr-1.5 h-4 w-4" />
-                    Agregar
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          </div>
+          {/* Variant Selector - If has variants */}
+          {product.hasVariants && variants.length > 0 && (
+            <Select value={selectedVariantId || undefined} onValueChange={setSelectedVariantId}>
+              <SelectTrigger className="h-10 font-medium">
+                <SelectValue
+                  placeholder={
+                    product.variantAttributes?.[0]?.displayName ||
+                    product.variantAttributes?.[0]?.name ||
+                    'Seleccionar tamaño'
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {variants.map((variant) => (
+                  <SelectItem key={variant._id} value={variant._id}>
+                    {variant.displayName || Object.values(variant.attributes || {}).join(' ') || 'Sin nombre'}
+                    {variant.stock === 0 && ' (Agotado)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
-          {/* Stock info */}
+          <div className="flex-1" />
+
+          {/* Add to Cart Button - Large and Prominent */}
+          <motion.div whileTap={{ scale: 0.97 }}>
+            <Button
+              ref={addButtonRef}
+              onClick={handleAddToCart}
+              disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+              className={cn(
+                "w-full h-12 text-base font-bold relative overflow-hidden",
+                "bg-red-600 hover:bg-red-700 text-white shadow-lg",
+                justAdded && "bg-green-600 hover:bg-green-700"
+              )}
+              size="lg"
+            >
+              {justAdded && (
+                <motion.div
+                  className="absolute inset-0 bg-white/20"
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ scale: 2, opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                />
+              )}
+              {justAdded ? (
+                <>
+                  <Check className="mr-2 h-5 w-5" />
+                  Agregado
+                </>
+              ) : isAdding ? (
+                <>
+                  <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Agregando...
+                </>
+              ) : isOutOfStock ? (
+                'Agotado'
+              ) : !selectedVariant ? (
+                'Seleccionar tamaño'
+              ) : (
+                <>
+                  Agregar
+                  <ShoppingCart className="ml-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
+          </motion.div>
+
+          {/* Stock Warning */}
           {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-[11px] text-amber-600 font-medium flex items-center gap-1"
+              className="text-xs text-amber-600 font-medium text-center flex items-center justify-center gap-1.5"
             >
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
               ¡Solo quedan {selectedVariant.stock}!
             </motion.p>
           )}
