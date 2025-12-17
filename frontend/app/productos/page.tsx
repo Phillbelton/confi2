@@ -32,6 +32,7 @@ function ProductsContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const productsGridRef = useRef<HTMLDivElement>(null);
+  const isUpdatingFromUrl = useRef(false);
 
   const [filters, setFilters] = useState<Filters>({
     search: searchParams.get('search') || undefined,
@@ -54,6 +55,8 @@ function ProductsContent() {
 
   // Sync filters with URL params when they change (e.g., from navbar navigation)
   useEffect(() => {
+    isUpdatingFromUrl.current = true;
+
     const newFilters: Filters = {
       search: searchParams.get('search') || undefined,
       category: searchParams.get('categoria') || searchParams.get('category') || undefined,
@@ -68,6 +71,11 @@ function ProductsContent() {
     setFilters(newFilters);
     setCurrentPage(Number(searchParams.get('page')) || 1);
     setSortBy(searchParams.get('sort') || 'newest');
+
+    // Reset flag after state updates
+    setTimeout(() => {
+      isUpdatingFromUrl.current = false;
+    }, 0);
   }, [searchParams]);
 
   // Scroll to products grid when category/subcategory filter is applied
@@ -109,8 +117,13 @@ function ProductsContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Update URL when filters change
+  // Update URL when filters change (but not when syncing from URL)
   useEffect(() => {
+    // Skip URL update if we're currently syncing from URL
+    if (isUpdatingFromUrl.current) {
+      return;
+    }
+
     const params = new URLSearchParams();
 
     if (filters.search) params.set('search', filters.search);
