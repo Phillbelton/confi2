@@ -55,9 +55,9 @@ export function FiltersSimplified({
 
   const handleSubcategoryChange = (value: string) => {
     if (value === 'all') {
-      onFilterChange({ ...filters, subcategoria: undefined });
+      onFilterChange({ ...filters, subcategory: undefined });
     } else {
-      onFilterChange({ ...filters, subcategoria: value });
+      onFilterChange({ ...filters, subcategory: value });
     }
   };
 
@@ -80,7 +80,7 @@ export function FiltersSimplified({
   const activeFilterCount =
     (filters.brands?.length || 0) +
     (filters.minPrice || filters.maxPrice ? 1 : 0) +
-    (filters.subcategoria ? 1 : 0) +
+    (filters.subcategory ? 1 : 0) +
     (filters.featured ? 1 : 0);
 
   return (
@@ -111,7 +111,7 @@ export function FiltersSimplified({
             <h4 className="font-medium">Subcategoría</h4>
           </div>
           <Select
-            value={filters.subcategoria || 'all'}
+            value={filters.subcategory || 'all'}
             onValueChange={handleSubcategoryChange}
           >
             <SelectTrigger>

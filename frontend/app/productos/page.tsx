@@ -36,8 +36,8 @@ function ProductsContent() {
 
   const [filters, setFilters] = useState<Filters>({
     search: searchParams.get('search') || undefined,
-    categoria: searchParams.get('categoria') || undefined,
-    subcategoria: searchParams.get('subcategoria') || undefined,
+    category: searchParams.get('categoria') || searchParams.get('category') || undefined,
+    subcategory: searchParams.get('subcategoria') || searchParams.get('subcategory') || undefined,
     brands: searchParams.get('brands')?.split(',').filter(Boolean) || undefined,
     minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
     maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
@@ -55,13 +55,13 @@ function ProductsContent() {
 
   // Scroll to products grid when category/subcategory filter is applied
   useEffect(() => {
-    if (filters.categoria || filters.subcategoria) {
+    if (filters.category || filters.subcategory) {
       // Wait for next tick to ensure DOM is updated
       setTimeout(() => {
         productsGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
-  }, [filters.categoria, filters.subcategoria]);
+  }, [filters.category, filters.subcategory]);
 
   // Fetch data
   const { data: productsData, isLoading: productsLoading } = useProducts({
@@ -97,8 +97,8 @@ function ProductsContent() {
     const params = new URLSearchParams();
 
     if (filters.search) params.set('search', filters.search);
-    if (filters.categoria) params.set('categoria', filters.categoria);
-    if (filters.subcategoria) params.set('subcategoria', filters.subcategoria);
+    if (filters.category) params.set('categoria', filters.category);
+    if (filters.subcategory) params.set('subcategoria', filters.subcategory);
     if (filters.brands?.length) params.set('brands', filters.brands.join(','));
     if (filters.minPrice) params.set('minPrice', String(filters.minPrice));
     if (filters.maxPrice) params.set('maxPrice', String(filters.maxPrice));
@@ -140,14 +140,14 @@ function ProductsContent() {
   const pagination = productsData?.pagination;
 
   // Get subcategories of selected category
-  const selectedCategory = filters.categoria
-    ? categories.find((cat) => cat._id === filters.categoria)
+  const selectedCategory = filters.category
+    ? categories.find((cat) => cat._id === filters.category)
     : undefined;
   const subcategories = selectedCategory?.subcategories || [];
 
   const activeFilterCount =
-    (filters.categoria ? 1 : 0) +
-    (filters.subcategoria ? 1 : 0) +
+    (filters.category ? 1 : 0) +
+    (filters.subcategory ? 1 : 0) +
     (filters.brands?.length || 0) +
     (filters.minPrice || filters.maxPrice ? 1 : 0) +
     (filters.featured ? 1 : 0) +
