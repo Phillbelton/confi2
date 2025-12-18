@@ -134,6 +134,7 @@ export const getProductParents = asyncHandler(
       limit = '20',
       category,
       categories,
+      subcategory,
       brand,
       brands,
       tags,
@@ -155,7 +156,8 @@ export const getProductParents = asyncHandler(
     }
 
     // Filtro de categorías (soporta tanto category como categories, tanto string como array)
-    const categoryFilter = categories || category;
+    // IMPORTANTE: Si hay subcategory, tiene prioridad sobre category
+    const categoryFilter = subcategory || categories || category;
     if (categoryFilter) {
       // Si es un string separado por comas, convertir a array
       const categoryArray = typeof categoryFilter === 'string'
