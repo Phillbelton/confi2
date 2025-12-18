@@ -118,10 +118,11 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
         ) : (
           <>
             {/* Cart Items */}
-            <ScrollArea className="flex-1 px-6">
-              <div className="space-y-4 pb-4">
-                <AnimatePresence mode="popLayout">
-                  {items.map((item, index) => {
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-6">
+                <div className="space-y-4 pb-4">
+                  <AnimatePresence mode="popLayout">
+                    {items.map((item, index) => {
                   const product = item.productParent;
                   const variant = item.variant;
                   const rawImage =
@@ -235,10 +236,11 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                       </div>
                     </motion.div>
                   );
-                })}
-                </AnimatePresence>
-              </div>
-            </ScrollArea>
+                  })}
+                  </AnimatePresence>
+                </div>
+              </ScrollArea>
+            </div>
 
             <Separator />
 
