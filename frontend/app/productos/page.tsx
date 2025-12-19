@@ -165,7 +165,7 @@ function ProductsContent() {
   };
 
   const categories = categoriesData || [];
-  const brands = brandsData?.data || [];
+  const brands = brandsData || []; // brandService.getAll() ya retorna el array directamente
   const products = productsData?.data || [];
   const pagination = productsData?.pagination;
 
