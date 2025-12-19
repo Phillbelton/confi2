@@ -226,7 +226,7 @@ export function ProductCardPremium({
               src={mainImage}
               alt={product.name}
               fill
-              className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+              className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
               loading={priority ? 'eager' : 'lazy'}
               priority={priority}
@@ -274,7 +274,7 @@ export function ProductCardPremium({
         </Link>
 
         {/* Content Section - Compact spacing */}
-        <CardContent className="flex-1 flex flex-col p-3 space-y-2">
+        <CardContent className="flex-1 flex flex-col p-2 space-y-1.5">
           {/* Price Section - Blue color, with strikethrough */}
           <div className="space-y-0">
             <div className="flex items-baseline gap-2">
