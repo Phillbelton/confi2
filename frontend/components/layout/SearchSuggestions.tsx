@@ -48,7 +48,7 @@ export function SearchSuggestions({
   return (
     <div
       className={cn(
-        'absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg overflow-hidden z-50',
+        'absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-xl overflow-hidden z-[60]',
         className
       )}
     >
