@@ -12,40 +12,85 @@ import { useClientLogout } from '@/hooks/client/useClientAuth';
 import { CartSheet } from '@/components/cart/CartSheet';
 import { UserDropdown } from './UserDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
+import { SearchSuggestions } from './SearchSuggestions';
 import { Logo } from './Logo';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useSearchSuggestions } from '@/hooks/useSearchSuggestions';
 
 export function Header() {
   const router = useRouter();
   const [cartOpen, setCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const itemCount = useCartStore((state) => state.itemCount);
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
+
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Hook para sugerencias de búsqueda
+  const { suggestions, isLoading } = useSearchSuggestions(
+    searchQuery,
+    showSuggestions && searchQuery.length >= 2
+  );
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/productos?search=${encodeURIComponent(searchQuery.trim())}`);
-      setMobileSearchExpanded(false); // Colapsar después de buscar
+      setMobileSearchExpanded(false);
+      setShowSuggestions(false);
     }
   };
 
   const clearSearch = () => {
     setSearchQuery('');
+    setShowSuggestions(false);
   };
 
   const toggleMobileSearch = () => {
     setMobileSearchExpanded(!mobileSearchExpanded);
   };
 
+  const handleSearchFocus = () => {
+    if (searchQuery.length >= 2) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setShowSuggestions(value.length >= 2);
+  };
+
+  const handleSuggestionSelect = () => {
+    setShowSuggestions(false);
+    setMobileSearchExpanded(false);
+  };
+
+  // Cerrar sugerencias al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Cerrar búsqueda mobile al hacer scroll
   useEffect(() => {
     const handleScroll = () => {
       if (mobileSearchExpanded && window.scrollY > 50) {
         setMobileSearchExpanded(false);
+        setShowSuggestions(false);
       }
     };
 
@@ -69,39 +114,49 @@ export function Header() {
           </div>
 
           {/* Search Bar - Center, Flexible Width */}
-          <form
-            onSubmit={handleSearch}
-            className="flex flex-1 max-w-2xl relative"
-          >
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="text"
-                placeholder="Buscar producto..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "w-full pl-10 pr-10 h-11 bg-muted/50 border-border/50",
-                  "focus-visible:ring-primary/20 focus-visible:border-primary",
-                  "placeholder:text-muted-foreground/60"
-                )}
-              />
-              <AnimatePresence>
-                {searchQuery && (
-                  <motion.button
-                    type="button"
-                    onClick={clearSearch}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-          </form>
+          <div ref={searchContainerRef} className="flex flex-1 max-w-2xl relative">
+            <form onSubmit={handleSearch} className="w-full relative">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Buscar producto..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={handleSearchFocus}
+                  className={cn(
+                    "w-full pl-10 pr-10 h-11 bg-muted/50 border-border/50",
+                    "focus-visible:ring-primary/20 focus-visible:border-primary",
+                    "placeholder:text-muted-foreground/60"
+                  )}
+                />
+                <AnimatePresence>
+                  {searchQuery && (
+                    <motion.button
+                      type="button"
+                      onClick={clearSearch}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Sugerencias Desktop */}
+              {showSuggestions && (
+                <SearchSuggestions
+                  suggestions={suggestions}
+                  isLoading={isLoading}
+                  query={searchQuery}
+                  onSelect={handleSuggestionSelect}
+                />
+              )}
+            </form>
+          </div>
 
           {/* Desktop: User Dropdown or Login */}
           <div className="flex items-center gap-2">
@@ -296,18 +351,19 @@ export function Header() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="pb-3 pt-1">
+                <div className="pb-3 pt-1" ref={searchContainerRef}>
                   <form onSubmit={handleSearch} className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                     <Input
                       type="text"
                       placeholder="Buscar producto..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onFocus={handleSearchFocus}
                       autoFocus
                       className="w-full pl-10 pr-20 h-10 bg-muted/50 border-border/50"
                     />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
                       <AnimatePresence>
                         {searchQuery && (
                           <motion.button
@@ -330,6 +386,16 @@ export function Header() {
                         Cerrar
                       </button>
                     </div>
+
+                    {/* Sugerencias Mobile */}
+                    {showSuggestions && (
+                      <SearchSuggestions
+                        suggestions={suggestions}
+                        isLoading={isLoading}
+                        query={searchQuery}
+                        onSelect={handleSuggestionSelect}
+                      />
+                    )}
                   </form>
                 </div>
               </motion.div>
