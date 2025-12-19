@@ -10,6 +10,7 @@ import { SkeletonGrid } from '@/components/ui/skeleton-card';
 import {
   HeroSection,
   AppliedFilters,
+  FiltersAside,
   FiltersSimplified,
   ToolbarPremium,
   ProductGridPremium,
@@ -222,11 +223,12 @@ function ProductsContent() {
                   <Skeleton className="h-64 w-full" />
                 </div>
               ) : (
-                <FiltersSimplified
+                <FiltersAside
                   filters={filters}
                   onFilterChange={handleFilterChange}
                   onClearFilters={handleClearFilters}
                   brands={brands}
+                  categories={categories}
                   subcategories={subcategories}
                   productCount={pagination?.totalItems}
                 />

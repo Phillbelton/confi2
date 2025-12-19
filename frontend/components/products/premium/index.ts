@@ -14,6 +14,7 @@ export { EmptyState } from './EmptyState';
 // Filter Components
 export { FiltersPremium } from './FiltersPremium';
 export { FiltersSimplified } from './FiltersSimplified';
+export { FiltersAside } from './FiltersAside';
 export { FiltersHeaderPremium } from './FiltersHeaderPremium';
 export { CategoryFilterPremium } from './CategoryFilterPremium';
 export { CategoryCardPremium } from './CategoryCardPremium';
