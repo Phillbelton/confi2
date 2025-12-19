@@ -114,7 +114,7 @@ export function Header() {
           </div>
 
           {/* Search Bar - Center, Flexible Width */}
-          <div ref={searchContainerRef} className="flex flex-1 max-w-2xl relative z-[55]">
+          <div ref={searchContainerRef} className="flex flex-1 max-w-2xl relative z-[90]">
             <form onSubmit={handleSearch} className="w-full relative">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -351,7 +351,7 @@ export function Header() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="pb-3 pt-1 relative z-[55]" ref={searchContainerRef}>
+                <div className="pb-3 pt-1 relative z-[90]" ref={searchContainerRef}>
                   <form onSubmit={handleSearch} className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                     <Input
