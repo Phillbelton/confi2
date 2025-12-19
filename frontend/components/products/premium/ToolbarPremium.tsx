@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Grid3x3, List, SlidersHorizontal } from 'lucide-react';
+import { ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -10,37 +10,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import type { Category } from '@/types';
 
 interface ToolbarPremiumProps {
   totalItems?: number;
   sortBy: string;
   onSortChange: (value: string) => void;
-  viewMode: 'grid' | 'list';
-  onViewModeChange: (mode: 'grid' | 'list') => void;
   onFiltersClick?: () => void;
   showFiltersButton?: boolean;
   activeFiltersCount?: number;
+  selectedCategory?: Category;
+  selectedSubcategory?: Category;
 }
 
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'Más recientes', icon: '🆕' },
   { value: 'price_asc', label: 'Menor precio', icon: '💰' },
   { value: 'price_desc', label: 'Mayor precio', icon: '💎' },
-  { value: 'name_asc', label: 'A → Z', icon: '🔤' },
-  { value: 'name_desc', label: 'Z → A', icon: '🔡' },
-  { value: 'popular', label: 'Más popular', icon: '🔥' },
+  { value: 'name_asc', label: 'Nombre A-Z', icon: '🔤' },
+  { value: 'name_desc', label: 'Nombre Z-A', icon: '🔡' },
 ];
 
 export function ToolbarPremium({
   totalItems,
   sortBy,
   onSortChange,
-  viewMode,
-  onViewModeChange,
   onFiltersClick,
   showFiltersButton = false,
   activeFiltersCount = 0,
+  selectedCategory,
+  selectedSubcategory,
 }: ToolbarPremiumProps) {
   return (
     <motion.div
@@ -48,15 +46,15 @@ export function ToolbarPremium({
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-card rounded-xl border border-border shadow-sm"
     >
-      {/* Left: Results Count + Filters (Mobile) */}
-      <div className="flex items-center gap-3">
+      {/* Left: Breadcrumb + Filters (Mobile) */}
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         {/* Mobile Filters Button */}
         {showFiltersButton && (
           <Button
             variant="outline"
             size="sm"
             onClick={onFiltersClick}
-            className="lg:hidden relative"
+            className="lg:hidden relative flex-shrink-0"
           >
             <SlidersHorizontal className="h-4 w-4 mr-2" />
             Filtros
@@ -72,32 +70,41 @@ export function ToolbarPremium({
           </Button>
         )}
 
-        {/* Results Count */}
-        <div className="flex items-center gap-2">
-          <motion.div
-            key={totalItems}
-            initial={{ scale: 1.2 }}
-            animate={{ scale: 1 }}
-            className="text-sm font-medium text-foreground"
-          >
-            {totalItems !== undefined ? (
-              <>
-                <span className="hidden sm:inline">Mostrando </span>
-                <span className="text-primary font-bold">{totalItems}</span>
-                <span className="hidden sm:inline"> productos</span>
-              </>
-            ) : (
-              <span className="text-muted-foreground">Cargando...</span>
-            )}
-          </motion.div>
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 text-sm overflow-x-auto">
+          {selectedCategory ? (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-primary whitespace-nowrap">
+                {selectedCategory.name}
+              </span>
+              {selectedSubcategory && (
+                <>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium text-foreground whitespace-nowrap">
+                    {selectedSubcategory.name}
+                  </span>
+                </>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground font-medium">
+              Todos los productos
+            </span>
+          )}
+
+          {/* Product count badge */}
+          {totalItems !== undefined && (
+            <span className="ml-2 px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full font-medium whitespace-nowrap">
+              {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Right: Sort + View Toggle */}
-      <div className="flex items-center gap-3">
-        {/* Sort Selector */}
+      {/* Right: Sort Selector */}
+      <div className="flex items-center gap-3 flex-shrink-0">
         <Select value={sortBy} onValueChange={onSortChange}>
-          <SelectTrigger className="w-[180px] h-9 bg-background">
+          <SelectTrigger className="w-[160px] h-9 bg-background">
             <div className="flex items-center gap-2">
               <span className="text-xs">Ordenar:</span>
               <SelectValue />
@@ -114,34 +121,6 @@ export function ToolbarPremium({
             ))}
           </SelectContent>
         </Select>
-
-        {/* View Mode Toggle */}
-        <div className="hidden sm:flex items-center border rounded-lg overflow-hidden bg-background">
-          <Button
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-            size="sm"
-            className={cn(
-              'rounded-none h-9 px-3',
-              viewMode === 'grid' && 'bg-primary text-primary-foreground hover:bg-primary/90'
-            )}
-            onClick={() => onViewModeChange('grid')}
-          >
-            <Grid3x3 className="h-4 w-4" />
-            <span className="ml-2 hidden md:inline">Grid</span>
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-            size="sm"
-            className={cn(
-              'rounded-none h-9 px-3',
-              viewMode === 'list' && 'bg-primary text-primary-foreground hover:bg-primary/90'
-            )}
-            onClick={() => onViewModeChange('list')}
-          >
-            <List className="h-4 w-4" />
-            <span className="ml-2 hidden md:inline">Lista</span>
-          </Button>
-        </div>
       </div>
     </motion.div>
   );

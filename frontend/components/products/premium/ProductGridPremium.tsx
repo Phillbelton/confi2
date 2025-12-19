@@ -8,14 +8,12 @@ import { ProductCardPremium } from './ProductCardPremium';
 
 interface ProductGridPremiumProps {
   products: ProductParent[];
-  viewMode?: 'grid' | 'list';
   onQuickView?: (product: ProductParent) => void;
   loading?: boolean;
 }
 
 export function ProductGridPremium({
   products,
-  viewMode = 'grid',
   onQuickView,
   loading = false,
 }: ProductGridPremiumProps) {
@@ -32,12 +30,7 @@ export function ProductGridPremium({
     >
       <div
         ref={parentRef}
-        className={cn(
-          'grid gap-4 sm:gap-6',
-          viewMode === 'grid'
-            ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-            : 'grid-cols-1'
-        )}
+        className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
       >
         {products.map((product, index) => (
           <ProductCardPremium

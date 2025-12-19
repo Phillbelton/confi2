@@ -48,7 +48,6 @@ function ProductsContent() {
 
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [quickViewProduct, setQuickViewProduct] = useState<ProductParent | null>(null);
   const [quickViewVariants, setQuickViewVariants] = useState<ProductVariant[]>([]);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -176,6 +175,11 @@ function ProductsContent() {
     : undefined;
   const subcategories = selectedCategory?.subcategories || [];
 
+  // Get selected subcategory
+  const selectedSubcategory = filters.subcategory
+    ? subcategories.find((subcat) => subcat._id === filters.subcategory)
+    : undefined;
+
   const activeFilterCount =
     (filters.category ? 1 : 0) +
     (filters.subcategory ? 1 : 0) +
@@ -204,11 +208,11 @@ function ProductsContent() {
           totalItems={pagination?.totalItems}
           sortBy={sortBy}
           onSortChange={handleSortChange}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
           onFiltersClick={() => setShowMobileFilters(true)}
           showFiltersButton={true}
           activeFiltersCount={activeFilterCount}
+          selectedCategory={selectedCategory}
+          selectedSubcategory={selectedSubcategory}
         />
 
         {/* ===== MAIN CONTENT: FILTERS + PRODUCTS ===== */}
@@ -271,7 +275,6 @@ function ProductsContent() {
             ) : (
               <ProductGridPremium
                 products={products}
-                viewMode={viewMode}
                 onQuickView={setQuickViewProduct}
                 loading={productsLoading}
               />
