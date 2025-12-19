@@ -48,6 +48,27 @@ export function CategoriesDropdown() {
                       Todas las categorías
                     </h3>
                     <nav className="space-y-1">
+                      {/* Ver Todos los Productos */}
+                      <Link
+                        href="/productos"
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all mb-2',
+                          'bg-primary/5 hover:bg-primary/10 border border-primary/20'
+                        )}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                            <Package className="h-4 w-4 text-primary-foreground" />
+                          </div>
+                          <span className="font-semibold text-sm text-primary">
+                            Ver todos los productos
+                          </span>
+                        </div>
+                      </Link>
+
+                      {/* Separator */}
+                      <div className="h-px bg-border my-2" />
+
                       {mainCategories?.map((category: CategoryWithSubcategories) => {
                         const config = getCategoryVisualConfig(category.name);
                         const isHovered = hoveredCategory === category._id;
