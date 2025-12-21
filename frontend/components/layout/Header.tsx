@@ -29,6 +29,8 @@ export function Header() {
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(120); // altura estimada inicial
 
   // Hook para sugerencias de búsqueda
   const { suggestions, isLoading } = useSearchSuggestions(
@@ -85,21 +87,30 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Cerrar búsqueda mobile al hacer scroll
+  // NO auto-cerrar búsqueda mobile al hacer scroll - removido para mejor UX
+
+  // Calcular altura del header para posicionar sugerencias mobile
   useEffect(() => {
-    const handleScroll = () => {
-      if (mobileSearchExpanded && window.scrollY > 50) {
-        setMobileSearchExpanded(false);
-        setShowSuggestions(false);
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        setHeaderHeight(headerRef.current.offsetHeight);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+
+    // También actualizar cuando se expanda/contraiga la búsqueda
+    const timer = setTimeout(updateHeaderHeight, 300);
+
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+      clearTimeout(timer);
+    };
   }, [mobileSearchExpanded]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header ref={headerRef} className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container mx-auto px-4">
         {/* DESKTOP LAYOUT (lg+) */}
         <div className="hidden lg:flex h-16 items-center gap-4 lg:gap-6">
@@ -394,6 +405,8 @@ export function Header() {
                         isLoading={isLoading}
                         query={searchQuery}
                         onSelect={handleSuggestionSelect}
+                        isMobile={true}
+                        headerHeight={headerHeight}
                       />
                     )}
                   </form>

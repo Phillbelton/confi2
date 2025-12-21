@@ -20,6 +20,8 @@ interface SearchSuggestionsProps {
   query: string;
   onSelect: () => void;
   className?: string;
+  isMobile?: boolean;
+  headerHeight?: number;
 }
 
 export function SearchSuggestions({
@@ -28,6 +30,8 @@ export function SearchSuggestions({
   query,
   onSelect,
   className,
+  isMobile = false,
+  headerHeight = 120,
 }: SearchSuggestionsProps) {
   const router = useRouter();
 
@@ -48,9 +52,12 @@ export function SearchSuggestions({
   return (
     <div
       className={cn(
-        'absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-xl overflow-hidden z-[100]',
+        isMobile
+          ? 'fixed left-4 right-4 bg-background border border-border rounded-lg shadow-xl overflow-hidden z-[100]'
+          : 'absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-xl overflow-hidden z-[100]',
         className
       )}
+      style={isMobile ? { top: `${headerHeight + 8}px` } : undefined}
     >
       {isLoading ? (
         <div className="p-4 text-center text-sm text-muted-foreground">
