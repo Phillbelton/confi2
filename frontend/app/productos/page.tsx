@@ -194,7 +194,7 @@ function ProductsContent() {
       <HeroSection onExploreClick={handleExploreClick} />
 
       {/* ===== PRODUCTS GRID SECTION ===== */}
-      <div ref={productsGridRef} className="scroll-mt-20 container mx-auto px-4">
+      <div ref={productsGridRef} className="scroll-mt-20">
         {/* ===== APPLIED FILTERS ===== */}
         <AppliedFilters
           filters={filters}
@@ -396,7 +396,7 @@ export default function ProductsPage() {
       <Header />
 
       <main className="flex-1">
-        <div className="container px-4 py-8 sm:py-12 md:px-6 lg:py-16">
+        <div className="container px-2 sm:px-4 py-8 sm:py-12 md:px-6 lg:py-16">
           <Suspense
             fallback={
               <div className="space-y-8">
