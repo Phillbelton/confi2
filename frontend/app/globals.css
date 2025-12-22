@@ -326,26 +326,26 @@
     @apply outline-2 outline-offset-2 outline-ring;
   }
 
-  /* Container customization - maximize width on large screens */
+  /* Container customization - optimized for readability and visual hierarchy */
   .container {
     @apply mx-auto px-4 md:px-6;
   }
 
   @media (min-width: 1280px) {
     .container {
-      max-width: 95vw !important;
+      max-width: 1280px !important;
     }
   }
 
   @media (min-width: 1536px) {
     .container {
-      max-width: 1680px !important;
+      max-width: 1400px !important;
     }
   }
 
   @media (min-width: 1920px) {
     .container {
-      max-width: 1800px !important;
+      max-width: 1536px !important;
     }
   }
 }

@@ -396,7 +396,7 @@ export default function ProductsPage() {
       <Header />
 
       <main className="flex-1">
-        <div className="container px-2 sm:px-4 py-8 sm:py-12 md:px-6 lg:py-16">
+        <div className="container px-2 sm:px-4 py-6 sm:py-8 md:px-6 lg:py-12">
           <Suspense
             fallback={
               <div className="space-y-8">

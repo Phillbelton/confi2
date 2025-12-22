@@ -40,6 +40,12 @@ export const metadata: Metadata = {
   creator: "Confitería Quelita",
   publisher: "Confitería Quelita",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
   openGraph: {
     type: "website",
     locale: "es_ES",
