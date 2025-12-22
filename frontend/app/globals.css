@@ -311,17 +311,14 @@
     @apply border-border outline-ring/50;
   }
 
-  html {
-    scroll-behavior: smooth;
-    margin: 0;
-    padding: 0;
-  }
-
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    margin: 0;
-    padding: 0;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
   }
 
   /* Better focus visibility */
@@ -329,33 +326,26 @@
     @apply outline-2 outline-offset-2 outline-ring;
   }
 
-  /* Container customization - maximize width usage */
+  /* Container customization - optimized for readability and visual hierarchy */
   .container {
-    @apply mx-auto;
-    width: 100%;
-    max-width: 100%;
-    padding-left: 0.5rem; /* 8px */
-    padding-right: 0.5rem; /* 8px */
-  }
-
-  @media (min-width: 640px) {
-    .container {
-      padding-left: 1rem; /* 16px */
-      padding-right: 1rem; /* 16px */
-    }
+    @apply mx-auto px-4 md:px-6;
   }
 
   @media (min-width: 1280px) {
     .container {
-      max-width: 98vw !important;
-      padding-left: 1.5rem; /* 24px */
-      padding-right: 1.5rem; /* 24px */
+      max-width: 1280px !important;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .container {
+      max-width: 1400px !important;
     }
   }
 
   @media (min-width: 1920px) {
     .container {
-      max-width: 97vw !important;
+      max-width: 1536px !important;
     }
   }
 }

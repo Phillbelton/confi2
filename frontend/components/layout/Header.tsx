@@ -111,7 +111,7 @@ export function Header() {
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4">
         {/* DESKTOP LAYOUT (lg+) */}
         <div className="hidden lg:flex h-16 items-center gap-4 lg:gap-6">
           {/* Logo */}

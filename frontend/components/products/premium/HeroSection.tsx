@@ -74,7 +74,7 @@ export function HeroSection({ onExploreClick }: HeroSectionProps) {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto py-8 md:py-12 lg:py-16">
+      <div className="relative z-10 container mx-auto px-4 py-8 md:py-12 lg:py-16">
         <div className="max-w-3xl mx-auto text-center">
           {/* Badge */}
           <motion.div
@@ -96,7 +96,8 @@ export function HeroSection({ onExploreClick }: HeroSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...motionTransitions.smooth, delay: 0.1 }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 font-display"
+            className="font-bold mb-4 font-display"
+            style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)' }}
           >
             <span className="gradient-text-sunset">
               Dulces Premium
@@ -112,7 +113,8 @@ export function HeroSection({ onExploreClick }: HeroSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...motionTransitions.smooth, delay: 0.2 }}
-            className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed"
+            className="text-muted-foreground mb-8 leading-relaxed"
+            style={{ fontSize: 'clamp(1rem, 1.5vw, 1.125rem)' }}
           >
             Descubre nuestra selección curada de confitería artesanal.
             <br className="hidden md:block" />
