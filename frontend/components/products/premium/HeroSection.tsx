@@ -74,7 +74,7 @@ export function HeroSection({ onExploreClick }: HeroSectionProps) {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-8 md:py-12 lg:py-16">
+      <div className="relative z-10 container mx-auto py-8 md:py-12 lg:py-16">
         <div className="max-w-3xl mx-auto text-center">
           {/* Badge */}
           <motion.div
