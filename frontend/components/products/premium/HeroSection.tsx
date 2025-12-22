@@ -96,8 +96,7 @@ export function HeroSection({ onExploreClick }: HeroSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...motionTransitions.smooth, delay: 0.1 }}
-            className="font-bold mb-4 font-display"
-            style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)' }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 font-display"
           >
             <span className="gradient-text-sunset">
               Dulces Premium
@@ -113,8 +112,7 @@ export function HeroSection({ onExploreClick }: HeroSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...motionTransitions.smooth, delay: 0.2 }}
-            className="text-muted-foreground mb-8 leading-relaxed"
-            style={{ fontSize: 'clamp(1rem, 1.5vw, 1.125rem)' }}
+            className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed"
           >
             Descubre nuestra selección curada de confitería artesanal.
             <br className="hidden md:block" />
