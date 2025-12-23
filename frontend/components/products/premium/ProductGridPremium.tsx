@@ -30,7 +30,7 @@ export function ProductGridPremium({
     >
       <div
         ref={parentRef}
-        className="grid gap-2 sm:gap-3 md:gap-4 lg:gap-5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+        className="grid gap-1 sm:gap-1.5 md:gap-2 lg:gap-2.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
       >
         {products.map((product, index) => (
           <ProductCardPremium
