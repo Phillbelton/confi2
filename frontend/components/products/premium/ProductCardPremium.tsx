@@ -333,7 +333,7 @@ export function ProductCardPremium({
 
           {/* Discount Tiers - Maximum 2 badges */}
           {visibleDiscountTiers && visibleDiscountTiers.length > 0 && (
-            <div className="flex gap-1.5">
+            <div className="flex gap-1">
               {visibleDiscountTiers.map((tier, i) => {
                 const minQty = tier.range.split('-')[0].split('+')[0].trim();
                 return (
@@ -342,13 +342,13 @@ export function ProductCardPremium({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="flex-1 flex flex-col items-center justify-center px-2 py-1 rounded-md bg-accent/10 border border-accent/30"
+                    className="flex-1 flex flex-col items-center justify-center px-1.5 py-0.5 rounded bg-accent/10 border border-accent/30"
                   >
-                    <span className="text-[10px] text-foreground/70 font-medium leading-tight">
-                      Desde {minQty} un
+                    <span className="text-[9px] text-foreground/70 font-medium leading-none">
+                      {minQty}+ un
                     </span>
-                    <span className="text-xs text-primary font-bold leading-tight">
-                      {tier.price} c/u
+                    <span className="text-[10px] text-primary font-bold leading-none mt-0.5">
+                      {tier.price}
                     </span>
                   </motion.div>
                 );

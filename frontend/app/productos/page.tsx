@@ -219,7 +219,7 @@ function ProductsContent() {
         <PremiumSection transparent waveBottom={false}>
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* FILTERS SIDEBAR (Desktop) */}
-          <aside className="hidden lg:block w-72 flex-shrink-0">
+          <aside className="hidden lg:block w-60 flex-shrink-0">
             <div className="sticky top-20">
               {categoriesLoading || brandsLoading ? (
                 <div className="space-y-4">

@@ -53,12 +53,12 @@ export function FiltersAside({
     filters.maxPrice || 100000,
   ]);
 
-  // Secciones colapsables - Precio siempre abierto por defecto
+  // Secciones colapsables - Solo precio abierto por defecto
   const [sections, setSections] = useState<CollapsibleSection[]>([
     { id: 'price', isOpen: true },
-    { id: 'categories', isOpen: true },
-    { id: 'brands', isOpen: true },
-    { id: 'specials', isOpen: true },
+    { id: 'categories', isOpen: false },
+    { id: 'brands', isOpen: false },
+    { id: 'specials', isOpen: false },
   ]);
 
   const toggleSection = (sectionId: string) => {
@@ -189,7 +189,7 @@ export function FiltersAside({
       </div>
 
       {/* Filters Container */}
-      <ScrollArea className="h-[calc(100vh-280px)]">
+      <ScrollArea className="max-h-[calc(100vh-200px)]">
         <div className="p-4 space-y-6">
 
           {/* PRECIO - Siempre primero */}
