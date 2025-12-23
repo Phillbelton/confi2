@@ -250,6 +250,7 @@ function ProductsContent() {
                   onFilterChange={handleFilterChange}
                   onClearFilters={handleClearFilters}
                   brands={brands}
+                  categories={categories}
                   subcategories={subcategories}
                   productCount={pagination?.totalItems}
                 />
