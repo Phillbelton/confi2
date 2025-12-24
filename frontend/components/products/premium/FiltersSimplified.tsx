@@ -7,9 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import type { ProductFilters as Filters, Brand, Category } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -18,8 +23,8 @@ interface FiltersSimplifiedProps {
   onFilterChange: (filters: Filters) => void;
   onClearFilters: () => void;
   brands: Brand[];
-  categories?: Category[]; // Todas las categorías (cuando no hay categoría seleccionada)
-  subcategories?: Category[]; // Subcategorías de la categoría seleccionada
+  categories?: Category[];
+  subcategories?: Category[];
   productCount?: number;
   className?: string;
 }
@@ -95,7 +100,7 @@ export function FiltersSimplified({
 
   return (
     <div className={cn('w-full', className)}>
-      {/* Botón Filtros - Colapsable */}
+      {/* Botón Principal Filtros */}
       <Button
         variant="outline"
         onClick={() => setIsOpen(!isOpen)}
@@ -118,7 +123,7 @@ export function FiltersSimplified({
         />
       </Button>
 
-      {/* Contenido Colapsable */}
+      {/* Dropdown Principal con Acordeones */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -128,10 +133,10 @@ export function FiltersSimplified({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="mt-4 space-y-6 p-4 border rounded-lg bg-card">
-              {/* Header con botón limpiar */}
+            <div className="mt-4 p-4 border rounded-lg bg-card">
+              {/* Botón Limpiar */}
               {activeFilterCount > 0 && (
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-end mb-4">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -144,174 +149,180 @@ export function FiltersSimplified({
                 </div>
               )}
 
-              {/* Precio */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                  <h4 className="font-medium">Rango de precio</h4>
-                </div>
-                <div className="space-y-4">
-                  <Slider
-                    value={priceRange}
-                    onValueChange={handlePriceChange}
-                    onValueCommit={handlePriceCommit}
-                    max={100000}
-                    step={1000}
-                    className="w-full"
-                  />
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>${priceRange[0].toLocaleString()}</span>
-                    <span>${priceRange[1].toLocaleString()}</span>
-                  </div>
-                </div>
-                <Separator />
-              </div>
-
-              {/* Categorías (solo si NO hay categoría seleccionada en navbar) */}
-              {!filters.category && categories.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-primary" />
-                    <h4 className="font-medium">Categorías</h4>
-                  </div>
-                  <ScrollArea className="max-h-[200px]">
-                    <div className="space-y-2">
-                      {categories.map((category) => {
-                        const isChecked = filters.category === category._id;
-                        return (
-                          <div key={category._id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`cat-${category._id}`}
-                              checked={isChecked}
-                              onCheckedChange={() => handleCategoryChange(category._id)}
-                            />
-                            <Label
-                              htmlFor={`cat-${category._id}`}
-                              className="text-sm font-normal cursor-pointer flex-1"
-                            >
-                              {category.name}
-                            </Label>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                  <Separator />
-                </div>
-              )}
-
-              {/* Subcategorías (si hay categoría seleccionada) */}
-              {subcategories.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-primary" />
-                    <h4 className="font-medium">Subcategorías</h4>
-                  </div>
-                  <ScrollArea className="max-h-[200px]">
-                    <div className="space-y-2">
-                      {subcategories.map((subcat) => {
-                        const isChecked = filters.subcategory === subcat._id;
-                        return (
-                          <div key={subcat._id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`subcat-${subcat._id}`}
-                              checked={isChecked}
-                              onCheckedChange={() => handleSubcategoryChange(subcat._id)}
-                            />
-                            <Label
-                              htmlFor={`subcat-${subcat._id}`}
-                              className="text-sm font-normal cursor-pointer flex-1"
-                            >
-                              {subcat.name}
-                            </Label>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                  <Separator />
-                </div>
-              )}
-
-              {/* Marcas */}
-              {brands.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+              {/* Acordeones de Filtros */}
+              <Accordion type="multiple" className="w-full">
+                {/* PRECIO */}
+                <AccordionItem value="price">
+                  <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4 text-primary" />
-                      <h4 className="font-medium">Marcas</h4>
+                      <DollarSign className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Precio</span>
                     </div>
-                    {filters.brands && filters.brands.length > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        {filters.brands.length}
-                      </Badge>
-                    )}
-                  </div>
-                  <ScrollArea className="max-h-[200px]">
-                    <div className="space-y-2">
-                      {brands.map((brand) => {
-                        const isChecked = filters.brands?.includes(brand._id) || false;
-                        return (
-                          <div key={brand._id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`brand-${brand._id}`}
-                              checked={isChecked}
-                              onCheckedChange={() => handleBrandToggle(brand._id)}
-                            />
-                            <Label
-                              htmlFor={`brand-${brand._id}`}
-                              className="text-sm font-normal cursor-pointer flex-1"
-                            >
-                              {brand.name}
-                            </Label>
-                          </div>
-                        );
-                      })}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-2">
+                      <Slider
+                        value={priceRange}
+                        onValueChange={handlePriceChange}
+                        onValueCommit={handlePriceCommit}
+                        max={100000}
+                        step={1000}
+                        className="w-full"
+                      />
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>${priceRange[0].toLocaleString()}</span>
+                        <span>${priceRange[1].toLocaleString()}</span>
+                      </div>
                     </div>
-                  </ScrollArea>
-                  <Separator />
-                </div>
-              )}
+                  </AccordionContent>
+                </AccordionItem>
 
-              {/* Especiales */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <h4 className="font-medium">Especiales</h4>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="featured"
-                      checked={filters.featured || false}
-                      onCheckedChange={handleFeaturedToggle}
-                    />
-                    <Label
-                      htmlFor="featured"
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      Productos destacados
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="onSale"
-                      checked={filters.onSale || false}
-                      onCheckedChange={handleOnSaleToggle}
-                    />
-                    <Label
-                      htmlFor="onSale"
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      Con descuento
-                    </Label>
-                  </div>
-                </div>
-              </div>
+                {/* CATEGORÍAS/SUBCATEGORÍAS */}
+                {(!filters.category && categories.length > 0) || subcategories.length > 0 ? (
+                  <AccordionItem value="categories">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-primary" />
+                        <span className="font-medium">
+                          {subcategories.length > 0 ? 'Subcategorías' : 'Categorías'}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <ScrollArea className="max-h-[200px] pt-2">
+                        <div className="space-y-2">
+                          {/* Mostrar categorías si no hay categoría seleccionada */}
+                          {!filters.category && categories.map((category) => {
+                            const isChecked = filters.category === category._id;
+                            return (
+                              <div key={category._id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`cat-${category._id}`}
+                                  checked={isChecked}
+                                  onCheckedChange={() => handleCategoryChange(category._id)}
+                                />
+                                <Label
+                                  htmlFor={`cat-${category._id}`}
+                                  className="text-sm font-normal cursor-pointer flex-1"
+                                >
+                                  {category.name}
+                                </Label>
+                              </div>
+                            );
+                          })}
 
-              {/* Resumen */}
+                          {/* Mostrar subcategorías si hay categoría seleccionada */}
+                          {subcategories.map((subcat) => {
+                            const isChecked = filters.subcategory === subcat._id;
+                            return (
+                              <div key={subcat._id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`subcat-${subcat._id}`}
+                                  checked={isChecked}
+                                  onCheckedChange={() => handleSubcategoryChange(subcat._id)}
+                                />
+                                <Label
+                                  htmlFor={`subcat-${subcat._id}`}
+                                  className="text-sm font-normal cursor-pointer flex-1"
+                                >
+                                  {subcat.name}
+                                </Label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </AccordionContent>
+                  </AccordionItem>
+                ) : null}
+
+                {/* MARCAS */}
+                {brands.length > 0 && (
+                  <AccordionItem value="brands">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center justify-between flex-1 pr-4">
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-primary" />
+                          <span className="font-medium">Marcas</span>
+                        </div>
+                        {filters.brands && filters.brands.length > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {filters.brands.length}
+                          </Badge>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <ScrollArea className="max-h-[200px] pt-2">
+                        <div className="space-y-2">
+                          {brands.map((brand) => {
+                            const isChecked = filters.brands?.includes(brand._id) || false;
+                            return (
+                              <div key={brand._id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`brand-${brand._id}`}
+                                  checked={isChecked}
+                                  onCheckedChange={() => handleBrandToggle(brand._id)}
+                                />
+                                <Label
+                                  htmlFor={`brand-${brand._id}`}
+                                  className="text-sm font-normal cursor-pointer flex-1"
+                                >
+                                  {brand.name}
+                                </Label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                {/* ESPECIALES */}
+                <AccordionItem value="specials">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Especiales</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="featured"
+                          checked={filters.featured || false}
+                          onCheckedChange={handleFeaturedToggle}
+                        />
+                        <Label
+                          htmlFor="featured"
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          Productos destacados
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="onSale"
+                          checked={filters.onSale || false}
+                          onCheckedChange={handleOnSaleToggle}
+                        />
+                        <Label
+                          htmlFor="onSale"
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          Con descuento
+                        </Label>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Contador de Productos */}
               {productCount !== undefined && (
-                <div className="pt-4 border-t">
+                <div className="mt-6 pt-4 border-t">
                   <p className="text-sm text-muted-foreground text-center">
                     <span className="font-semibold text-foreground">{productCount}</span>{' '}
                     {productCount === 1 ? 'producto encontrado' : 'productos encontrados'}
