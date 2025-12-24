@@ -51,7 +51,6 @@ function ProductsContent() {
   const [quickViewProduct, setQuickViewProduct] = useState<ProductParent | null>(null);
   const [quickViewVariants, setQuickViewVariants] = useState<ProductVariant[]>([]);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Sync filters with URL params when they change (e.g., from navbar navigation)
   useEffect(() => {
@@ -208,9 +207,6 @@ function ProductsContent() {
           totalItems={pagination?.totalItems}
           sortBy={sortBy}
           onSortChange={handleSortChange}
-          onFiltersClick={() => setShowMobileFilters(true)}
-          showFiltersButton={true}
-          activeFiltersCount={activeFilterCount}
           selectedCategory={selectedCategory}
           selectedSubcategory={selectedSubcategory}
         />

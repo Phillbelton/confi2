@@ -1,8 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ChevronRight, SlidersHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronRight } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -16,9 +15,6 @@ interface ToolbarPremiumProps {
   totalItems?: number;
   sortBy: string;
   onSortChange: (value: string) => void;
-  onFiltersClick?: () => void;
-  showFiltersButton?: boolean;
-  activeFiltersCount?: number;
   selectedCategory?: Category;
   selectedSubcategory?: Category;
 }
@@ -34,9 +30,6 @@ export function ToolbarPremium({
   totalItems,
   sortBy,
   onSortChange,
-  onFiltersClick,
-  showFiltersButton = false,
-  activeFiltersCount = 0,
   selectedCategory,
   selectedSubcategory,
 }: ToolbarPremiumProps) {
@@ -46,30 +39,8 @@ export function ToolbarPremium({
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-card rounded-xl border border-border shadow-sm"
     >
-      {/* Left: Breadcrumb + Filters (Mobile) */}
+      {/* Left: Breadcrumb */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        {/* Mobile Filters Button */}
-        {showFiltersButton && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onFiltersClick}
-            className="lg:hidden relative flex-shrink-0"
-          >
-            <SlidersHorizontal className="h-4 w-4 mr-2" />
-            Filtros
-            {activeFiltersCount > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
-              >
-                {activeFiltersCount}
-              </motion.span>
-            )}
-          </Button>
-        )}
-
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm overflow-x-auto">
           {selectedCategory ? (
