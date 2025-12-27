@@ -32,7 +32,8 @@
       "Bash(sort:*)",
       "Bash(npx lighthouse:*)",
       "Bash(curl:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File test-all.ps1:*)"
     ],
     "deny": [
       "Bash(rm -rf /*)",
