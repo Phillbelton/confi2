@@ -573,6 +573,116 @@ class EmailService {
       }
     );
   }
+
+  /**
+   * Envía email de cancelación de pedido
+   */
+  async sendOrderCancellationEmail(order: IOrder, userEmail: string, userName: string): Promise<boolean> {
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido Cancelado</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #e91e63;
+      margin: 0;
+    }
+    .content {
+      background-color: white;
+      padding: 25px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .alert {
+      background-color: #ffebee;
+      border-left: 4px solid #f44336;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .order-number {
+      background-color: #e91e63;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍬 Confitería Quelita</h1>
+    </div>
+    <div class="content">
+      <h2>Hola ${userName},</h2>
+
+      <div class="alert">
+        <strong>✗ Pedido Cancelado</strong>
+      </div>
+
+      <div class="order-number">
+        Pedido #${order.orderNumber}
+      </div>
+
+      <p>Tu pedido ha sido cancelado.</p>
+
+      ${
+        order.cancellationReason
+          ? `
+      <p><strong>Motivo de cancelación:</strong><br>
+      ${order.cancellationReason}</p>
+      `
+          : ''
+      }
+
+      <p>Si tienes alguna pregunta o deseas realizar un nuevo pedido, no dudes en contactarnos por WhatsApp.</p>
+    </div>
+    <div class="footer">
+      <p>Si tienes alguna pregunta, contáctanos por WhatsApp: ${ENV.WHATSAPP_BUSINESS_NUMBER}</p>
+      <p>&copy; ${new Date().getFullYear()} Confitería Quelita. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    return this.sendEmail({
+      to: userEmail,
+      subject: `❌ Pedido Cancelado #${order.orderNumber} - Confitería Quelita`,
+      html,
+    });
+  }
 }
 
 // Exportar instancia singleton

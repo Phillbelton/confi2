@@ -7,6 +7,7 @@ import { AuthRequest, ApiResponse, PaginatedResponse, OrderStatus } from '../typ
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { applyDiscountToCart } from '../services/discountService';
 import { generateWhatsAppURL, generateConfirmationMessage, generateReadyForDeliveryMessage, generateCancellationMessage } from '../services/whatsappService';
+import { emailService } from '../services/emailService';
 
 /**
  * Controller para Order - Integra stock + whatsapp + discounts + addresses
@@ -181,6 +182,11 @@ export const createOrder = asyncHandler(
       status: 'pending_whatsapp',
       whatsappSent: false,
     });
+
+    // Enviar email de confirmación de pedido (no bloqueante)
+    emailService
+      .sendOrderConfirmationEmail(order, customerData.email, customerData.name)
+      .catch((err) => console.error('Error enviando email de confirmación:', err));
 
     // Generar URL de WhatsApp
     const whatsappURL = generateWhatsAppURL(order, process.env.WHATSAPP_BUSINESS_PHONE || '595981234567');
@@ -418,10 +424,16 @@ export const updateOrderStatus = asyncHandler(
       throw new AppError(400, 'No se puede cambiar el estado de una orden cancelada');
     }
 
+    const oldStatus = order.status;
     order.status = status;
     if (adminNotes) order.adminNotes = adminNotes;
 
     await order.save();
+
+    // Enviar email de actualización de estado (no bloqueante)
+    emailService
+      .sendOrderStatusUpdateEmail(order, order.customer.email, order.customer.name, status)
+      .catch((err) => console.error('Error enviando email de actualización de estado:', err));
 
     // Generar mensaje de WhatsApp según el nuevo estado
     let message = '';
@@ -484,6 +496,11 @@ export const cancelOrder = asyncHandler(
 
     // El pre-save hook restaurará el stock automáticamente
     await order.save();
+
+    // Enviar email de cancelación (no bloqueante)
+    emailService
+      .sendOrderCancellationEmail(order, order.customer.email, order.customer.name)
+      .catch((err) => console.error('Error enviando email de cancelación:', err));
 
     // Generar mensaje de cancelación
     const message = generateCancellationMessage(order);

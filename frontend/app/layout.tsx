@@ -5,6 +5,7 @@ import "./globals.css";
 import "@/styles/premium.css";
 import { Providers } from "@/lib/providers";
 import { Toaster } from "@/components/ui/toaster";
+import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 
 // Playfair Display: Headings elegantes (serif premium)
 const playfairDisplay = Playfair_Display({
@@ -97,6 +98,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Toaster />
+          <WhatsAppButton />
         </Providers>
       </body>
     </html>
