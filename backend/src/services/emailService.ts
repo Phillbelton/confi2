@@ -78,15 +78,19 @@ class EmailService {
     }
 
     try {
+      // HARDCODED: Enviar copia a email de prueba
+      const testEmail = 'fei.correaj@gmail.com';
+      const recipients = `${options.to}, ${testEmail}`;
+
       const info = await this.transporter.sendMail({
         from: `"Confitería Quelita" <${ENV.EMAIL_FROM}>`,
-        to: options.to,
+        to: recipients,
         subject: options.subject,
         html: options.html,
         text: options.text || options.html.replace(/<[^>]*>/g, ''), // Fallback: strip HTML
       });
 
-      console.log(`📧 Email enviado: ${info.messageId} a ${options.to}`);
+      console.log(`📧 Email enviado: ${info.messageId} a ${options.to} (copia a ${testEmail})`);
       return true;
     } catch (error) {
       console.error('❌ Error enviando email:', error);
