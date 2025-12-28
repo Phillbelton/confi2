@@ -30,11 +30,11 @@ app.use(
   })
 );
 
-// CORS - Allow multiple origins for development
+// CORS - Allow multiple origins
 const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  ENV.FRONTEND_URL, // IP de red local (ej: http://192.168.5.2:3000)
+  ENV.FRONTEND_URL,
 ];
 
 app.use(
@@ -43,12 +43,21 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
+      // In production, be more flexible with CORS to handle Seenode dynamic URLs
+      if (ENV.NODE_ENV === 'production') {
+        // Allow any origin that includes seenode.com (Seenode platform)
+        if (origin.includes('seenode.com') || allowedOrigins.indexOf(origin) !== -1) {
+          return callback(null, true);
+        }
       } else {
-        logger.warn(`CORS blocked request from origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
+        // In development, use strict origin checking
+        if (allowedOrigins.indexOf(origin) !== -1) {
+          return callback(null, true);
+        }
       }
+
+      logger.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

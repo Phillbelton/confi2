@@ -11,37 +11,19 @@ export function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // In development, skip server-side token check
+    // Skip server-side token check in all environments
     // The ProtectedRoute/FuncionarioProtectedRoute components handle authentication on the client
-    // This is necessary because we use localStorage (not cookies) in development
-    // 
+    // This is necessary because we use localStorage (not cookies) for token storage
+    //
     // Note: Client-side route protection validates:
     // 1. User is authenticated (has valid token)
     // 2. User has correct role (admin for /admin/*, funcionario for /funcionario/*)
     // 3. User has permission to access the specific route
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      // Let client-side components handle auth and authorization
-      return NextResponse.next();
-    }
-
-    // In production, check for authentication token in cookies
-    const token = request.cookies.get('token');
-
-    // If no token, redirect to appropriate login page
-    if (!token) {
-      const loginUrl = pathname.startsWith('/funcionario')
-        ? new URL('/funcionario/login', request.url)
-        : new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Token exists, allow access
-    // Note: Role-based authorization is handled by ProtectedRoute/FuncionarioProtectedRoute
-    // For stronger production security, we could decode the JWT here and validate
-    // route permissions, but that would require access to JWT secret in middleware
+    //
+    // Why we use localStorage instead of cookies:
+    // - Simpler cross-domain handling (Seenode assigns different URLs for frontend/backend)
+    // - Avoids sameSite/CORS cookie issues in production
+    // - Client-side components provide sufficient security with token validation
     return NextResponse.next();
   }
 
