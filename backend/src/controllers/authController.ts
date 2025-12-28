@@ -28,7 +28,7 @@ const setTokenCookie = (res: Response, token: string, refreshToken: string) => {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction, // Solo secure en producción (tests usan HTTP)
-      sameSite: 'strict' as const,
+      sameSite: isProduction ? ('none' as const) : ('strict' as const), // 'none' para cross-domain en producción
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     };
 
@@ -156,7 +156,7 @@ export const logout = asyncHandler(async (req: AuthRequest, res: Response<ApiRes
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict' as const,
+      sameSite: isProduction ? ('none' as const) : ('strict' as const), // 'none' para cross-domain en producción
       maxAge: 0, // Expire immediately
     };
 
