@@ -87,11 +87,11 @@ export default function OrdenesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Órdenes</h1>
-          <p className="text-slate-500 dark:text-slate-400">
+          <p className="text-slate-400">
             Gestión completa de órdenes
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white">
           <RefreshCw className="h-4 w-4" />
           Actualizar
         </Button>
@@ -99,19 +99,19 @@ export default function OrdenesPage() {
 
       {/* Tabs for quick filters */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="today">Hoy</TabsTrigger>
-          <TabsTrigger value="pending">Pendientes</TabsTrigger>
-          <TabsTrigger value="in_progress">En Proceso</TabsTrigger>
-          <TabsTrigger value="completed">Completadas</TabsTrigger>
+        <TabsList className="bg-slate-800 border-slate-700">
+          <TabsTrigger value="all" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">Todas</TabsTrigger>
+          <TabsTrigger value="today" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">Hoy</TabsTrigger>
+          <TabsTrigger value="pending" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">Pendientes</TabsTrigger>
+          <TabsTrigger value="in_progress" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">En Proceso</TabsTrigger>
+          <TabsTrigger value="completed" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">Completadas</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-4 mt-4">
           {/* Filters */}
-          <Card>
+          <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-base">Filtros</CardTitle>
+              <CardTitle className="text-base text-slate-100">Filtros</CardTitle>
             </CardHeader>
             <CardContent>
               <OrderFilters
@@ -123,13 +123,13 @@ export default function OrdenesPage() {
           </Card>
 
           {/* Orders Table */}
-          <Card>
+          <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>
+                <CardTitle className="text-slate-100">
                   Órdenes
                   {pagination && (
-                    <span className="text-sm font-normal text-slate-500 ml-2">
+                    <span className="text-sm font-normal text-slate-400 ml-2">
                       ({pagination.total} total)
                     </span>
                   )}

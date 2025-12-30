@@ -31,13 +31,13 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
           type="text"
           placeholder="Buscar por número, cliente, teléfono..."
           value={filters.search || ''}
           onChange={(e) => onFilterChange('search', e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
         />
       </div>
 
@@ -48,10 +48,10 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
           value={filters.status || 'all'}
           onValueChange={(value) => onFilterChange('status', value === 'all' ? '' : value)}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-slate-200">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-800 border-slate-600">
             <SelectItem value="all">Todos los estados</SelectItem>
             <SelectItem value="pending_whatsapp">🟡 Pendiente WhatsApp</SelectItem>
             <SelectItem value="confirmed">🔵 Confirmada</SelectItem>
@@ -67,10 +67,10 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
           value={filters.deliveryMethod || 'all'}
           onValueChange={(value) => onFilterChange('deliveryMethod', value === 'all' ? '' : value)}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-slate-200">
             <SelectValue placeholder="Método de entrega" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-800 border-slate-600">
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="delivery">🚚 Delivery</SelectItem>
             <SelectItem value="pickup">📦 Retiro</SelectItem>
@@ -82,10 +82,10 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
           value={filters.paymentMethod || 'all'}
           onValueChange={(value) => onFilterChange('paymentMethod', value === 'all' ? '' : value)}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-slate-200">
             <SelectValue placeholder="Método de pago" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-800 border-slate-600">
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="cash">💵 Efectivo</SelectItem>
             <SelectItem value="transfer">💳 Transferencia</SelectItem>
@@ -94,7 +94,7 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
 
         {/* Clear Filters */}
         {hasActiveFilters && (
-          <Button variant="outline" size="sm" onClick={onClearFilters} className="gap-2">
+          <Button variant="outline" size="sm" onClick={onClearFilters} className="gap-2 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white">
             <X className="h-4 w-4" />
             Limpiar filtros
           </Button>

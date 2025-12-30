@@ -29,17 +29,17 @@ export default function PendientesPage() {
     if (hours > 24) {
       return {
         label: '🚨 Muy Urgente',
-        className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        className: 'bg-red-900/40 text-red-400',
       };
     } else if (hours > 2) {
       return {
         label: '⏰ Urgente',
-        className: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+        className: 'bg-orange-900/40 text-orange-400',
       };
     } else {
       return {
         label: '🆕 Nueva',
-        className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+        className: 'bg-blue-900/40 text-blue-400',
       };
     }
   };
@@ -47,10 +47,10 @@ export default function PendientesPage() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-3xl font-bold">Órdenes Pendientes</h1>
+        <h1 className="text-3xl font-bold text-slate-100">Órdenes Pendientes</h1>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
+            <div key={i} className="h-32 bg-slate-700 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -61,20 +61,20 @@ export default function PendientesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Órdenes Pendientes</h1>
-        <p className="text-slate-500 dark:text-slate-400">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-100">Órdenes Pendientes</h1>
+        <p className="text-slate-400">
           Órdenes esperando confirmación por WhatsApp ({orders.length})
         </p>
       </div>
 
       {/* Empty State */}
       {orders.length === 0 && (
-        <Card>
+        <Card className="bg-slate-800 border-slate-700">
           <CardContent className="py-12">
             <div className="text-center">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">¡Todo al día!</h3>
-              <p className="text-slate-500">No hay órdenes pendientes de confirmación</p>
+              <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-slate-100">¡Todo al día!</h3>
+              <p className="text-slate-400">No hay órdenes pendientes de confirmación</p>
             </div>
           </CardContent>
         </Card>
@@ -92,7 +92,7 @@ export default function PendientesPage() {
             <Card
               key={order._id}
               className={cn(
-                'hover:shadow-md transition-shadow',
+                'hover:shadow-md transition-shadow bg-slate-800 border-slate-700',
                 isVeryUrgent && 'border-red-500 border-2',
                 isUrgent && !isVeryUrgent && 'border-orange-500 border-l-4'
               )}
@@ -100,12 +100,12 @@ export default function PendientesPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-base font-mono">
+                    <CardTitle className="text-base font-mono text-slate-100">
                       {order.orderNumber}
                     </CardTitle>
                     <Badge className={priority.className}>{priority.label}</Badge>
                   </div>
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-slate-400">
                     {formatDistanceToNow(new Date(order.createdAt), {
                       addSuffix: true,
                       locale: es,
@@ -119,8 +119,8 @@ export default function PendientesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">Cliente</p>
-                    <p className="font-semibold">{order.customer.name}</p>
-                    <p className="text-sm text-slate-600">{order.customer.phone}</p>
+                    <p className="font-semibold text-slate-100">{order.customer.name}</p>
+                    <p className="text-sm text-slate-400">{order.customer.phone}</p>
                     {order.customer.email && (
                       <p className="text-xs text-slate-500">{order.customer.email}</p>
                     )}
@@ -129,16 +129,16 @@ export default function PendientesPage() {
                   <div>
                     <p className="text-sm text-slate-500 mb-1">Detalles</p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="border-slate-600 text-slate-300">
                         {formatCurrency(order.total)}
                       </Badge>
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="border-slate-600 text-slate-300">
                         {order.deliveryMethod === 'delivery' ? '🚚 Delivery' : '📦 Retiro'}
                       </Badge>
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="border-slate-600 text-slate-300">
                         {order.paymentMethod === 'cash' ? '💵 Efectivo' : '💳 Transfer.'}
                       </Badge>
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="border-slate-600 text-slate-300">
                         📦 {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
                       </Badge>
                     </div>
@@ -148,9 +148,9 @@ export default function PendientesPage() {
                 {/* Products Summary */}
                 <div>
                   <p className="text-sm text-slate-500 mb-2">Productos</p>
-                  <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 space-y-1">
+                  <div className="bg-slate-900 rounded-lg p-3 space-y-1">
                     {order.items.slice(0, 3).map((item, idx) => (
-                      <p key={idx} className="text-sm">
+                      <p key={idx} className="text-sm text-slate-300">
                         • {item.quantity}x {item.variantSnapshot.name}
                       </p>
                     ))}
@@ -164,11 +164,11 @@ export default function PendientesPage() {
 
                 {/* Customer Notes */}
                 {order.customerNotes && (
-                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                    <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                  <div className="bg-yellow-950/30 border border-yellow-800 rounded-lg p-3">
+                    <p className="text-sm font-medium text-yellow-100 mb-1">
                       💬 Nota del cliente:
                     </p>
-                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <p className="text-sm text-yellow-200">
                       {order.customerNotes}
                     </p>
                   </div>
@@ -176,7 +176,7 @@ export default function PendientesPage() {
 
                 {/* WhatsApp Status */}
                 {order.whatsappSent && order.whatsappSentAt && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <div className="flex items-center gap-2 text-sm text-green-400">
                     <CheckCircle className="h-4 w-4" />
                     <span>
                       WhatsApp enviado{' '}
@@ -189,9 +189,9 @@ export default function PendientesPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-700">
                   <Button
-                    className="flex-1 md:flex-none gap-2"
+                    className="flex-1 md:flex-none gap-2 bg-green-600 hover:bg-green-700"
                     onClick={() => handleOpenWhatsApp(order._id, order.customer.phone)}
                   >
                     <MessageCircle className="h-4 w-4" />
@@ -199,7 +199,7 @@ export default function PendientesPage() {
                   </Button>
 
                   <Link href={`/funcionario/ordenes/${order._id}`} className="flex-1 md:flex-none">
-                    <Button variant="outline" className="w-full gap-2">
+                    <Button variant="outline" className="w-full gap-2 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white">
                       <Eye className="h-4 w-4" />
                       Ver Detalle
                     </Button>
@@ -220,13 +220,13 @@ export default function PendientesPage() {
 
       {/* Help */}
       {orders.length > 0 && (
-        <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+        <Card className="bg-blue-950/30 border-blue-800">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-900 dark:text-blue-100">
+              <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-100">
                 <p className="font-semibold mb-1">Consejos para gestionar pendientes:</p>
-                <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+                <ul className="space-y-1 text-blue-200">
                   <li>• Prioriza las órdenes más antiguas (marcadas como urgentes)</li>
                   <li>• Envía el WhatsApp para confirmar disponibilidad</li>
                   <li>• Una vez confirmado por el cliente, haz clic en "Confirmar Orden"</li>

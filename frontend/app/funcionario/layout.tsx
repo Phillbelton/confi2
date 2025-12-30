@@ -36,10 +36,11 @@ export default function FuncionarioLayout({
   }
 
   // Protected funcionario pages with sidebar and header
+  // Tema oscuro forzado para funcionarios internos
   return (
     <FuncionarioProtectedRoute>
       <TooltipProvider delayDuration={200}>
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
+        <div className="min-h-screen bg-slate-950 text-slate-100">
           <FuncionarioSidebar />
 
           <div className="md:pl-64">

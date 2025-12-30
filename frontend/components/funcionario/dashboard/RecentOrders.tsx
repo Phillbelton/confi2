@@ -16,12 +16,12 @@ interface RecentOrdersProps {
 }
 
 const statusColors = {
-  pending_whatsapp: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  preparing: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  shipped: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
-  completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  pending_whatsapp: 'bg-yellow-900/40 text-yellow-400',
+  confirmed: 'bg-blue-900/40 text-blue-400',
+  preparing: 'bg-purple-900/40 text-purple-400',
+  shipped: 'bg-indigo-900/40 text-indigo-400',
+  completed: 'bg-green-900/40 text-green-400',
+  cancelled: 'bg-red-900/40 text-red-400',
 };
 
 const statusLabels = {
@@ -36,14 +36,14 @@ const statusLabels = {
 export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-slate-800 border-slate-700">
         <CardHeader>
-          <CardTitle>Órdenes Recientes</CardTitle>
+          <CardTitle className="text-slate-100">Órdenes Recientes</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              <div key={i} className="h-16 bg-slate-700 rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -53,12 +53,12 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
 
   if (orders.length === 0) {
     return (
-      <Card>
+      <Card className="bg-slate-800 border-slate-700">
         <CardHeader>
-          <CardTitle>Órdenes Recientes</CardTitle>
+          <CardTitle className="text-slate-100">Órdenes Recientes</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-slate-500 py-8">
+          <p className="text-center text-slate-400 py-8">
             No hay órdenes recientes
           </p>
         </CardContent>
@@ -67,11 +67,11 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
   }
 
   return (
-    <Card>
+    <Card className="bg-slate-800 border-slate-700">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Órdenes Recientes</CardTitle>
+        <CardTitle className="text-slate-100">Órdenes Recientes</CardTitle>
         <Link href="/funcionario/ordenes">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-slate-700">
             Ver todas
           </Button>
         </Link>
@@ -81,18 +81,18 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
           {orders.map((order) => (
             <div
               key={order._id}
-              className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="flex items-center justify-between p-3 rounded-lg border border-slate-600 hover:bg-slate-700 transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-mono text-sm font-semibold">
+                  <span className="font-mono text-sm font-semibold text-slate-100">
                     {order.orderNumber}
                   </span>
                   <Badge className={statusColors[order.status]}>
                     {statusLabels[order.status]}
                   </Badge>
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
+                <p className="text-sm text-slate-400 truncate">
                   {order.customer.name}
                 </p>
                 <p className="text-xs text-slate-500">
@@ -105,12 +105,12 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
 
               <div className="flex items-center gap-2 ml-4">
                 <div className="text-right mr-2">
-                  <p className="text-sm font-semibold">
+                  <p className="text-sm font-semibold text-slate-100">
                     {formatCurrency(order.total)}
                   </p>
                 </div>
                 <Link href={`/funcionario/ordenes/${order._id}`}>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white hover:bg-slate-700">
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -118,6 +118,7 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="text-green-400 hover:text-green-300 hover:bg-slate-700"
                     onClick={() => {
                       window.open(
                         `https://wa.me/${order.customer.phone.replace(/\D/g, '')}`,
@@ -125,7 +126,7 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
                       );
                     }}
                   >
-                    <MessageCircle className="h-4 w-4 text-green-600" />
+                    <MessageCircle className="h-4 w-4" />
                   </Button>
                 )}
               </div>

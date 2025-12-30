@@ -23,24 +23,24 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
       title: 'Nuevas Órdenes',
       value: stats.nuevasOrdenes,
       icon: Bell,
-      iconColor: 'text-blue-600',
-      bgColor: 'bg-blue-100 dark:bg-blue-900/20',
+      iconColor: 'text-blue-400',
+      bgColor: 'bg-blue-900/30',
       description: 'Creadas hoy',
     },
     {
       title: 'Por Confirmar',
       value: stats.porConfirmar,
       icon: Clock,
-      iconColor: 'text-yellow-600',
-      bgColor: 'bg-yellow-100 dark:bg-yellow-900/20',
+      iconColor: 'text-yellow-400',
+      bgColor: 'bg-yellow-900/30',
       description: 'Pendientes WhatsApp',
     },
     {
       title: 'Completadas',
       value: stats.completadasHoy,
       icon: CheckCircle,
-      iconColor: 'text-green-600',
-      bgColor: 'bg-green-100 dark:bg-green-900/20',
+      iconColor: 'text-green-400',
+      bgColor: 'bg-green-900/30',
       description: 'Hoy',
     },
   ];
@@ -49,9 +49,9 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
+          <Card key={i} className="animate-pulse bg-slate-800 border-slate-700">
             <CardContent className="p-6">
-              <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
+              <div className="h-20 bg-slate-700 rounded" />
             </CardContent>
           </Card>
         ))}
@@ -66,15 +66,15 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
         return (
           <Card
             key={card.title}
-            className="hover:shadow-md transition-shadow cursor-pointer"
+            className="hover:shadow-md transition-shadow cursor-pointer bg-slate-800 border-slate-700"
           >
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                  <p className="text-sm font-medium text-slate-400">
                     {card.title}
                   </p>
-                  <p className="text-2xl font-bold mt-2">
+                  <p className="text-2xl font-bold mt-2 text-slate-100">
                     {card.value}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
