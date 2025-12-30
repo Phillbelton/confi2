@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Edit2, Check, X, Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface EditShippingCostProps {
   currentCost: number;
@@ -128,12 +129,4 @@ export function EditShippingCost({
       </p>
     </div>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }

@@ -33,6 +33,7 @@ import { CancelOrderModal } from '@/components/funcionario/orders/CancelOrderMod
 import { EditOrderItemsModal } from '@/components/funcionario/orders/EditOrderItemsModal';
 import { WhatsAppHelper } from '@/components/funcionario/orders/WhatsAppHelper';
 import { EditShippingCost } from '@/components/funcionario/orders/EditShippingCost';
+import { formatCurrency } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -625,14 +626,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       />
     </div>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 function safeFormatDate(date: Date | string | undefined | null, formatFn: (d: Date) => string, fallback: string = '-'): string {

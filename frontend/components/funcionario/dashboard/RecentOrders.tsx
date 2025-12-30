@@ -8,6 +8,7 @@ import Link from 'next/link';
 import type { Order } from '@/types/order';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatCurrency } from '@/lib/utils';
 
 interface RecentOrdersProps {
   orders: Order[];
@@ -134,12 +135,4 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
       </CardContent>
     </Card>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }

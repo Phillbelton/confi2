@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertTriangle, XCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Order } from '@/types/order';
+import { formatCurrency } from '@/lib/utils';
 
 interface CancelOrderModalProps {
   open: boolean;
@@ -192,14 +193,6 @@ export function CancelOrderModal({
       </DialogContent>
     </Dialog>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 function getStatusLabel(status: string): string {

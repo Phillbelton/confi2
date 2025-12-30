@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import type { Order } from '@/types/order';
+import { formatCurrency } from '@/lib/utils';
 
 interface ConfirmOrderModalProps {
   open: boolean;
@@ -189,12 +190,4 @@ export function ConfirmOrderModal({
       </DialogContent>
     </Dialog>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }

@@ -7,9 +7,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   ClipboardList,
-  BarChart3,
-  User,
-  ChevronLeft,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,7 +20,7 @@ const menuItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Órdenes',
+    title: 'Ordenes',
     href: '/funcionario/ordenes',
     icon: ShoppingCart,
   },
@@ -30,16 +28,6 @@ const menuItems = [
     title: 'Pendientes',
     href: '/funcionario/ordenes/pendientes',
     icon: ClipboardList,
-  },
-  {
-    title: 'Estadísticas',
-    href: '/funcionario/estadisticas',
-    icon: BarChart3,
-  },
-  {
-    title: 'Perfil',
-    href: '/funcionario/perfil',
-    icon: User,
   },
 ];
 
@@ -49,42 +37,34 @@ export function FuncionarioSidebar() {
 
   return (
     <>
-      {/* Sidebar */}
+      {/* Sidebar - Always expanded on desktop, toggleable on mobile */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800',
-          sidebarOpen ? 'w-64' : 'w-0 md:w-16'
+          'fixed left-0 top-0 z-40 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800',
+          'transition-transform duration-300 md:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
-            {sidebarOpen && (
-              <Link href="/funcionario" className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">Q</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-base leading-tight">Quelita</span>
-                  <span className="text-xs text-slate-500">Funcionario</span>
-                </div>
-              </Link>
-            )}
+            <Link href="/funcionario" className="flex items-center space-x-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">Q</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="font-semibold text-base leading-tight">Quelita</span>
+                <span className="text-xs text-slate-500">Funcionario</span>
+              </div>
+            </Link>
+            {/* Close button only on mobile */}
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className={cn(
-                'hidden md:flex',
-                !sidebarOpen && 'mx-auto'
-              )}
+              className="md:hidden"
             >
-              <ChevronLeft
-                className={cn(
-                  'h-4 w-4 transition-transform',
-                  !sidebarOpen && 'rotate-180'
-                )}
-              />
+              <X className="h-4 w-4" />
             </Button>
           </div>
 
@@ -105,13 +85,17 @@ export function FuncionarioSidebar() {
                       'hover:bg-slate-100 dark:hover:bg-slate-800',
                       isActive
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'text-slate-700 dark:text-slate-300',
-                      !sidebarOpen && 'justify-center'
+                        : 'text-slate-700 dark:text-slate-300'
                     )}
-                    title={!sidebarOpen ? item.title : undefined}
+                    onClick={() => {
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 768) {
+                        toggleSidebar();
+                      }
+                    }}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
-                    {sidebarOpen && <span>{item.title}</span>}
+                    <span>{item.title}</span>
                   </Link>
                 );
               })}
@@ -119,13 +103,11 @@ export function FuncionarioSidebar() {
           </ScrollArea>
 
           {/* Footer */}
-          {sidebarOpen && (
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-              <div className="text-xs text-slate-500 text-center">
-                Vista del Funcionario
-              </div>
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="text-xs text-slate-500 text-center">
+              Vista del Funcionario
             </div>
-          )}
+          </div>
         </div>
       </aside>
 

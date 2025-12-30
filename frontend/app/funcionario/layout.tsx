@@ -42,7 +42,7 @@ export default function FuncionarioLayout({
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
           <FuncionarioSidebar />
 
-          <div className="md:pl-64 transition-all duration-300">
+          <div className="md:pl-64">
             <FuncionarioHeader onSearchClick={() => setCommandPaletteOpen(true)} />
 
             <main className="p-4 md:p-6">

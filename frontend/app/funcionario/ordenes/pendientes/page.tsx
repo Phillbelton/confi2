@@ -8,7 +8,7 @@ import { Eye, MessageCircle, CheckCircle, Clock, AlertCircle } from 'lucide-reac
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 export default function PendientesPage() {
   const { orders, isLoading, markWhatsAppSent } = useFuncionarioOrders({
@@ -238,12 +238,4 @@ export default function PendientesPage() {
       )}
     </div>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell, Clock, CheckCircle, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { Bell, Clock, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StatsData {
@@ -9,7 +9,7 @@ interface StatsData {
   porConfirmar: number;
   completadasHoy: number;
   ventasDelDia: number;
-  cambioVentas?: number; // Porcentaje de cambio vs ayer
+  cambioVentas?: number;
 }
 
 interface StatsCardsProps {
@@ -43,37 +43,12 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
       bgColor: 'bg-green-100 dark:bg-green-900/20',
       description: 'Hoy',
     },
-    {
-      title: 'Ventas del Día',
-      value: formatCurrency(stats.ventasDelDia),
-      icon: DollarSign,
-      iconColor: 'text-purple-600',
-      bgColor: 'bg-purple-100 dark:bg-purple-900/20',
-      description: stats.cambioVentas !== undefined ? (
-        <div className="flex items-center gap-1">
-          {stats.cambioVentas > 0 ? (
-            <>
-              <TrendingUp className="h-3 w-3 text-green-600" />
-              <span className="text-green-600">+{stats.cambioVentas}%</span>
-            </>
-          ) : stats.cambioVentas < 0 ? (
-            <>
-              <TrendingDown className="h-3 w-3 text-red-600" />
-              <span className="text-red-600">{stats.cambioVentas}%</span>
-            </>
-          ) : (
-            <span className="text-slate-500">0%</span>
-          )}
-          <span className="text-slate-500">vs ayer</span>
-        </div>
-      ) : 'Total del día',
-    },
   ];
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
           <Card key={i} className="animate-pulse">
             <CardContent className="p-6">
               <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
@@ -85,7 +60,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -118,10 +93,3 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   );
 }
 
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}

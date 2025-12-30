@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Loader2, Package } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import api from '@/lib/axios';
+import { formatCurrency } from '@/lib/utils';
 
 interface ProductVariant {
   _id: string;
@@ -239,12 +240,4 @@ export function ProductSelector({
       </DialogContent>
     </Dialog>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
