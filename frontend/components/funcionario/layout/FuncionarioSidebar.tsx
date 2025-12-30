@@ -40,21 +40,21 @@ export function FuncionarioSidebar() {
       {/* Sidebar - Always expanded on desktop, toggleable on mobile */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800',
+          'fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 border-r border-slate-700',
           'transition-transform duration-300 md:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700">
             <Link href="/funcionario" className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">Q</span>
               </div>
               <div className="flex flex-col">
-                <span className="font-semibold text-base leading-tight">Quelita</span>
-                <span className="text-xs text-slate-500">Funcionario</span>
+                <span className="font-semibold text-base leading-tight text-white">Quelita</span>
+                <span className="text-xs text-slate-400">Funcionario</span>
               </div>
             </Link>
             {/* Close button only on mobile */}
@@ -62,7 +62,7 @@ export function FuncionarioSidebar() {
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="md:hidden"
+              className="md:hidden text-slate-400 hover:text-white hover:bg-slate-800"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -81,11 +81,10 @@ export function FuncionarioSidebar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                      'hover:bg-slate-100 dark:hover:bg-slate-800',
+                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                       isActive
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'text-slate-700 dark:text-slate-300'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     )}
                     onClick={() => {
                       // Close sidebar on mobile after navigation
@@ -103,7 +102,7 @@ export function FuncionarioSidebar() {
           </ScrollArea>
 
           {/* Footer */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="p-4 border-t border-slate-700">
             <div className="text-xs text-slate-500 text-center">
               Vista del Funcionario
             </div>
@@ -114,7 +113,7 @@ export function FuncionarioSidebar() {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
           onClick={toggleSidebar}
         />
       )}

@@ -39,14 +39,16 @@ export default function FuncionarioLayout({
   return (
     <FuncionarioProtectedRoute>
       <TooltipProvider delayDuration={200}>
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
           <FuncionarioSidebar />
 
           <div className="md:pl-64">
             <FuncionarioHeader onSearchClick={() => setCommandPaletteOpen(true)} />
 
-            <main className="p-4 md:p-6">
-              {children}
+            <main className="px-4 py-6 md:px-8 md:py-6 lg:px-10">
+              <div className="max-w-7xl mx-auto">
+                {children}
+              </div>
             </main>
           </div>
 

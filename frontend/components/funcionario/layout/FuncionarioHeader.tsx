@@ -22,13 +22,13 @@ export function FuncionarioHeader({ onSearchClick }: FuncionarioHeaderProps = {}
   const { logout } = useFuncionarioAuth();
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-      <div className="flex items-center justify-between h-full px-4 md:px-6">
+    <header className="sticky top-0 z-30 h-16 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="flex items-center justify-between h-full px-4 md:px-8">
         {/* Left side - Mobile menu + Search */}
         <div className="flex items-center gap-4 flex-1">
           {/* Mobile menu button */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={toggleSidebar}
             className="md:hidden"
