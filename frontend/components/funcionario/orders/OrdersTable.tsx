@@ -24,12 +24,12 @@ interface OrdersTableProps {
 }
 
 const statusColors = {
-  pending_whatsapp: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  preparing: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  shipped: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
-  completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  pending_whatsapp: 'bg-yellow-900/40 text-yellow-400',
+  confirmed: 'bg-blue-900/40 text-blue-400',
+  preparing: 'bg-purple-900/40 text-purple-400',
+  shipped: 'bg-indigo-900/40 text-indigo-400',
+  completed: 'bg-green-900/40 text-green-400',
+  cancelled: 'bg-red-900/40 text-red-400',
 };
 
 const statusLabels = {
@@ -46,7 +46,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
     return (
       <div className="space-y-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          <div key={i} className="h-20 bg-slate-700 rounded animate-pulse" />
         ))}
       </div>
     );
@@ -55,24 +55,24 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
-        <Package className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-        <p className="text-slate-500 font-medium">No se encontraron órdenes</p>
-        <p className="text-sm text-slate-400">Intenta ajustar los filtros</p>
+        <Package className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+        <p className="text-slate-300 font-medium">No se encontraron órdenes</p>
+        <p className="text-sm text-slate-500">Intenta ajustar los filtros</p>
       </div>
     );
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border border-slate-600 rounded-lg overflow-hidden">
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[140px]">N° Orden</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead className="w-[120px]">Total</TableHead>
-            <TableHead className="w-[140px]">Estado</TableHead>
-            <TableHead className="w-[120px]">Hace</TableHead>
-            <TableHead className="text-right w-[150px]">Acciones</TableHead>
+        <TableHeader className="bg-slate-800">
+          <TableRow className="border-slate-600 hover:bg-slate-800">
+            <TableHead className="w-[140px] text-slate-300">N° Orden</TableHead>
+            <TableHead className="text-slate-300">Cliente</TableHead>
+            <TableHead className="w-[120px] text-slate-300">Total</TableHead>
+            <TableHead className="w-[140px] text-slate-300">Estado</TableHead>
+            <TableHead className="w-[120px] text-slate-300">Hace</TableHead>
+            <TableHead className="text-right w-[150px] text-slate-300">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,15 +85,15 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
               <TableRow
                 key={order._id}
                 className={cn(
-                  'hover:bg-slate-50 dark:hover:bg-slate-800',
-                  isUrgent && 'border-l-4 border-l-orange-500 bg-orange-50/50 dark:bg-orange-950/20'
+                  'border-slate-700 hover:bg-slate-800',
+                  isUrgent && 'border-l-4 border-l-orange-500 bg-orange-950/30'
                 )}
               >
                 {/* Order Number */}
-                <TableCell className="font-mono font-semibold text-sm">
+                <TableCell className="font-mono font-semibold text-sm text-slate-100">
                   <Link
                     href={`/funcionario/ordenes/${order._id}`}
-                    className="hover:text-blue-600 dark:hover:text-blue-400"
+                    className="hover:text-blue-400"
                   >
                     {order.orderNumber}
                   </Link>
@@ -102,15 +102,15 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                 {/* Customer */}
                 <TableCell>
                   <div>
-                    <p className="font-medium text-sm">{order.customer.name}</p>
+                    <p className="font-medium text-sm text-slate-100">{order.customer.name}</p>
                     <p className="text-xs text-slate-500">
                       {order.customer.phone}
                     </p>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-slate-600 text-slate-300">
                         {order.deliveryMethod === 'delivery' ? '🚚 Delivery' : '📦 Retiro'}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-slate-600 text-slate-300">
                         {order.paymentMethod === 'cash' ? '💵 Efectivo' : '💳 Transfer.'}
                       </Badge>
                     </div>
@@ -118,7 +118,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                 </TableCell>
 
                 {/* Total */}
-                <TableCell className="font-semibold">
+                <TableCell className="font-semibold text-slate-100">
                   {formatCurrency(order.total)}
                 </TableCell>
 
@@ -128,14 +128,14 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                     {statusLabels[order.status]}
                   </Badge>
                   {isUrgent && (
-                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                    <p className="text-xs text-orange-400 mt-1">
                       ⚠️ Urgente
                     </p>
                   )}
                 </TableCell>
 
                 {/* Time */}
-                <TableCell className="text-sm text-slate-500">
+                <TableCell className="text-sm text-slate-400">
                   {formatDistanceToNow(new Date(order.createdAt), {
                     addSuffix: true,
                     locale: es,
@@ -147,7 +147,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                   <div className="flex items-center justify-end gap-1">
                     {/* View */}
                     <Link href={`/funcionario/ordenes/${order._id}`}>
-                      <Button variant="ghost" size="icon" title="Ver detalle">
+                      <Button variant="ghost" size="icon" title="Ver detalle" className="text-slate-300 hover:text-white hover:bg-slate-700">
                         <Eye className="h-4 w-4" />
                       </Button>
                     </Link>
@@ -158,6 +158,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                         variant="ghost"
                         size="icon"
                         title="Abrir WhatsApp"
+                        className="hover:bg-slate-700"
                         onClick={() => {
                           window.open(
                             `https://wa.me/${order.customer.phone.replace(/\D/g, '')}`,
@@ -170,7 +171,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                       >
                         <MessageCircle className={cn(
                           'h-4 w-4',
-                          order.whatsappSent ? 'text-green-600' : 'text-slate-400'
+                          order.whatsappSent ? 'text-green-400' : 'text-slate-500'
                         )} />
                       </Button>
                     )}
@@ -182,7 +183,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                           variant="ghost"
                           size="icon"
                           title="Confirmar orden"
-                          className="text-blue-600 hover:text-blue-700"
+                          className="text-blue-400 hover:text-blue-300 hover:bg-slate-700"
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
@@ -195,7 +196,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                           variant="ghost"
                           size="icon"
                           title="Marcar como enviada"
-                          className="text-indigo-600 hover:text-indigo-700"
+                          className="text-indigo-400 hover:text-indigo-300 hover:bg-slate-700"
                         >
                           <Truck className="h-4 w-4" />
                         </Button>
