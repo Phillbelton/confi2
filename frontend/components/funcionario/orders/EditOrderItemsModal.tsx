@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Edit, Loader2, Trash2, Plus, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { ProductSelector } from './ProductSelector';
 import type { Order } from '@/types/order';
+import { formatCurrency } from '@/lib/utils';
 
 interface EditOrderItemsModalProps {
   open: boolean;
@@ -369,12 +370,4 @@ export function EditOrderItemsModal({
       />
     </>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }

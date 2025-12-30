@@ -22,6 +22,7 @@ import {
 import { MessageCircle, Copy, ExternalLink, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Order } from '@/types/order';
+import { formatCurrency } from '@/lib/utils';
 
 interface WhatsAppHelperProps {
   open: boolean;
@@ -414,14 +415,6 @@ function formatAddress(order: Order): string {
   return `${address.street || ''} ${address.number || ''}, ${address.neighborhood || ''}, ${address.city || ''}${
     address.reference ? `\nReferencia: ${address.reference}` : ''
   }`;
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 function getCategoryLabel(category: string): string {

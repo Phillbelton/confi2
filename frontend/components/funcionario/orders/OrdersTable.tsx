@@ -15,7 +15,7 @@ import Link from 'next/link';
 import type { Order } from '@/types/order';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 interface OrdersTableProps {
   orders: Order[];
@@ -210,12 +210,4 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
       </Table>
     </div>
   );
-}
-
-function formatCurrency(value: number): string {
-  return '$' + new Intl.NumberFormat('es-CL', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }

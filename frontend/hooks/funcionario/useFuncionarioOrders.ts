@@ -130,19 +130,3 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
     refetch: ordersQuery.refetch,
   };
 }
-
-export function useFuncionarioOrder(id: string) {
-  const orderQuery = useQuery({
-    queryKey: ['funcionario-order', id],
-    queryFn: () => funcionarioOrdersService.getOrderById(id),
-    enabled: !!id,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-  });
-
-  return {
-    order: orderQuery.data,
-    isLoading: orderQuery.isLoading,
-    error: orderQuery.error,
-    refetch: orderQuery.refetch,
-  };
-}

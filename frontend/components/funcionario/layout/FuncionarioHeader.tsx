@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Menu, Search, LogOut, User } from 'lucide-react';
+import { Menu, Search, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,10 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { useFuncionarioStore } from '@/store/useFuncionarioStore';
 import { useFuncionarioAuth } from '@/hooks/funcionario/useFuncionarioAuth';
-import { useRouter } from 'next/navigation';
 
 interface FuncionarioHeaderProps {
   onSearchClick?: () => void;
@@ -22,14 +20,6 @@ interface FuncionarioHeaderProps {
 export function FuncionarioHeader({ onSearchClick }: FuncionarioHeaderProps = {}) {
   const { user, toggleSidebar } = useFuncionarioStore();
   const { logout } = useFuncionarioAuth();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  // TODO: Implementar notificaciones reales
-  const notificationCount = 3;
 
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -63,65 +53,8 @@ export function FuncionarioHeader({ onSearchClick }: FuncionarioHeaderProps = {}
           </div>
         </div>
 
-        {/* Right side - Notifications + User menu */}
+        {/* Right side - User menu */}
         <div className="flex items-center gap-2">
-          {/* Notifications */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                {notificationCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                  >
-                    {notificationCount}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="py-2 px-2 space-y-2">
-                <div className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer">
-                  <div className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Nueva orden QUE-015</p>
-                      <p className="text-xs text-slate-500">Juan Pérez • hace 2 min</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer">
-                  <div className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-yellow-500 mt-1.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Orden QUE-012 pendiente 2h</p>
-                      <p className="text-xs text-slate-500">María López • hace 2h</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer">
-                  <div className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-green-500 mt-1.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Orden QUE-010 completada</p>
-                      <p className="text-xs text-slate-500">Carlos Sosa • hace 15 min</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <div className="p-2">
-                <Button variant="ghost" size="sm" className="w-full text-xs">
-                  Ver todas las notificaciones
-                </Button>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2">
@@ -139,14 +72,9 @@ export function FuncionarioHeader({ onSearchClick }: FuncionarioHeaderProps = {}
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/funcionario/perfil')}>
-                <User className="mr-2 h-4 w-4" />
-                Perfil
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+              <DropdownMenuItem onClick={() => logout()} className="text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
-                Cerrar Sesión
+                Cerrar Sesion
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -2,7 +2,6 @@
 
 import { StatsCards } from '@/components/funcionario/dashboard/StatsCards';
 import { RecentOrders } from '@/components/funcionario/dashboard/RecentOrders';
-import { QuickActions } from '@/components/funcionario/dashboard/QuickActions';
 import { useFuncionarioDashboard } from '@/hooks/funcionario/useFuncionarioDashboard';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -35,29 +34,19 @@ export default function FuncionarioDashboardPage() {
       {/* Stats Cards */}
       <StatsCards stats={stats} isLoading={isLoadingStats} />
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Orders - Takes 2 columns */}
-        <div className="lg:col-span-2">
-          <RecentOrders orders={recentOrders} isLoading={isLoadingRecentOrders} />
-        </div>
-
-        {/* Quick Actions - Takes 1 column */}
-        <div>
-          <QuickActions />
-        </div>
-      </div>
+      {/* Recent Orders - Full width */}
+      <RecentOrders orders={recentOrders} isLoading={isLoadingRecentOrders} />
 
       {/* Help Section */}
       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-          💡 Consejos Rápidos
+          Consejos Rapidos
         </h3>
         <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-          <li>• Revisa las órdenes pendientes en <strong>Pendientes</strong> del menú lateral</li>
-          <li>• Usa <kbd className="px-2 py-1 bg-white dark:bg-slate-800 rounded border">Ctrl+K</kbd> para búsqueda rápida</li>
-          <li>• El dashboard se actualiza automáticamente cada minuto</li>
-          <li>• Haz clic en el número de orden para ver los detalles</li>
+          <li>- Revisa las ordenes pendientes en <strong>Pendientes</strong> del menu lateral</li>
+          <li>- Usa <kbd className="px-2 py-1 bg-white dark:bg-slate-800 rounded border">Ctrl+K</kbd> para busqueda rapida</li>
+          <li>- El dashboard se actualiza automaticamente cada minuto</li>
+          <li>- Haz clic en el numero de orden para ver los detalles</li>
         </ul>
       </div>
     </div>
