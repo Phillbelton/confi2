@@ -47,7 +47,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
         {[1, 2, 3].map((i) => (
           <Card key={i} className="animate-pulse bg-slate-800 border-slate-700">
             <CardContent className="p-6">
@@ -60,7 +60,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -68,7 +68,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
             key={card.title}
             className="hover:shadow-md transition-shadow cursor-pointer bg-slate-800 border-slate-700"
           >
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4 md:p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-slate-400">

@@ -11,11 +11,11 @@ export default function FuncionarioDashboardPage() {
     useFuncionarioDashboard();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-slate-400">
             Gestión de órdenes - Vista del Funcionario
           </p>
@@ -38,7 +38,7 @@ export default function FuncionarioDashboardPage() {
       <RecentOrders orders={recentOrders} isLoading={isLoadingRecentOrders} />
 
       {/* Help Section */}
-      <div className="bg-blue-950/30 border border-blue-800 rounded-lg p-4">
+      <div className="bg-blue-950/30 border border-blue-800 rounded-lg p-3 sm:p-4">
         <h3 className="font-semibold text-blue-100 mb-2">
           Consejos Rapidos
         </h3>

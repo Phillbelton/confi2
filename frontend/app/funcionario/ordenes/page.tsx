@@ -82,11 +82,11 @@ export default function OrdenesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Órdenes</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Órdenes</h1>
           <p className="text-slate-400">
             Gestión completa de órdenes
           </p>
@@ -107,13 +107,13 @@ export default function OrdenesPage() {
           <TabsTrigger value="completed" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">Completadas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="space-y-4 mt-4">
+        <TabsContent value={activeTab} className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           {/* Filters */}
           <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
+            <CardHeader className="px-3 pt-3 sm:px-6 sm:pt-6">
               <CardTitle className="text-base text-slate-100">Filtros</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
               <OrderFilters
                 filters={filters}
                 onFilterChange={handleFilterChange}
@@ -124,9 +124,9 @@ export default function OrdenesPage() {
 
           {/* Orders Table */}
           <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
+            <CardHeader className="px-3 pt-3 sm:px-6 sm:pt-6">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-slate-100">
+                <CardTitle className="text-slate-100 text-base sm:text-lg">
                   Órdenes
                   {pagination && (
                     <span className="text-sm font-normal text-slate-400 ml-2">
@@ -136,7 +136,7 @@ export default function OrdenesPage() {
                 </CardTitle>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
               <OrdersTable
                 orders={orders}
                 isLoading={isLoading}

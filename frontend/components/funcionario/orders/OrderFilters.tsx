@@ -28,7 +28,7 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
     filters.status || filters.deliveryMethod || filters.paymentMethod || filters.search;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -42,13 +42,13 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
       </div>
 
       {/* Filter dropdowns */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 sm:gap-3">
         {/* Status Filter */}
         <Select
           value={filters.status || 'all'}
           onValueChange={(value) => onFilterChange('status', value === 'all' ? '' : value)}
         >
-          <SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-slate-200">
+          <SelectTrigger className="w-full sm:w-[180px] bg-slate-800 border-slate-600 text-slate-200">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent className="bg-slate-800 border-slate-600">
@@ -67,7 +67,7 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
           value={filters.deliveryMethod || 'all'}
           onValueChange={(value) => onFilterChange('deliveryMethod', value === 'all' ? '' : value)}
         >
-          <SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-slate-200">
+          <SelectTrigger className="w-full sm:w-[180px] bg-slate-800 border-slate-600 text-slate-200">
             <SelectValue placeholder="Método de entrega" />
           </SelectTrigger>
           <SelectContent className="bg-slate-800 border-slate-600">
@@ -82,7 +82,7 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters }: OrderF
           value={filters.paymentMethod || 'all'}
           onValueChange={(value) => onFilterChange('paymentMethod', value === 'all' ? '' : value)}
         >
-          <SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-slate-200">
+          <SelectTrigger className="w-full sm:w-[180px] bg-slate-800 border-slate-600 text-slate-200">
             <SelectValue placeholder="Método de pago" />
           </SelectTrigger>
           <SelectContent className="bg-slate-800 border-slate-600">
