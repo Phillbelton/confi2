@@ -46,7 +46,7 @@ export default function FuncionarioLayout({
           <div className="md:pl-64">
             <FuncionarioHeader onSearchClick={() => setCommandPaletteOpen(true)} />
 
-            <main className="px-4 py-6 md:px-8 md:py-6 lg:px-10">
+            <main className="px-2 py-4 sm:px-4 md:px-8 md:py-6 lg:px-10">
               <div className="max-w-7xl mx-auto">
                 {children}
               </div>

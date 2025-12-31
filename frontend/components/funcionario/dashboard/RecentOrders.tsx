@@ -68,20 +68,20 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
 
   return (
     <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-slate-100">Órdenes Recientes</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between px-3 pt-3 sm:px-6 sm:pt-6">
+        <CardTitle className="text-slate-100 text-base sm:text-lg">Órdenes Recientes</CardTitle>
         <Link href="/funcionario/ordenes">
           <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-slate-700">
             Ver todas
           </Button>
         </Link>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+        <div className="space-y-2 sm:space-y-3">
           {orders.map((order) => (
             <div
               key={order._id}
-              className="flex items-center justify-between p-3 rounded-lg border border-slate-600 hover:bg-slate-700 transition-colors"
+              className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-slate-600 hover:bg-slate-700 transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -103,7 +103,7 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 ml-4">
+              <div className="flex items-center gap-1 sm:gap-2 ml-2 sm:ml-4">
                 <div className="text-right mr-2">
                   <p className="text-sm font-semibold text-slate-100">
                     {formatCurrency(order.total)}

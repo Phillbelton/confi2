@@ -58,10 +58,10 @@ export default function PendientesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-100">Órdenes Pendientes</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100">Órdenes Pendientes</h1>
         <p className="text-slate-400">
           Órdenes esperando confirmación por WhatsApp ({orders.length})
         </p>
@@ -81,7 +81,7 @@ export default function PendientesPage() {
       )}
 
       {/* Orders List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {orders.map((order) => {
           const priority = getPriorityBadge(order.createdAt);
           const hours = (new Date().getTime() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
@@ -97,7 +97,7 @@ export default function PendientesPage() {
                 isUrgent && !isVeryUrgent && 'border-orange-500 border-l-4'
               )}
             >
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-2 sm:pb-3 px-3 pt-3 sm:px-6 sm:pt-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-base font-mono text-slate-100">
@@ -114,9 +114,9 @@ export default function PendientesPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 px-3 pb-3 sm:px-6 sm:pb-6">
                 {/* Customer Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">Cliente</p>
                     <p className="font-semibold text-slate-100">{order.customer.name}</p>
@@ -147,8 +147,8 @@ export default function PendientesPage() {
 
                 {/* Products Summary */}
                 <div>
-                  <p className="text-sm text-slate-500 mb-2">Productos</p>
-                  <div className="bg-slate-900 rounded-lg p-3 space-y-1">
+                  <p className="text-sm text-slate-500 mb-1 sm:mb-2">Productos</p>
+                  <div className="bg-slate-900 rounded-lg p-2 sm:p-3 space-y-1">
                     {order.items.slice(0, 3).map((item, idx) => (
                       <p key={idx} className="text-sm text-slate-300">
                         • {item.quantity}x {item.variantSnapshot.name}
@@ -164,7 +164,7 @@ export default function PendientesPage() {
 
                 {/* Customer Notes */}
                 {order.customerNotes && (
-                  <div className="bg-yellow-950/30 border border-yellow-800 rounded-lg p-3">
+                  <div className="bg-yellow-950/30 border border-yellow-800 rounded-lg p-2 sm:p-3">
                     <p className="text-sm font-medium text-yellow-100 mb-1">
                       💬 Nota del cliente:
                     </p>
@@ -189,7 +189,7 @@ export default function PendientesPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-700">
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-700 text-sm sm:text-base">
                   <Button
                     className="flex-1 md:flex-none gap-2 bg-green-600 hover:bg-green-700"
                     onClick={() => handleOpenWhatsApp(order._id, order.customer.phone)}
@@ -221,7 +221,7 @@ export default function PendientesPage() {
       {/* Help */}
       {orders.length > 0 && (
         <Card className="bg-blue-950/30 border-blue-800">
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6 px-3 pb-3 sm:px-6 sm:pb-6">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-100">
