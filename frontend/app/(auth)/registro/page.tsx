@@ -15,7 +15,6 @@ import { AnimatedInput } from '@/components/ui/animated-input';
 import { Input } from '@/components/ui/input';
 import { PasswordStrength } from '@/components/ui/password-strength';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -47,7 +46,6 @@ const registerSchema = z
       .string()
       .min(6, 'Mínimo 6 caracteres'),
     confirmPassword: z.string(),
-    acceptTerms: z.literal(true, 'Debes aceptar los términos'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden',
@@ -96,13 +94,11 @@ function RegisterContent() {
       phone: '',
       password: '',
       confirmPassword: '',
-      acceptTerms: false as any,
     },
   });
 
   const password = watch('password');
   const confirmPassword = watch('confirmPassword');
-  const acceptTerms = watch('acceptTerms');
   const passwordsMatch = password && confirmPassword && password === confirmPassword ? true : undefined;
 
   // Redirigir si ya está autenticado
@@ -113,7 +109,7 @@ function RegisterContent() {
   }, [_hasHydrated, isAuthenticated, router]);
 
   const onSubmit = async (data: RegisterFormData) => {
-    const { confirmPassword, acceptTerms, ...registerData } = data;
+    const { confirmPassword, ...registerData } = data;
     // Prepend +56 and remove spaces from phone
     const phoneClean = registerData.phone.replace(/\s/g, '');
     registerMutation.mutate({
@@ -261,33 +257,6 @@ function RegisterContent() {
                     {...register('confirmPassword')}
                   />
                 </motion.div>
-
-                {/* Términos */}
-                <motion.div variants={itemVariants} className="flex items-start gap-3">
-                  <Checkbox
-                    id="acceptTerms"
-                    checked={acceptTerms}
-                    onCheckedChange={(checked) =>
-                      setValue('acceptTerms', checked === true ? true : (false as unknown as true))
-                    }
-                    className="mt-0.5"
-                  />
-                  <Label htmlFor="acceptTerms" className="text-sm leading-relaxed">
-                    Acepto los{' '}
-                    <Link href="/terminos" className="text-primary hover:underline">
-                      términos y condiciones
-                    </Link>{' '}
-                    y la{' '}
-                    <Link href="/privacidad" className="text-primary hover:underline">
-                      política de privacidad
-                    </Link>
-                  </Label>
-                </motion.div>
-                {errors.acceptTerms && (
-                  <p className="text-sm text-destructive -mt-2">
-                    {errors.acceptTerms.message}
-                  </p>
-                )}
 
                 <motion.div variants={itemVariants}>
                   <AnimatedButton
