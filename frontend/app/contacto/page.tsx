@@ -201,15 +201,27 @@ export default function ContactoPage() {
                   <div className="grid gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="phone">Teléfono</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="+56 9 1234 5678"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        disabled={isSubmitting}
-                      />
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                          +56
+                        </span>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          inputMode="numeric"
+                          placeholder="9 1234 5678"
+                          value={formData.phone}
+                          onChange={(e) => {
+                            // Solo permitir dígitos y espacios, máximo 11 caracteres
+                            const value = e.target.value.replace(/[^\d\s]/g, '').slice(0, 11);
+                            setFormData((prev) => ({ ...prev, phone: value }));
+                          }}
+                          disabled={isSubmitting}
+                          maxLength={11}
+                          className="rounded-l-none"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="subject">Asunto *</Label>
