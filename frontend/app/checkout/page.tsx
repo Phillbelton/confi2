@@ -47,11 +47,16 @@ export default function CheckoutPage() {
   // Pre-fill form if user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
+      // Quitar el prefijo +56 del teléfono si viene del usuario
+      let phone = user.phone || '';
+      if (phone.startsWith('+56')) {
+        phone = phone.slice(3);
+      }
       setFormData((prev) => ({
         ...prev,
         name: user.name || prev.name,
         email: user.email || prev.email,
-        phone: user.phone || prev.phone,
+        phone: phone || prev.phone,
       }));
     }
   }, [isAuthenticated, user]);
@@ -80,10 +85,11 @@ export default function CheckoutPage() {
 
     try {
       // Prepare customer data
+      const phoneClean = formData.phone.replace(/\s/g, '');
       const customer = {
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
+        phone: `+56${phoneClean}`,
         address:
           formData.deliveryMethod === 'delivery'
             ? {
@@ -279,15 +285,27 @@ export default function CheckoutPage() {
                         <Label htmlFor="phone">
                           Teléfono <span className="text-destructive">*</span>
                         </Label>
-                        <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          required
-                          placeholder="0981234567"
-                        />
+                        <div className="flex">
+                          <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                            +56
+                          </span>
+                          <Input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            inputMode="numeric"
+                            value={formData.phone}
+                            onChange={(e) => {
+                              // Solo permitir dígitos y espacios, máximo 11 caracteres
+                              const value = e.target.value.replace(/[^\d\s]/g, '').slice(0, 11);
+                              setFormData((prev) => ({ ...prev, phone: value }));
+                            }}
+                            required
+                            placeholder="9 1234 5678"
+                            maxLength={11}
+                            className="rounded-l-none"
+                          />
+                        </div>
                       </div>
 
                       <div>

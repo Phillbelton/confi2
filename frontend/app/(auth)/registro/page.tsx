@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { AnimatedButton } from '@/components/ui/animated-button';
 import { AnimatedInput } from '@/components/ui/animated-input';
+import { Input } from '@/components/ui/input';
 import { PasswordStrength } from '@/components/ui/password-strength';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -207,15 +208,30 @@ function RegisterContent() {
 
                 {/* Teléfono */}
                 <motion.div variants={itemVariants}>
-                  <AnimatedInput
-                    id="phone"
-                    type="tel"
-                    label="Teléfono (WhatsApp +56)"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    error={errors.phone?.message}
-                    {...register('phone')}
-                  />
+                  <Label htmlFor="phone" className="text-sm font-medium">
+                    Teléfono (WhatsApp)
+                  </Label>
+                  <div className="flex mt-1.5">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                      +56
+                    </span>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      placeholder="9 1234 5678"
+                      maxLength={11}
+                      className={cn(
+                        'rounded-l-none',
+                        errors.phone && 'border-destructive focus-visible:ring-destructive'
+                      )}
+                      {...register('phone')}
+                    />
+                  </div>
+                  {errors.phone && (
+                    <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
+                  )}
                 </motion.div>
 
                 {/* Contraseña */}

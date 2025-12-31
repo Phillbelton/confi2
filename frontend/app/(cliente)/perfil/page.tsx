@@ -38,7 +38,7 @@ import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
-  phone: z.string().regex(/^\+?[0-9\s\-]{8,20}$/, 'Teléfono inválido').optional().or(z.literal('')),
+  phone: z.string().regex(/^9\s?\d{4}\s?\d{4}$/, 'Formato: 9 1234 5678').optional().or(z.literal('')),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -85,6 +85,12 @@ export default function ProfilePage() {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
+  // Quitar el prefijo +56 del teléfono para mostrarlo en el formulario
+  const getPhoneWithoutPrefix = (phone: string | undefined) => {
+    if (!phone) return '';
+    return phone.startsWith('+56') ? phone.slice(3) : phone;
+  };
+
   const {
     register,
     handleSubmit,
@@ -94,7 +100,7 @@ export default function ProfilePage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: user?.name || '',
-      phone: user?.phone || '',
+      phone: getPhoneWithoutPrefix(user?.phone),
     },
   });
 
@@ -117,13 +123,19 @@ export default function ProfilePage() {
   const handleOpenEditDialog = () => {
     reset({
       name: user?.name || '',
-      phone: user?.phone || '',
+      phone: getPhoneWithoutPrefix(user?.phone),
     });
     setEditDialogOpen(true);
   };
 
   const onSubmitProfile = async (data: ProfileFormData) => {
-    updateProfileMutation.mutate(data, {
+    // Agregar prefijo +56 al teléfono si existe
+    const phoneClean = data.phone ? data.phone.replace(/\s/g, '') : '';
+    const dataWithPhone = {
+      ...data,
+      phone: phoneClean ? `+56${phoneClean}` : '',
+    };
+    updateProfileMutation.mutate(dataWithPhone, {
       onSuccess: () => {
         setEditDialogOpen(false);
       },
@@ -281,16 +293,23 @@ export default function ProfilePage() {
 
             <div className="space-y-2">
               <Label htmlFor="edit-phone">Teléfono</Label>
-              <Input
-                id="edit-phone"
-                type="tel"
-                inputMode="tel"
-                className={cn(
-                  'h-12',
-                  errors.phone && 'border-destructive'
-                )}
-                {...register('phone')}
-              />
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm h-12">
+                  +56
+                </span>
+                <Input
+                  id="edit-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="9 1234 5678"
+                  maxLength={11}
+                  className={cn(
+                    'h-12 rounded-l-none',
+                    errors.phone && 'border-destructive'
+                  )}
+                  {...register('phone')}
+                />
+              </div>
               {errors.phone && (
                 <p className="text-sm text-destructive">{errors.phone.message}</p>
               )}
