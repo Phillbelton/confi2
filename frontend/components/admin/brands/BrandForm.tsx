@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Upload, X, Info } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -51,7 +51,6 @@ export function BrandForm({
   const [logoPreview, setLogoPreview] = useState<string | null>(
     brand?.logo || null
   );
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const isEditing = !!brand;
 
@@ -80,27 +79,19 @@ export function BrandForm({
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+    if (file && brand && onUploadLogo) {
+      // Mostrar preview inmediatamente
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Subir automáticamente al seleccionar
+      onUploadLogo(brand._id, file);
     }
   };
 
-  const handleUploadLogo = () => {
-    if (selectedFile && brand && onUploadLogo) {
-      onUploadLogo(brand._id, selectedFile);
-      setSelectedFile(null);
-    }
-  };
-
-  const handleRemoveLogo = () => {
-    setLogoPreview(null);
-    setSelectedFile(null);
-  };
 
   return (
     <div className="space-y-6">
@@ -132,7 +123,7 @@ export function BrandForm({
             </Avatar>
 
             <div className="flex-1 space-y-2">
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Input
                   type="file"
                   accept="image/*"
@@ -140,37 +131,12 @@ export function BrandForm({
                   disabled={isUploadingLogo}
                   className="flex-1"
                 />
-                {logoPreview && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleRemoveLogo}
-                    disabled={isUploadingLogo}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                {isUploadingLogo && (
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 )}
               </div>
-              {selectedFile && (
-                <Button
-                  type="button"
-                  onClick={handleUploadLogo}
-                  disabled={isUploadingLogo}
-                  size="sm"
-                >
-                  {isUploadingLogo ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Subiendo...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Subir logo
-                    </>
-                  )}
-                </Button>
+              {isUploadingLogo && (
+                <p className="text-xs text-muted-foreground">Subiendo logo...</p>
               )}
             </div>
           </div>

@@ -24,7 +24,7 @@ export default function AdminLayout({
   return (
     <ProtectedRoute>
       <TooltipProvider delayDuration={200}>
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="theme-admin min-h-screen bg-background text-foreground">
           <AdminSidebar />
 
           <div className="md:pl-64 transition-all duration-300">

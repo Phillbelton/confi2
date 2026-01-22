@@ -120,7 +120,7 @@ export function AppliedFilters({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="flex flex-wrap items-center gap-2 mb-6 p-4 bg-muted/30 rounded-xl border border-border"
+      className="flex flex-wrap items-center gap- mb-6 p-4 bg-muted/30 rounded-xl border border-border"
     >
       <span className="text-sm font-medium text-muted-foreground mr-2">
         Filtros activos:

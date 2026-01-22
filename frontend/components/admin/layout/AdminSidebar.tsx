@@ -92,13 +92,13 @@ export function AdminSidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800',
+          'fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-sidebar border-r border-sidebar-border',
           sidebarOpen ? 'w-64' : 'w-0 md:w-16'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
             {sidebarOpen && (
               <Link href="/admin" className="flex items-center space-x-2">
                 <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
@@ -138,10 +138,10 @@ export function AdminSidebar() {
                     href={item.href}
                     className={cn(
                       'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                      'hover:bg-slate-100 dark:hover:bg-slate-800',
+                      'hover:bg-sidebar-accent',
                       isActive
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                        : 'text-slate-700 dark:text-slate-300',
+                        ? 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90'
+                        : 'text-sidebar-foreground',
                       !sidebarOpen && 'justify-center'
                     )}
                     title={!sidebarOpen ? item.title : undefined}

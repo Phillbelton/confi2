@@ -26,7 +26,7 @@ export function AdminHeader() {
     .slice(0, 2) || 'AD';
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6">
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6">
       {/* Left side */}
       <div className="flex items-center gap-4">
         <Button

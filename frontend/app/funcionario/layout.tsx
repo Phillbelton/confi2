@@ -40,7 +40,7 @@ export default function FuncionarioLayout({
   return (
     <FuncionarioProtectedRoute>
       <TooltipProvider delayDuration={200}>
-        <div className="min-h-screen bg-slate-950 text-slate-100">
+        <div className="theme-funcionario min-h-screen bg-background text-foreground">
           <FuncionarioSidebar />
 
           <div className="md:pl-64">
