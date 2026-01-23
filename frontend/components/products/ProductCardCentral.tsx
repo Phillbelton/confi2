@@ -31,21 +31,20 @@ interface ProductCardCentralProps {
 }
 
 export function ProductCardCentral({ product, variants = [], className }: ProductCardCentralProps) {
-  const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+  // Initialize with first variant ID if available
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(() => {
+    return variants.length > 0 ? variants[0]._id : '';
+  });
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
 
-  // Sync selectedVariantId when variants change or component mounts
+  // Sync selectedVariantId when variants change
   useEffect(() => {
-    if (variants.length > 0) {
-      // Always set to first variant if we don't have a valid selection
-      const currentVariant = variants.find((v) => v._id === selectedVariantId);
-      if (!currentVariant) {
-        setSelectedVariantId(variants[0]._id);
-      }
+    if (variants.length > 0 && !selectedVariantId) {
+      setSelectedVariantId(variants[0]._id);
     }
   }, [variants, selectedVariantId]);
 
@@ -63,27 +62,6 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
       .join(' - ');
     return attrs || variant.sku;
   };
-
-  // Debug log (temporary)
-  useEffect(() => {
-    if (product.hasVariants && variants.length > 0) {
-      console.log('ProductCard Debug:', {
-        productName: product.name,
-        variantsCount: variants.length,
-        selectedVariantId,
-        selectedVariant: selectedVariant ? {
-          id: selectedVariant._id,
-          displayName: getDisplayName(selectedVariant),
-          attributes: selectedVariant.attributes
-        } : null,
-        allVariants: variants.map(v => ({
-          id: v._id,
-          displayName: getDisplayName(v),
-          attributes: v.attributes
-        }))
-      });
-    }
-  }, [selectedVariantId, variants]);
 
   // Check if out of stock
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
