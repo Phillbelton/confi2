@@ -201,19 +201,20 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
 
         {/* Variant Selector */}
         {product.hasVariants && variants.length > 1 && selectedVariantId && (
-          <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
-            <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200">
-              <SelectValue placeholder="Seleccionar formato" />
-            </SelectTrigger>
-            <SelectContent>
+          <div>
+            <select
+              value={selectedVariantId}
+              onChange={(e) => setSelectedVariantId(e.target.value)}
+              className="h-8 w-full text-xs bg-gray-50 border border-gray-200 rounded-md px-2"
+            >
               {variants.map((variant) => (
-                <SelectItem key={variant._id} value={variant._id}>
+                <option key={variant._id} value={variant._id}>
                   {getDisplayName(variant)}
                   {variant.stock === 0 && ' (Agotado)'}
-                </SelectItem>
+                </option>
               ))}
-            </SelectContent>
-          </Select>
+            </select>
+          </div>
         )}
 
         {/* Price Per Unit */}
