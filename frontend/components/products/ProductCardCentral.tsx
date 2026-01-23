@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Heart, Check } from 'lucide-react';
@@ -40,8 +40,27 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
 
   const addItem = useCartStore((state) => state.addItem);
 
+  // Sync selectedVariantId when variants change
+  useEffect(() => {
+    if (variants.length > 0 && !selectedVariantId) {
+      setSelectedVariantId(variants[0]._id);
+    }
+  }, [variants, selectedVariantId]);
+
   // Get selected variant or first variant
   const selectedVariant = variants.find((v) => v._id === selectedVariantId) || variants[0];
+
+  // Generate displayName if not provided by backend
+  const getDisplayName = (variant: ProductVariant | undefined) => {
+    if (!variant) return '';
+    if (variant.displayName) return variant.displayName;
+
+    // Fallback: generate from attributes
+    const attrs = Object.entries(variant.attributes || {})
+      .map(([key, value]) => value)
+      .join(' - ');
+    return attrs || variant.sku;
+  };
 
   // Check if out of stock
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
@@ -84,7 +103,7 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
       setJustAdded(true);
       toast.success('Producto agregado al carrito', {
         description: `${product.name}${
-          product.hasVariants ? ` - ${selectedVariant.displayName}` : ''
+          product.hasVariants ? ` - ${getDisplayName(selectedVariant)}` : ''
         }`,
       });
 
@@ -173,8 +192,8 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
         <Link href={`/productos/${product.slug}`}>
           <h3 className="font-semibold text-sm text-gray-800 line-clamp-2 hover:text-primary transition-colors uppercase">
             {product.name}
-            {selectedVariant?.displayName && product.hasVariants && (
-              <span className="font-normal"> - {selectedVariant.displayName}</span>
+            {product.hasVariants && selectedVariant && (
+              <span className="font-normal"> - {getDisplayName(selectedVariant)}</span>
             )}
           </h3>
         </Link>
@@ -184,13 +203,13 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
           <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
             <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200">
               <SelectValue>
-                {selectedVariant?.displayName || 'Seleccionar'}
+                {getDisplayName(selectedVariant) || 'Seleccionar'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {variants.map((variant) => (
                 <SelectItem key={variant._id} value={variant._id}>
-                  {variant.displayName}
+                  {getDisplayName(variant)}
                   {variant.stock === 0 && ' (Agotado)'}
                 </SelectItem>
               ))}
