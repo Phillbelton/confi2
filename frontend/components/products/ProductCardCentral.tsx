@@ -203,7 +203,7 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
         {product.hasVariants && variants.length > 1 && selectedVariantId && (
           <div>
             <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
-              <SelectTrigger className="h-8 w-full text-xs bg-gray-50 border border-gray-200">
+              <SelectTrigger className="h-8 w-full text-xs bg-gray-50 border border-gray-200 text-gray-900">
                 <SelectValue>
                   {getDisplayName(selectedVariant)}
                 </SelectValue>
