@@ -202,9 +202,7 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
         {product.hasVariants && variants.length > 1 && (
           <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
             <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200">
-              <SelectValue>
-                {getDisplayName(selectedVariant) || 'Seleccionar'}
-              </SelectValue>
+              <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
             <SelectContent>
               {variants.map((variant) => (
