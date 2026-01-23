@@ -31,19 +31,21 @@ interface ProductCardCentralProps {
 }
 
 export function ProductCardCentral({ product, variants = [], className }: ProductCardCentralProps) {
-  const [selectedVariantId, setSelectedVariantId] = useState<string>(
-    variants[0]?._id || ''
-  );
+  const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
 
-  // Sync selectedVariantId when variants change
+  // Sync selectedVariantId when variants change or component mounts
   useEffect(() => {
-    if (variants.length > 0 && !selectedVariantId) {
-      setSelectedVariantId(variants[0]._id);
+    if (variants.length > 0) {
+      // Always set to first variant if we don't have a valid selection
+      const currentVariant = variants.find((v) => v._id === selectedVariantId);
+      if (!currentVariant) {
+        setSelectedVariantId(variants[0]._id);
+      }
     }
   }, [variants, selectedVariantId]);
 
@@ -61,6 +63,27 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
       .join(' - ');
     return attrs || variant.sku;
   };
+
+  // Debug log (temporary)
+  useEffect(() => {
+    if (product.hasVariants && variants.length > 0) {
+      console.log('ProductCard Debug:', {
+        productName: product.name,
+        variantsCount: variants.length,
+        selectedVariantId,
+        selectedVariant: selectedVariant ? {
+          id: selectedVariant._id,
+          displayName: getDisplayName(selectedVariant),
+          attributes: selectedVariant.attributes
+        } : null,
+        allVariants: variants.map(v => ({
+          id: v._id,
+          displayName: getDisplayName(v),
+          attributes: v.attributes
+        }))
+      });
+    }
+  }, [selectedVariantId, variants]);
 
   // Check if out of stock
   const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
@@ -199,10 +222,10 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
         </Link>
 
         {/* Variant Selector */}
-        {product.hasVariants && variants.length > 1 && (
+        {product.hasVariants && variants.length > 1 && selectedVariantId && (
           <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
             <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200">
-              <SelectValue placeholder="Seleccionar" />
+              <SelectValue placeholder="Seleccionar formato" />
             </SelectTrigger>
             <SelectContent>
               {variants.map((variant) => (
