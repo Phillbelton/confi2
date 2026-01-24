@@ -844,6 +844,19 @@ export const editOrderItems = asyncHandler(
     // Guardar orden
     await order.save();
 
+    // Enviar email de notificación al cliente sobre la edición del pedido (no bloqueante)
+    emailService
+      .sendOrderEditEmail(
+        order,
+        order.customer.email,
+        order.customer.name,
+        {
+          oldItems,
+          newItems: newOrderItems,
+        }
+      )
+      .catch((err) => console.error('Error enviando email de edición de pedido:', err));
+
     res.status(200).json({
       success: true,
       message: 'Orden actualizada exitosamente',

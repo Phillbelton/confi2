@@ -516,6 +516,13 @@ class EmailService {
   }
 
   /**
+   * Helper: Formatea moneda en Guaraníes
+   */
+  private formatCurrency(amount: number): string {
+    return `₲${amount.toLocaleString('es-PY')}`;
+  }
+
+  /**
    * Helper: Obtiene información detallada del estado
    */
   private getStatusInfo(status: string): { label: string; color: string; icon: string; message: string } {
@@ -680,6 +687,224 @@ class EmailService {
     return this.sendEmail({
       to: userEmail,
       subject: `❌ Pedido Cancelado #${order.orderNumber} - Confitería Quelita`,
+      html,
+    });
+  }
+
+  /**
+   * Envía email cuando se edita un pedido
+   */
+  async sendOrderEditEmail(
+    order: IOrder,
+    userEmail: string,
+    userName: string,
+    changes: { oldItems: any[]; newItems: any[] }
+  ): Promise<boolean> {
+    const orderUrl = `${ENV.FRONTEND_URL}/orders/${order._id}`;
+
+    // Formatear items para mostrar en el email
+    const formatItems = (items: any[]) => {
+      return items
+        .map(
+          (item) => `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">
+            ${item.variantSnapshot?.name || 'Producto'}
+          </td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+            ${item.quantity}
+          </td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">
+            ${this.formatCurrency(item.pricePerUnit)}
+          </td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">
+            ${this.formatCurrency(item.subtotal)}
+          </td>
+        </tr>
+      `
+        )
+        .join('');
+    };
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido Modificado</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #e91e63;
+      margin: 0;
+    }
+    .content {
+      background-color: white;
+      padding: 25px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .alert {
+      background-color: #fff3e0;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .order-number {
+      background-color: #e91e63;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .items-table th {
+      background-color: #f5f5f5;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+    }
+    .total-section {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+    }
+    .total-row.final {
+      font-size: 18px;
+      font-weight: bold;
+      color: #e91e63;
+      border-top: 2px solid #ddd;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #e91e63;
+      color: white;
+      padding: 12px 30px;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍬 Confitería Quelita</h1>
+    </div>
+    <div class="content">
+      <h2>Hola ${userName},</h2>
+
+      <div class="alert">
+        <strong>✏️ Tu pedido ha sido modificado</strong>
+      </div>
+
+      <div class="order-number">
+        Pedido #${order.orderNumber}
+      </div>
+
+      <p>Te informamos que hemos realizado cambios en tu pedido. A continuación te mostramos los detalles actualizados:</p>
+
+      <h3>Productos actualizados:</h3>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th style="text-align: center;">Cantidad</th>
+            <th style="text-align: right;">Precio Unit.</th>
+            <th style="text-align: right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${formatItems(order.items)}
+        </tbody>
+      </table>
+
+      <div class="total-section">
+        <div class="total-row">
+          <span>Subtotal:</span>
+          <span>${this.formatCurrency(order.subtotal)}</span>
+        </div>
+        ${
+          order.totalDiscount > 0
+            ? `
+        <div class="total-row">
+          <span>Descuento:</span>
+          <span style="color: #4caf50;">-${this.formatCurrency(order.totalDiscount)}</span>
+        </div>
+        `
+            : ''
+        }
+        <div class="total-row">
+          <span>Envío:</span>
+          <span>${this.formatCurrency(order.shippingCost)}</span>
+        </div>
+        <div class="total-row final">
+          <span>Total:</span>
+          <span>${this.formatCurrency(order.total)}</span>
+        </div>
+      </div>
+
+      ${order.adminNotes ? `<p><strong>Nota:</strong> ${order.adminNotes}</p>` : ''}
+
+      <div style="text-align: center;">
+        <a href="${orderUrl}" class="button">Ver Detalle del Pedido</a>
+      </div>
+
+      <p>Si tienes alguna pregunta sobre estos cambios, no dudes en contactarnos.</p>
+    </div>
+    <div class="footer">
+      <p>Si tienes alguna pregunta, contáctanos por WhatsApp: ${ENV.WHATSAPP_BUSINESS_NUMBER}</p>
+      <p>&copy; ${new Date().getFullYear()} Confitería Quelita. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    return this.sendEmail({
+      to: userEmail,
+      subject: `✏️ Tu pedido #${order.orderNumber} ha sido modificado - Confitería Quelita`,
       html,
     });
   }
