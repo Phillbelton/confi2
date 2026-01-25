@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, Search, User, MapPin, Phone, Clock, ChevronDown, Menu, X } from 'lucide-react';
+import { ShoppingCart, Search, User, MapPin, Phone, ChevronDown, Menu, X, Grid3x3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,23 +11,33 @@ import { useClientStore } from '@/store/useClientStore';
 import { CartSheet } from '@/components/cart/CartSheet';
 import { UserDropdown } from './UserDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
+import { MobileCategoriesNav } from './MobileCategoriesNav';
 import { SearchSuggestions } from './SearchSuggestions';
 import { Logo } from './Logo';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useSearchSuggestions } from '@/hooks/useSearchSuggestions';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 export function Header() {
   const router = useRouter();
   const [cartOpen, setCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const itemCount = useCartStore((state) => state.itemCount);
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Hook para sugerencias de búsqueda
   const { suggestions, isLoading } = useSearchSuggestions(
@@ -85,8 +95,9 @@ export function Header() {
       {/* Barra Principal - Fondo oscuro */}
       <div className="bg-[#1a1a2e] border-b border-white/10">
         <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center gap-4">
-            {/* Logo */}
+          {/* Desktop Header */}
+          <div className="hidden lg:flex h-16 items-center gap-4">
+            {/* Logo - Desktop */}
             <Link href="/" className="flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold text-primary">confitería</span>
@@ -95,12 +106,10 @@ export function Header() {
             </Link>
 
             {/* Categories Button - Desktop */}
-            <div className="hidden lg:block">
-              <CategoriesDropdown />
-            </div>
+            <CategoriesDropdown />
 
             {/* Search Bar - Desktop */}
-            <div ref={searchContainerRef} className="hidden lg:flex flex-1 max-w-xl relative">
+            <div ref={searchContainerRef} className="flex flex-1 max-w-xl relative">
               <form onSubmit={handleSearch} className="w-full">
                 <div className="relative flex">
                   <Input
@@ -131,11 +140,8 @@ export function Header() {
               </form>
             </div>
 
-            {/* Spacer */}
-            <div className="flex-1 lg:hidden" />
-
             {/* User Login/Account - Desktop */}
-            <div className="hidden lg:flex items-center">
+            <div className="flex items-center">
               {_hasHydrated && isAuthenticated && user ? (
                 <UserDropdown user={user} />
               ) : _hasHydrated ? (
@@ -154,14 +160,14 @@ export function Header() {
               ) : null}
             </div>
 
-            {/* Cart Button */}
+            {/* Cart Button - Desktop */}
             <Button
               variant="ghost"
               className="relative h-10 px-3 text-white hover:text-primary hover:bg-white/10"
               onClick={() => setCartOpen(true)}
             >
               <ShoppingCart className="h-5 w-5" />
-              <span className="ml-2 hidden sm:inline font-medium">Carrito</span>
+              <span className="ml-2 font-medium">Carrito</span>
               {itemCount > 0 && (
                 <Badge
                   className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 bg-primary text-white text-xs"
@@ -170,29 +176,147 @@ export function Header() {
                 </Badge>
               )}
             </Button>
+          </div>
 
-            {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden text-white hover:text-primary hover:bg-white/10"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
+          {/* Mobile Header */}
+          <div className="flex lg:hidden h-14 items-center justify-between gap-1">
+            {/* Logo - Mobile (Compacto) */}
+            <Link href="/" className="flex-shrink-0">
+              <span className="text-lg font-bold text-primary">quelita</span>
+            </Link>
+
+            {/* Mobile Navigation Icons */}
+            <div className="flex items-center gap-1">
+              {/* Categories Button - Mobile */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                  >
+                    <Grid3x3 className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] bg-[#1a1a2e] border-white/10 p-0 overflow-y-auto">
+                  <SheetHeader className="p-4 border-b border-white/10">
+                    <SheetTitle className="text-white text-left">Categorías</SheetTitle>
+                  </SheetHeader>
+                  <div className="p-4">
+                    <MobileCategoriesNav />
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              {/* Search Button - Mobile */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                onClick={() => setMobileSearchOpen(true)}
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+
+              {/* Cart Button - Mobile */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                onClick={() => setCartOpen(true)}
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <Badge
+                    className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 bg-primary text-white text-xs"
+                  >
+                    {itemCount > 99 ? '99+' : itemCount}
+                  </Badge>
+                )}
+              </Button>
+
+              {/* User Button - Mobile */}
+              {_hasHydrated && isAuthenticated && user ? (
+                <UserDropdown user={user} />
+              ) : _hasHydrated ? (
+                <Link href="/login">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Barra Secundaria - Rojo */}
-      <div className="bg-primary text-white">
+      {/* Mobile Search Overlay */}
+      <AnimatePresence>
+        {mobileSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden fixed inset-0 z-50 bg-[#1a1a2e]"
+          >
+            <div className="container mx-auto px-4 py-4">
+              <div className="flex items-center gap-3">
+                <form onSubmit={(e) => { handleSearch(e); setMobileSearchOpen(false); }} className="flex-1 relative">
+                  <Input
+                    ref={mobileSearchInputRef}
+                    type="text"
+                    placeholder="Buscar en Quelita"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onFocus={handleSearchFocus}
+                    autoFocus
+                    className="w-full h-12 pl-4 pr-12 rounded-lg bg-white text-gray-900 border-0 placeholder:text-gray-500"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                  >
+                    <Search className="h-5 w-5" />
+                  </button>
+                </form>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 text-white hover:text-primary"
+                  onClick={() => { setMobileSearchOpen(false); setSearchQuery(''); }}
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+
+              {/* Mobile Search Suggestions */}
+              {showSuggestions && searchQuery.length >= 2 && (
+                <div className="mt-4">
+                  <SearchSuggestions
+                    suggestions={suggestions}
+                    isLoading={isLoading}
+                    query={searchQuery}
+                    onSelect={() => { handleSuggestionSelect(); setMobileSearchOpen(false); }}
+                  />
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Barra Secundaria - Rojo (Solo Desktop) */}
+      <div className="hidden sm:block bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="flex h-10 items-center justify-between text-sm">
             {/* Izquierda - Ubicación/Delivery */}
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Cómo te gustaría recibir tu pedido</span>
-              <span className="sm:hidden">Delivery</span>
+              <span>Cómo te gustaría recibir tu pedido</span>
               <ChevronDown className="h-4 w-4" />
             </div>
 
@@ -214,73 +338,6 @@ export function Header() {
           </div>
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-[#1a1a2e] border-b border-white/10 overflow-hidden"
-          >
-            <div className="container mx-auto px-4 py-4 space-y-4">
-              {/* Mobile Search */}
-              <form onSubmit={handleSearch} className="relative">
-                <Input
-                  type="text"
-                  placeholder="Buscar en Quelita"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onFocus={handleSearchFocus}
-                  className="w-full h-10 pl-4 pr-12 rounded-lg bg-white text-gray-900 border-0 placeholder:text-gray-500"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  <Search className="h-5 w-5" />
-                </button>
-              </form>
-
-              {/* Mobile Categories */}
-              <div className="pt-2">
-                <CategoriesDropdown />
-              </div>
-
-              {/* Mobile User */}
-              {_hasHydrated && !isAuthenticated && (
-                <Link
-                  href="/login"
-                  className="flex items-center gap-3 text-white py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <User className="h-5 w-5" />
-                  <span>Iniciar sesión</span>
-                </Link>
-              )}
-
-              {/* Mobile Links */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                <Link
-                  href="/como-ser-socio"
-                  className="text-gray-300 hover:text-white py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Cómo ser socio
-                </Link>
-                <Link
-                  href="/locales"
-                  className="text-gray-300 hover:text-white py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Locales y Horarios
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Cart Sheet */}
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
