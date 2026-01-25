@@ -26,7 +26,7 @@ export default function HomePage() {
         {/* Hero Banner */}
         <section className="relative bg-gradient-to-r from-primary to-primary/80 text-white overflow-hidden">
           <div className="container mx-auto px-4 py-12 md:py-16">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
               <div className="space-y-6">
                 <h1 className="text-4xl md:text-5xl font-bold leading-tight">
                   Los mejores productos
@@ -79,7 +79,7 @@ export default function HomePage() {
         {/* Features */}
         <section className="py-8 bg-[#1a1a2e]">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <div className="flex items-center gap-3 p-4 bg-white/5 rounded-lg">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                   <Truck className="h-5 w-5 text-primary" />
@@ -167,8 +167,8 @@ export default function HomePage() {
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Star className="h-6 w-6 text-yellow-400 fill-yellow-400" />
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                  <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400 fill-yellow-400" />
                   Productos Destacados
                 </h2>
                 <p className="text-gray-400 text-sm mt-1">Los más vendidos de la semana</p>
@@ -183,7 +183,7 @@ export default function HomePage() {
             </div>
 
             {featuredLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="bg-white rounded-lg overflow-hidden">
                     <Skeleton className="aspect-square" />
@@ -196,7 +196,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                 {featuredProducts.slice(0, 10).map((product: ProductParent & { variants?: ProductVariant[] }) => (
                   <ProductCardCentral
                     key={product._id}

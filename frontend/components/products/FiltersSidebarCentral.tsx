@@ -148,7 +148,7 @@ export function FiltersSidebarCentral({
 
       {/* Categories */}
       <CollapsibleSection title="Categorías" icon={<Tag className="h-4 w-4 text-gray-400" />}>
-        <div className="space-y-1 max-h-64 overflow-y-auto scrollbar-hide">
+        <div className="space-y-1 max-h-48 sm:max-h-64 overflow-y-auto scrollbar-hide">
           {categories?.map((category: Category & { subcategories?: Category[] }) => {
             const isSelected = selectedCategory === category._id;
             const hasSubcategories = category.subcategories && category.subcategories.length > 0;
@@ -213,7 +213,7 @@ export function FiltersSidebarCentral({
 
       {/* Brands */}
       <CollapsibleSection title="Marca" icon={<Tag className="h-4 w-4 text-gray-400" />}>
-        <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
+        <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto scrollbar-hide">
           {brands?.map((brand: Brand) => (
             <label
               key={brand._id}

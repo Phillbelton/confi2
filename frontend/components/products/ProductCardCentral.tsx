@@ -174,11 +174,11 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
       </Link>
 
       {/* Content */}
-      <div className="p-4 space-y-3">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
         {/* Price */}
         <div className="space-y-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-primary">
+            <span className="text-xl sm:text-2xl font-bold text-primary">
               ${displayPrice.toLocaleString('es-CL')}
             </span>
             {hasFixedDiscountApplied && (

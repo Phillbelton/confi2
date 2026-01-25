@@ -219,19 +219,19 @@ function ProductsContent() {
           {/* Products Section */}
           <div className="flex-1">
             {/* Header with title and sort */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 flex-wrap">
                   {pageTitle}
                   {pagination && (
-                    <span className="text-lg font-normal text-gray-400">
+                    <span className="text-base sm:text-lg font-normal text-gray-400">
                       ({pagination.totalItems})
                     </span>
                   )}
                 </h1>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {/* Mobile Filter Button */}
                 <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
                   <SheetTrigger asChild>
@@ -274,7 +274,7 @@ function ProductsContent() {
 
                 {/* Sort Dropdown */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-44 bg-[#1a1a2e] border-gray-600 text-white">
+                  <SelectTrigger className="w-full sm:w-44 bg-[#1a1a2e] border-gray-600 text-white">
                     <SelectValue placeholder="Ordenar por:" />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
@@ -352,7 +352,7 @@ function ProductsContent() {
 
             {/* Products Grid */}
             {productsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                   <div key={i} className="bg-white rounded-lg overflow-hidden">
                     <Skeleton className="aspect-square" />
@@ -375,7 +375,7 @@ function ProductsContent() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {products.map((product: ProductParent & { variants?: ProductVariant[] }) => (
                   <ProductCardCentral
                     key={product._id}
@@ -459,7 +459,7 @@ export default function ProductsPage() {
               <div className="flex gap-6">
                 <Skeleton className="hidden lg:block w-64 h-96" />
                 <div className="flex-1">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                     {Array.from({ length: 12 }).map((_, i) => (
                       <Skeleton key={i} className="aspect-square rounded-lg" />
                     ))}
