@@ -30,6 +30,15 @@ interface ProductCardCentralProps {
   className?: string;
 }
 
+/**
+ * ProductCardCentral - Tarjeta de producto optimizada para el catálogo
+ *
+ * Diseño integrado con el tema oscuro del sitio:
+ * - Fondo con gradiente sutil que combina con el background oscuro
+ * - Bordes sutiles para definir la tarjeta sin alto contraste
+ * - Layout flex que garantiza botones alineados entre tarjetas
+ */
+
 export function ProductCardCentral({ product, variants = [], className }: ProductCardCentralProps) {
   // Initialize with first variant ID if available
   const [selectedVariantId, setSelectedVariantId] = useState<string>(() => {
@@ -126,14 +135,25 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
   return (
     <div
       className={cn(
-        'group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow',
+        // Estructura flex para altura completa y botón al fondo
+        'group relative flex flex-col h-full',
+        // Fondo con gradiente sutil que integra con el tema oscuro
+        'bg-gradient-to-b from-slate-800/95 to-slate-900/95',
+        // Borde sutil para definición sin alto contraste
+        'border border-white/10 hover:border-white/20',
+        // Esquinas y transiciones suaves
+        'rounded-xl overflow-hidden',
+        'shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30',
+        'transition-all duration-300',
+        // Efecto hover sutil
+        'hover:-translate-y-0.5',
         isOutOfStock && 'opacity-70',
         className
       )}
     >
       {/* Image Container */}
       <Link href={`/productos/${product.slug}`} className="block relative">
-        <div className="aspect-square relative overflow-hidden bg-gray-100 p-4">
+        <div className="aspect-square relative overflow-hidden bg-slate-900/50 p-3">
           <Image
             src={mainImage}
             alt={product.name}
@@ -149,7 +169,7 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
               'absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all z-10',
               isFavorite
                 ? 'bg-primary text-white'
-                : 'bg-white/80 text-gray-400 hover:text-primary hover:bg-white'
+                : 'bg-slate-800/80 text-gray-400 hover:text-primary hover:bg-slate-700'
             )}
           >
             <Heart className={cn('h-5 w-5', isFavorite && 'fill-current')} />
@@ -157,14 +177,14 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
 
           {/* Discount Badge */}
           {hasDiscount && discountBadge && !isOutOfStock && (
-            <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground font-bold">
+            <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground font-bold shadow-md">
               {discountBadge}
             </Badge>
           )}
 
           {/* Out of Stock Overlay */}
           {isOutOfStock && (
-            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+            <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center backdrop-blur-sm">
               <Badge variant="destructive" className="text-sm px-3 py-1">
                 Agotado
               </Badge>
@@ -173,95 +193,102 @@ export function ProductCardCentral({ product, variants = [], className }: Produc
         </div>
       </Link>
 
-      {/* Content */}
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-        {/* Price */}
-        <div className="space-y-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl sm:text-2xl font-bold text-primary">
+      {/* Content - flex-1 para ocupar espacio disponible */}
+      <div className="flex flex-col flex-1 p-3 sm:p-4">
+        {/* Contenido principal - crece para empujar botón abajo */}
+        <div className="flex-1 space-y-2 sm:space-y-2.5">
+          {/* Price */}
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-xl sm:text-2xl font-bold text-white">
               ${displayPrice.toLocaleString('es-CL')}
             </span>
             {hasFixedDiscountApplied && (
-              <span className="text-sm text-gray-400 line-through">
+              <span className="text-sm text-gray-500 line-through">
                 ${originalPrice.toLocaleString('es-CL')}
               </span>
             )}
           </div>
+
+          {/* Product Name */}
+          <Link href={`/productos/${product.slug}`}>
+            <h3 className="font-semibold text-sm text-gray-200 line-clamp-2 hover:text-primary transition-colors leading-tight">
+              {product.name}
+              {product.hasVariants && selectedVariant && (
+                <span className="font-normal text-gray-400"> - {getDisplayName(selectedVariant)}</span>
+              )}
+            </h3>
+          </Link>
+
+          {/* Variant Selector */}
+          {product.hasVariants && variants.length > 1 && selectedVariantId && (
+            <div>
+              <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
+                <SelectTrigger className="h-8 w-full text-xs bg-slate-700/50 border-white/10 text-gray-200 hover:bg-slate-700">
+                  <SelectValue>
+                    {getDisplayName(selectedVariant)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-white/10">
+                  {variants.map((variant) => (
+                    <SelectItem
+                      key={variant._id}
+                      value={variant._id}
+                      className="text-gray-200 focus:bg-slate-700 focus:text-white"
+                    >
+                      {getDisplayName(variant)}
+                      {variant.stock === 0 && ' (Agotado)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Price Per Unit */}
+          <p className="text-xs text-gray-500">
+            ${pricePerUnit.toLocaleString('es-CL')} por UN
+          </p>
+
+          {/* Minimum Purchase */}
+          {minPurchase > 1 && (
+            <p className="text-xs text-amber-500/80">
+              Compra mínima {minPurchase} un
+            </p>
+          )}
         </div>
 
-        {/* Product Name */}
-        <Link href={`/productos/${product.slug}`}>
-          <h3 className="font-semibold text-sm text-gray-800 line-clamp-2 hover:text-primary transition-colors uppercase">
-            {product.name}
-            {product.hasVariants && selectedVariant && (
-              <span className="font-normal"> - {getDisplayName(selectedVariant)}</span>
+        {/* Add to Cart Button - siempre al fondo */}
+        <div className="mt-3 sm:mt-4">
+          <Button
+            onClick={handleAddToCart}
+            disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+            className={cn(
+              'w-full h-10 font-semibold transition-all',
+              justAdded
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-primary hover:bg-primary/90 text-white'
             )}
-          </h3>
-        </Link>
-
-        {/* Variant Selector */}
-        {product.hasVariants && variants.length > 1 && selectedVariantId && (
-          <div>
-            <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
-              <SelectTrigger className="h-8 w-full text-xs bg-gray-50 border border-gray-200 text-gray-900">
-                <SelectValue>
-                  {getDisplayName(selectedVariant)}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {variants.map((variant) => (
-                  <SelectItem key={variant._id} value={variant._id}>
-                    {getDisplayName(variant)}
-                    {variant.stock === 0 && ' (Agotado)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Price Per Unit */}
-        <p className="text-xs text-gray-500">
-          ${pricePerUnit.toLocaleString('es-CL')} por UN
-        </p>
-
-        {/* Minimum Purchase */}
-        {minPurchase > 1 && (
-          <p className="text-xs text-gray-500">
-            Compra mínima {minPurchase} un
-          </p>
-        )}
-
-        {/* Add to Cart Button */}
-        <Button
-          onClick={handleAddToCart}
-          disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
-          className={cn(
-            'w-full h-10 font-semibold transition-all',
-            justAdded
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-primary hover:bg-primary/90 text-white'
-          )}
-        >
-          {justAdded ? (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              Agregado
-            </>
-          ) : isAdding ? (
-            <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Agregando...
-            </>
-          ) : isOutOfStock ? (
-            'Agotado'
-          ) : (
-            <>
-              Agregar
-              <ShoppingCart className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
+          >
+            {justAdded ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Agregado
+              </>
+            ) : isAdding ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Agregando...
+              </>
+            ) : isOutOfStock ? (
+              'Agotado'
+            ) : (
+              <>
+                Agregar
+                <ShoppingCart className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
