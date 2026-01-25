@@ -311,7 +311,7 @@ export const getProductsQuerySchema = z.object({
     inStock: z.enum(['true', 'false']).optional(),
     active: z.enum(['true', 'false']).optional(),
     search: z.string().max(100).optional(),
-    sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest']).optional(),
+    sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular']).optional(),
   }),
 });
 

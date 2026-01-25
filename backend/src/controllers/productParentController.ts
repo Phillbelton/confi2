@@ -207,16 +207,13 @@ export const getProductParents = asyncHandler(
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    // Construir sort
+    // Construir sort para campos del ProductParent
+    // Nota: El ordenamiento por precio se hace después de cargar variantes
     let sortObj: any = { createdAt: -1 }; // default
-    if (sort) {
+    const sortByPrice = sort === 'price_asc' || sort === 'price_desc';
+
+    if (sort && !sortByPrice) {
       switch (sort) {
-        case 'price_asc':
-          sortObj = { 'variants.price': 1 };
-          break;
-        case 'price_desc':
-          sortObj = { 'variants.price': -1 };
-          break;
         case 'name_asc':
           sortObj = { name: 1 };
           break;
@@ -228,6 +225,9 @@ export const getProductParents = asyncHandler(
           break;
         case 'oldest':
           sortObj = { createdAt: 1 };
+          break;
+        case 'popular':
+          sortObj = { views: -1, createdAt: -1 };
           break;
       }
     }
@@ -288,10 +288,25 @@ export const getProductParents = asyncHandler(
     }
 
     // Adjuntar variantes a cada producto
-    const productsWithVariants = filteredProducts.map((product) => ({
+    let productsWithVariants = filteredProducts.map((product) => ({
       ...product.toObject(),
       variants: variantsByProduct[product._id.toString()] || [],
     }));
+
+    // Ordenar por precio si es necesario (después de tener las variantes)
+    if (sortByPrice) {
+      productsWithVariants.sort((a, b) => {
+        // Obtener el precio mínimo de las variantes de cada producto
+        const priceA = a.variants.length > 0
+          ? Math.min(...a.variants.map((v: any) => v.price || Infinity))
+          : Infinity;
+        const priceB = b.variants.length > 0
+          ? Math.min(...b.variants.map((v: any) => v.price || Infinity))
+          : Infinity;
+
+        return sort === 'price_asc' ? priceA - priceB : priceB - priceA;
+      });
+    }
 
     // Calcular paginación
     const totalPages = Math.ceil(total / limitNum);

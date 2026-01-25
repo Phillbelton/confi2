@@ -218,15 +218,8 @@ function ProductsContent() {
 
           {/* Products Section */}
           <div className="flex-1">
-            {/* Header with product count and sort */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              {pagination && (
-                <p className="text-sm text-gray-400">
-                  {pagination.totalItems} {pagination.totalItems === 1 ? 'producto' : 'productos'}
-                </p>
-              )}
-
-              <div className="flex items-center gap-2 sm:gap-3">
+            {/* Header with sort */}
+            <div className="flex items-center justify-end gap-2 sm:gap-3 mb-6">
                 {/* Mobile Filter Button */}
                 <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
                   <SheetTrigger asChild>
@@ -281,7 +274,6 @@ function ProductsContent() {
                     <SelectItem value="popular">Más populares</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
             </div>
 
             {/* Active Filters */}
