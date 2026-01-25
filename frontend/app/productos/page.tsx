@@ -218,18 +218,13 @@ function ProductsContent() {
 
           {/* Products Section */}
           <div className="flex-1">
-            {/* Header with title and sort */}
+            {/* Header with product count and sort */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 flex-wrap">
-                  {pageTitle}
-                  {pagination && (
-                    <span className="text-base sm:text-lg font-normal text-gray-400">
-                      ({pagination.totalItems})
-                    </span>
-                  )}
-                </h1>
-              </div>
+              {pagination && (
+                <p className="text-sm text-gray-400">
+                  {pagination.totalItems} {pagination.totalItems === 1 ? 'producto' : 'productos'}
+                </p>
+              )}
 
               <div className="flex items-center gap-2 sm:gap-3">
                 {/* Mobile Filter Button */}
