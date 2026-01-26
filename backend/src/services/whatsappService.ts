@@ -416,6 +416,55 @@ export function generateReadyForDeliveryMessage(order: IOrder): string {
 }
 
 /**
+ * Genera mensaje de orden editada para el cliente
+ * @param order Orden editada
+ * @returns Mensaje de actualización
+ */
+export function generateOrderEditedMessage(order: IOrder): string {
+  try {
+    const lines: string[] = [];
+
+    lines.push('✏️ *PEDIDO ACTUALIZADO*');
+    lines.push('━━━━━━━━━━━━━━━━━━━━');
+    lines.push('');
+    lines.push(`Hola *${order.customer.name}*,`);
+    lines.push('');
+    lines.push(`Tu pedido *${order.orderNumber}* ha sido modificado.`);
+    lines.push('');
+
+    // Productos actualizados
+    lines.push('🛒 *Productos actuales:*');
+    order.items.forEach((item) => {
+      const precioFormateado = item.subtotal.toLocaleString('es-CL');
+      lines.push(`• ${item.quantity}x ${item.variantSnapshot.name} - $${precioFormateado}`);
+    });
+    lines.push('');
+
+    // Totales
+    const subtotalFormateado = order.subtotal.toLocaleString('es-CL');
+    lines.push(`Subtotal: $${subtotalFormateado}`);
+
+    if (order.shippingCost > 0) {
+      const envioFormateado = order.shippingCost.toLocaleString('es-CL');
+      lines.push(`Envío: $${envioFormateado}`);
+    }
+
+    const totalFormateado = order.total.toLocaleString('es-CL');
+    lines.push(`💵 *Total: $${totalFormateado}*`);
+    lines.push('');
+
+    lines.push('Si tienes alguna duda sobre los cambios, contáctanos.');
+    lines.push('');
+    lines.push('_Gracias por tu preferencia_');
+
+    return lines.join('\n');
+  } catch (error) {
+    console.error('Error en generateOrderEditedMessage:', error);
+    throw error;
+  }
+}
+
+/**
  * Genera mensaje de orden completada para el cliente
  * @param order Orden completada
  * @returns Mensaje de agradecimiento

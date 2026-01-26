@@ -13,6 +13,7 @@ import {
   generateReadyForDeliveryMessage,
   generateCancellationMessage,
   generateCompletedMessage,
+  generateOrderEditedMessage,
 } from '../services/whatsappService';
 import { emailService } from '../services/emailService';
 
@@ -890,6 +891,19 @@ export const editOrderItems = asyncHandler(
     // Guardar orden
     await order.save();
 
+    // Al editar items: Email + WhatsApp
+    // Enviar email de actualización (no bloqueante)
+    emailService
+      .sendOrderStatusUpdateEmail(order, order.customer.email, order.customer.name, 'updated')
+      .catch((err) => console.error('Error enviando email de edición:', err));
+
+    // Generar mensaje y URL de WhatsApp
+    const message = generateOrderEditedMessage(order);
+    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
+    const whatsappURL = customerPhone
+      ? `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`
+      : null;
+
     res.status(200).json({
       success: true,
       message: 'Orden actualizada exitosamente',
@@ -900,6 +914,8 @@ export const editOrderItems = asyncHandler(
           quantityChange: change.quantityChange,
           type: change.type,
         })),
+        whatsappMessage: message,
+        whatsappURL,
       },
     });
   }
