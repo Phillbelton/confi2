@@ -30,7 +30,7 @@ export function generateOrderMessage(order: IOrder): string {
 
     // Número de orden y fecha
     lines.push(`📋 *Orden:* ${order.orderNumber}`);
-    const fecha = new Date(order.createdAt).toLocaleString('es-PY', {
+    const fecha = new Date(order.createdAt).toLocaleString('es-CL', {
       dateStyle: 'medium',
       timeStyle: 'short',
     });
@@ -108,18 +108,18 @@ export function generateOrderMessage(order: IOrder): string {
       lines.push(`   Cantidad: ${item.quantity} un`);
 
       // Mostrar precio unitario
-      const precioFormateado = item.pricePerUnit.toLocaleString('es-PY');
-      lines.push(`   Precio c/u: ₲${precioFormateado}`);
+      const precioFormateado = item.pricePerUnit.toLocaleString('es-CL');
+      lines.push(`   Precio c/u: $${precioFormateado}`);
 
       // Si tiene descuento, mostrarlo
       if (item.discount > 0) {
-        const descuentoFormateado = item.discount.toLocaleString('es-PY');
-        lines.push(`   💰 Descuento: ₲${descuentoFormateado}`);
+        const descuentoFormateado = item.discount.toLocaleString('es-CL');
+        lines.push(`   💰 Descuento: $${descuentoFormateado}`);
       }
 
       // Subtotal del item
-      const subtotalFormateado = item.subtotal.toLocaleString('es-PY');
-      lines.push(`   *Subtotal: ₲${subtotalFormateado}*`);
+      const subtotalFormateado = item.subtotal.toLocaleString('es-CL');
+      lines.push(`   *Subtotal: $${subtotalFormateado}*`);
     });
 
     lines.push('');
@@ -128,23 +128,23 @@ export function generateOrderMessage(order: IOrder): string {
     // Resumen de montos
     lines.push('');
     lines.push('💵 *RESUMEN*');
-    const subtotalFormateado = order.subtotal.toLocaleString('es-PY');
-    lines.push(`Subtotal: ₲${subtotalFormateado}`);
+    const subtotalFormateado = order.subtotal.toLocaleString('es-CL');
+    lines.push(`Subtotal: $${subtotalFormateado}`);
 
     if (order.totalDiscount > 0) {
-      const totalDescuentoFormateado = order.totalDiscount.toLocaleString('es-PY');
-      lines.push(`Descuento total: -₲${totalDescuentoFormateado}`);
+      const totalDescuentoFormateado = order.totalDiscount.toLocaleString('es-CL');
+      lines.push(`Descuento total: -$${totalDescuentoFormateado}`);
     }
 
     if (order.shippingCost > 0) {
-      const envioFormateado = order.shippingCost.toLocaleString('es-PY');
-      lines.push(`Envío: ₲${envioFormateado}`);
+      const envioFormateado = order.shippingCost.toLocaleString('es-CL');
+      lines.push(`Envío: $${envioFormateado}`);
     } else if (order.deliveryMethod === 'delivery') {
       lines.push('Envío: _A confirmar_');
     }
 
-    const totalFormateado = order.total.toLocaleString('es-PY');
-    lines.push(`*TOTAL: ₲${totalFormateado}*`);
+    const totalFormateado = order.total.toLocaleString('es-CL');
+    lines.push(`*TOTAL: $${totalFormateado}*`);
 
     if (order.shippingCost === 0 && order.deliveryMethod === 'delivery') {
       lines.push('_Total final se confirmará con el costo de envío_');
@@ -260,6 +260,53 @@ export function getFloatButtonConfig(): FloatButtonConfig {
 }
 
 /**
+ * Genera mensaje de "pedido recibido" para el cliente (al crear orden)
+ * Este es el primer mensaje que recibe el cliente
+ * @param order Orden recién creada
+ * @returns Mensaje de recepción
+ */
+export function generateOrderReceivedMessage(order: IOrder): string {
+  try {
+    const lines: string[] = [];
+
+    lines.push('📦 *PEDIDO RECIBIDO*');
+    lines.push('━━━━━━━━━━━━━━━━━━━━');
+    lines.push('');
+    lines.push(`Hola *${order.customer.name}*,`);
+    lines.push('');
+    lines.push(`Recibimos tu pedido *${order.orderNumber}*.`);
+    lines.push('');
+
+    // Productos resumidos
+    lines.push('🛒 *Productos:*');
+    order.items.forEach((item) => {
+      const precioFormateado = item.subtotal.toLocaleString('es-CL');
+      lines.push(`• ${item.quantity}x ${item.variantSnapshot.name} - $${precioFormateado}`);
+    });
+    lines.push('');
+
+    // Subtotal
+    const subtotalFormateado = order.subtotal.toLocaleString('es-CL');
+    lines.push(`💵 Subtotal: *$${subtotalFormateado}*`);
+
+    if (order.deliveryMethod === 'delivery') {
+      lines.push('🚚 Envío: _Por confirmar_');
+    }
+    lines.push('');
+
+    lines.push('⏳ Estamos revisando tu pedido.');
+    lines.push('Te confirmaremos en breve con el total final.');
+    lines.push('');
+    lines.push('_Gracias por tu preferencia_');
+
+    return lines.join('\n');
+  } catch (error) {
+    console.error('Error en generateOrderReceivedMessage:', error);
+    throw error;
+  }
+}
+
+/**
  * Genera mensaje de confirmación de orden para cliente
  * @param order Orden confirmada
  * @returns Mensaje de confirmación
@@ -284,8 +331,8 @@ export function generateConfirmationMessage(order: IOrder): string {
     lines.push('');
 
     // Total
-    const totalFormateado = order.total.toLocaleString('es-PY');
-    lines.push(`💵 Total: *₲${totalFormateado}*`);
+    const totalFormateado = order.total.toLocaleString('es-CL');
+    lines.push(`💵 Total: *$${totalFormateado}*`);
     lines.push('');
 
     // Información de entrega
@@ -347,8 +394,8 @@ export function generateReadyForDeliveryMessage(order: IOrder): string {
     }
     lines.push('');
 
-    const totalFormateado = order.total.toLocaleString('es-PY');
-    lines.push(`💵 Total a pagar: *₲${totalFormateado}*`);
+    const totalFormateado = order.total.toLocaleString('es-CL');
+    lines.push(`💵 Total a pagar: *$${totalFormateado}*`);
 
     if (order.paymentMethod === 'cash') {
       lines.push('💰 Pago en efectivo');
@@ -364,6 +411,38 @@ export function generateReadyForDeliveryMessage(order: IOrder): string {
     return lines.join('\n');
   } catch (error) {
     console.error('Error en generateReadyForDeliveryMessage:', error);
+    throw error;
+  }
+}
+
+/**
+ * Genera mensaje de orden completada para el cliente
+ * @param order Orden completada
+ * @returns Mensaje de agradecimiento
+ */
+export function generateCompletedMessage(order: IOrder): string {
+  try {
+    const lines: string[] = [];
+
+    lines.push('🎉 *¡PEDIDO ENTREGADO!*');
+    lines.push('━━━━━━━━━━━━━━━━━━━━');
+    lines.push('');
+    lines.push(`Hola *${order.customer.name}*,`);
+    lines.push('');
+    lines.push(`Tu orden *${order.orderNumber}* ha sido entregada.`);
+    lines.push('');
+    lines.push('¡Gracias por tu compra! 🙏');
+    lines.push('');
+    lines.push('Esperamos que disfrutes tus productos.');
+    lines.push('Si tienes alguna consulta, no dudes en escribirnos.');
+    lines.push('');
+    lines.push('⭐ Tu opinión es importante para nosotros.');
+    lines.push('');
+    lines.push('_¡Te esperamos pronto!_');
+
+    return lines.join('\n');
+  } catch (error) {
+    console.error('Error en generateCompletedMessage:', error);
     throw error;
   }
 }

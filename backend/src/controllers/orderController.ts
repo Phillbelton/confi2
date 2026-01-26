@@ -6,7 +6,14 @@ import StockMovement from '../models/StockMovement';
 import { AuthRequest, ApiResponse, PaginatedResponse, OrderStatus } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { applyDiscountToCart } from '../services/discountService';
-import { generateWhatsAppURL, generateConfirmationMessage, generateReadyForDeliveryMessage, generateCancellationMessage } from '../services/whatsappService';
+import {
+  generateWhatsAppURL,
+  generateOrderReceivedMessage,
+  generateConfirmationMessage,
+  generateReadyForDeliveryMessage,
+  generateCancellationMessage,
+  generateCompletedMessage,
+} from '../services/whatsappService';
 import { emailService } from '../services/emailService';
 
 /**
@@ -183,13 +190,14 @@ export const createOrder = asyncHandler(
       whatsappSent: false,
     });
 
-    // Enviar email de confirmación de pedido (no bloqueante)
-    emailService
-      .sendOrderConfirmationEmail(order, customerData.email, customerData.name)
-      .catch((err) => console.error('Error enviando email de confirmación:', err));
+    // Al crear orden: Solo WhatsApp, NO email
+    // El email se enviará cuando el funcionario confirme el pedido
 
-    // Generar URL de WhatsApp
-    const whatsappURL = generateWhatsAppURL(order, process.env.WHATSAPP_BUSINESS_PHONE || '595981234567');
+    // Generar URL de WhatsApp para notificar al cliente
+    const customerPhone = customerData.phone?.replace(/\D/g, '') || '';
+    const whatsappURL = customerPhone
+      ? `https://wa.me/${customerPhone}?text=${encodeURIComponent(generateOrderReceivedMessage(order))}`
+      : null;
 
     res.status(201).json({
       success: true,
@@ -197,6 +205,7 @@ export const createOrder = asyncHandler(
       data: {
         order,
         whatsappURL,
+        whatsappMessage: generateOrderReceivedMessage(order),
       },
     });
   }
@@ -232,8 +241,18 @@ export const confirmOrder = asyncHandler(
 
     await order.save();
 
-    // Generar mensaje de confirmación
+    // Al confirmar: Email + WhatsApp
+    // Enviar email de confirmación (no bloqueante)
+    emailService
+      .sendOrderConfirmationEmail(order, order.customer.email, order.customer.name)
+      .catch((err) => console.error('Error enviando email de confirmación:', err));
+
+    // Generar mensaje y URL de WhatsApp para el cliente
     const message = generateConfirmationMessage(order);
+    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
+    const whatsappURL = customerPhone
+      ? `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`
+      : null;
 
     res.status(200).json({
       success: true,
@@ -241,6 +260,7 @@ export const confirmOrder = asyncHandler(
       data: {
         order,
         whatsappMessage: message,
+        whatsappURL,
       },
     });
   }
@@ -430,17 +450,36 @@ export const updateOrderStatus = asyncHandler(
 
     await order.save();
 
-    // Enviar email de actualización de estado (no bloqueante)
-    emailService
-      .sendOrderStatusUpdateEmail(order, order.customer.email, order.customer.name, status)
-      .catch((err) => console.error('Error enviando email de actualización de estado:', err));
+    // Notificaciones según el nuevo estado:
+    // - confirmed: Email + WhatsApp (pero esto se maneja en confirmOrder)
+    // - preparing/shipped: Solo WhatsApp
+    // - completed: Email + WhatsApp
+    // - cancelled: Se maneja en cancelOrder
 
-    // Generar mensaje de WhatsApp según el nuevo estado
     let message = '';
+    let whatsappURL: string | null = null;
+    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
+
     if (status === 'confirmed') {
+      // Email + WhatsApp
+      emailService
+        .sendOrderConfirmationEmail(order, order.customer.email, order.customer.name)
+        .catch((err) => console.error('Error enviando email de confirmación:', err));
       message = generateConfirmationMessage(order);
-    } else if (status === 'shipped' || status === 'preparing') {
+    } else if (status === 'preparing' || status === 'shipped') {
+      // Solo WhatsApp, NO email
       message = generateReadyForDeliveryMessage(order);
+    } else if (status === 'completed') {
+      // Email + WhatsApp
+      emailService
+        .sendOrderStatusUpdateEmail(order, order.customer.email, order.customer.name, status)
+        .catch((err) => console.error('Error enviando email de completado:', err));
+      message = generateCompletedMessage(order);
+    }
+
+    // Generar URL de WhatsApp si hay mensaje y teléfono
+    if (message && customerPhone) {
+      whatsappURL = `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`;
     }
 
     res.status(200).json({
@@ -449,6 +488,7 @@ export const updateOrderStatus = asyncHandler(
       data: {
         order,
         whatsappMessage: message,
+        whatsappURL,
       },
     });
   }
@@ -497,13 +537,18 @@ export const cancelOrder = asyncHandler(
     // El pre-save hook restaurará el stock automáticamente
     await order.save();
 
+    // Al cancelar: Email + WhatsApp
     // Enviar email de cancelación (no bloqueante)
     emailService
       .sendOrderCancellationEmail(order, order.customer.email, order.customer.name)
       .catch((err) => console.error('Error enviando email de cancelación:', err));
 
-    // Generar mensaje de cancelación
+    // Generar mensaje y URL de WhatsApp
     const message = generateCancellationMessage(order);
+    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
+    const whatsappURL = customerPhone
+      ? `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`
+      : null;
 
     res.status(200).json({
       success: true,
@@ -511,6 +556,7 @@ export const cancelOrder = asyncHandler(
       data: {
         order,
         whatsappMessage: message,
+        whatsappURL,
       },
     });
   }
