@@ -892,9 +892,9 @@ export const editOrderItems = asyncHandler(
     await order.save();
 
     // Al editar items: Email + WhatsApp
-    // Enviar email de actualización (no bloqueante)
+    // Enviar email con productos actualizados (no bloqueante)
     emailService
-      .sendOrderStatusUpdateEmail(order, order.customer.email, order.customer.name, 'updated')
+      .sendOrderEditedEmail(order, order.customer.email, order.customer.name)
       .catch((err) => console.error('Error enviando email de edición:', err));
 
     // Generar mensaje y URL de WhatsApp

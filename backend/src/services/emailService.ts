@@ -683,6 +683,186 @@ class EmailService {
       html,
     });
   }
+
+  /**
+   * Envía email de orden editada (con lista de productos actualizada)
+   */
+  async sendOrderEditedEmail(order: IOrder, userEmail: string, userName: string): Promise<boolean> {
+    const orderUrl = `${ENV.FRONTEND_URL}/orders/${order._id}`;
+
+    // Formatear items del pedido
+    const itemsHtml = order.items
+      .map(
+        (item) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.variantSnapshot.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.pricePerUnit.toLocaleString('es-CL')}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.subtotal.toLocaleString('es-CL')}</td>
+      </tr>
+    `
+      )
+      .join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido Actualizado</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #e91e63;
+      margin: 0;
+    }
+    .content {
+      background-color: white;
+      padding: 25px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .order-number {
+      background-color: #ff9800;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .info-box {
+      background-color: #fff3e0;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th {
+      background-color: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      font-weight: bold;
+    }
+    .total-row {
+      background-color: #f5f5f5;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #e91e63;
+      color: white;
+      text-decoration: none;
+      padding: 12px 30px;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .footer {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍬 Confitería Quelita</h1>
+      <p style="color: #ff9800; font-size: 20px; margin: 10px 0;">✏️ Pedido Actualizado</p>
+    </div>
+    <div class="content">
+      <h2>Hola ${userName},</h2>
+      <p>Tu pedido ha sido modificado. A continuación te mostramos los detalles actualizados:</p>
+
+      <div class="order-number">
+        Pedido #${order.orderNumber}
+      </div>
+
+      <div class="info-box">
+        <strong>ℹ️ Información:</strong><br>
+        Los productos de tu pedido han sido actualizados. Revisa el detalle a continuación.
+      </div>
+
+      <h3>Productos Actuales</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th style="text-align: center;">Cantidad</th>
+            <th style="text-align: right;">Precio Unit.</th>
+            <th style="text-align: right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="padding: 10px; text-align: right;">Subtotal:</td>
+            <td style="padding: 10px; text-align: right;">$${order.subtotal.toLocaleString('es-CL')}</td>
+          </tr>
+          ${order.shippingCost > 0 ? `
+          <tr>
+            <td colspan="3" style="padding: 10px; text-align: right;">Envío:</td>
+            <td style="padding: 10px; text-align: right;">$${order.shippingCost.toLocaleString('es-CL')}</td>
+          </tr>
+          ` : ''}
+          <tr class="total-row">
+            <td colspan="3" style="padding: 15px; text-align: right;">Total:</td>
+            <td style="padding: 15px; text-align: right;">$${order.total.toLocaleString('es-CL')}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <center>
+        <a href="${orderUrl}" class="button">Ver Detalle del Pedido</a>
+      </center>
+
+      <p style="margin-top: 20px; color: #666;">
+        Si tienes alguna duda sobre los cambios realizados, no dudes en contactarnos.
+      </p>
+    </div>
+    <div class="footer">
+      <p>Si tienes alguna pregunta, contáctanos por WhatsApp: ${ENV.WHATSAPP_BUSINESS_NUMBER}</p>
+      <p>&copy; ${new Date().getFullYear()} Confitería Quelita. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    return this.sendEmail({
+      to: userEmail,
+      subject: `✏️ Pedido Actualizado #${order.orderNumber} - Confitería Quelita`,
+      html,
+    });
+  }
 }
 
 // Exportar instancia singleton
