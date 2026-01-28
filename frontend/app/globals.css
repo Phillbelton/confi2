@@ -429,3 +429,139 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ===========================================
+   SONNER TOAST STYLES - Premium & Responsive
+   =========================================== */
+
+/* Posicionamiento responsive para toasts */
+[data-sonner-toaster] {
+  --width: 356px;
+  --mobile-offset: 16px;
+}
+
+/* Móvil: centrado en la parte inferior con padding seguro */
+@media (max-width: 640px) {
+  [data-sonner-toaster] {
+    --width: calc(100vw - 32px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    bottom: var(--mobile-offset) !important;
+    top: auto !important;
+  }
+
+  [data-sonner-toaster] [data-sonner-toast] {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* Tablets y Desktop: esquina superior derecha */
+@media (min-width: 641px) {
+  [data-sonner-toaster] {
+    top: 16px !important;
+    right: 16px !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none;
+  }
+}
+
+/* Animación de entrada suave */
+[data-sonner-toast][data-mounted="true"] {
+  animation: toast-slide-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1);
+}
+
+/* Animación de salida suave */
+[data-sonner-toast][data-removed="true"] {
+  animation: toast-slide-out 0.2s cubic-bezier(0.06, 0.71, 0.55, 1) forwards;
+}
+
+@keyframes toast-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(100%) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-slide-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100%) scale(0.95);
+  }
+}
+
+/* Desktop: animación desde la derecha */
+@media (min-width: 641px) {
+  @keyframes toast-slide-in {
+    0% {
+      opacity: 0;
+      transform: translateX(100%) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  @keyframes toast-slide-out {
+    0% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(100%) scale(0.95);
+    }
+  }
+}
+
+/* Estilos del botón cerrar */
+[data-sonner-toast] [data-close-button] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+[data-sonner-toast]:hover [data-close-button] {
+  opacity: 1;
+}
+
+/* Progress bar para toasts con duración */
+[data-sonner-toast] [data-content] {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Icono del toast */
+[data-sonner-toast] [data-icon] {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Safe area para dispositivos con notch */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 640px) {
+    [data-sonner-toaster] {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}

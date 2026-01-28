@@ -4,7 +4,7 @@ import { Playfair_Display, Inter, Caveat } from "next/font/google";
 import "./globals.css";
 import "@/styles/premium.css";
 import { Providers } from "@/lib/providers";
-import { Toaster } from "@/components/ui/toaster";
+// Toaster de Sonner se carga en providers.tsx
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 
 // Playfair Display: Headings elegantes (serif premium)
@@ -97,7 +97,6 @@ export default function RootLayout({
       >
         <Providers>
           {children}
-          <Toaster />
           <WhatsAppButton />
         </Providers>
       </body>
