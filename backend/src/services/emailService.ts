@@ -863,6 +863,110 @@ class EmailService {
       html,
     });
   }
+
+  /**
+   * Envía email de bienvenida a nuevo cliente
+   */
+  async sendWelcomeEmail(email: string, userName: string): Promise<boolean> {
+    const whatsappNumber = ENV.WHATSAPP_BUSINESS_NUMBER;
+    const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\+/g, '')}`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Bienvenido a Confitería Quelita!</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #dc2626;
+      margin: 0;
+    }
+    .content {
+      background-color: white;
+      padding: 25px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .welcome-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    .whatsapp-button {
+      display: inline-block;
+      background-color: #25D366;
+      color: white;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .whatsapp-button:hover {
+      background-color: #128C7E;
+    }
+    .footer {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍬 Confitería Quelita</h1>
+    </div>
+    <div class="content">
+      <div class="welcome-icon">🎉</div>
+      <h2>¡Bienvenido/a, ${userName}!</h2>
+      <p>Gracias por registrarte en Confitería Quelita.</p>
+      <p>Estamos felices de tenerte con nosotros. Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos:</p>
+
+      <a href="${whatsappLink}" class="whatsapp-button">
+        💬 Escríbenos por WhatsApp
+      </a>
+
+      <p style="color: #666; font-size: 14px; margin-top: 20px;">
+        ${whatsappNumber}
+      </p>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} Confitería Quelita. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: '🎉 ¡Bienvenido/a a Confitería Quelita!',
+      html,
+    });
+  }
 }
 
 // Exportar instancia singleton

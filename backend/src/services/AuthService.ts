@@ -95,6 +95,13 @@ export class AuthService {
     const token = this.generateToken(payload);
     const refreshToken = this.generateRefreshToken(payload);
 
+    // Enviar email de bienvenida (no bloqueante)
+    if (user.role === 'cliente') {
+      emailService.sendWelcomeEmail(user.email, user.name).catch((err) => {
+        console.error('Error enviando email de bienvenida:', err);
+      });
+    }
+
     return { user, token, refreshToken };
   }
 
