@@ -66,15 +66,24 @@ export class AuthService {
       throw new AppError(400, 'El email ya está registrado');
     }
 
-    // Crear usuario
-    const user = await User.create({
-      name: data.name,
-      email: normalizedEmail,
-      password: data.password, // Se hasheará en el pre-save hook
-      phone: data.phone,
-      role: data.role || 'cliente',
-      active: true,
-    });
+    // Crear usuario (con manejo de error de duplicado como segunda línea de defensa)
+    let user;
+    try {
+      user = await User.create({
+        name: data.name,
+        email: normalizedEmail,
+        password: data.password, // Se hasheará en el pre-save hook
+        phone: data.phone,
+        role: data.role || 'cliente',
+        active: true,
+      });
+    } catch (error: any) {
+      // Capturar error de índice duplicado de MongoDB (code 11000)
+      if (error.code === 11000) {
+        throw new AppError(400, 'El email ya está registrado');
+      }
+      throw error;
+    }
 
     // Generar tokens
     const payload: TokenPayload = {
