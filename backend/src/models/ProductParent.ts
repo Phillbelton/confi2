@@ -175,8 +175,7 @@ const productParentSchema = new Schema<IProductParent>(
   }
 );
 
-// Índices
-productParentSchema.index({ slug: 1 }, { unique: true });
+// Índices (slug ya tiene unique:true inline)
 productParentSchema.index({ categories: 1, active: 1 });
 productParentSchema.index({ brand: 1, active: 1 });
 productParentSchema.index({ featured: 1, active: 1 });

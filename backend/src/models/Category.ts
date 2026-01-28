@@ -94,8 +94,7 @@ const categorySchema = new Schema<ICategory>(
   }
 );
 
-// Índices
-categorySchema.index({ slug: 1 });
+// Índices (slug ya tiene unique:true inline)
 categorySchema.index({ active: 1 });
 categorySchema.index({ parent: 1, active: 1 });
 categorySchema.index({ order: 1 });

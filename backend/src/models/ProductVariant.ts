@@ -218,9 +218,7 @@ const productVariantSchema = new Schema<IProductVariant>(
   }
 );
 
-// Índices
-productVariantSchema.index({ sku: 1 }, { unique: true });
-productVariantSchema.index({ slug: 1 }, { unique: true, sparse: true });
+// Índices (sku y slug ya tienen unique:true inline)
 productVariantSchema.index({ parentProduct: 1, active: 1 });
 productVariantSchema.index({ price: 1 });
 productVariantSchema.index({ stock: 1 });

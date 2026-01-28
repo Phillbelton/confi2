@@ -62,8 +62,7 @@ const brandSchema = new Schema<IBrand>(
   }
 );
 
-// Índices
-brandSchema.index({ slug: 1 });
+// Índices (slug ya tiene unique:true inline)
 brandSchema.index({ active: 1 });
 
 // Middleware pre-save: Generar slug

@@ -80,11 +80,9 @@ const tagSchema = new Schema<ITag>(
   }
 );
 
-// Índices
-tagSchema.index({ slug: 1 }, { unique: true });
+// Índices (slug y name ya tienen unique:true inline)
 tagSchema.index({ active: 1 });
 tagSchema.index({ order: 1 });
-tagSchema.index({ name: 1 });
 
 // Pre-save: generar slug
 tagSchema.pre('save', async function (next) {

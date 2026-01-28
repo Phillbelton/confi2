@@ -9,6 +9,15 @@ const DB_NAME = process.env.DB_NAME || 'confiteria_quelita';
 
 export const connectDatabase = async (): Promise<void> => {
   try {
+    // Capturar errores de creación de índices ANTES de conectar (evitar unhandled rejections)
+    for (const modelName of mongoose.modelNames()) {
+      mongoose.model(modelName).on('index', (err) => {
+        if (err) {
+          logger.error(`Error al crear índices para ${modelName}`, { error: err.message });
+        }
+      });
+    }
+
     const connectionOptions = {
       dbName: DB_NAME,
       maxPoolSize: 10, // Para VPS, no serverless
@@ -37,7 +46,7 @@ export const connectDatabase = async (): Promise<void> => {
       // No es crítico, ignorar
     }
 
-    // Event listeners para debugging
+    // Manejar errores de autoIndex en todos los modelos
     mongoose.connection.on('error', (err) => {
       logger.error('Error de MongoDB', { error: err.message, stack: err.stack });
     });

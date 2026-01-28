@@ -20,7 +20,10 @@ validateEnv();
 
 // Conectar a base de datos (solo en desarrollo/producción, no en tests)
 if (process.env.NODE_ENV !== 'test') {
-  connectDatabase();
+  connectDatabase().catch((err) => {
+    console.error('Error fatal al conectar a la base de datos:', err);
+    process.exit(1);
+  });
 }
 
 // Middlewares de seguridad
@@ -158,11 +161,16 @@ process.on('SIGINT', () => {
 
 // Manejo de errores no capturados
 process.on('uncaughtException', (error) => {
+  console.error('=== UNCAUGHT EXCEPTION ===');
+  console.error('Error:', error);
   logger.error('Uncaught Exception', { error: error.message, stack: error.stack });
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+  console.error('=== UNHANDLED REJECTION ===');
+  console.error('Reason:', reason);
+  console.error('Promise:', promise);
   logger.error('Unhandled Rejection', { reason, promise });
   process.exit(1);
 });
