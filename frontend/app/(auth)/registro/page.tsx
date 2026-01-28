@@ -158,7 +158,7 @@ function RegisterContent() {
           animate="visible"
           className="w-full max-w-md"
         >
-          <Card className="border-0 shadow-lg">
+          <Card className="bg-gradient-to-b from-slate-800/95 to-slate-900/95 border border-white/10 shadow-xl">
             <CardHeader className="text-center pb-2">
               <motion.div variants={itemVariants}>
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-2xl">
@@ -166,10 +166,10 @@ function RegisterContent() {
                 </div>
               </motion.div>
               <motion.div variants={itemVariants}>
-                <CardTitle className="text-2xl">Crea tu cuenta</CardTitle>
+                <CardTitle className="text-2xl text-white">Crea tu cuenta</CardTitle>
               </motion.div>
               <motion.div variants={itemVariants}>
-                <CardDescription>
+                <CardDescription className="text-gray-400">
                   Para seguir tus pedidos fácilmente
                 </CardDescription>
               </motion.div>
@@ -204,11 +204,11 @@ function RegisterContent() {
 
                 {/* Teléfono */}
                 <motion.div variants={itemVariants}>
-                  <Label htmlFor="phone" className="text-sm font-medium">
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-300">
                     Teléfono (WhatsApp)
                   </Label>
                   <div className="flex mt-1.5">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-white/20 bg-slate-700/50 text-gray-400 text-sm">
                       +56
                     </span>
                     <Input
@@ -273,7 +273,7 @@ function RegisterContent() {
             </CardContent>
 
             <CardFooter className="flex flex-col gap-4 pt-0">
-              <motion.div variants={itemVariants} className="text-center text-sm">
+              <motion.div variants={itemVariants} className="text-center text-sm text-gray-400">
                 ¿Ya tienes cuenta?{' '}
                 <Link href="/login" className="text-primary hover:underline font-medium">
                   Iniciar sesión
@@ -283,7 +283,7 @@ function RegisterContent() {
               <motion.div variants={itemVariants}>
                 <Link
                   href="/"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
                   ← Volver a la tienda
                 </Link>

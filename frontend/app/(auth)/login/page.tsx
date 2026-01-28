@@ -126,7 +126,7 @@ function LoginContent() {
           animate="visible"
           className="w-full max-w-md"
         >
-          <Card className="border-0 shadow-lg">
+          <Card className="bg-gradient-to-b from-slate-800/95 to-slate-900/95 border border-white/10 shadow-xl">
             <CardHeader className="text-center pb-2">
               <motion.div variants={itemVariants}>
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-2xl">
@@ -134,10 +134,10 @@ function LoginContent() {
                 </div>
               </motion.div>
               <motion.div variants={itemVariants}>
-                <CardTitle className="text-2xl">Bienvenido de vuelta</CardTitle>
+                <CardTitle className="text-2xl text-white">Bienvenido de vuelta</CardTitle>
               </motion.div>
               <motion.div variants={itemVariants}>
-                <CardDescription>
+                <CardDescription className="text-gray-400">
                   Ingresa para ver tus pedidos y más
                 </CardDescription>
               </motion.div>
@@ -195,17 +195,17 @@ function LoginContent() {
             <CardFooter className="flex flex-col gap-4 pt-0">
               <motion.div variants={itemVariants} className="relative w-full">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+                  <span className="w-full border-t border-white/10" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
+                  <span className="bg-slate-900 px-2 text-gray-400">
                     ¿No tienes cuenta?
                   </span>
                 </div>
               </motion.div>
 
               <motion.div variants={itemVariants} className="w-full">
-                <Button variant="outline" className="w-full h-12" asChild>
+                <Button variant="outline" className="w-full h-12 border-white/20 text-gray-200 hover:bg-white/10 hover:text-white" asChild>
                   <Link href="/registro">Crear cuenta</Link>
                 </Button>
               </motion.div>
@@ -213,7 +213,7 @@ function LoginContent() {
               <motion.div variants={itemVariants}>
                 <Link
                   href="/"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
                   ← Volver a la tienda
                 </Link>
