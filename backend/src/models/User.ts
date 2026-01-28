@@ -76,6 +76,8 @@ const userSchema = new Schema<IUser>(
     phone: {
       type: String,
       trim: true,
+      unique: true,
+      sparse: true, // Permite múltiples null/undefined pero únicos cuando tiene valor
       match: [/^\+?[1-9]\d{1,14}$/, 'Número de teléfono inválido'],
     },
     addresses: [
@@ -167,6 +169,7 @@ const userSchema = new Schema<IUser>(
 
 // Índices
 userSchema.index({ email: 1 });
+userSchema.index({ phone: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ active: 1 });
 userSchema.index({ createdAt: -1 });

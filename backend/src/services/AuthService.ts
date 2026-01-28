@@ -60,10 +60,19 @@ export class AuthService {
     // Normalizar email a minúsculas para comparación
     const normalizedEmail = data.email.toLowerCase().trim();
 
-    // Verificar si el usuario ya existe
-    const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
+    // Verificar si el email ya existe
+    const existingEmail = await User.findOne({ email: normalizedEmail });
+    if (existingEmail) {
       throw new AppError(400, 'El email ya está registrado');
+    }
+
+    // Verificar si el teléfono ya existe
+    if (data.phone) {
+      const normalizedPhone = data.phone.replace(/\s/g, '');
+      const existingPhone = await User.findOne({ phone: normalizedPhone });
+      if (existingPhone) {
+        throw new AppError(400, 'El número de teléfono ya está registrado');
+      }
     }
 
     // Crear usuario (con manejo de error de duplicado como segunda línea de defensa)
@@ -80,7 +89,8 @@ export class AuthService {
     } catch (error: any) {
       // Capturar error de índice duplicado de MongoDB (code 11000)
       if (error.code === 11000) {
-        throw new AppError(400, 'El email ya está registrado');
+        const field = error.keyPattern?.email ? 'email' : 'número de teléfono';
+        throw new AppError(400, `El ${field} ya está registrado`);
       }
       throw error;
     }

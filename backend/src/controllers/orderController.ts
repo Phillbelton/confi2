@@ -91,17 +91,17 @@ export const createOrder = asyncHandler(
       // Usuario no autenticado (visita) - debe proporcionar datos en el body
       const { customer } = req.body;
 
-      if (!customer || !customer.name || !customer.email || !customer.phone) {
+      if (!customer || !customer.name || !customer.phone) {
         throw new AppError(
           400,
-          'Usuario no autenticado debe proporcionar: customer.name, customer.email, customer.phone'
+          'Usuario no autenticado debe proporcionar: customer.name, customer.phone'
         );
       }
 
       customerData = {
         name: customer.name,
-        email: customer.email,
         phone: customer.phone,
+        ...(customer.email && { email: customer.email }),
       };
 
       // Dirección opcional para visitas

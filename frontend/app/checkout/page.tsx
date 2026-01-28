@@ -32,7 +32,6 @@ export default function CheckoutPage() {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     phone: '',
     street: '',
     number: '',
@@ -55,7 +54,6 @@ export default function CheckoutPage() {
       setFormData((prev) => ({
         ...prev,
         name: user.name || prev.name,
-        email: user.email || prev.email,
         phone: phone || prev.phone,
       }));
     }
@@ -86,9 +84,8 @@ export default function CheckoutPage() {
     try {
       // Prepare customer data
       const phoneClean = formData.phone.replace(/\s/g, '');
-      const customer = {
+      const customer: any = {
         name: formData.name,
-        email: formData.email,
         phone: `+56${phoneClean}`,
         address:
           formData.deliveryMethod === 'delivery'
@@ -268,7 +265,7 @@ export default function CheckoutPage() {
                   <CardContent className="space-y-4">
                     <div>
                       <Label htmlFor="name">
-                        Nombre completo <span className="text-destructive">*</span>
+                        Nombre <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         id="name"
@@ -280,43 +277,29 @@ export default function CheckoutPage() {
                       />
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label htmlFor="phone">
-                          Teléfono <span className="text-destructive">*</span>
-                        </Label>
-                        <div className="flex">
-                          <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
-                            +56
-                          </span>
-                          <Input
-                            id="phone"
-                            name="phone"
-                            type="tel"
-                            inputMode="numeric"
-                            value={formData.phone}
-                            onChange={(e) => {
-                              // Solo permitir dígitos y espacios, máximo 11 caracteres
-                              const value = e.target.value.replace(/[^\d\s]/g, '').slice(0, 11);
-                              setFormData((prev) => ({ ...prev, phone: value }));
-                            }}
-                            required
-                            placeholder="9 1234 5678"
-                            maxLength={11}
-                            className="rounded-l-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="email">Email (opcional)</Label>
+                    <div>
+                      <Label htmlFor="phone">
+                        Teléfono (WhatsApp) <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                          +56
+                        </span>
                         <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          placeholder="juan@ejemplo.com"
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          inputMode="numeric"
+                          value={formData.phone}
+                          onChange={(e) => {
+                            // Solo permitir dígitos y espacios, máximo 11 caracteres
+                            const value = e.target.value.replace(/[^\d\s]/g, '').slice(0, 11);
+                            setFormData((prev) => ({ ...prev, phone: value }));
+                          }}
+                          required
+                          placeholder="9 1234 5678"
+                          maxLength={11}
+                          className="rounded-l-none"
                         />
                       </div>
                     </div>
