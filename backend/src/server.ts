@@ -1,3 +1,5 @@
+console.log('[BOOT] server.ts cargando...');
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -14,9 +16,11 @@ import { apiRateLimiter } from './middleware/rateLimiter';
 
 // Crear app Express
 const app = express();
+console.log('[BOOT] Express app creada');
 
 // Validar variables de entorno
 validateEnv();
+console.log('[BOOT] Env validado');
 
 // Conectar a base de datos (solo en desarrollo/producción, no en tests)
 if (process.env.NODE_ENV !== 'test') {
@@ -131,6 +135,8 @@ app.use(notFoundHandler);
 
 // Error handler (debe ser el último middleware)
 app.use(errorHandler);
+
+console.log('[BOOT] Middlewares y rutas configurados');
 
 // Iniciar servidor (solo en desarrollo/producción, no en tests)
 const PORT = ENV.PORT;
