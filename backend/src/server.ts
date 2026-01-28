@@ -137,6 +137,9 @@ const PORT = ENV.PORT;
 const HOST = '0.0.0.0'; // Listen on all network interfaces
 
 if (process.env.NODE_ENV !== 'test') {
+  console.log(`[DEBUG] Intentando iniciar servidor en ${HOST}:${PORT}...`);
+  console.log(`[DEBUG] NODE_ENV=${process.env.NODE_ENV}`);
+
   const server = app.listen(PORT, HOST, () => {
     logger.info('═══════════════════════════════════════════════════════════');
     logger.info(`🚀 Servidor corriendo en puerto ${PORT}`);
@@ -155,6 +158,8 @@ if (process.env.NODE_ENV !== 'test') {
     }
     process.exit(1);
   });
+
+  console.log(`[DEBUG] app.listen() llamado, esperando callback...`);
 }
 
 // Manejo de señales de terminación
