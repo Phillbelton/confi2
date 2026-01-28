@@ -182,7 +182,7 @@ function RegisterContent() {
                   <AnimatedInput
                     id="name"
                     type="text"
-                    label="Nombre completo"
+                    label="Nombre"
                     autoComplete="name"
                     error={errors.name?.message}
                     className="bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400"

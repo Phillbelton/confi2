@@ -57,8 +57,11 @@ export class AuthService {
    * Registrar nuevo usuario
    */
   async register(data: RegisterDTO): Promise<AuthResult> {
+    // Normalizar email a minúsculas para comparación
+    const normalizedEmail = data.email.toLowerCase().trim();
+
     // Verificar si el usuario ya existe
-    const existingUser = await User.findOne({ email: data.email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       throw new AppError(400, 'El email ya está registrado');
     }
@@ -66,7 +69,7 @@ export class AuthService {
     // Crear usuario
     const user = await User.create({
       name: data.name,
-      email: data.email,
+      email: normalizedEmail,
       password: data.password, // Se hasheará en el pre-save hook
       phone: data.phone,
       role: data.role || 'cliente',
