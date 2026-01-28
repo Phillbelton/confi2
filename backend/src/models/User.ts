@@ -76,8 +76,7 @@ const userSchema = new Schema<IUser>(
     phone: {
       type: String,
       trim: true,
-      unique: true,
-      sparse: true, // Permite múltiples null/undefined pero únicos cuando tiene valor
+      // Unicidad validada en AuthService.register() para evitar crash con datos existentes duplicados
       match: [/^\+?[1-9]\d{1,14}$/, 'Número de teléfono inválido'],
     },
     addresses: [

@@ -9,9 +9,6 @@ const DB_NAME = process.env.DB_NAME || 'confiteria_quelita';
 
 export const connectDatabase = async (): Promise<void> => {
   try {
-    // Desactivar autoIndex globalmente para evitar crashes por índices duplicados
-    mongoose.set('autoIndex', false);
-
     const connectionOptions = {
       dbName: DB_NAME,
       maxPoolSize: 10, // Para VPS, no serverless
@@ -23,6 +20,22 @@ export const connectDatabase = async (): Promise<void> => {
     await mongoose.connect(MONGODB_URI, connectionOptions);
 
     logger.info(`MongoDB conectado exitosamente a: ${DB_NAME}`);
+
+    // Limpiar índice único de phone si existe (legacy)
+    try {
+      const db = mongoose.connection.db;
+      if (db) {
+        const usersCollection = db.collection('users');
+        const indexes = await usersCollection.indexes();
+        const phoneIndex = indexes.find((idx: any) => idx.key?.phone && idx.unique);
+        if (phoneIndex) {
+          await usersCollection.dropIndex(phoneIndex.name!);
+          logger.info('Índice único de phone eliminado (legacy)');
+        }
+      }
+    } catch (cleanupError: any) {
+      // No es crítico, ignorar
+    }
 
     // Event listeners para debugging
     mongoose.connection.on('error', (err) => {
