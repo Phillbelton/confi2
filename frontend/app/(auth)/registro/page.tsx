@@ -185,6 +185,7 @@ function RegisterContent() {
                     label="Nombre completo"
                     autoComplete="name"
                     error={errors.name?.message}
+                    className="bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400"
                     {...register('name')}
                   />
                 </motion.div>
@@ -198,6 +199,7 @@ function RegisterContent() {
                     inputMode="email"
                     autoComplete="email"
                     error={errors.email?.message}
+                    className="bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400"
                     {...register('email')}
                   />
                 </motion.div>
@@ -219,7 +221,7 @@ function RegisterContent() {
                       placeholder="9 1234 5678"
                       maxLength={11}
                       className={cn(
-                        'rounded-l-none',
+                        'rounded-l-none bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400',
                         errors.phone && 'border-destructive focus-visible:ring-destructive'
                       )}
                       {...register('phone')}
@@ -239,6 +241,7 @@ function RegisterContent() {
                     autoComplete="new-password"
                     showPasswordToggle
                     error={errors.password?.message}
+                    className="bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400"
                     {...register('password')}
                   />
                   <PasswordStrength password={password || ''} />
@@ -254,6 +257,7 @@ function RegisterContent() {
                     showPasswordToggle
                     success={passwordsMatch}
                     error={errors.confirmPassword?.message}
+                    className="bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400"
                     {...register('confirmPassword')}
                   />
                 </motion.div>

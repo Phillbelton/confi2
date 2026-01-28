@@ -153,6 +153,7 @@ function LoginContent() {
                     inputMode="email"
                     autoComplete="email"
                     error={errors.email?.message}
+                    className="bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400"
                     {...register('email')}
                   />
                 </motion.div>
@@ -165,6 +166,7 @@ function LoginContent() {
                     autoComplete="current-password"
                     showPasswordToggle
                     error={errors.password?.message}
+                    className="bg-slate-700/50 border-white/20 text-white placeholder:text-gray-400"
                     {...register('password')}
                   />
                 </motion.div>
