@@ -167,9 +167,7 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Índices
-userSchema.index({ email: 1 });
-userSchema.index({ phone: 1 });
+// Índices (email y phone ya tienen unique en el schema, no duplicar)
 userSchema.index({ role: 1 });
 userSchema.index({ active: 1 });
 userSchema.index({ createdAt: -1 });
