@@ -9,26 +9,20 @@ const DB_NAME = process.env.DB_NAME || 'confiteria_quelita';
 
 export const connectDatabase = async (): Promise<void> => {
   try {
+    // Desactivar autoIndex globalmente para evitar crashes por índices duplicados
+    mongoose.set('autoIndex', false);
+
     const connectionOptions = {
       dbName: DB_NAME,
       maxPoolSize: 10, // Para VPS, no serverless
       minPoolSize: 2,
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      autoIndex: false, // No crear índices automáticamente, los sincronizamos manualmente
     };
 
     await mongoose.connect(MONGODB_URI, connectionOptions);
 
     logger.info(`MongoDB conectado exitosamente a: ${DB_NAME}`);
-
-    // Sincronizar índices manualmente con manejo de errores
-    try {
-      await mongoose.connection.syncIndexes();
-      logger.info('Índices de MongoDB sincronizados correctamente');
-    } catch (indexError: any) {
-      logger.warn(`Error sincronizando índices: ${indexError.message}. Los índices se validarán a nivel de aplicación.`);
-    }
 
     // Event listeners para debugging
     mongoose.connection.on('error', (err) => {
