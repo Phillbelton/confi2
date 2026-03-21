@@ -1,0 +1,125 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { adminAuthService } from '@/services/admin/auth';
+import { useAdminStore } from '@/store/useAdminStore';
+import type { AdminLoginCredentials } from '@/types/admin';
+
+export function useAdminAuth() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const queryClient = useQueryClient();
+  const { setUser, logout: clearStore, setLoading } = useAdminStore();
+
+  // Don't fetch profile on login page to avoid unnecessary 401 errors
+  const isLoginPage = pathname === '/admin/login';
+
+  // Check if we have a token to determine if we should fetch profile
+  const hasToken = typeof window !== 'undefined' ? !!localStorage.getItem('admin-token') : false;
+
+  // Get profile query
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['admin-profile'],
+    queryFn: adminAuthService.getProfile,
+    retry: false,
+    staleTime: 1000 * 60 * 2, // 2 minutes - data considered fresh
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+    refetchInterval: 1000 * 60 * 3, // Auto-revalidate every 3 minutes (detects expired sessions)
+    refetchOnWindowFocus: false, // Prevent refetching when window regains focus (avoids rate limit)
+    refetchOnMount: false, // Prevent refetching on component mount if data exists (avoids rate limit)
+    refetchOnReconnect: false, // Prevent refetching on network reconnection (avoids rate limit)
+    enabled: hasToken && !isLoginPage, // Only fetch when we have token and not on login page
+  });
+
+  // Clear store if profile query fails (invalid/expired token)
+  // But don't clear immediately - give it time after login
+  useEffect(() => {
+    if (error && !isLoginPage && !isLoading) {
+      // Only clear if we're not loading and there's an actual auth error
+      const timer = setTimeout(() => {
+        localStorage.removeItem('admin-token');
+        clearStore();
+        queryClient.clear();
+      }, 500); // Wait 500ms before clearing to avoid race conditions
+
+      return () => clearTimeout(timer);
+    }
+  }, [error, isLoginPage, isLoading, clearStore, queryClient]);
+
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: (credentials: AdminLoginCredentials) =>
+      adminAuthService.login(credentials),
+    onSuccess: (data) => {
+      // Reject if not admin
+      if (data.user.role !== 'admin') {
+        if (data.user.role === 'funcionario') {
+          toast.error('Los funcionarios deben ingresar por /funcionario/login');
+          // Redirect to funcionario login
+          setTimeout(() => {
+            window.location.href = '/funcionario/login';
+          }, 1500);
+        } else {
+          toast.error('Acceso denegado. Solo administradores pueden ingresar aquí.');
+        }
+        return;
+      }
+
+      // Store token in localStorage for development (cookies don't work cross-port)
+      if (data.token) {
+        localStorage.setItem('admin-token', data.token);
+      }
+
+      // Set user in store and cache BEFORE redirecting
+      setUser(data.user);
+      queryClient.setQueryData(['admin-profile'], data.user);
+
+      // Show success message
+      toast.success(`Bienvenido, ${data.user.name}!`);
+
+      // Redirect to admin dashboard
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 500);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al iniciar sesión');
+    },
+  });
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: adminAuthService.logout,
+    onSuccess: () => {
+      // Clear token from localStorage
+      localStorage.removeItem('admin-token');
+      clearStore();
+      queryClient.clear();
+      toast.success('Sesión cerrada exitosamente');
+      router.push('/admin/login');
+    },
+    onError: (error: any) => {
+      // Even if logout fails on server, clear client state
+      localStorage.removeItem('admin-token');
+      clearStore();
+      queryClient.clear();
+      router.push('/admin/login');
+      toast.error(error.message || 'Error al cerrar sesión');
+    },
+  });
+
+  return {
+    user,
+    isLoading,
+    error,
+    login: loginMutation.mutate,
+    isLoggingIn: loginMutation.isPending,
+    logout: logoutMutation.mutate,
+    isLoggingOut: logoutMutation.isPending,
+  };
+}

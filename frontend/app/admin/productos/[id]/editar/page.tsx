@@ -1,0 +1,211 @@
+'use client';
+
+import { useParams } from 'next/navigation';
+import { Loader2, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProductForm } from '@/components/admin/products/ProductForm';
+import { ImageUploader } from '@/components/admin/products/ImageUploader';
+import { VariantsTable } from '@/components/admin/products/VariantsTable';
+import { AddVariantDialog } from '@/components/admin/products/AddVariantDialog';
+import {
+  useAdminProduct,
+  useAdminProducts,
+  useAdminProductVariants,
+} from '@/hooks/admin/useAdminProducts';
+import { Card, CardContent } from '@/components/ui/card';
+import type { UpdateProductParentInput } from '@/services/admin/products';
+
+export default function EditarProductoPage() {
+  const params = useParams();
+  const router = useRouter();
+  const productId = params.id as string;
+
+  const { product, isLoading, error } = useAdminProduct(productId);
+  const {
+    updateProduct,
+    isUpdating,
+    uploadImages,
+    isUploadingImages,
+    deleteImage,
+    isDeletingImage,
+  } = useAdminProducts();
+  const {
+    variants,
+    isLoading: isLoadingVariants,
+    addVariantToParent,
+    isAddingVariant,
+    updateVariant,
+    deleteVariant,
+    updateStock,
+    uploadVariantImages,
+    isUploadingVariantImages,
+    deleteVariantImage,
+    isDeletingVariantImage,
+  } = useAdminProductVariants(productId);
+
+  const handleSubmit = async (data: UpdateProductParentInput) => {
+    updateProduct(
+      { id: productId, data },
+      {
+        onSuccess: () => {
+          // Stay on edit page to continue managing images/variants
+        },
+      }
+    );
+  };
+
+  const handleUploadImages = async (files: File[]) => {
+    uploadImages({ id: productId, files });
+  };
+
+  const handleDeleteImage = async (filename: string) => {
+    deleteImage({ id: productId, filename });
+  };
+
+  const handleUpdateVariant = (variantId: string, data: { price?: number; stock?: number; active?: boolean }) => {
+    if (data.stock !== undefined) {
+      updateStock({ id: variantId, data: { stock: data.stock } });
+    }
+    if (data.price !== undefined) {
+      updateVariant({ id: variantId, data: { price: data.price } });
+    }
+    if (data.active !== undefined) {
+      updateVariant({ id: variantId, data: { active: data.active } });
+    }
+  };
+
+  const handleDeleteVariant = (variantId: string) => {
+    if (confirm('¿Estás seguro de eliminar esta variante?')) {
+      deleteVariant(variantId);
+    }
+  };
+
+  const handleUploadVariantImages = (variantId: string, files: File[]) => {
+    uploadVariantImages({ id: variantId, files });
+  };
+
+  const handleDeleteVariantImage = (variantId: string, filename: string) => {
+    deleteVariantImage({ id: variantId, filename });
+  };
+
+  const handleUpdateVariantDiscounts = (
+    variantId: string,
+    data: { fixedDiscount?: any; tieredDiscount?: any }
+  ) => {
+    updateVariant({ id: variantId, data });
+  };
+
+  const handleAddVariant = (data: {
+    attributes: Record<string, string>;
+    price: number;
+    stock: number;
+    sku?: string;
+    description?: string;
+  }) => {
+    addVariantToParent(data);
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <p className="text-lg font-medium mb-2">Producto no encontrado</p>
+          <p className="text-sm text-muted-foreground">
+            El producto que buscas no existe o fue eliminado
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Editar Producto</h1>
+          <p className="text-muted-foreground">{product.name}</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="info" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="info">Información</TabsTrigger>
+          <TabsTrigger value="images">Imágenes</TabsTrigger>
+          <TabsTrigger value="variants">
+            Variantes {variants.length > 0 && `(${variants.length})`}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Info Tab */}
+        <TabsContent value="info">
+          <ProductForm
+            product={product}
+            mode="edit"
+            onSubmit={handleSubmit}
+            isSubmitting={isUpdating}
+          />
+        </TabsContent>
+
+        {/* Images Tab */}
+        <TabsContent value="images">
+          <ImageUploader
+            images={product.images || []}
+            onUpload={handleUploadImages}
+            onDelete={handleDeleteImage}
+            isUploading={isUploadingImages}
+            isDeleting={isDeletingImage}
+            maxImages={5}
+          />
+        </TabsContent>
+
+        {/* Variants Tab */}
+        <TabsContent value="variants">
+          <div className="space-y-4">
+            {/* Add Variant Button */}
+            {product.hasVariants && (
+              <div className="flex justify-end">
+                <AddVariantDialog
+                  productParent={product}
+                  existingVariants={variants}
+                  onAddVariant={handleAddVariant}
+                  isAdding={isAddingVariant}
+                />
+              </div>
+            )}
+
+            {/* Variants Table */}
+            <VariantsTable
+              variants={variants}
+              onUpdateVariant={handleUpdateVariant}
+              onDeleteVariant={handleDeleteVariant}
+              onUploadImages={handleUploadVariantImages}
+              onDeleteImage={handleDeleteVariantImage}
+              onUpdateDiscounts={handleUpdateVariantDiscounts}
+              isLoading={isLoadingVariants}
+              isUploadingImages={isUploadingVariantImages}
+              isDeletingImage={isDeletingVariantImage}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

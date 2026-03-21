@@ -1,0 +1,2144 @@
+# ESPECIFICACIONES MOBILE-FIRST - ÁREA DE CLIENTE
+
+Documentación exhaustiva de diseño y especificaciones técnicas para las vistas del área de cliente con enfoque **mobile-first** y experiencia **premium**.
+
+**Fecha:** 2025-01-24
+**Versión:** 1.1 (Actualizado: 2025-11-24)
+**Prioridad:** CRÍTICA
+**Audiencia:** Desarrolladores Frontend
+
+---
+
+## ÍNDICE
+
+0. [Arquitectura de Autenticación](#0-arquitectura-de-autenticación)
+1. [Principios de Diseño](#1-principios-de-diseño)
+2. [Sistema de Diseño Cliente](#2-sistema-de-diseño-cliente)
+3. [Layout General Cliente](#3-layout-general-cliente)
+4. [Vista: Login](#4-vista-login)
+5. [Vista: Registro](#5-vista-registro)
+6. [Vista: Perfil](#6-vista-perfil)
+7. [Vista: Mis Órdenes](#7-vista-mis-órdenes)
+8. [Vista: Detalle de Orden](#8-vista-detalle-de-orden)
+9. [Vista: Direcciones](#9-vista-direcciones)
+10. [Componentes Compartidos](#10-componentes-compartidos)
+11. [Estados y Feedback](#11-estados-y-feedback)
+12. [Integración Backend](#12-integración-backend)
+13. [Checklist de Implementación](#13-checklist-de-implementación)
+
+---
+
+## 0. ARQUITECTURA DE AUTENTICACIÓN
+
+### 0.1 Filosofía: Misma UI con Restricciones de Autenticación
+
+El enfoque estándar para e-commerce es **una sola UI** para todos los usuarios, con restricciones de autenticación solo donde sea necesario. Esto reduce fricción y aumenta conversiones.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PRINCIPIO: El usuario puede explorar y agregar al carrito      │
+│  sin registrarse. Solo se pide login al hacer checkout.         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 0.2 Clasificación de Rutas
+
+| Tipo | Ruta | Descripción | Comportamiento |
+|------|------|-------------|----------------|
+| **Pública** | `/` | Home | Acceso libre |
+| **Pública** | `/productos` | Catálogo | Acceso libre |
+| **Pública** | `/productos/[slug]` | Detalle producto | Acceso libre |
+| **Pública** | `/login` | Login cliente | Redirige a /perfil si ya autenticado |
+| **Pública** | `/registro` | Registro | Redirige a /perfil si ya autenticado |
+| **Protegida** | `/perfil` | Mi perfil | Redirige a /login si no autenticado |
+| **Protegida** | `/mis-ordenes` | Mis pedidos | Redirige a /login si no autenticado |
+| **Protegida** | `/mis-ordenes/[id]` | Detalle pedido | Redirige a /login si no autenticado |
+| **Protegida** | `/direcciones` | Direcciones | Redirige a /login si no autenticado |
+| **Semi-protegida** | `/checkout` | Checkout | Permite guest o pide login |
+
+### 0.3 Comportamiento del Header Público
+
+El `Header` (usado en Home, Catálogo, Detalle) debe mostrar diferentes estados:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SIN LOGIN:                                                     │
+│  [Logo]  Inicio  Productos  Ofertas    [🔍] [🛒] [Iniciar sesión]│
+├─────────────────────────────────────────────────────────────────┤
+│  CON LOGIN:                                                     │
+│  [Logo]  Inicio  Productos  Ofertas    [🔍] [🛒] [👤 Mi cuenta ▼]│
+│                                              └─→ Dropdown:      │
+│                                                   • Mi perfil   │
+│                                                   • Mis pedidos │
+│                                                   • Cerrar sesión│
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 0.4 Implementación Header con Auth-Awareness
+
+```tsx
+// components/layout/Header.tsx
+'use client';
+
+import { useClientStore } from '@/store/useClientStore';
+
+export function Header() {
+  const { isAuthenticated, user } = useClientStore();
+
+  return (
+    <header>
+      {/* ... logo, nav ... */}
+
+      <div className="flex items-center gap-2">
+        <CartButton />
+
+        {isAuthenticated ? (
+          <UserDropdown user={user} />
+        ) : (
+          <Button variant="outline" asChild>
+            <Link href="/login">Iniciar sesión</Link>
+          </Button>
+        )}
+      </div>
+    </header>
+  );
+}
+```
+
+### 0.5 Flujo de Checkout
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FLUJO CHECKOUT                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Usuario agrega productos al carrito (sin login)                │
+│                    ↓                                            │
+│  Click en "Ir al checkout"                                      │
+│                    ↓                                            │
+│  ┌─────────────────────────────────────────┐                   │
+│  │ ¿Usuario autenticado?                   │                   │
+│  │                                         │                   │
+│  │   SÍ → Continuar a checkout            │                   │
+│  │   NO → Mostrar opciones:               │                   │
+│  │        • "Continuar como invitado"     │                   │
+│  │        • "Iniciar sesión" (redirect)   │                   │
+│  │        • "Crear cuenta"                │                   │
+│  └─────────────────────────────────────────┘                   │
+│                                                                 │
+│  Si elige login: redirect a /login?redirect=/checkout           │
+│  Post-login: volver a /checkout con carrito intacto            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 0.6 Carrito: Persistencia Cross-Session
+
+```tsx
+// El carrito usa localStorage y funciona igual para todos
+// store/useCartStore.ts
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      // ... métodos
+    }),
+    {
+      name: 'quelita-cart', // Mismo key para guest y autenticado
+    }
+  )
+);
+
+// Opcional: Sincronizar carrito con backend al hacer login
+// para recuperar carrito de sesiones anteriores
+```
+
+---
+
+## 1. PRINCIPIOS DE DISEÑO
+
+### 1.1 Filosofía Premium para Cliente
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PREMIUM = Simplicidad + Elegancia + Velocidad + Confianza  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Pilares:**
+
+| Pilar | Descripción | Implementación |
+|-------|-------------|----------------|
+| **Simplicidad** | Información esencial, sin ruido | Jerarquía visual clara, whitespace generoso |
+| **Elegancia** | Estética sofisticada pero cálida | Paleta cálida, tipografía refinada, micro-animaciones |
+| **Velocidad** | Respuesta instantánea | Skeleton loaders, optimistic UI, transiciones 150ms |
+| **Confianza** | Seguridad y profesionalismo | Estados claros, feedback inmediato, datos protegidos |
+
+### 1.2 Reglas Mobile-First Estrictas
+
+```css
+/* ✅ CORRECTO: Siempre diseñar mobile primero */
+.elemento {
+  padding: 1rem;        /* Mobile: 16px */
+}
+
+@media (min-width: 768px) {
+  .elemento {
+    padding: 1.5rem;    /* Tablet+: 24px */
+  }
+}
+
+/* ❌ INCORRECTO: Desktop first */
+.elemento {
+  padding: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  .elemento {
+    padding: 1rem;
+  }
+}
+```
+
+### 1.3 Touch Targets Obligatorios
+
+```
+┌─────────────────────────────────────────┐
+│  MÍNIMO: 44×44px (iOS) / 48×48px (MD)   │
+│  RECOMENDADO: 48×48px para todo         │
+│  SPACING: 8px mínimo entre elementos    │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 2. SISTEMA DE DISEÑO CLIENTE
+
+### 2.1 Paleta de Colores (Cálida - Confitería)
+
+```css
+:root {
+  /* === BRAND === */
+  --primary: 25 95% 53%;              /* #F97316 - Naranja cálido */
+  --primary-hover: 25 95% 45%;        /* Hover más oscuro */
+  --primary-foreground: 0 0% 98%;     /* Texto sobre primary */
+
+  /* === ESTADOS ORDEN === */
+  --status-pending: 38 92% 50%;       /* Amarillo - Pendiente */
+  --status-confirmed: 217 91% 60%;    /* Azul - Confirmado */
+  --status-preparing: 262 83% 58%;    /* Violeta - Preparando */
+  --status-shipped: 199 89% 48%;      /* Cyan - Enviado */
+  --status-completed: 142 76% 36%;    /* Verde - Completado */
+  --status-cancelled: 0 84% 60%;      /* Rojo - Cancelado */
+
+  /* === SUPERFICIES === */
+  --background: 0 0% 100%;            /* Blanco puro */
+  --background-subtle: 30 20% 98%;    /* Crema muy sutil */
+  --card: 0 0% 100%;                  /* Cards blancas */
+  --card-hover: 30 20% 98%;           /* Card hover */
+
+  /* === TEXTO === */
+  --foreground: 20 14% 12%;           /* Casi negro cálido */
+  --foreground-muted: 20 10% 45%;     /* Gris cálido */
+  --foreground-subtle: 20 8% 65%;     /* Gris claro */
+
+  /* === BORDES === */
+  --border: 20 10% 90%;               /* Borde sutil */
+  --border-hover: 20 10% 80%;         /* Borde hover */
+
+  /* === FEEDBACK === */
+  --success: 142 76% 36%;
+  --success-bg: 142 76% 95%;
+  --warning: 38 92% 50%;
+  --warning-bg: 38 92% 95%;
+  --error: 0 84% 60%;
+  --error-bg: 0 84% 95%;
+  --info: 217 91% 60%;
+  --info-bg: 217 91% 95%;
+}
+```
+
+### 2.2 Tipografía
+
+```tsx
+// next.config.ts - Fuentes premium
+import { DM_Sans, Outfit } from 'next/font/google';
+
+// Títulos: Outfit (moderna, geométrica, amigable)
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-heading',
+  display: 'swap',
+});
+
+// Cuerpo: DM Sans (legible, moderna)
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+});
+```
+
+**Escala tipográfica mobile-first:**
+
+```css
+/* Mobile (default) */
+--text-xs: 0.75rem;      /* 12px - Labels pequeños */
+--text-sm: 0.875rem;     /* 14px - Texto secundario */
+--text-base: 1rem;       /* 16px - Texto principal */
+--text-lg: 1.125rem;     /* 18px - Subtítulos */
+--text-xl: 1.25rem;      /* 20px - Títulos sección */
+--text-2xl: 1.5rem;      /* 24px - Títulos página */
+--text-3xl: 2rem;        /* 32px - Hero mobile */
+
+/* Tablet+ (md:) */
+--text-2xl-md: 1.875rem; /* 30px */
+--text-3xl-md: 2.5rem;   /* 40px */
+--text-4xl-md: 3rem;     /* 48px - Hero desktop */
+```
+
+### 2.3 Espaciado Consistente
+
+```css
+/* Sistema de espaciado 4px */
+--space-1: 0.25rem;   /* 4px */
+--space-2: 0.5rem;    /* 8px */
+--space-3: 0.75rem;   /* 12px */
+--space-4: 1rem;      /* 16px - Base mobile */
+--space-5: 1.25rem;   /* 20px */
+--space-6: 1.5rem;    /* 24px - Base tablet */
+--space-8: 2rem;      /* 32px - Base desktop */
+--space-10: 2.5rem;   /* 40px */
+--space-12: 3rem;     /* 48px */
+--space-16: 4rem;     /* 64px */
+```
+
+### 2.4 Sombras Premium
+
+```css
+--shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+--shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+--shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.08), 0 4px 12px -4px rgb(0 0 0 / 0.05);
+--shadow-card-hover: 0 8px 24px -4px rgb(0 0 0 / 0.12), 0 4px 8px -4px rgb(0 0 0 / 0.05);
+```
+
+### 2.5 Animaciones y Transiciones
+
+```css
+/* Duraciones */
+--duration-fast: 150ms;
+--duration-normal: 200ms;
+--duration-slow: 300ms;
+--duration-slower: 500ms;
+
+/* Easings */
+--ease-out: cubic-bezier(0.16, 1, 0.3, 1);      /* Salida suave */
+--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);  /* Entrada/salida */
+--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* Efecto rebote sutil */
+
+/* Transición default para todos los elementos interactivos */
+.interactive {
+  transition: all var(--duration-fast) var(--ease-out);
+}
+```
+
+---
+
+## 3. LAYOUT GENERAL CLIENTE
+
+### 3.1 Estructura de Rutas
+
+```
+frontend/app/
+├── (auth)/                      # Grupo para autenticación
+│   ├── login/
+│   │   └── page.tsx
+│   └── registro/
+│       └── page.tsx
+│
+├── (cliente)/                   # Grupo para área autenticada
+│   ├── layout.tsx              # Layout con navegación cliente
+│   ├── perfil/
+│   │   └── page.tsx
+│   ├── mis-ordenes/
+│   │   ├── page.tsx
+│   │   └── [orderNumber]/
+│   │       └── page.tsx
+│   └── direcciones/
+│       └── page.tsx
+```
+
+### 3.2 Layout Cliente - Mobile
+
+```
+┌─────────────────────────────────────────┐
+│ ← Volver    QUELITA    [Carrito] [≡]   │  ← Header sticky
+├─────────────────────────────────────────┤
+│                                         │
+│           [CONTENIDO PÁGINA]            │
+│                                         │
+│                                         │
+│                                         │
+│                                         │
+├─────────────────────────────────────────┤
+│  🏠    📦    👤    ⚙️                   │  ← Bottom nav (opcional)
+│ Inicio Pedidos Perfil Config            │
+└─────────────────────────────────────────┘
+
+Dimensiones mobile:
+- Header: 56px altura
+- Bottom nav: 64px altura (si se usa)
+- Padding contenido: 16px horizontal
+- Safe areas: respetadas (notch, home indicator)
+```
+
+### 3.3 Layout Cliente - Desktop
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  LOGO    Inicio  Productos  Ofertas    [🔍]  [🛒]  [👤 Juan] │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────┐  ┌────────────────────────────────────────┐│
+│  │             │  │                                        ││
+│  │  SIDEBAR    │  │         CONTENIDO PRINCIPAL            ││
+│  │  NAVEGACIÓN │  │                                        ││
+│  │             │  │                                        ││
+│  │  • Perfil   │  │                                        ││
+│  │  • Pedidos  │  │                                        ││
+│  │  • Direcciones│ │                                        ││
+│  │  • Config   │  │                                        ││
+│  │             │  │                                        ││
+│  │  [Cerrar    │  │                                        ││
+│  │   sesión]   │  │                                        ││
+│  │             │  │                                        ││
+│  └─────────────┘  └────────────────────────────────────────┘│
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+Dimensiones desktop:
+- Header: 72px altura
+- Sidebar: 280px ancho (fijo)
+- Contenido: flex-1 (resto del espacio)
+- Max-width contenedor: 1280px
+- Padding contenido: 32px
+```
+
+### 3.4 Código Layout Cliente
+
+```tsx
+// app/(cliente)/layout.tsx
+'use client';
+
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { ClientHeader } from '@/components/client/ClientHeader';
+import { ClientSidebar } from '@/components/client/ClientSidebar';
+import { ClientBottomNav } from '@/components/client/ClientBottomNav';
+
+export default function ClientLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const isMobile = useMediaQuery('(max-width: 1023px)');
+
+  return (
+    <div className="min-h-screen bg-background">
+      <ClientHeader />
+
+      <div className="flex">
+        {/* Sidebar - Solo desktop */}
+        {!isMobile && <ClientSidebar />}
+
+        {/* Contenido principal */}
+        <main className={cn(
+          "flex-1 min-h-[calc(100vh-56px)]",
+          // Mobile: padding bottom para bottom nav
+          "pb-20 lg:pb-0",
+          // Desktop: padding izquierdo para sidebar
+          "lg:ml-[280px]"
+        )}>
+          <div className="container mx-auto px-4 py-6 lg:px-8 lg:py-8">
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {/* Bottom Nav - Solo mobile */}
+      {isMobile && <ClientBottomNav />}
+    </div>
+  );
+}
+```
+
+---
+
+## 4. VISTA: LOGIN
+
+### 4.1 Wireframe Mobile (375px)
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│              [LOGO QUELITA]             │
+│                                         │
+│         Bienvenido de vuelta            │
+│    Ingresa para ver tus pedidos         │
+│                                         │
+├─────────────────────────────────────────┤
+│                                         │
+│  Email                                  │
+│  ┌─────────────────────────────────────┐│
+│  │ tu@email.com                        ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Contraseña                             │
+│  ┌─────────────────────────────────────┐│
+│  │ ••••••••                        👁  ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  [¿Olvidaste tu contraseña?]           │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │         INICIAR SESIÓN              ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ─────────── o continuar con ──────────│
+│                                         │
+│  ┌─────────┐ ┌─────────┐               │
+│  │ Google  │ │ Facebook│               │
+│  └─────────┘ └─────────┘               │
+│                                         │
+│  ¿No tienes cuenta? [Crear cuenta]     │
+│                                         │
+│  ← Volver a la tienda                   │
+│                                         │
+└─────────────────────────────────────────┘
+
+Especificaciones:
+- Logo: 120px ancho, centrado
+- Inputs: 48px altura (touch-friendly)
+- Botón primario: 48px altura, full-width
+- Espaciado vertical: 16px entre elementos
+- Padding horizontal: 24px
+```
+
+### 4.2 Wireframe Tablet/Desktop (768px+)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│  ┌─────────────────────────┐ ┌─────────────────────────────┐│
+│  │                         │ │                             ││
+│  │   [IMAGEN DECORATIVA]   │ │      [LOGO QUELITA]         ││
+│  │                         │ │                             ││
+│  │   Productos dulces,     │ │   Bienvenido de vuelta      ││
+│  │   momentos felices      │ │                             ││
+│  │                         │ │   Email                     ││
+│  │                         │ │   [____________]            ││
+│  │                         │ │                             ││
+│  │                         │ │   Contraseña                ││
+│  │                         │ │   [____________]            ││
+│  │                         │ │                             ││
+│  │                         │ │   [INICIAR SESIÓN]          ││
+│  │                         │ │                             ││
+│  │                         │ │   ¿No tienes cuenta?        ││
+│  │                         │ │   [Crear cuenta]            ││
+│  │                         │ │                             ││
+│  └─────────────────────────┘ └─────────────────────────────┘│
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+Especificaciones:
+- Split layout: 50/50 o 60/40
+- Panel izquierdo: imagen decorativa con overlay
+- Panel derecho: formulario centrado verticalmente
+- Max-width formulario: 400px
+- Inputs: 44px altura
+```
+
+### 4.3 Estados y Validación
+
+```tsx
+// Estados del formulario
+interface LoginFormState {
+  isLoading: boolean;
+  error: string | null;
+  fieldErrors: {
+    email?: string;
+    password?: string;
+  };
+}
+
+// Validación con Zod
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'El email es requerido')
+    .email('Email inválido'),
+  password: z
+    .string()
+    .min(1, 'La contraseña es requerida')
+    .min(6, 'Mínimo 6 caracteres'),
+});
+```
+
+### 4.4 Interacciones y Animaciones
+
+```tsx
+// Animaciones de entrada
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: 'easeOut' },
+  },
+};
+
+// Feedback de errores
+const shakeAnimation = {
+  x: [0, -10, 10, -10, 10, 0],
+  transition: { duration: 0.4 },
+};
+```
+
+### 4.5 Especificaciones de Accesibilidad
+
+```tsx
+// Input con label asociado
+<div>
+  <Label htmlFor="email">Email</Label>
+  <Input
+    id="email"
+    type="email"
+    inputMode="email"
+    autoComplete="email"
+    aria-describedby={error ? 'email-error' : undefined}
+    aria-invalid={!!error}
+  />
+  {error && (
+    <p id="email-error" role="alert" className="text-sm text-error mt-1">
+      {error}
+    </p>
+  )}
+</div>
+```
+
+---
+
+## 5. VISTA: REGISTRO
+
+### 5.1 Wireframe Mobile (375px)
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│              [LOGO QUELITA]             │
+│                                         │
+│           Crea tu cuenta                │
+│    Para seguir tus pedidos fácilmente   │
+│                                         │
+├─────────────────────────────────────────┤
+│                                         │
+│  Nombre completo                        │
+│  ┌─────────────────────────────────────┐│
+│  │ Juan Pérez                          ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Email                                  │
+│  ┌─────────────────────────────────────┐│
+│  │ tu@email.com                        ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Teléfono (WhatsApp)                    │
+│  ┌─────────────────────────────────────┐│
+│  │ +54 9 11 1234-5678                  ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Contraseña                             │
+│  ┌─────────────────────────────────────┐│
+│  │ ••••••••                        👁  ││
+│  └─────────────────────────────────────┘│
+│  ✓ Mínimo 6 caracteres                  │
+│                                         │
+│  Confirmar contraseña                   │
+│  ┌─────────────────────────────────────┐│
+│  │ ••••••••                        👁  ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ☑ Acepto los términos y condiciones   │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │          CREAR CUENTA               ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ¿Ya tienes cuenta? [Iniciar sesión]   │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### 5.2 Validación en Tiempo Real
+
+```tsx
+const registerSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'El nombre es requerido')
+    .min(2, 'Mínimo 2 caracteres')
+    .max(100, 'Máximo 100 caracteres'),
+  email: z
+    .string()
+    .min(1, 'El email es requerido')
+    .email('Email inválido'),
+  phone: z
+    .string()
+    .min(1, 'El teléfono es requerido')
+    .regex(/^\+?[0-9\s-]{8,20}$/, 'Teléfono inválido'),
+  password: z
+    .string()
+    .min(6, 'Mínimo 6 caracteres')
+    .regex(/[A-Z]/, 'Debe contener una mayúscula')
+    .regex(/[0-9]/, 'Debe contener un número'),
+  confirmPassword: z.string(),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: 'Debes aceptar los términos' }),
+  }),
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmPassword'],
+});
+```
+
+### 5.3 Indicador de Fortaleza de Contraseña
+
+```
+┌─────────────────────────────────────────┐
+│  Contraseña                             │
+│  ┌─────────────────────────────────────┐│
+│  │ ••••••••                            ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Seguridad: ████████░░░░ Media          │
+│                                         │
+│  ✓ Mínimo 6 caracteres                  │
+│  ✓ Una letra mayúscula                  │
+│  ○ Un número                            │
+│  ○ Un carácter especial (opcional)      │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 6. VISTA: PERFIL
+
+### 6.1 Wireframe Mobile (375px)
+
+```
+┌─────────────────────────────────────────┐
+│ ← Mi cuenta                             │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │         ┌─────────┐                 ││
+│  │         │   👤    │                 ││
+│  │         │  Avatar │                 ││
+│  │         └─────────┘                 ││
+│  │                                     ││
+│  │        Juan Pérez                   ││
+│  │     juan@email.com                  ││
+│  │   Cliente desde Ene 2025            ││
+│  │                                     ││
+│  │      [Editar perfil]                ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  📊 Tu actividad                    ││
+│  │                                     ││
+│  │  ┌─────────┐ ┌─────────┐ ┌────────┐││
+│  │  │   12    │ │ $45.000 │ │   3    │││
+│  │  │ Pedidos │ │ Gastado │ │Proceso │││
+│  │  └─────────┘ └─────────┘ └────────┘││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  Acciones rápidas                   ││
+│  ├─────────────────────────────────────┤│
+│  │  📦 Ver mis pedidos              → ││
+│  ├─────────────────────────────────────┤│
+│  │  📍 Mis direcciones              → ││
+│  ├─────────────────────────────────────┤│
+│  │  🔒 Cambiar contraseña           → ││
+│  ├─────────────────────────────────────┤│
+│  │  🔔 Notificaciones               → ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  🚪 Cerrar sesión                   ││
+│  └─────────────────────────────────────┘│
+│                                         │
+└─────────────────────────────────────────┘
+
+Especificaciones:
+- Avatar: 80px diámetro, con fallback iniciales
+- Stats cards: 3 columnas, altura uniforme
+- Lista acciones: items 56px altura (touch)
+- Botón cerrar sesión: estilo outline/ghost
+```
+
+### 6.2 Wireframe Desktop (1024px+)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│  ┌─────────────────────────┐  ┌────────────────────────────┐│
+│  │                         │  │                            ││
+│  │  ┌─────┐ Juan Pérez     │  │   📊 Tu actividad          ││
+│  │  │ 👤  │                │  │                            ││
+│  │  └─────┘ juan@email.com │  │   ┌────────┐ ┌────────┐    ││
+│  │         +54 9 11 1234   │  │   │   12   │ │$45.000 │    ││
+│  │                         │  │   │Pedidos │ │Gastado │    ││
+│  │  Cliente desde Ene 2025 │  │   └────────┘ └────────┘    ││
+│  │                         │  │                            ││
+│  │  [Editar perfil]        │  │   ┌────────┐ ┌────────┐    ││
+│  │                         │  │   │   3    │ │   8    │    ││
+│  │                         │  │   │En proc │ │Complet │    ││
+│  └─────────────────────────┘  │   └────────┘ └────────┘    ││
+│                               │                            ││
+│                               └────────────────────────────┘│
+│                                                              │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │                                                         ││
+│  │   Información personal                    [Editar]      ││
+│  │   ─────────────────────────────────────────────────     ││
+│  │                                                         ││
+│  │   Nombre          Juan Pérez                            ││
+│  │   Email           juan@email.com                        ││
+│  │   Teléfono        +54 9 11 1234-5678                    ││
+│  │                                                         ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                              │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │                                                         ││
+│  │   Dirección principal                     [Gestionar]   ││
+│  │   ─────────────────────────────────────────────────     ││
+│  │                                                         ││
+│  │   🏠 Casa (Predeterminada)                              ││
+│  │   Calle Principal 123, Ciudad                           ││
+│  │                                                         ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Modal Editar Perfil - Mobile
+
+```
+┌─────────────────────────────────────────┐
+│ Editar perfil                       [×] │
+├─────────────────────────────────────────┤
+│                                         │
+│         ┌─────────┐                     │
+│         │   👤    │                     │
+│         │ [Cambiar│                     │
+│         │  foto]  │                     │
+│         └─────────┘                     │
+│                                         │
+│  Nombre                                 │
+│  ┌─────────────────────────────────────┐│
+│  │ Juan Pérez                          ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Email                                  │
+│  ┌─────────────────────────────────────┐│
+│  │ juan@email.com                      ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Teléfono                               │
+│  ┌─────────────────────────────────────┐│
+│  │ +54 9 11 1234-5678                  ││
+│  └─────────────────────────────────────┘│
+│                                         │
+├─────────────────────────────────────────┤
+│  [Cancelar]          [Guardar cambios]  │
+└─────────────────────────────────────────┘
+
+Implementación:
+- Mobile: Sheet desde abajo (90vh altura)
+- Desktop: Dialog centrado (max-width 480px)
+```
+
+---
+
+## 7. VISTA: MIS ÓRDENES
+
+### 7.1 Wireframe Mobile (375px) - Lista
+
+```
+┌─────────────────────────────────────────┐
+│ ← Mis pedidos                           │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │ [Todos ▼]  [Buscar...        🔍]   ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  │  #QUE-20250124-001                  ││
+│  │  ┌────────────────────────────────┐ ││
+│  │  │ ● En preparación               │ ││
+│  │  └────────────────────────────────┘ ││
+│  │                                     ││
+│  │  24 Ene 2025 • 3 productos          ││
+│  │                                     ││
+│  │  ┌────┐ ┌────┐ ┌────┐              ││
+│  │  │ 🖼 │ │ 🖼 │ │ +1 │              ││
+│  │  └────┘ └────┘ └────┘              ││
+│  │                                     ││
+│  │  Total: $12.500                     ││
+│  │                                     ││
+│  │  [Ver detalle →]                    ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  │  #QUE-20250120-003                  ││
+│  │  ┌────────────────────────────────┐ ││
+│  │  │ ✓ Completado                   │ ││
+│  │  └────────────────────────────────┘ ││
+│  │                                     ││
+│  │  20 Ene 2025 • 5 productos          ││
+│  │                                     ││
+│  │  Total: $8.200                      ││
+│  │                                     ││
+│  │  [Ver detalle →] [Repetir pedido]   ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  [Cargar más]                           │
+│                                         │
+└─────────────────────────────────────────┘
+
+Especificaciones:
+- Cards con sombra sutil
+- Badge de estado con color correspondiente
+- Thumbnails: 48px × 48px, border-radius 8px
+- "+N" badge para más productos
+- Altura mínima card: touch-friendly
+- Pull-to-refresh habilitado
+```
+
+### 7.2 Wireframe Desktop (1024px+) - Lista
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│  Mis pedidos                                                 │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ [Todos los estados ▼]  [🔍 Buscar por número...]       │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │                                                        │ │
+│  │  PEDIDO             FECHA        ESTADO      TOTAL     │ │
+│  │  ─────────────────────────────────────────────────────│ │
+│  │                                                        │ │
+│  │  #QUE-20250124-001  24 Ene 2025  ●Preparando  $12.500 │ │
+│  │  ┌──┐┌──┐┌──┐ 3 productos                    [Ver →]  │ │
+│  │  └──┘└──┘└──┘                                         │ │
+│  │                                                        │ │
+│  │  ────────────────────────────────────────────────────  │ │
+│  │                                                        │ │
+│  │  #QUE-20250120-003  20 Ene 2025  ✓Completado  $8.200  │ │
+│  │  ┌──┐┌──┐┌──┐ 5 productos         [Ver →] [Repetir]   │ │
+│  │  └──┘└──┘└──┘                                         │ │
+│  │                                                        │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  Mostrando 1-10 de 12 pedidos              [← 1 2 →]        │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 7.3 Estado Vacío
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│                                         │
+│           ┌─────────────┐               │
+│           │             │               │
+│           │  📦         │               │
+│           │  (vacío)    │               │
+│           │             │               │
+│           └─────────────┘               │
+│                                         │
+│        Aún no tienes pedidos            │
+│                                         │
+│   Cuando realices tu primera compra,    │
+│   podrás verla y seguirla aquí.         │
+│                                         │
+│   ┌─────────────────────────────────┐   │
+│   │      Explorar productos         │   │
+│   └─────────────────────────────────┘   │
+│                                         │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### 7.4 Filtros Mobile (Sheet)
+
+```
+┌─────────────────────────────────────────┐
+│ Filtrar pedidos                     [×] │
+├─────────────────────────────────────────┤
+│                                         │
+│  Estado                                 │
+│  ○ Todos                                │
+│  ○ Pendientes                           │
+│  ○ En preparación                       │
+│  ○ Enviados                             │
+│  ○ Completados                          │
+│  ○ Cancelados                           │
+│                                         │
+│  Período                                │
+│  ○ Todos                                │
+│  ○ Última semana                        │
+│  ○ Último mes                           │
+│  ○ Últimos 3 meses                      │
+│  ○ Personalizado                        │
+│                                         │
+├─────────────────────────────────────────┤
+│  [Limpiar]           [Aplicar filtros]  │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 8. VISTA: DETALLE DE ORDEN
+
+### 8.1 Wireframe Mobile (375px)
+
+```
+┌─────────────────────────────────────────┐
+│ ← Pedido #QUE-20250124-001              │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  │         ● En preparación            ││
+│  │                                     ││
+│  │  ○──────●──────○──────○──────○     ││
+│  │  📨    ✓     🍳     🚚     ✓       ││
+│  │ Enviado Confirm. Prep.  Envío  Listo││
+│  │                                     ││
+│  │  Estimado: Hoy 18:00 - 20:00        ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  📦 Productos (3)                   ││
+│  ├─────────────────────────────────────┤│
+│  │                                     ││
+│  │  ┌────┐  Alfajor Triple             ││
+│  │  │ 🖼 │  Chocolate • Grande         ││
+│  │  └────┘  2 × $1.500 = $3.000        ││
+│  │                                     ││
+│  │  ────────────────────────────────   ││
+│  │                                     ││
+│  │  ┌────┐  Torta de Cumpleaños        ││
+│  │  │ 🖼 │  Mediana • Dulce de leche   ││
+│  │  └────┘  1 × $8.000 = $8.000        ││
+│  │                                     ││
+│  │  ────────────────────────────────   ││
+│  │                                     ││
+│  │  ┌────┐  Facturas Surtidas          ││
+│  │  │ 🖼 │  Docena                     ││
+│  │  └────┘  1 × $2.500 = $2.500        ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  💰 Resumen                         ││
+│  ├─────────────────────────────────────┤│
+│  │                                     ││
+│  │  Subtotal              $13.500      ││
+│  │  Descuento              -$1.000     ││
+│  │  Envío                  $1.500      ││
+│  │  ───────────────────────────────    ││
+│  │  Total                 $14.000      ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  📍 Entrega                         ││
+│  ├─────────────────────────────────────┤│
+│  │                                     ││
+│  │  Calle Principal 123               ││
+│  │  Barrio Centro, Ciudad             ││
+│  │  Referencia: Casa azul             ││
+│  │                                     ││
+│  │  📞 +54 9 11 1234-5678             ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  💳 Pago                            ││
+│  ├─────────────────────────────────────┤│
+│  │  Método: Efectivo al recibir        ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  [💬 Contactar por WhatsApp]        ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  [🔄 Volver a pedir]                ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  (Solo si está pendiente)               │
+│  ┌─────────────────────────────────────┐│
+│  │  [Cancelar pedido]                  ││
+│  └─────────────────────────────────────┘│
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### 8.2 Timeline de Estados (Componente Stepper)
+
+```tsx
+// Componente OrderStatusTimeline
+
+interface TimelineStep {
+  status: OrderStatus;
+  label: string;
+  icon: LucideIcon;
+  description?: string;
+  timestamp?: string;
+}
+
+const steps: TimelineStep[] = [
+  {
+    status: 'pending_whatsapp',
+    label: 'Enviado',
+    icon: Send,
+    description: 'Pedido enviado por WhatsApp',
+  },
+  {
+    status: 'confirmed',
+    label: 'Confirmado',
+    icon: CheckCircle,
+    description: 'Pedido confirmado por la tienda',
+  },
+  {
+    status: 'preparing',
+    label: 'Preparando',
+    icon: ChefHat,
+    description: 'Preparando tu pedido',
+  },
+  {
+    status: 'shipped',
+    label: 'En camino',
+    icon: Truck,
+    description: 'Pedido en camino',
+  },
+  {
+    status: 'completed',
+    label: 'Entregado',
+    icon: Package,
+    description: 'Pedido entregado',
+  },
+];
+
+// Visual: Línea horizontal con círculos
+// - Completado: círculo lleno + color primary
+// - Actual: círculo lleno + animación pulse
+// - Pendiente: círculo vacío + color muted
+```
+
+### 8.3 Especificaciones Visual Timeline
+
+```
+MOBILE (vertical):
+┌─────────────────────────────────────────┐
+│  ● Enviado                    24 Ene    │
+│  │  Pedido enviado por WhatsApp         │
+│  │                                      │
+│  ● Confirmado                 24 Ene    │
+│  │  Confirmado por la tienda            │
+│  │                                      │
+│  ◉ Preparando ← ACTUAL (pulse anim)     │
+│  │  Preparando tu pedido                │
+│  │                                      │
+│  ○ En camino                            │
+│  │                                      │
+│  ○ Entregado                            │
+└─────────────────────────────────────────┘
+
+DESKTOP (horizontal):
+┌──────────────────────────────────────────────────────────────┐
+│  ●────────●────────◉────────○────────○                       │
+│  Enviado  Confirm. Preparando  Camino  Entregado             │
+│                      ↑                                        │
+│                   ACTUAL                                      │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 8.4 Acción "Volver a Pedir"
+
+```tsx
+// Flujo al hacer click en "Volver a pedir"
+async function handleReorder(order: Order) {
+  // 1. Mostrar loading toast
+  toast.loading('Agregando productos al carrito...');
+
+  // 2. Verificar disponibilidad de cada item
+  const availability = await checkAvailability(order.items);
+
+  // 3. Si hay items no disponibles, mostrar alerta
+  if (availability.unavailable.length > 0) {
+    // Mostrar dialog con opciones
+    showUnavailableDialog(availability);
+    return;
+  }
+
+  // 4. Agregar al carrito
+  for (const item of order.items) {
+    addToCart(item.variant, item.quantity);
+  }
+
+  // 5. Redirigir al carrito
+  toast.success('Productos agregados al carrito');
+  router.push('/checkout');
+}
+```
+
+---
+
+## 9. VISTA: DIRECCIONES
+
+### 9.1 Wireframe Mobile (375px)
+
+```
+┌─────────────────────────────────────────┐
+│ ← Mis direcciones                       │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  [+ Agregar dirección]              ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  │  🏠 Casa                  ★ Default ││
+│  │  ─────────────────────────────────  ││
+│  │                                     ││
+│  │  Calle Principal 123               ││
+│  │  Barrio Centro                     ││
+│  │  Ciudad, CP 1234                   ││
+│  │                                     ││
+│  │  Referencia: Casa azul con rejas   ││
+│  │                                     ││
+│  │  [Editar]  [Eliminar]              ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  │  🏢 Trabajo                         ││
+│  │  ─────────────────────────────────  ││
+│  │                                     ││
+│  │  Av. Comercial 456, Piso 3         ││
+│  │  Zona Norte                        ││
+│  │  Ciudad, CP 5678                   ││
+│  │                                     ││
+│  │  [Editar]  [Eliminar]  [★ Default] ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### 9.2 Modal Agregar/Editar Dirección - Mobile
+
+```
+┌─────────────────────────────────────────┐
+│ Agregar dirección                   [×] │
+├─────────────────────────────────────────┤
+│                                         │
+│  Nombre de la dirección                 │
+│  ┌─────────────────────────────────────┐│
+│  │ Ej: Casa, Trabajo, etc.             ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Calle / Avenida                        │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Número                                 │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Barrio / Colonia                       │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Ciudad                                 │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  Referencia (opcional)                  │
+│  ┌─────────────────────────────────────┐│
+│  │ Ej: Casa azul, frente al parque    ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ☐ Usar como dirección predeterminada  │
+│                                         │
+├─────────────────────────────────────────┤
+│  [Cancelar]            [Guardar]        │
+└─────────────────────────────────────────┘
+```
+
+### 9.3 Confirmación Eliminar
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │                                     ││
+│  │         ⚠️                          ││
+│  │                                     ││
+│  │   ¿Eliminar esta dirección?         ││
+│  │                                     ││
+│  │   "Casa"                            ││
+│  │   Calle Principal 123               ││
+│  │                                     ││
+│  │   Esta acción no se puede deshacer. ││
+│  │                                     ││
+│  │   [Cancelar]  [Eliminar]            ││
+│  │                                     ││
+│  └─────────────────────────────────────┘│
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### 9.4 Validación Direcciones
+
+```tsx
+const addressSchema = z.object({
+  label: z
+    .string()
+    .min(1, 'El nombre es requerido')
+    .max(50, 'Máximo 50 caracteres'),
+  street: z
+    .string()
+    .min(1, 'La calle es requerida')
+    .max(200, 'Máximo 200 caracteres'),
+  number: z
+    .string()
+    .min(1, 'El número es requerido')
+    .max(20, 'Máximo 20 caracteres'),
+  neighborhood: z
+    .string()
+    .max(100, 'Máximo 100 caracteres')
+    .optional(),
+  city: z
+    .string()
+    .min(1, 'La ciudad es requerida')
+    .max(100, 'Máximo 100 caracteres'),
+  reference: z
+    .string()
+    .max(200, 'Máximo 200 caracteres')
+    .optional(),
+  isDefault: z.boolean().default(false),
+});
+```
+
+---
+
+## 10. COMPONENTES COMPARTIDOS
+
+### 10.1 ClientHeader (Mobile)
+
+```tsx
+// components/client/ClientHeader.tsx
+
+interface ClientHeaderProps {
+  title?: string;
+  showBack?: boolean;
+  onBack?: () => void;
+}
+
+export function ClientHeader({ title, showBack = true, onBack }: ClientHeaderProps) {
+  return (
+    <header className="sticky top-0 z-50 h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <div className="container h-full flex items-center justify-between px-4">
+        {/* Izquierda: Volver o Menú */}
+        <div className="flex items-center gap-2">
+          {showBack ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBack || (() => router.back())}
+              className="h-10 w-10"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-10 w-10">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <MobileClientNav />
+              </SheetContent>
+            </Sheet>
+          )}
+        </div>
+
+        {/* Centro: Logo o Título */}
+        <div className="flex-1 text-center">
+          {title ? (
+            <h1 className="text-base font-semibold truncate">{title}</h1>
+          ) : (
+            <Logo className="h-8 mx-auto" />
+          )}
+        </div>
+
+        {/* Derecha: Carrito */}
+        <div className="flex items-center gap-2">
+          <CartButton />
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+### 10.2 ClientBottomNav (Mobile)
+
+```tsx
+// components/client/ClientBottomNav.tsx
+
+const navItems = [
+  { href: '/', icon: Home, label: 'Inicio' },
+  { href: '/productos', icon: Grid, label: 'Productos' },
+  { href: '/mis-ordenes', icon: Package, label: 'Pedidos' },
+  { href: '/perfil', icon: User, label: 'Perfil' },
+];
+
+export function ClientBottomNav() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t safe-area-bottom">
+      <div className="flex items-center justify-around h-16">
+        {navItems.map(({ href, icon: Icon, label }) => {
+          const isActive = pathname === href || pathname.startsWith(href + '/');
+
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full",
+                "transition-colors duration-150",
+                isActive
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className={cn("h-5 w-5", isActive && "fill-current")} />
+              <span className="text-xs font-medium">{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+```
+
+### 10.3 OrderCard (Mobile)
+
+```tsx
+// components/client/OrderCard.tsx
+
+interface OrderCardProps {
+  order: Order;
+  onViewDetail: () => void;
+  onReorder?: () => void;
+}
+
+export function OrderCard({ order, onViewDetail, onReorder }: OrderCardProps) {
+  const statusConfig = getStatusConfig(order.status);
+
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="font-semibold text-sm">#{order.orderNumber}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatDate(order.createdAt)} • {order.items.length} productos
+            </p>
+          </div>
+          <Badge
+            variant="secondary"
+            className={cn(
+              "text-xs",
+              statusConfig.bgColor,
+              statusConfig.textColor
+            )}
+          >
+            {statusConfig.icon}
+            {statusConfig.label}
+          </Badge>
+        </div>
+
+        {/* Thumbnails */}
+        <div className="flex gap-2 mb-3">
+          {order.items.slice(0, 3).map((item, index) => (
+            <div
+              key={index}
+              className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted"
+            >
+              <Image
+                src={item.variantSnapshot.image}
+                alt={item.variantSnapshot.name}
+                fill
+                className="object-cover"
+              />
+            </div>
+          ))}
+          {order.items.length > 3 && (
+            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
+              <span className="text-xs font-medium text-muted-foreground">
+                +{order.items.length - 3}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Total y acciones */}
+        <div className="flex items-center justify-between">
+          <p className="font-bold">
+            Total: {formatCurrency(order.total)}
+          </p>
+          <div className="flex gap-2">
+            {order.status === 'completed' && onReorder && (
+              <Button variant="outline" size="sm" onClick={onReorder}>
+                Repetir
+              </Button>
+            )}
+            <Button variant="default" size="sm" onClick={onViewDetail}>
+              Ver detalle
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### 10.4 AddressCard
+
+```tsx
+// components/client/AddressCard.tsx
+
+interface AddressCardProps {
+  address: Address;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSetDefault: () => void;
+}
+
+export function AddressCard({
+  address,
+  onEdit,
+  onDelete,
+  onSetDefault,
+}: AddressCardProps) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Home className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold">{address.label}</span>
+          </div>
+          {address.isDefault && (
+            <Badge variant="secondary" className="text-xs">
+              <Star className="h-3 w-3 mr-1 fill-current" />
+              Predeterminada
+            </Badge>
+          )}
+        </div>
+
+        {/* Dirección */}
+        <div className="text-sm text-muted-foreground space-y-1 mb-4">
+          <p>{address.street} {address.number}</p>
+          {address.neighborhood && <p>{address.neighborhood}</p>}
+          <p>{address.city}</p>
+          {address.reference && (
+            <p className="italic">Ref: {address.reference}</p>
+          )}
+        </div>
+
+        {/* Acciones */}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            Editar
+          </Button>
+          <Button variant="outline" size="sm" onClick={onDelete}>
+            Eliminar
+          </Button>
+          {!address.isDefault && (
+            <Button variant="ghost" size="sm" onClick={onSetDefault}>
+              <Star className="h-4 w-4 mr-1" />
+              Predeterminar
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+---
+
+## 11. ESTADOS Y FEEDBACK
+
+### 11.1 Loading States (Skeletons)
+
+```tsx
+// Skeleton para OrderCard
+export function OrderCardSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+
+        <div className="flex gap-2 mb-3">
+          <Skeleton className="h-12 w-12 rounded-lg" />
+          <Skeleton className="h-12 w-12 rounded-lg" />
+          <Skeleton className="h-12 w-12 rounded-lg" />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Lista de skeletons
+export function OrderListSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <OrderCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+```
+
+### 11.2 Empty States
+
+```tsx
+// Componente reutilizable para estados vacíos
+interface EmptyStateProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  action?: {
+    label: string;
+    href: string;
+  };
+}
+
+export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+        <Icon className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground max-w-xs mb-6">
+        {description}
+      </p>
+      {action && (
+        <Button asChild>
+          <Link href={action.href}>{action.label}</Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// Uso
+<EmptyState
+  icon={Package}
+  title="Aún no tienes pedidos"
+  description="Cuando realices tu primera compra, podrás verla y seguirla aquí."
+  action={{ label: "Explorar productos", href: "/productos" }}
+/>
+```
+
+### 11.3 Error States
+
+```tsx
+// Error genérico con retry
+interface ErrorStateProps {
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+}
+
+export function ErrorState({
+  title = "Algo salió mal",
+  description = "No pudimos cargar la información. Por favor, intenta de nuevo.",
+  onRetry,
+}: ErrorStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <div className="h-16 w-16 rounded-full bg-error-bg flex items-center justify-center mb-4">
+        <AlertCircle className="h-8 w-8 text-error" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground max-w-xs mb-6">
+        {description}
+      </p>
+      {onRetry && (
+        <Button onClick={onRetry} variant="outline">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Reintentar
+        </Button>
+      )}
+    </div>
+  );
+}
+```
+
+### 11.4 Toast Notifications
+
+```tsx
+// Configuración de toasts
+const toastConfig = {
+  // Éxito
+  success: {
+    className: 'bg-success-bg border-success text-success',
+    icon: <CheckCircle className="h-5 w-5" />,
+    duration: 3000,
+  },
+  // Error
+  error: {
+    className: 'bg-error-bg border-error text-error',
+    icon: <XCircle className="h-5 w-5" />,
+    duration: 5000,
+  },
+  // Info
+  info: {
+    className: 'bg-info-bg border-info text-info',
+    icon: <Info className="h-5 w-5" />,
+    duration: 4000,
+  },
+  // Loading
+  loading: {
+    className: 'bg-muted',
+    icon: <Loader2 className="h-5 w-5 animate-spin" />,
+    duration: Infinity,
+  },
+};
+
+// Uso con sonner
+toast.success('Perfil actualizado correctamente');
+toast.error('No se pudo procesar tu solicitud');
+toast.promise(updateProfile(data), {
+  loading: 'Guardando cambios...',
+  success: 'Perfil actualizado',
+  error: 'Error al actualizar',
+});
+```
+
+---
+
+## 12. INTEGRACIÓN BACKEND
+
+### 12.1 Servicios Requeridos
+
+```tsx
+// services/client/auth.ts
+export const clientAuthService = {
+  login: (credentials: LoginCredentials) =>
+    api.post('/auth/login', credentials),
+
+  register: (data: RegisterData) =>
+    api.post('/auth/register', data),
+
+  logout: () =>
+    api.post('/auth/logout'),
+
+  getProfile: () =>
+    api.get('/auth/me'),
+
+  updateProfile: (data: UpdateProfileData) =>
+    api.put('/auth/me', data),
+
+  changePassword: (data: ChangePasswordData) =>
+    api.put('/auth/me/password', data),
+};
+
+// services/client/orders.ts
+export const clientOrderService = {
+  getMyOrders: (params?: OrderFilters) =>
+    api.get('/orders/my-orders', { params }),
+
+  getOrderByNumber: (orderNumber: string) =>
+    api.get(`/orders/number/${orderNumber}`),
+
+  cancelOrder: (orderId: string, reason: string) =>
+    api.put(`/orders/${orderId}/cancel`, { reason }),
+};
+
+// services/client/addresses.ts
+export const addressService = {
+  getAll: () =>
+    api.get('/users/me/addresses'),
+
+  create: (data: CreateAddressData) =>
+    api.post('/users/me/addresses', data),
+
+  update: (id: string, data: UpdateAddressData) =>
+    api.put(`/users/me/addresses/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/users/me/addresses/${id}`),
+
+  setDefault: (id: string) =>
+    api.patch(`/users/me/addresses/${id}/default`),
+};
+```
+
+### 12.2 Hooks React Query
+
+```tsx
+// hooks/useClientAuth.ts
+export function useProfile() {
+  return useQuery({
+    queryKey: ['profile'],
+    queryFn: () => clientAuthService.getProfile(),
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: clientAuthService.updateProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast.success('Perfil actualizado');
+    },
+    onError: (error) => {
+      toast.error('Error al actualizar perfil');
+    },
+  });
+}
+
+// hooks/useClientOrders.ts
+export function useMyOrders(filters?: OrderFilters) {
+  return useQuery({
+    queryKey: ['my-orders', filters],
+    queryFn: () => clientOrderService.getMyOrders(filters),
+    staleTime: 2 * 60 * 1000, // 2 minutos
+  });
+}
+
+export function useOrderDetail(orderNumber: string) {
+  return useQuery({
+    queryKey: ['order', orderNumber],
+    queryFn: () => clientOrderService.getOrderByNumber(orderNumber),
+    enabled: !!orderNumber,
+  });
+}
+
+// hooks/useAddresses.ts
+export function useAddresses() {
+  return useQuery({
+    queryKey: ['addresses'],
+    queryFn: () => addressService.getAll(),
+  });
+}
+
+export function useCreateAddress() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: addressService.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
+      toast.success('Dirección agregada');
+    },
+  });
+}
+```
+
+### 12.3 Store de Autenticación Cliente
+
+```tsx
+// store/useClientAuthStore.ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface ClientUser {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: 'cliente';
+}
+
+interface ClientAuthState {
+  user: ClientUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+
+  setUser: (user: ClientUser | null) => void;
+  setLoading: (loading: boolean) => void;
+  logout: () => void;
+}
+
+export const useClientAuthStore = create<ClientAuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: true,
+
+      setUser: (user) =>
+        set({
+          user,
+          isAuthenticated: !!user,
+          isLoading: false,
+        }),
+
+      setLoading: (isLoading) => set({ isLoading }),
+
+      logout: () =>
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        }),
+    }),
+    {
+      name: 'quelita-client-auth',
+      partialize: (state) => ({ user: state.user }),
+    }
+  )
+);
+```
+
+---
+
+## 13. CHECKLIST DE IMPLEMENTACIÓN
+
+### 13.1 Pre-Desarrollo
+
+- [ ] Revisar esta documentación completa
+- [ ] Verificar endpoints backend disponibles
+- [ ] Configurar variables de entorno
+- [ ] Preparar assets (iconos, imágenes placeholder)
+
+### 13.2 Por Vista
+
+#### Login
+- [ ] Crear `/app/(auth)/login/page.tsx`
+- [ ] Implementar formulario con React Hook Form + Zod
+- [ ] Agregar validación en tiempo real
+- [ ] Implementar show/hide password
+- [ ] Agregar animaciones de entrada
+- [ ] Testear en mobile (375px)
+- [ ] Testear en desktop (1024px+)
+- [ ] Verificar accesibilidad (keyboard, screen reader)
+
+#### Registro
+- [ ] Crear `/app/(auth)/registro/page.tsx`
+- [ ] Implementar formulario multi-campo
+- [ ] Agregar indicador de fortaleza de contraseña
+- [ ] Implementar checkbox de términos
+- [ ] Testear flujo completo
+- [ ] Verificar responsive
+
+#### Perfil
+- [ ] Crear `/app/(cliente)/perfil/page.tsx`
+- [ ] Implementar header con avatar
+- [ ] Crear stats cards
+- [ ] Implementar lista de acciones rápidas
+- [ ] Crear modal de edición
+- [ ] Testear en mobile y desktop
+
+#### Mis Órdenes
+- [ ] Crear `/app/(cliente)/mis-ordenes/page.tsx`
+- [ ] Implementar OrderCard component
+- [ ] Agregar filtros (Sheet en mobile)
+- [ ] Implementar búsqueda
+- [ ] Agregar paginación/infinite scroll
+- [ ] Crear empty state
+- [ ] Testear pull-to-refresh (mobile)
+
+#### Detalle de Orden
+- [ ] Crear `/app/(cliente)/mis-ordenes/[orderNumber]/page.tsx`
+- [ ] Implementar OrderStatusTimeline
+- [ ] Crear lista de productos
+- [ ] Implementar resumen de pago
+- [ ] Agregar información de entrega
+- [ ] Implementar "Volver a pedir"
+- [ ] Agregar "Cancelar pedido" (si aplica)
+- [ ] Implementar contacto WhatsApp
+
+#### Direcciones
+- [ ] Crear `/app/(cliente)/direcciones/page.tsx`
+- [ ] Implementar AddressCard
+- [ ] Crear modal agregar/editar
+- [ ] Implementar confirmación de eliminar
+- [ ] Agregar "Marcar como predeterminada"
+- [ ] Testear CRUD completo
+
+### 13.3 Post-Desarrollo
+
+- [ ] Verificar todos los breakpoints (375, 768, 1024, 1280)
+- [ ] Testear en dispositivo real (iOS + Android)
+- [ ] Lighthouse audit > 90 en mobile
+- [ ] Verificar accesibilidad completa
+- [ ] Testear con red lenta (3G)
+- [ ] Validar integración con backend
+- [ ] Code review
+
+---
+
+## ANEXOS
+
+### A. Configuración Tailwind Adicional
+
+```js
+// tailwind.config.ts (agregar a extend)
+extend: {
+  colors: {
+    status: {
+      pending: 'hsl(var(--status-pending))',
+      confirmed: 'hsl(var(--status-confirmed))',
+      preparing: 'hsl(var(--status-preparing))',
+      shipped: 'hsl(var(--status-shipped))',
+      completed: 'hsl(var(--status-completed))',
+      cancelled: 'hsl(var(--status-cancelled))',
+    },
+  },
+  animation: {
+    'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+    'slide-up': 'slideUp 0.3s ease-out',
+    'slide-down': 'slideDown 0.3s ease-out',
+  },
+  keyframes: {
+    slideUp: {
+      '0%': { transform: 'translateY(10px)', opacity: '0' },
+      '100%': { transform: 'translateY(0)', opacity: '1' },
+    },
+    slideDown: {
+      '0%': { transform: 'translateY(-10px)', opacity: '0' },
+      '100%': { transform: 'translateY(0)', opacity: '1' },
+    },
+  },
+}
+```
+
+### B. Utilidades CSS Personalizadas
+
+```css
+/* globals.css */
+
+/* Safe area para dispositivos con notch */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Scrollbar personalizado */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground) / 0.3);
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+```
+
+---
+
+**FIN DE LA DOCUMENTACIÓN**
+
+**Versión:** 1.0
+**Última actualización:** 2025-01-24
+**Autor:** Claude (Asistente de desarrollo)
+**Revisión pendiente:** Equipo de desarrollo

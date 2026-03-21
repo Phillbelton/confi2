@@ -1,0 +1,48 @@
+'use client';
+
+import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import type { ProductParent } from '@/types';
+import { ProductCardPremium } from './ProductCardPremium';
+
+interface ProductGridPremiumProps {
+  products: ProductParent[];
+  onQuickView?: (product: ProductParent) => void;
+  loading?: boolean;
+}
+
+export function ProductGridPremium({
+  products,
+  onQuickView,
+  loading = false,
+}: ProductGridPremiumProps) {
+  const [parentRef] = useAutoAnimate({
+    duration: 300,
+    easing: 'ease-out',
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div
+        ref={parentRef}
+        className="grid gap-1 sm:gap-1.5 md:gap-2 lg:gap-2.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+      >
+        {products.map((product, index) => (
+          <ProductCardPremium
+            key={product._id}
+            product={product}
+            variants={(product as any).variants || []}
+            onQuickView={() => onQuickView?.(product)}
+            index={index}
+            priority={index < 5}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}

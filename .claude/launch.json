@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "autoVerify": false,
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npm", "run", "dev"],
+      "cwd": "backend",
+      "port": 5000,
+      "autoPort": false,
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npm", "run", "dev"],
+      "cwd": "frontend",
+      "port": 3000,
+      "autoPort": true,
+      "env": {
+        "NODE_ENV": "development",
+        "NEXT_PUBLIC_API_URL": "http://localhost:5000/api"
+      }
+    }
+  ]
+}
