@@ -197,6 +197,26 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response<ApiResp
 });
 
 /**
+ * @desc    Verificar si un teléfono ya está registrado
+ * @route   POST /api/auth/check-phone
+ * @access  Public
+ */
+export const checkPhone = asyncHandler(async (req: AuthRequest, res: Response<ApiResponse>) => {
+  const { phone } = req.body;
+
+  if (!phone || typeof phone !== 'string') {
+    res.status(400).json({ success: false, error: 'Teléfono requerido' });
+    return;
+  }
+
+  const exists = await authService.checkPhoneExists(phone);
+
+  res.status(200).json(
+    successResponse({ exists })
+  );
+});
+
+/**
  * @desc    Actualizar perfil de usuario
  * @route   PUT /api/auth/profile
  * @access  Private
