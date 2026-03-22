@@ -500,7 +500,7 @@ export const updateOrderStatus = asyncHandler(
 // @access  Private (admin, funcionario, owner)
 export const cancelOrder = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { reason } = req.body;
+    const { cancellationReason } = req.body;
     const { id } = req.params;
 
     const order = await Order.findById(id);
@@ -533,7 +533,7 @@ export const cancelOrder = asyncHandler(
 
     order.status = 'cancelled';
     order.cancelledBy = req.user?.id as any;
-    order.cancellationReason = reason;
+    order.cancellationReason = cancellationReason;
 
     // El pre-save hook restaurará el stock automáticamente
     await order.save();

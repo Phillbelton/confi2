@@ -220,7 +220,7 @@ describe('Stock Movements API', () => {
       await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${adminToken}`)
-        .send({ reason: 'Test cancellation' });
+        .send({ cancellationReason: 'Test cancellation' });
 
       const response = await request(app)
         .get(`/api/stock-movements/order/${order._id}`)
@@ -445,7 +445,7 @@ describe('Stock Movements API', () => {
       await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${adminToken}`)
-        .send({ reason: 'Test cancellation for integration test' });
+        .send({ cancellationReason: 'Test cancellation for integration test' });
 
       const movements = await StockMovement.find({
         variant: variant._id,

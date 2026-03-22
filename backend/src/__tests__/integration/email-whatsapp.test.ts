@@ -194,7 +194,7 @@ describe('Email & WhatsApp Integration Tests', () => {
         .put(`/api/orders/${orderId}/cancel`)
         .set('Cookie', `token=${token}`)
         .send({
-          reason: 'Cliente cambió de opinión',
+          cancellationReason: 'Cliente cambió de opinión',
         });
 
       expect(cancelResponse.status).toBe(200);
@@ -234,7 +234,7 @@ describe('Email & WhatsApp Integration Tests', () => {
         .put(`/api/orders/${orderId}/cancel`)
         .set('Cookie', `token=${token}`)
         .send({
-          reason: 'Test cancellation',
+          cancellationReason: 'Test cancellation',
         });
 
       expect(cancelResponse.status).toBe(200);

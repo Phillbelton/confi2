@@ -415,7 +415,7 @@ describe('Orders API', () => {
       const response = await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${token}`)
-        .send({ reason: 'Customer requested cancellation' });
+        .send({ cancellationReason: 'Customer requested cancellation' });
 
       expect(response.status).toBe(200);
       expect(response.body.data.order.status).toBe('cancelled');
@@ -440,7 +440,7 @@ describe('Orders API', () => {
       const response = await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${token}`)
-        .send({ reason: 'Admin cancellation' });
+        .send({ cancellationReason: 'Admin cancellation' });
 
       expect(response.status).toBe(200);
     });
@@ -454,7 +454,7 @@ describe('Orders API', () => {
       const response = await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${token}`)
-        .send({ reason: 'Trying to cancel another user order' });
+        .send({ cancellationReason: 'Trying to cancel another user order' });
 
       expect(response.status).toBe(403);
     });
@@ -467,7 +467,7 @@ describe('Orders API', () => {
       const response = await request(app)
         .put(`/api/orders/${order._id}/cancel`)
         .set('Cookie', `token=${token}`)
-        .send({ reason: 'Cancel' });
+        .send({ cancellationReason: 'Cancel' });
 
       expect(response.status).toBe(400);
     });

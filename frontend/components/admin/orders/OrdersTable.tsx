@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Eye, MessageCircle } from 'lucide-react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -15,7 +15,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OrderStatusBadge } from './OrderStatusBadge';
-import { OrderDetailModal } from './OrderDetailModal';
 import type { Order } from '@/types/order';
 
 interface OrdersTableProps {
@@ -29,7 +28,6 @@ export function OrdersTable({
   onWhatsAppClick,
   isMarkingWhatsApp,
 }: OrdersTableProps) {
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   if (orders.length === 0) {
     return (
@@ -59,7 +57,12 @@ export function OrdersTable({
             {orders.map((order) => (
               <TableRow key={order._id}>
                 <TableCell className="font-mono text-sm">
-                  {order.orderNumber}
+                  <Link
+                    href={`/admin/ordenes/${order._id}`}
+                    className="hover:text-primary hover:underline"
+                  >
+                    {order.orderNumber}
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <div>
@@ -114,14 +117,12 @@ export function OrdersTable({
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Ver
-                  </Button>
+                  <Link href={`/admin/ordenes/${order._id}`}>
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver
+                    </Button>
+                  </Link>
                 </TableCell>
               </TableRow>
             ))}
@@ -129,13 +130,6 @@ export function OrdersTable({
         </Table>
       </div>
 
-      {selectedOrder && (
-        <OrderDetailModal
-          order={selectedOrder}
-          open={!!selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-        />
-      )}
     </>
   );
 }

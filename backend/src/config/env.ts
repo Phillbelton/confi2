@@ -41,6 +41,9 @@ export const ENV = {
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 min
   RATE_LIMIT_MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
 
+  // Order expiration (guest orders auto-cancel)
+  ORDER_EXPIRATION_HOURS: parseInt(process.env.ORDER_EXPIRATION_HOURS || '48', 10),
+
   // Email (preparado para futuro)
   SMTP_HOST: process.env.SMTP_HOST || '',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),

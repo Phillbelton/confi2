@@ -11,6 +11,7 @@ import { xssSanitize } from './middleware/xssSanitize';
 import logger from './config/logger';
 import { requestLogger } from './middleware/requestLogger';
 import { apiRateLimiter } from './middleware/rateLimiter';
+import { startOrderExpirationScheduler } from './services/orderExpirationService';
 
 // Crear app Express
 const app = express();
@@ -147,6 +148,9 @@ async function startServer() {
       logger.info(`🎯 Frontend URL: ${ENV.FRONTEND_URL}`);
       logger.info('═══════════════════════════════════════════════════════════');
     });
+
+    // 3. Iniciar schedulers
+    startOrderExpirationScheduler();
   }
 }
 
