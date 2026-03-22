@@ -89,10 +89,23 @@ const passwordResetLimiter = createTestAwareRateLimiter({
   legacyHeaders: false,
 });
 
+// Rate limiter para check-phone (evitar enumeración de usuarios)
+const checkPhoneLimiter = createTestAwareRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // Máximo 10 consultas
+  message: {
+    success: false,
+    error: 'Demasiadas consultas. Intenta de nuevo en unos minutos.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Rutas públicas
 router.post('/register', registerLimiter, validate(registerSchema), authController.register);
 router.post('/login', loginLimiter, validate(loginSchema), authController.login);
 router.post('/refresh', authController.refreshToken);
+router.post('/check-phone', checkPhoneLimiter, authController.checkPhone);
 router.post('/forgot-password', passwordResetLimiter, validate(forgotPasswordSchema), passwordController.forgotPassword);
 router.post('/reset-password/:token', validate(resetPasswordSchema), passwordController.resetPassword);
 

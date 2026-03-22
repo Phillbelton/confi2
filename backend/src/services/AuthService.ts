@@ -296,6 +296,23 @@ export class AuthService {
 
     return user;
   }
+
+  /**
+   * Verificar si un teléfono ya está registrado
+   * No revela datos del usuario, solo true/false
+   */
+  async checkPhoneExists(phone: string): Promise<boolean> {
+    // Normalizar: quitar espacios, asegurar formato +56
+    const cleaned = phone.replace(/\s/g, '');
+    const normalized = cleaned.startsWith('+56') ? cleaned : `+56${cleaned}`;
+
+    const user = await User.findOne({
+      phone: normalized,
+      active: true,
+    }).select('_id').lean();
+
+    return !!user;
+  }
 }
 
 // Exportar instancia singleton

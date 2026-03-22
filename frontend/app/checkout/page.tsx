@@ -17,7 +17,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { useClientStore } from '@/store/useClientStore';
 import { orderService } from '@/services/orders';
 import { getSafeImageUrl } from '@/lib/image-utils';
-import { ShoppingCart, Truck, MapPin, CreditCard, AlertCircle, Loader2, User, LogIn, UserPlus } from 'lucide-react';
+import { ShoppingCart, Truck, MapPin, CreditCard, AlertCircle, Loader2, User, LogIn, UserPlus, Info } from 'lucide-react';
 import type { DeliveryMethod, PaymentMethod } from '@/types';
 
 export default function CheckoutPage() {
@@ -28,6 +28,8 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [continueAsGuest, setContinueAsGuest] = useState(false);
+  const [phoneRegistered, setPhoneRegistered] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -76,6 +78,34 @@ export default function CheckoutPage() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Verificar si el teléfono ya está registrado (solo para invitados)
+  const handlePhoneBlur = async () => {
+    if (isAuthenticated) return; // No verificar si ya está logueado
+
+    const phoneClean = formData.phone.replace(/\s/g, '');
+    if (phoneClean.length < 9) {
+      setPhoneRegistered(false);
+      return;
+    }
+
+    setCheckingPhone(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${API_URL}/auth/check-phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneClean }),
+      });
+      const data = await res.json();
+      setPhoneRegistered(data.data?.exists === true);
+    } catch {
+      // Silenciar error — no bloquear checkout
+      setPhoneRegistered(false);
+    } finally {
+      setCheckingPhone(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -299,13 +329,43 @@ export default function CheckoutPage() {
                               // Solo permitir dígitos y espacios, máximo 11 caracteres
                               const value = e.target.value.replace(/[^\d\s]/g, '').slice(0, 11);
                               setFormData((prev) => ({ ...prev, phone: value }));
+                              setPhoneRegistered(false); // Resetear al editar
                             }}
+                            onBlur={handlePhoneBlur}
                             required
                             placeholder="9 1234 5678"
                             maxLength={11}
                             className="rounded-l-none"
                           />
                         </div>
+
+                        {/* Aviso: teléfono ya registrado */}
+                        {!isAuthenticated && phoneRegistered && (
+                          <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md text-sm">
+                            <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-blue-800 dark:text-blue-300">
+                                Ya tenés una cuenta con este número. Iniciá sesión para ver tu historial de pedidos.
+                              </p>
+                              <div className="flex gap-2 mt-2">
+                                <Link
+                                  href="/login?redirect=/checkout"
+                                  className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                >
+                                  <LogIn className="h-3 w-3" />
+                                  Iniciar sesión
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => setPhoneRegistered(false)}
+                                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                  Continuar como invitado
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div>
