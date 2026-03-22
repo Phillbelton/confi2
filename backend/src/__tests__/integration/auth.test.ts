@@ -13,12 +13,10 @@ import crypto from 'crypto';
 
 describe('Authentication API', () => {
   beforeEach(async () => {
-    // Clear database before each test
     await clearDatabase();
   });
 
   afterAll(async () => {
-    // Clear database after all tests
     await clearDatabase();
   });
 
@@ -78,13 +76,11 @@ describe('Authentication API', () => {
     });
 
     it('should reject registration with existing email', async () => {
-      // Create first user
       await createTestUser({
         email: 'existing@example.com',
         password: 'ExistingPass123!',
       });
 
-      // Try to register with same email
       const response = await request(app)
         .post('/api/auth/register')
         .send({
@@ -131,7 +127,7 @@ describe('Authentication API', () => {
         .send({
           name: 'Weak Password User',
           email: 'weak@example.com',
-          password: '123', // Too short
+          password: '123', // Too short, no uppercase, no special char
           phone: '595981234567',
         });
 
@@ -173,13 +169,107 @@ describe('Authentication API', () => {
       const isMatch = await user!.comparePassword(plainPassword);
       expect(isMatch).toBe(true);
     });
+
+    it('should always assign "cliente" role regardless of what is sent', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Sneaky Admin',
+          email: 'sneaky@example.com',
+          password: 'SecurePass123!',
+          role: 'admin', // Attempt to self-assign admin
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.user.role).toBe('cliente');
+
+      const user = await User.findOne({ email: 'sneaky@example.com' });
+      expect(user?.role).toBe('cliente');
+    });
+
+    it('should normalize email to lowercase', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Upper Email',
+          email: 'UPPER@EXAMPLE.COM',
+          password: 'SecurePass123!',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.user.email).toBe('upper@example.com');
+    });
+
+    it('should register without optional phone', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'No Phone User',
+          email: 'nophone@example.com',
+          password: 'SecurePass123!',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.user).toBeDefined();
+    });
+
+    it('should reject password without uppercase letter', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Test',
+          email: 'test@example.com',
+          password: 'nouppercase123!',
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should reject password without special character', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Test',
+          email: 'test@example.com',
+          password: 'NoSpecial123',
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should reject name shorter than 2 characters', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'A',
+          email: 'shortname@example.com',
+          password: 'SecurePass123!',
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return both token and refreshToken in response body', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Token User',
+          email: 'tokens@example.com',
+          password: 'SecurePass123!',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.token).toBeTruthy();
+      expect(response.body.data.refreshToken).toBeTruthy();
+      expect(response.body.data.token).not.toBe(response.body.data.refreshToken);
+    });
   });
 
   // ==================== POST /api/auth/login ====================
 
   describe('POST /api/auth/login', () => {
     it('should login user successfully with correct credentials', async () => {
-      const user = await createTestUser({
+      await createTestUser({
         email: 'login@example.com',
         password: 'CorrectPass123!',
       });
@@ -350,6 +440,108 @@ describe('Authentication API', () => {
       updatedUser = await User.findById(user._id);
       expect(updatedUser?.loginAttempts).toBe(0);
     });
+
+    it('should lock account after 5 failed attempts', async () => {
+      const user = await createTestUser({
+        email: 'lockme@example.com',
+        password: 'CorrectPass123!',
+      });
+
+      // 5 failed attempts
+      for (let i = 0; i < 5; i++) {
+        await request(app)
+          .post('/api/auth/login')
+          .send({ email: 'lockme@example.com', password: 'Wrong123!' });
+      }
+
+      // 6th attempt — even with correct password — should be locked
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'lockme@example.com',
+          password: 'CorrectPass123!',
+        });
+
+      expect(response.status).toBe(423);
+      expect(response.body.error).toContain('bloqueada');
+
+      // Verify lockUntil was set in DB
+      const lockedUser = await User.findById(user._id);
+      expect(lockedUser?.lockUntil).toBeDefined();
+      expect(lockedUser?.loginAttempts).toBe(5);
+    });
+
+    it('should login with case-insensitive email', async () => {
+      await createTestUser({
+        email: 'caseemail@example.com',
+        password: 'SecurePass123!',
+      });
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'CASEEMAIL@EXAMPLE.COM',
+          password: 'SecurePass123!',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.user.email).toBe('caseemail@example.com');
+    });
+
+    it('should return user role in login response', async () => {
+      await createTestUser({
+        email: 'admin@roletest.com',
+        password: 'AdminPass123!',
+        role: 'admin',
+      });
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'admin@roletest.com',
+          password: 'AdminPass123!',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.user.role).toBe('admin');
+    });
+
+    it('should not return password in login response', async () => {
+      await createTestUser({
+        email: 'nopassword@example.com',
+        password: 'SecurePass123!',
+      });
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'nopassword@example.com',
+          password: 'SecurePass123!',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.user.password).toBeUndefined();
+    });
+
+    it('should return same error for wrong email and wrong password (no enumeration)', async () => {
+      await createTestUser({
+        email: 'exists@example.com',
+        password: 'SecurePass123!',
+      });
+
+      const wrongEmail = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'doesnt@example.com', password: 'SecurePass123!' });
+
+      const wrongPass = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'exists@example.com', password: 'WrongPass123!' });
+
+      // Both should return 401 with the same generic message
+      expect(wrongEmail.status).toBe(401);
+      expect(wrongPass.status).toBe(401);
+      expect(wrongEmail.body.error).toBe(wrongPass.body.error);
+    });
   });
 
   // ==================== POST /api/auth/logout ====================
@@ -383,7 +575,6 @@ describe('Authentication API', () => {
         ? response.headers['set-cookie']
         : [response.headers['set-cookie']];
 
-      // Check for expired cookies
       const hasExpiredCookie = setCookies.some((cookie: string) =>
         (cookie.includes('token=') || cookie.includes('refreshToken=')) &&
         cookie.includes('Max-Age=0')
@@ -467,7 +658,6 @@ describe('Authentication API', () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
 
-      // Add an address to the user
       await user.addAddress({
         label: 'Home',
         street: 'Av. Mariscal López',
@@ -486,6 +676,48 @@ describe('Authentication API', () => {
       expect(Array.isArray(response.body.data.user.addresses)).toBe(true);
       expect(response.body.data.user.addresses.length).toBe(1);
       expect(response.body.data.user.addresses[0].label).toBe('Home');
+    });
+
+    it('should authenticate via Cookie instead of Authorization header', async () => {
+      const user = await createTestUser({
+        email: 'cookie-auth@example.com',
+        password: 'SecurePass123!',
+      });
+
+      // Login to get cookie
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'cookie-auth@example.com', password: 'SecurePass123!' });
+
+      const cookies = loginRes.headers['set-cookie'];
+      let tokenCookie = '';
+      if (Array.isArray(cookies)) {
+        cookies.forEach((c: string) => {
+          if (c.startsWith('token=')) {
+            tokenCookie = c.split(';')[0]; // "token=xxx"
+          }
+        });
+      }
+
+      // Access /me with cookie
+      const response = await request(app)
+        .get('/api/auth/me')
+        .set('Cookie', tokenCookie);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.user.email).toBe('cookie-auth@example.com');
+    });
+
+    it('should include createdAt in user data', async () => {
+      const user = await createTestUser();
+      const token = generateAuthToken(user);
+
+      const response = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.user.createdAt).toBeDefined();
     });
   });
 
@@ -600,6 +832,18 @@ describe('Authentication API', () => {
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.email).toBe('original@example.com');
     });
+
+    it('should reject name shorter than 2 characters', async () => {
+      const user = await createTestUser();
+      const token = generateAuthToken(user);
+
+      const response = await request(app)
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'X' });
+
+      expect(response.status).toBe(400);
+    });
   });
 
   // ==================== PUT /api/auth/change-password ====================
@@ -708,6 +952,7 @@ describe('Authentication API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           newPassword: 'NewPassword456!',
+          confirmPassword: 'NewPassword456!',
         });
 
       expect(response.status).toBe(400);
@@ -730,6 +975,42 @@ describe('Authentication API', () => {
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
     });
+
+    it('should reject when confirmPassword does not match newPassword', async () => {
+      const user = await createTestUser({
+        password: 'CorrectPassword123!',
+      });
+      const token = generateAuthToken(user);
+
+      const response = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          currentPassword: 'CorrectPassword123!',
+          newPassword: 'NewPassword456!',
+          confirmPassword: 'DifferentPassword789!',
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should reject when newPassword equals currentPassword', async () => {
+      const user = await createTestUser({
+        password: 'SamePassword123!',
+      });
+      const token = generateAuthToken(user);
+
+      const response = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          currentPassword: 'SamePassword123!',
+          newPassword: 'SamePassword123!',
+          confirmPassword: 'SamePassword123!',
+        });
+
+      expect(response.status).toBe(400);
+    });
   });
 
   // ==================== POST /api/auth/refresh ====================
@@ -737,9 +1018,7 @@ describe('Authentication API', () => {
   describe('POST /api/auth/refresh', () => {
     it('should refresh token successfully with valid refresh token', async () => {
       const user = await createTestUser();
-      const token = generateAuthToken(user);
 
-      // First login to get refresh token in cookie
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
@@ -761,7 +1040,6 @@ describe('Authentication API', () => {
         });
       }
 
-      // Use refresh token to get new token
       const refreshResponse = await request(app)
         .post('/api/auth/refresh')
         .set('Cookie', `refreshToken=${refreshToken}`);
@@ -776,7 +1054,6 @@ describe('Authentication API', () => {
     it('should set new cookies on token refresh', async () => {
       const user = await createTestUser();
 
-      // Login to get refresh token
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
@@ -795,7 +1072,6 @@ describe('Authentication API', () => {
         });
       }
 
-      // Refresh token
       const refreshResponse = await request(app)
         .post('/api/auth/refresh')
         .set('Cookie', `refreshToken=${refreshToken}`);
@@ -825,7 +1101,6 @@ describe('Authentication API', () => {
     it('should reject refresh if user no longer exists', async () => {
       const user = await createTestUser();
 
-      // Login to get refresh token
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
@@ -847,7 +1122,6 @@ describe('Authentication API', () => {
       // Delete the user
       await User.deleteOne({ _id: user._id });
 
-      // Try to refresh
       const refreshResponse = await request(app)
         .post('/api/auth/refresh')
         .set('Cookie', `refreshToken=${refreshToken}`);
@@ -855,13 +1129,73 @@ describe('Authentication API', () => {
       expect(refreshResponse.status).toBe(401);
       expect(refreshResponse.body.success).toBe(false);
     });
+
+    it('should reject refresh if user was deactivated', async () => {
+      const user = await createTestUser();
+
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ email: user.email, password: 'Test123!' });
+
+      const cookies = loginResponse.headers['set-cookie'];
+      let refreshToken = '';
+      if (Array.isArray(cookies)) {
+        cookies.forEach((c: string) => {
+          if (c.includes('refreshToken=')) {
+            refreshToken = c.split('refreshToken=')[1].split(';')[0];
+          }
+        });
+      }
+
+      // Deactivate user
+      await User.findByIdAndUpdate(user._id, { active: false });
+
+      const refreshResponse = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', `refreshToken=${refreshToken}`);
+
+      expect(refreshResponse.status).toBe(401);
+    });
+
+    it('should issue a new token that is actually valid for requests', async () => {
+      const user = await createTestUser();
+
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ email: user.email, password: 'Test123!' });
+
+      const cookies = loginResponse.headers['set-cookie'];
+      let refreshToken = '';
+      if (Array.isArray(cookies)) {
+        cookies.forEach((c: string) => {
+          if (c.includes('refreshToken=')) {
+            refreshToken = c.split('refreshToken=')[1].split(';')[0];
+          }
+        });
+      }
+
+      const refreshResponse = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', `refreshToken=${refreshToken}`);
+
+      expect(refreshResponse.status).toBe(200);
+      const newToken = refreshResponse.body.data.token;
+
+      // Use new token to access protected route
+      const meResponse = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${newToken}`);
+
+      expect(meResponse.status).toBe(200);
+      expect(meResponse.body.data.user.email).toBe(user.email);
+    });
   });
 
   // ==================== POST /api/auth/forgot-password ====================
 
   describe('POST /api/auth/forgot-password', () => {
     it('should return success message for existing user email', async () => {
-      const user = await createTestUser({
+      await createTestUser({
         email: 'forgot@example.com',
       });
 
@@ -886,7 +1220,6 @@ describe('Authentication API', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('Si el email');
-      // Don't reveal whether email exists
     });
 
     it('should create password reset token in database', async () => {
@@ -894,7 +1227,6 @@ describe('Authentication API', () => {
         email: 'reset@example.com',
       });
 
-      // Clear any existing tokens
       await PasswordResetToken.deleteMany({ userId: user._id });
 
       const response = await request(app)
@@ -905,7 +1237,6 @@ describe('Authentication API', () => {
 
       expect(response.status).toBe(200);
 
-      // Verify token was created
       const token = await PasswordResetToken.findOne({ userId: user._id });
       expect(token).toBeTruthy();
       expect(token?.used).toBe(false);
@@ -944,7 +1275,6 @@ describe('Authentication API', () => {
           email: 'inactive@example.com',
         });
 
-      // Verify no reset token was created
       const resetToken = await PasswordResetToken.findOne({ userId: user._id });
       expect(resetToken).toBeFalsy();
     });
@@ -957,9 +1287,7 @@ describe('Authentication API', () => {
       // Request first reset token
       await request(app)
         .post('/api/auth/forgot-password')
-        .send({
-          email: 'multiple@example.com',
-        });
+        .send({ email: 'multiple@example.com' });
 
       const firstToken = await PasswordResetToken.findOne({
         userId: user._id,
@@ -970,14 +1298,10 @@ describe('Authentication API', () => {
       // Request second reset token
       await request(app)
         .post('/api/auth/forgot-password')
-        .send({
-          email: 'multiple@example.com',
-        });
+        .send({ email: 'multiple@example.com' });
 
       // First token should be marked as used
-      const oldToken = await PasswordResetToken.findOne({
-        _id: firstToken?._id,
-      });
+      const oldToken = await PasswordResetToken.findOne({ _id: firstToken?._id });
       expect(oldToken?.used).toBe(true);
 
       // New token should exist
@@ -986,6 +1310,22 @@ describe('Authentication API', () => {
         used: false,
       });
       expect(newToken).toBeTruthy();
+    });
+
+    it('should return identical response for existing and non-existing emails', async () => {
+      await createTestUser({ email: 'real@example.com' });
+
+      const existingRes = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ email: 'real@example.com' });
+
+      const fakeRes = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ email: 'fake@example.com' });
+
+      // Same status, same message structure — no way to tell which exists
+      expect(existingRes.status).toBe(fakeRes.status);
+      expect(existingRes.body.message).toBe(fakeRes.body.message);
     });
   });
 
@@ -998,25 +1338,6 @@ describe('Authentication API', () => {
         password: 'OldPassword123!',
       });
 
-      // Request password reset
-      await request(app)
-        .post('/api/auth/forgot-password')
-        .send({
-          email: 'resettoken@example.com',
-        });
-
-      // Get the reset token
-      const resetTokenDoc = await PasswordResetToken.findOne({
-        userId: user._id,
-        used: false,
-      });
-      expect(resetTokenDoc).toBeTruthy();
-
-      // Extract plain token (we need to generate it since we only have the hash)
-      // For testing, we'll use the password reset flow properly
-      const resetTokenPlain = (resetTokenDoc?.token as any);
-
-      // Actually, let's generate a proper token for this test
       const { token: plainToken } = await (PasswordResetToken as any).createResetToken(user._id);
 
       const response = await request(app)
@@ -1033,20 +1354,14 @@ describe('Authentication API', () => {
       // Verify old password no longer works
       const oldLoginResponse = await request(app)
         .post('/api/auth/login')
-        .send({
-          email: 'resettoken@example.com',
-          password: 'OldPassword123!',
-        });
+        .send({ email: 'resettoken@example.com', password: 'OldPassword123!' });
 
       expect(oldLoginResponse.status).toBe(401);
 
       // Verify new password works
       const newLoginResponse = await request(app)
         .post('/api/auth/login')
-        .send({
-          email: 'resettoken@example.com',
-          password: 'NewResetPassword456!',
-        });
+        .send({ email: 'resettoken@example.com', password: 'NewResetPassword456!' });
 
       expect(newLoginResponse.status).toBe(200);
     });
@@ -1070,7 +1385,6 @@ describe('Authentication API', () => {
         password: 'OldPassword123!',
       });
 
-      // Generate and use a reset token
       const { token: plainToken } = await (PasswordResetToken as any).createResetToken(user._id);
 
       // Use the token
@@ -1096,7 +1410,6 @@ describe('Authentication API', () => {
     it('should reject reset with expired token', async () => {
       const user = await createTestUser();
 
-      // Create an expired token
       const hashedToken = crypto.createHash('sha256').update('test-token').digest('hex');
       const expiredDate = new Date();
       expiredDate.setHours(expiredDate.getHours() - 2); // 2 hours ago
@@ -1139,7 +1452,7 @@ describe('Authentication API', () => {
       const response = await request(app)
         .post(`/api/auth/reset-password/${plainToken}`)
         .send({
-          newPassword: '123', // Too weak
+          newPassword: '123',
           confirmPassword: '123',
         });
 
@@ -1156,10 +1469,7 @@ describe('Authentication API', () => {
       // Create failed login attempts
       await request(app)
         .post('/api/auth/login')
-        .send({
-          email: 'lockuser@example.com',
-          password: 'WrongPassword123!',
-        });
+        .send({ email: 'lockuser@example.com', password: 'WrongPassword123!' });
 
       let updatedUser = await User.findById(user._id);
       expect(updatedUser?.loginAttempts).toBe(1);
@@ -1173,7 +1483,6 @@ describe('Authentication API', () => {
           confirmPassword: 'NewPassword456!',
         });
 
-      // Login attempts should be reset
       updatedUser = await User.findById(user._id);
       expect(updatedUser?.loginAttempts).toBe(0);
     });
@@ -1182,9 +1491,7 @@ describe('Authentication API', () => {
       const user = await createTestUser();
       const { token: plainToken } = await (PasswordResetToken as any).createResetToken(user._id);
 
-      const tokenBefore = await PasswordResetToken.findOne({
-        userId: user._id,
-      });
+      const tokenBefore = await PasswordResetToken.findOne({ userId: user._id });
       expect(tokenBefore?.used).toBe(false);
 
       await request(app)
@@ -1194,36 +1501,41 @@ describe('Authentication API', () => {
           confirmPassword: 'NewPassword456!',
         });
 
-      const tokenAfter = await PasswordResetToken.findOne({
-        userId: user._id,
-      });
+      const tokenAfter = await PasswordResetToken.findOne({ userId: user._id });
       expect(tokenAfter?.used).toBe(true);
+    });
+
+    it('should reject when confirmPassword does not match newPassword', async () => {
+      const user = await createTestUser();
+      const { token: plainToken } = await (PasswordResetToken as any).createResetToken(user._id);
+
+      const response = await request(app)
+        .post(`/api/auth/reset-password/${plainToken}`)
+        .send({
+          newPassword: 'NewPassword456!',
+          confirmPassword: 'DifferentPassword789!',
+        });
+
+      expect(response.status).toBe(400);
     });
   });
 
-  // ==================== Edge Cases and Integration Tests ====================
+  // ==================== Authentication Edge Cases ====================
 
   describe('Authentication Edge Cases', () => {
     it('should handle concurrent login attempts properly', async () => {
-      const user = await createTestUser({
+      await createTestUser({
         email: 'concurrent@example.com',
         password: 'SecurePass123!',
       });
 
-      // Simulate concurrent login attempts
       const results = await Promise.all([
         request(app)
           .post('/api/auth/login')
-          .send({
-            email: 'concurrent@example.com',
-            password: 'SecurePass123!',
-          }),
+          .send({ email: 'concurrent@example.com', password: 'SecurePass123!' }),
         request(app)
           .post('/api/auth/login')
-          .send({
-            email: 'concurrent@example.com',
-            password: 'SecurePass123!',
-          }),
+          .send({ email: 'concurrent@example.com', password: 'SecurePass123!' }),
       ]);
 
       expect(results[0].status).toBe(200);
@@ -1232,11 +1544,8 @@ describe('Authentication API', () => {
 
     it('should prevent user enumeration through registration', async () => {
       const testEmail = 'enumtest@example.com';
-
-      // Create user
       await createTestUser({ email: testEmail });
 
-      // Try to register again
       const response = await request(app)
         .post('/api/auth/register')
         .send({
@@ -1252,13 +1561,9 @@ describe('Authentication API', () => {
     it('should handle expired access token with valid refresh token', async () => {
       const user = await createTestUser();
 
-      // Login to get tokens
       const loginResponse = await request(app)
         .post('/api/auth/login')
-        .send({
-          email: user.email,
-          password: 'Test123!',
-        });
+        .send({ email: user.email, password: 'Test123!' });
 
       const cookies = loginResponse.headers['set-cookie'];
       let refreshToken = '';
@@ -1271,7 +1576,6 @@ describe('Authentication API', () => {
         });
       }
 
-      // Access token is still valid here, but demonstrate refresh flow
       const refreshResponse = await request(app)
         .post('/api/auth/refresh')
         .set('Cookie', `refreshToken=${refreshToken}`);
@@ -1298,9 +1602,7 @@ describe('Authentication API', () => {
       await request(app)
         .put('/api/auth/profile')
         .set('Authorization', `Bearer ${token}`)
-        .send({
-          name: 'Updated Session User',
-        });
+        .send({ name: 'Updated Session User' });
 
       // Verify update persisted
       const secondResponse = await request(app)
@@ -1308,6 +1610,102 @@ describe('Authentication API', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(secondResponse.body.data.user.name).toBe('Updated Session User');
+    });
+
+    it('should register → login → access protected → change password → login with new', async () => {
+      // Full lifecycle test
+      const email = 'lifecycle@example.com';
+
+      // 1. Register
+      const regRes = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Lifecycle User',
+          email,
+          password: 'Initial123!',
+        });
+      expect(regRes.status).toBe(201);
+      const token = regRes.body.data.token;
+
+      // 2. Access protected route
+      const meRes = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${token}`);
+      expect(meRes.status).toBe(200);
+      expect(meRes.body.data.user.email).toBe(email);
+
+      // 3. Change password
+      const changeRes = await request(app)
+        .put('/api/auth/change-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          currentPassword: 'Initial123!',
+          newPassword: 'Changed456!',
+          confirmPassword: 'Changed456!',
+        });
+      expect(changeRes.status).toBe(200);
+
+      // 4. Login with new password
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email, password: 'Changed456!' });
+      expect(loginRes.status).toBe(200);
+
+      // 5. Old password rejected
+      const oldLoginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email, password: 'Initial123!' });
+      expect(oldLoginRes.status).toBe(401);
+    });
+
+    it('should login each role type (admin, funcionario, cliente)', async () => {
+      for (const [roleName, userData] of Object.entries(testUsers)) {
+        await createTestUser(userData);
+
+        const res = await request(app)
+          .post('/api/auth/login')
+          .send({ email: userData.email, password: userData.password });
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.user.role).toBe(userData.role);
+      }
+    });
+
+    it('should reject protected routes after logout cookies are cleared', async () => {
+      const user = await createTestUser({
+        email: 'logoutflow@example.com',
+        password: 'SecurePass123!',
+      });
+
+      // Login via API to get cookie-based token
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'logoutflow@example.com', password: 'SecurePass123!' });
+
+      expect(loginRes.status).toBe(200);
+
+      // Access with cookies directly from login response
+      const cookies = loginRes.headers['set-cookie'];
+      let tokenCookie = '';
+      if (Array.isArray(cookies)) {
+        cookies.forEach((c: string) => {
+          if (c.startsWith('token=')) {
+            tokenCookie = c.split(';')[0];
+          }
+        });
+      }
+
+      // me should work with cookie
+      const meRes = await request(app)
+        .get('/api/auth/me')
+        .set('Cookie', tokenCookie);
+      expect(meRes.status).toBe(200);
+
+      // After logout, using empty cookie should fail
+      const meAfter = await request(app)
+        .get('/api/auth/me')
+        .set('Cookie', 'token=');
+      expect(meAfter.status).toBe(401);
     });
   });
 });

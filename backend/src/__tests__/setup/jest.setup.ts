@@ -14,8 +14,18 @@ if (ENV.NODE_ENV !== 'test') {
   throw new Error('Jest setup should only run in test environment!');
 }
 
-// Mock external services
-jest.mock('../../services/emailService');
+// Mock external services — explicit mock to cover all class instance methods
+jest.mock('../../services/emailService', () => ({
+  emailService: {
+    sendWelcomeEmail: jest.fn().mockResolvedValue(true),
+    sendOrderConfirmationEmail: jest.fn().mockResolvedValue(true),
+    sendOrderStatusUpdateEmail: jest.fn().mockResolvedValue(true),
+    sendOrderCancellationEmail: jest.fn().mockResolvedValue(true),
+    sendOrderEditedEmail: jest.fn().mockResolvedValue(true),
+    sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
+    sendEmail: jest.fn().mockResolvedValue(true),
+  },
+}));
 
 // Increase test timeout for integration tests
 jest.setTimeout(30000);

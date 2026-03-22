@@ -125,7 +125,7 @@ export const cancelOrderSchema = z.object({
   }),
 
   body: z.object({
-    reason: z.string()
+    cancellationReason: z.string()
       .min(10, 'El motivo debe tener al menos 10 caracteres')
       .max(500, 'El motivo no puede exceder 500 caracteres')
       .trim()
