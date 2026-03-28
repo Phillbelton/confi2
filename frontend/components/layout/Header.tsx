@@ -33,6 +33,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const itemCount = useCartStore((state) => state.itemCount);
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
 
@@ -44,6 +45,13 @@ export function Header() {
     searchQuery,
     showSuggestions && searchQuery.length >= 2
   );
+
+  // Scroll detection for glass effect intensity
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,37 +100,64 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* Barra Principal - Fondo oscuro */}
-      <div className="bg-[#1a1a2e] border-b border-white/10">
+      {/* Top Info Bar - Darker turquoise */}
+      <div className="hidden sm:block bg-secondary/90 text-white relative overflow-hidden">
         <div className="container mx-auto px-4">
+          <div className="flex h-8 items-center justify-between text-xs relative z-10">
+            <div className="flex items-center gap-2 text-white/80">
+              <MapPin className="h-3 w-3" />
+              <span>Envíos a Peñalolén · La Florida · Macul · La Reina</span>
+            </div>
+            <div className="hidden lg:flex items-center gap-4 text-white/80">
+              <span>L-S 08:30 a 20:30 · Dom 10:00 a 16:00</span>
+            </div>
+            <div className="flex items-center gap-2 text-white/90">
+              <Phone className="h-3 w-3" />
+              <span className="font-semibold">+56 9 6426 9246</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navigation - Glassmorphism */}
+      <div
+        className={cn(
+          'transition-all duration-300 candy-bg',
+          scrolled
+            ? 'glass-nav shadow-lg'
+            : 'bg-primary/95 border-b border-white/10'
+        )}
+      >
+        <div className="container mx-auto px-4 relative z-10">
           {/* Desktop Header */}
           <div className="hidden lg:flex h-16 items-center gap-4">
-            {/* Logo - Desktop */}
-            <Link href="/" className="flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-primary">confitería</span>
-                <span className="text-2xl font-light text-white">quelita</span>
-              </div>
+            {/* Logo */}
+            <Link href="/" className="flex-shrink-0 transition-transform hover:scale-105">
+              <img
+                src="/brand/logo.png"
+                alt="Confitería Quelita"
+                className="h-12 w-auto drop-shadow-md"
+              />
             </Link>
 
-            {/* Categories Button - Desktop */}
+            {/* Categories Button */}
             <CategoriesDropdown />
 
-            {/* Search Bar - Desktop */}
+            {/* Search Bar */}
             <div ref={searchContainerRef} className="flex flex-1 max-w-xl relative">
               <form onSubmit={handleSearch} className="w-full">
                 <div className="relative flex">
                   <Input
                     type="text"
-                    placeholder="Buscar en Quelita"
+                    placeholder="¿Qué estás buscando?"
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onFocus={handleSearchFocus}
-                    className="w-full h-10 pl-4 pr-12 rounded-lg bg-white text-gray-900 border-0 placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-primary"
+                    className="w-full h-10 pl-4 pr-12 rounded-full bg-white/20 text-white border border-white/30 placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:bg-white/25 backdrop-blur-sm"
                   />
                   <button
                     type="submit"
-                    className="absolute right-0 top-0 h-10 w-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors"
+                    className="absolute right-0 top-0 h-10 w-10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
                   >
                     <Search className="h-5 w-5" />
                   </button>
@@ -140,37 +175,37 @@ export function Header() {
               </form>
             </div>
 
-            {/* User Login/Account - Desktop */}
+            {/* User Login/Account */}
             <div className="flex items-center">
               {_hasHydrated && isAuthenticated && user ? (
                 <UserDropdown user={user} />
               ) : _hasHydrated ? (
                 <Link
                   href="/login"
-                  className="flex items-center gap-3 text-white hover:text-primary transition-colors"
+                  className="flex items-center gap-3 text-white hover:text-white/90 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center backdrop-blur-sm border border-white/20">
                     <User className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col leading-tight">
-                    <span className="text-xs text-gray-400">¡Hola! Inicia sesión</span>
+                    <span className="text-xs text-white/70">¡Hola!</span>
                     <span className="font-semibold text-sm">Mi cuenta</span>
                   </div>
                 </Link>
               ) : null}
             </div>
 
-            {/* Cart Button - Desktop */}
+            {/* Cart Button */}
             <Button
               variant="ghost"
-              className="relative h-10 px-3 text-white hover:text-primary hover:bg-white/10"
+              className="relative h-10 px-3 text-white hover:text-white hover:bg-white/15 rounded-full"
               onClick={() => setCartOpen(true)}
             >
               <ShoppingCart className="h-5 w-5" />
               <span className="ml-2 font-medium">Carrito</span>
               {itemCount > 0 && (
                 <Badge
-                  className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 bg-primary text-white text-xs"
+                  className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 bg-accent text-white text-xs border-2 border-primary"
                 >
                   {itemCount > 99 ? '99+' : itemCount}
                 </Badge>
@@ -180,26 +215,23 @@ export function Header() {
 
           {/* Mobile Header */}
           <div className="flex lg:hidden h-14 items-center justify-between gap-1">
-            {/* Logo - Mobile (Compacto) */}
             <Link href="/" className="flex-shrink-0">
-              <span className="text-lg font-bold text-primary">quelita</span>
+              <img src="/brand/logo.png" alt="Quelita" className="h-10 w-auto drop-shadow-md" />
             </Link>
 
-            {/* Mobile Navigation Icons */}
-            <div className="flex items-center gap-1">
-              {/* Categories Button - Mobile */}
+            <div className="flex items-center gap-0.5">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                    className="h-10 w-10 text-white hover:bg-white/15 rounded-full"
                   >
                     <Grid3x3 className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] bg-[#1a1a2e] border-white/10 p-0 overflow-y-auto">
-                  <SheetHeader className="p-4 border-b border-white/10">
+                <SheetContent side="left" className="w-[300px] bg-gradient-to-b from-primary to-secondary border-white/10 p-0 overflow-y-auto">
+                  <SheetHeader className="p-4 border-b border-white/15">
                     <SheetTitle className="text-white text-left">Categorías</SheetTitle>
                   </SheetHeader>
                   <div className="p-4">
@@ -208,34 +240,31 @@ export function Header() {
                 </SheetContent>
               </Sheet>
 
-              {/* Search Button - Mobile */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                className="h-10 w-10 text-white hover:bg-white/15 rounded-full"
                 onClick={() => setMobileSearchOpen(true)}
               >
                 <Search className="h-5 w-5" />
               </Button>
 
-              {/* Cart Button - Mobile */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                className="relative h-10 w-10 text-white hover:bg-white/15 rounded-full"
                 onClick={() => setCartOpen(true)}
               >
                 <ShoppingCart className="h-5 w-5" />
                 {itemCount > 0 && (
                   <Badge
-                    className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 bg-primary text-white text-xs"
+                    className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 bg-accent text-white text-xs"
                   >
                     {itemCount > 99 ? '99+' : itemCount}
                   </Badge>
                 )}
               </Button>
 
-              {/* User Button - Mobile */}
               {_hasHydrated && isAuthenticated && user ? (
                 <UserDropdown user={user} />
               ) : _hasHydrated ? (
@@ -243,7 +272,7 @@ export function Header() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 text-white hover:text-primary hover:bg-white/10"
+                    className="h-10 w-10 text-white hover:bg-white/15 rounded-full"
                   >
                     <User className="h-5 w-5" />
                   </Button>
@@ -261,7 +290,7 @@ export function Header() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden fixed inset-0 z-50 bg-[#1a1a2e]"
+            className="lg:hidden fixed inset-0 z-50 bg-gradient-to-b from-primary to-secondary"
           >
             <div className="container mx-auto px-4 py-4">
               <div className="flex items-center gap-3">
@@ -269,16 +298,16 @@ export function Header() {
                   <Input
                     ref={mobileSearchInputRef}
                     type="text"
-                    placeholder="Buscar en Quelita"
+                    placeholder="¿Qué estás buscando?"
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onFocus={handleSearchFocus}
                     autoFocus
-                    className="w-full h-12 pl-4 pr-12 rounded-lg bg-white text-gray-900 border-0 placeholder:text-gray-500"
+                    className="w-full h-12 pl-4 pr-12 rounded-full bg-white/20 text-white border border-white/30 placeholder:text-white/60"
                   />
                   <button
                     type="submit"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70"
                   >
                     <Search className="h-5 w-5" />
                   </button>
@@ -286,14 +315,13 @@ export function Header() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 text-white hover:text-primary"
+                  className="h-12 w-12 text-white hover:bg-white/15 rounded-full"
                   onClick={() => { setMobileSearchOpen(false); setSearchQuery(''); }}
                 >
                   <X className="h-6 w-6" />
                 </Button>
               </div>
 
-              {/* Mobile Search Suggestions */}
               {showSuggestions && searchQuery.length >= 2 && (
                 <div className="mt-4">
                   <SearchSuggestions
@@ -308,36 +336,6 @@ export function Header() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Barra Secundaria - Rojo (Solo Desktop) */}
-      <div className="hidden sm:block bg-primary text-white">
-        <div className="container mx-auto px-4">
-          <div className="flex h-10 items-center justify-between text-sm">
-            {/* Izquierda - Ubicación/Delivery */}
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              <span>Cómo te gustaría recibir tu pedido</span>
-              <ChevronDown className="h-4 w-4" />
-            </div>
-
-            {/* Centro - Links útiles (Desktop) */}
-            <div className="hidden lg:flex items-center gap-6">
-              <Link href="/como-ser-socio" className="hover:underline">
-                Cómo ser socio
-              </Link>
-              <Link href="/locales" className="hover:underline">
-                Locales y Horarios
-              </Link>
-            </div>
-
-            {/* Derecha - Teléfono */}
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              <span className="font-semibold">600 6600 777</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Cart Sheet */}
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
