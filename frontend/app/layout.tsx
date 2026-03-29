@@ -1,28 +1,29 @@
 import type { Metadata } from "next";
-// Fuentes Google premium para UI/UX mejorada
-import { Playfair_Display, Inter, Caveat } from "next/font/google";
+// Fuentes Google — Quelita brand: redondeadas, amigables, profesionales
+import { Nunito, Quicksand, Caveat } from "next/font/google";
 import "./globals.css";
 import "@/styles/premium.css";
 import { Providers } from "@/lib/providers";
 // Toaster de Sonner se carga en providers.tsx
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 
-// Playfair Display: Headings elegantes (serif premium)
-const playfairDisplay = Playfair_Display({
+// Nunito: Headings redondeados y amigables
+const nunito = Nunito({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["400", "600", "700"],
+  weight: ["400", "600", "700", "800"],
   display: "swap",
 });
 
-// Inter: Body text moderna y legible (sans-serif)
-const inter = Inter({
+// Quicksand: Body text redondeado y legible
+const quicksand = Quicksand({
   subsets: ["latin"],
   variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-// Caveat: Acentos manuscritos (opcional para detalles especiales)
+// Caveat: Acentos manuscritos (para "Con Cariño" y detalles)
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-handwriting",
@@ -93,7 +94,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfairDisplay.variable} ${caveat.variable} font-sans antialiased`}
+        className={`${quicksand.variable} ${nunito.variable} ${caveat.variable} font-sans antialiased`}
       >
         <Providers>
           {children}
