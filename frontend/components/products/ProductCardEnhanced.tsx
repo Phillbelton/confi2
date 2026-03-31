@@ -105,9 +105,6 @@ export function ProductCardEnhanced({
     new Date().getTime() - new Date(product.createdAt).getTime() <
     7 * 24 * 60 * 60 * 1000;
 
-  // Check if out of stock
-  const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
-
   // Get first image: use variant image if available, otherwise use parent image
   // ✅ OPTIMIZACIÓN: Cargar imagen optimizada de Cloudinary (400x400px)
   const mainImage = getSafeImageUrl(
@@ -134,7 +131,7 @@ export function ProductCardEnhanced({
   // const reviewCount = 234;
 
   const handleAddToCart = async () => {
-    if (!selectedVariant || isOutOfStock) return;
+    if (!selectedVariant) return;
 
     setIsAdding(true);
 
@@ -190,9 +187,7 @@ export function ProductCardEnhanced({
   };
 
   const incrementQuantity = () => {
-    if (selectedVariant && quantity < selectedVariant.stock) {
-      setQuantity((prev) => prev + 1);
-    }
+    setQuantity((prev) => prev + 1);
   };
 
   const decrementQuantity = () => {
@@ -220,7 +215,7 @@ export function ProductCardEnhanced({
           'group relative overflow-hidden transition-all duration-300',
           'hover:shadow-2xl border-border/50',
           'transform-gpu', // GPU acceleration
-          isOutOfStock && 'opacity-60'
+          !selectedVariant?.active && 'opacity-60'
         )}
       >
         {/* Gradient overlay on hover */}
@@ -298,12 +293,7 @@ export function ProductCardEnhanced({
                 <Badge className="bg-green-500 text-white shadow-md">🆕 Nuevo</Badge>
               </motion.div>
             )}
-            {isOutOfStock && (
-              <Badge variant="destructive" className="shadow-md">
-                Agotado
-              </Badge>
-            )}
-            {hasDiscount && !isOutOfStock && discountBadge && (
+            {hasDiscount && discountBadge && (
               <motion.div
                 animate={{
                   scale: [1, 1.05, 1],
@@ -341,7 +331,6 @@ export function ProductCardEnhanced({
                 {variants.map((variant) => (
                   <SelectItem key={variant._id} value={variant._id}>
                     {variant.displayName}
-                    {variant.stock === 0 && ' (Agotado)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -426,7 +415,7 @@ export function ProductCardEnhanced({
                 size="sm"
                 className="h-7 w-7 p-0 hover:bg-primary/10"
                 onClick={incrementQuantity}
-                disabled={!selectedVariant || quantity >= selectedVariant.stock}
+                disabled={!selectedVariant}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -437,7 +426,7 @@ export function ProductCardEnhanced({
               <Button
                 ref={addButtonRef}
                 onClick={handleAddToCart}
-                disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+                disabled={isAdding || justAdded || !selectedVariant}
                 className={cn(
                   "w-full h-8 text-xs relative overflow-hidden",
                   justAdded && "gradient-primary"
@@ -463,8 +452,6 @@ export function ProductCardEnhanced({
                     <div className="mr-1 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     ...
                   </>
-                ) : isOutOfStock ? (
-                  'Agotado'
                 ) : (
                   <>
                     <ShoppingCart className="mr-1 h-3 w-3" />
@@ -475,16 +462,6 @@ export function ProductCardEnhanced({
             </motion.div>
           </div>
 
-          {/* Stock info */}
-          {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[10px] text-amber-600 font-medium"
-            >
-              ¡Solo quedan {selectedVariant.stock}!
-            </motion.p>
-          )}
         </CardContent>
       </Card>
 

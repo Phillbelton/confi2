@@ -55,9 +55,6 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
     new Date().getTime() - new Date(product.createdAt).getTime() <
     7 * 24 * 60 * 60 * 1000;
 
-  // Check if out of stock
-  const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
-
   // Get first image: use variant image if available, otherwise use parent image
   // ✅ OPTIMIZACIÓN: Cargar imagen optimizada de Cloudinary (400x400px)
   const mainImage = getSafeImageUrl(
@@ -80,7 +77,7 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
   const hasFixedDiscountApplied = priceInfo?.appliedFixedDiscount !== null;
 
   const handleAddToCart = async () => {
-    if (!selectedVariant || isOutOfStock) return;
+    if (!selectedVariant) return;
 
     setIsAdding(true);
 
@@ -111,7 +108,6 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
     <Card
       className={cn(
         'group relative overflow-hidden transition-all duration-200 hover-scale hover:shadow-lg',
-        isOutOfStock && 'opacity-60',
         className
       )}
     >
@@ -135,13 +131,10 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
             {isNew && (
               <Badge className="bg-success text-success-foreground">Nuevo</Badge>
             )}
-            {isOutOfStock && (
-              <Badge variant="destructive">Agotado</Badge>
-            )}
           </div>
 
           {/* Discount Badge */}
-          {hasDiscount && !isOutOfStock && discountBadge && (
+          {hasDiscount && discountBadge && (
             <div className="absolute top-2 right-2">
               <TooltipProvider>
                 <Tooltip>
@@ -206,7 +199,6 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
                 {variants.map((variant) => (
                   <SelectItem key={variant._id} value={variant._id}>
                     {variant.displayName}
-                    {variant.stock === 0 && ' (Agotado)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -261,18 +253,12 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
           </div>
         )}
 
-        {/* Stock info */}
-        {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
-          <p className="text-xs text-amber-600 mt-1">
-            ¡Últimas {selectedVariant.stock} unidades!
-          </p>
-        )}
       </CardContent>
 
       <CardFooter className="p-4 pt-0">
         <Button
           onClick={handleAddToCart}
-          disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+          disabled={isAdding || justAdded || !selectedVariant}
           className="w-full touch-target"
           variant={justAdded ? 'outline' : 'default'}
         >
@@ -286,8 +272,6 @@ export function ProductCard({ product, variants = [], className }: ProductCardPr
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Agregando...
             </>
-          ) : isOutOfStock ? (
-            'Agotado'
           ) : (
             <>
               <ShoppingCart className="mr-2 h-4 w-4" />

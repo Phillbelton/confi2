@@ -739,7 +739,6 @@ describe('Product API', () => {
       expect(response.body.data).toHaveProperty('name', 'Test Variant');
       expect(response.body.data).toHaveProperty('price', 15000);
       expect(response.body.data).toHaveProperty('sku');
-      expect(response.body.data).toHaveProperty('stock');
     });
 
     it('should return 404 for non-existent variant', async () => {
@@ -877,7 +876,6 @@ describe('Product API', () => {
           parentProduct: parent._id.toString(),
           name: 'New Variant',
           price: 12000,
-          stock: 50,
           attributes: {},
           images: ['/uploads/variants/test.jpg'],
         })
@@ -888,7 +886,6 @@ describe('Product API', () => {
       expect(response.body.data).toHaveProperty('sku');
       expect(response.body.data.name).toBe('New Variant');
       expect(response.body.data.price).toBe(12000);
-      expect(response.body.data.stock).toBe(50);
 
       // Verify in database
       const variant = await ProductVariant.findById(response.body.data._id);
@@ -906,7 +903,6 @@ describe('Product API', () => {
           parentProduct: parent._id.toString(),
           name: 'Funcionario Variant',
           price: 10000,
-          stock: 100,
         })
         .expect(201);
 
@@ -923,7 +919,6 @@ describe('Product API', () => {
           parentProduct: parent._id.toString(),
           name: 'Auto SKU Variant',
           price: 10000,
-          stock: 100,
         })
         .expect(201);
 
@@ -941,7 +936,7 @@ describe('Product API', () => {
           parentProduct: parent._id.toString(),
           name: 'Unauthorized Variant',
           price: 10000,
-          stock: 100,
+
         })
         .expect(401);
 
@@ -958,7 +953,7 @@ describe('Product API', () => {
           parentProduct: parent._id.toString(),
           name: 'Cliente Variant',
           price: 10000,
-          stock: 100,
+
         })
         .expect(403);
 
@@ -974,7 +969,7 @@ describe('Product API', () => {
         .send({
           parentProduct: parent._id.toString(),
           // Missing name and price
-          stock: 100,
+
         })
         .expect(400);
 
@@ -991,7 +986,7 @@ describe('Product API', () => {
           parentProduct: parent._id.toString(),
           name: 'Invalid Variant',
           price: -1000,
-          stock: 100,
+
         })
         .expect(400);
 
@@ -1012,7 +1007,7 @@ describe('Product API', () => {
           parentProduct: parent._id.toString(),
           name: 'Duplicate SKU Variant',
           price: 10000,
-          stock: 100,
+
           sku: variant1.sku, // Duplicate SKU
         })
         .expect(400);
@@ -1123,101 +1118,6 @@ describe('Product API', () => {
     });
   });
 
-  describe('ProductVariant - PATCH /api/products/variants/:id/stock', () => {
-    it('should update stock as admin', async () => {
-      const variant = await createTestProductVariant({
-        stock: 100,
-      });
-
-      const response = await request(app)
-        .patch(`/api/products/variants/${variant._id.toString()}/stock`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          stock: 50,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.stock).toBe(50);
-
-      // Verify in database
-      const updated = await ProductVariant.findById(variant._id);
-      expect(updated?.stock).toBe(50);
-    });
-
-    it('should update stock as funcionario', async () => {
-      const variant = await createTestProductVariant({
-        stock: 100,
-      });
-
-      const response = await request(app)
-        .patch(`/api/products/variants/${variant._id.toString()}/stock`)
-        .set('Authorization', `Bearer ${funcionarioToken}`)
-        .send({
-          stock: 75,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.stock).toBe(75);
-    });
-
-    it('should reject stock update without authentication', async () => {
-      const variant = await createTestProductVariant();
-
-      const response = await request(app)
-        .patch(`/api/products/variants/${variant._id.toString()}/stock`)
-        .send({
-          stock: 50,
-        })
-        .expect(401);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject stock update by cliente user', async () => {
-      const variant = await createTestProductVariant();
-
-      const response = await request(app)
-        .patch(`/api/products/variants/${variant._id.toString()}/stock`)
-        .set('Authorization', `Bearer ${clienteToken}`)
-        .send({
-          stock: 50,
-        })
-        .expect(403);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject stock update with negative value', async () => {
-      const variant = await createTestProductVariant();
-
-      const response = await request(app)
-        .patch(`/api/products/variants/${variant._id.toString()}/stock`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          stock: -10,
-        })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should return 404 for non-existent variant', async () => {
-      const fakeId = '507f1f77bcf86cd799439011';
-
-      const response = await request(app)
-        .patch(`/api/products/variants/${fakeId}/stock`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          stock: 50,
-        })
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-    });
-  });
-
   describe('ProductVariant - DELETE /api/products/variants/:id', () => {
     it('should delete variant as admin', async () => {
       // Create parent with at least 2 variants so deletion is allowed
@@ -1283,161 +1183,6 @@ describe('Product API', () => {
         .expect(404);
 
       expect(response.body.success).toBe(false);
-    });
-  });
-
-  describe('ProductVariant - GET /api/products/variants/stock/low', () => {
-    it('should list variants with low stock as admin', async () => {
-      const variant1 = await createTestProductVariant({
-        name: 'Low Stock Variant',
-        stock: 5,
-        lowStockThreshold: 10,
-      });
-
-      const variant2 = await createTestProductVariant({
-        name: 'Normal Stock Variant',
-        stock: 100,
-        lowStockThreshold: 10,
-      });
-
-      const response = await request(app)
-        .get('/api/products/variants/stock/low')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
-
-      // Verify low stock variant is in list
-      const lowStockVariants = response.body.data.filter(
-        (v: any) => v.name === 'Low Stock Variant'
-      );
-      expect(lowStockVariants.length).toBe(1);
-    });
-
-    it('should list variants with low stock as funcionario', async () => {
-      await createTestProductVariant({
-        stock: 5,
-        lowStockThreshold: 10,
-      });
-
-      const response = await request(app)
-        .get('/api/products/variants/stock/low')
-        .set('Authorization', `Bearer ${funcionarioToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-    });
-
-    it('should reject low stock query without authentication', async () => {
-      const response = await request(app)
-        .get('/api/products/variants/stock/low')
-        .expect(401);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject low stock query by cliente user', async () => {
-      const response = await request(app)
-        .get('/api/products/variants/stock/low')
-        .set('Authorization', `Bearer ${clienteToken}`)
-        .expect(403);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should support pagination', async () => {
-      for (let i = 1; i <= 5; i++) {
-        await createTestProductVariant({
-          name: `Low Stock ${i}`,
-          stock: 5,
-          lowStockThreshold: 10,
-        });
-      }
-
-      const response = await request(app)
-        .get('/api/products/variants/stock/low')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .query({ skip: 0, limit: 2 })
-        .expect(200);
-
-      expect(response.body.data.length).toBeLessThanOrEqual(2);
-    });
-  });
-
-  describe('ProductVariant - GET /api/products/variants/stock/out', () => {
-    it('should list out of stock variants as admin', async () => {
-      const variant1 = await createTestProductVariant({
-        name: 'Out of Stock',
-        stock: 0,
-      });
-
-      const variant2 = await createTestProductVariant({
-        name: 'In Stock',
-        stock: 100,
-      });
-
-      const response = await request(app)
-        .get('/api/products/variants/stock/out')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(Array.isArray(response.body.data)).toBe(true);
-
-      // Verify out of stock variant is in list
-      const outOfStock = response.body.data.filter(
-        (v: any) => v.name === 'Out of Stock'
-      );
-      expect(outOfStock.length).toBe(1);
-    });
-
-    it('should list out of stock variants as funcionario', async () => {
-      await createTestProductVariant({
-        stock: 0,
-      });
-
-      const response = await request(app)
-        .get('/api/products/variants/stock/out')
-        .set('Authorization', `Bearer ${funcionarioToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-    });
-
-    it('should reject out of stock query without authentication', async () => {
-      const response = await request(app)
-        .get('/api/products/variants/stock/out')
-        .expect(401);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject out of stock query by cliente user', async () => {
-      const response = await request(app)
-        .get('/api/products/variants/stock/out')
-        .set('Authorization', `Bearer ${clienteToken}`)
-        .expect(403);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should not include in-stock variants', async () => {
-      await createTestProductVariant({
-        name: 'In Stock',
-        stock: 50,
-      });
-
-      const response = await request(app)
-        .get('/api/products/variants/stock/out')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      const inStock = response.body.data.filter(
-        (v: any) => v.name === 'In Stock'
-      );
-      expect(inStock.length).toBe(0);
     });
   });
 

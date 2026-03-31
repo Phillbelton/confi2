@@ -46,7 +46,6 @@ export default function ProductosPage() {
     categories: [],
     brands: [],
     featured: undefined,
-    inStock: undefined,
   });
 
   const {

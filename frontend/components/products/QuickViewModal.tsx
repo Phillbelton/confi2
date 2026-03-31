@@ -59,8 +59,6 @@ export function QuickViewModal({
   if (!product) return null;
 
   const selectedVariant = variants.find((v) => v._id === selectedVariantId) || variants[0];
-  const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
-
   // Get images for gallery
   const images = selectedVariant?.images || product.images || [];
   const currentImage = getSafeImageUrl(images[currentImageIndex]);
@@ -82,7 +80,7 @@ export function QuickViewModal({
   const reviewCount = 234;
 
   const handleAddToCart = async () => {
-    if (!selectedVariant || isOutOfStock) return;
+    if (!selectedVariant) return;
 
     setIsAdding(true);
 
@@ -118,9 +116,7 @@ export function QuickViewModal({
   };
 
   const incrementQuantity = () => {
-    if (selectedVariant && quantity < selectedVariant.stock) {
-      setQuantity((prev) => prev + 1);
-    }
+    setQuantity((prev) => prev + 1);
   };
 
   const decrementQuantity = () => {
@@ -261,15 +257,13 @@ export function QuickViewModal({
                           'flex items-center space-x-3 border rounded-lg p-3 cursor-pointer transition-all',
                           selectedVariantId === variant._id
                             ? 'border-primary bg-primary/5'
-                            : 'border-border hover:border-primary/50',
-                          variant.stock === 0 && 'opacity-50 cursor-not-allowed'
+                            : 'border-border hover:border-primary/50'
                         )}
-                        onClick={() => !variant.stock && setSelectedVariantId(variant._id)}
+                        onClick={() => setSelectedVariantId(variant._id)}
                       >
                         <RadioGroupItem
                           value={variant._id}
                           id={variant._id}
-                          disabled={variant.stock === 0}
                         />
                         <Label
                           htmlFor={variant._id}
@@ -280,11 +274,6 @@ export function QuickViewModal({
                             ${variantPrice.finalPrice.toLocaleString()}
                           </span>
                         </Label>
-                        {variant.stock === 0 && (
-                          <Badge variant="secondary" className="text-xs">
-                            Agotado
-                          </Badge>
-                        )}
                       </div>
                     );
                   })}
@@ -358,16 +347,11 @@ export function QuickViewModal({
                     variant="ghost"
                     size="icon"
                     onClick={incrementQuantity}
-                    disabled={!selectedVariant || quantity >= selectedVariant.stock}
+                    disabled={!selectedVariant}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                {selectedVariant && (
-                  <span className="text-sm text-muted-foreground">
-                    Stock: {selectedVariant.stock} unidades
-                  </span>
-                )}
               </div>
             </div>
 
@@ -385,7 +369,7 @@ export function QuickViewModal({
             <div className="space-y-2">
               <Button
                 onClick={handleAddToCart}
-                disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+                disabled={isAdding || justAdded || !selectedVariant}
                 className="w-full h-12 text-base"
                 size="lg"
                 variant={justAdded ? 'outline' : 'default'}
@@ -400,8 +384,6 @@ export function QuickViewModal({
                     <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     Agregando...
                   </>
-                ) : isOutOfStock ? (
-                  'Agotado'
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />

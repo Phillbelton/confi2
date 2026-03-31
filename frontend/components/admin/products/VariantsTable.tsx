@@ -34,7 +34,7 @@ import type { ProductVariant, FixedDiscount, TieredDiscountVariant } from '@/typ
 
 interface VariantsTableProps {
   variants: ProductVariant[];
-  onUpdateVariant: (variantId: string, data: { price?: number; stock?: number; active?: boolean }) => void;
+  onUpdateVariant: (variantId: string, data: { price?: number; active?: boolean }) => void;
   onDeleteVariant: (variantId: string) => void;
   onUploadImages?: (variantId: string, files: File[]) => void;
   onDeleteImage?: (variantId: string, filename: string) => void;
@@ -59,20 +59,17 @@ export function VariantsTable({
 }: VariantsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
-  const [editStock, setEditStock] = useState('');
 
   const handleEdit = (variant: ProductVariant) => {
     setEditingId(variant._id);
     setEditPrice(variant.price.toString());
-    setEditStock(variant.stock.toString());
   };
 
   const handleSave = (variantId: string) => {
     const price = parseFloat(editPrice);
-    const stock = parseInt(editStock, 10);
 
-    if (!isNaN(price) && !isNaN(stock)) {
-      onUpdateVariant(variantId, { price, stock });
+    if (!isNaN(price)) {
+      onUpdateVariant(variantId, { price });
       setEditingId(null);
     }
   };
@@ -80,7 +77,6 @@ export function VariantsTable({
   const handleCancel = () => {
     setEditingId(null);
     setEditPrice('');
-    setEditStock('');
   };
 
   if (variants.length === 0) {
@@ -100,7 +96,7 @@ export function VariantsTable({
       <CardHeader>
         <CardTitle>Variantes del Producto</CardTitle>
         <CardDescription>
-          Gestiona el precio y stock de cada variante
+          Gestiona el precio de cada variante
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -145,7 +141,6 @@ export function VariantsTable({
                   </div>
                 </TableHead>
                 <TableHead>Precio</TableHead>
-                <TableHead>Stock</TableHead>
                 <TableHead>Imágenes</TableHead>
                 <TableHead>Descuentos</TableHead>
                 <TableHead>Estado</TableHead>
@@ -187,26 +182,6 @@ export function VariantsTable({
                         />
                       ) : (
                         <span className="font-semibold">${variant.price.toLocaleString()}</span>
-                      )}
-                    </TableCell>
-
-                    {/* Stock */}
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          value={editStock}
-                          onChange={(e) => setEditStock(e.target.value)}
-                          className="w-20"
-                          min="0"
-                        />
-                      ) : (
-                        <Badge
-                          variant={variant.stock > 0 ? 'default' : 'secondary'}
-                          className={variant.stock > 0 ? 'bg-green-600' : ''}
-                        >
-                          {variant.stock}
-                        </Badge>
                       )}
                     </TableCell>
 
@@ -383,8 +358,6 @@ export function VariantsTable({
         {/* Summary */}
         <div className="mt-4 flex gap-4 text-sm text-muted-foreground">
           <span>Total variantes: <strong>{variants.length}</strong></span>
-          <span>En stock: <strong>{variants.filter(v => v.stock > 0).length}</strong></span>
-          <span>Sin stock: <strong>{variants.filter(v => v.stock === 0).length}</strong></span>
         </div>
       </CardContent>
     </Card>

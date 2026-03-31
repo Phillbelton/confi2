@@ -122,8 +122,6 @@ export default function ProductDetailPage() {
   }
 
   const selectedVariant = variants.find((v) => v._id === selectedVariantId) || variants[0];
-  const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
-  const maxQuantity = selectedVariant?.allowBackorder ? 999 : (selectedVariant?.stock || 0);
 
   // Get images: use variant images if available, otherwise use parent images
   const allImages = (selectedVariant?.images && selectedVariant.images.length > 0
@@ -204,7 +202,7 @@ export default function ProductDetailPage() {
   const discount = getApplicableDiscount();
 
   const handleAddToCart = async () => {
-    if (!selectedVariant || isOutOfStock) return;
+    if (!selectedVariant) return;
 
     setIsAdding(true);
 
@@ -229,9 +227,7 @@ export default function ProductDetailPage() {
   };
 
   const incrementQuantity = () => {
-    if (quantity < maxQuantity) {
-      setQuantity(quantity + 1);
-    }
+    setQuantity(quantity + 1);
   };
 
   const decrementQuantity = () => {
@@ -278,7 +274,6 @@ export default function ProductDetailPage() {
                       Destacado
                     </Badge>
                   )}
-                  {isOutOfStock && <Badge variant="destructive">Agotado</Badge>}
                 </div>
               </div>
 
@@ -347,10 +342,8 @@ export default function ProductDetailPage() {
                         <SelectItem
                           key={variant._id}
                           value={variant._id}
-                          disabled={variant.stock === 0}
                         >
                           {variant.displayName}
-                          {variant.stock === 0 && ' (Agotado)'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -455,15 +448,8 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Stock info */}
-              {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
-                <p className="text-sm text-amber-600">
-                  ¡Últimas {selectedVariant.stock} unidades disponibles!
-                </p>
-              )}
-
               {/* Quantity Selector */}
-              {selectedVariant && !isOutOfStock && (
+              {selectedVariant && (
                 <div>
                   <label className="text-sm font-medium mb-2 block">Cantidad:</label>
                   <div className="flex items-center gap-4">
@@ -481,14 +467,10 @@ export default function ProductDetailPage() {
                         variant="ghost"
                         size="icon"
                         onClick={incrementQuantity}
-                        disabled={quantity >= maxQuantity}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {maxQuantity} disponibles
-                    </span>
                   </div>
                 </div>
               )}
@@ -496,7 +478,7 @@ export default function ProductDetailPage() {
               {/* Add to Cart Button */}
               <Button
                 onClick={handleAddToCart}
-                disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+                disabled={isAdding || justAdded || !selectedVariant}
                 className="w-full h-12 text-lg"
                 size="lg"
               >
@@ -510,8 +492,6 @@ export default function ProductDetailPage() {
                     <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     Agregando...
                   </>
-                ) : isOutOfStock ? (
-                  'Agotado'
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />

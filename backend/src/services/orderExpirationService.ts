@@ -6,7 +6,7 @@
  *
  * - Solo afecta órdenes de invitados (sin customer.user)
  * - Las órdenes de usuarios registrados NO expiran
- * - El stock se restaura automáticamente via el pre-save hook del modelo Order
+ * - La orden se marca como cancelada automáticamente
  * - Las órdenes canceladas permanecen en la base de datos como registro histórico
  */
 
@@ -43,7 +43,6 @@ export async function cancelExpiredGuestOrders(): Promise<number> {
     try {
       order.status = 'cancelled';
       order.cancellationReason = EXPIRATION_REASON;
-      // El pre-save hook restaura el stock automáticamente
       await order.save();
       cancelledCount++;
 

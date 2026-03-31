@@ -518,6 +518,94 @@
   animation-delay: -4s;
 }
 
+/* ===========================================
+   JOY-CON MATERIAL SYSTEM
+   Inspired by Nintendo Switch Joy-Con texture:
+   Matte plastic feel, soft inner shadows,
+   ultra-rounded edges, tactile depth
+   =========================================== */
+
+/* Base panel — the "body" of a Joy-Con: matte surface with subtle inner shadow */
+.jc-panel {
+  background: linear-gradient(145deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Recessed surface — like the Joy-Con rail groove or button wells */
+.jc-well {
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.875rem;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Raised element — like Joy-Con bumper buttons (L/R) */
+.jc-raised {
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: all 0.15s ease;
+}
+.jc-raised:hover {
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.09) 100%
+  );
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.jc-raised:active {
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.12);
+  transform: translateY(0.5px);
+}
+
+/* Pill button — like the Home/Capture buttons */
+.jc-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.15s ease;
+}
+.jc-pill:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.20);
+}
+
+/* Separator — soft matte groove between sections */
+.jc-groove {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.12) 20%,
+    rgba(0, 0, 0, 0.12) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
 /* Section with flowing gradient */
 .section-gradient-flow {
   background: linear-gradient(

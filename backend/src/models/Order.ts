@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { OrderStatus, DeliveryMethod, PaymentMethod } from '../types';
-import StockMovement from './StockMovement';
 
 // Interfaces
 export interface IOrderItem {
@@ -342,74 +341,6 @@ orderSchema.pre('save', async function (next) {
       }
 
       this.orderNumber = `QUE-${dateString}-${String(sequence).padStart(3, '0')}`;
-    } catch (error) {
-      return next(error as Error);
-    }
-  }
-  next();
-});
-
-// Pre-save: descontar stock al crear orden
-orderSchema.pre('save', async function (next) {
-  if (this.isNew) {
-    try {
-      const ProductVariant = mongoose.model('ProductVariant');
-
-      // Validar stock disponible y descontar
-      for (const item of this.items) {
-        const variant = await ProductVariant.findById(item.variant);
-        if (!variant) {
-          return next(new Error(`Variante ${item.variantSnapshot.sku} no encontrada`));
-        }
-
-        // Verificar si hay stock suficiente (solo si trackStock = true)
-        if (variant.trackStock && !variant.allowBackorder && variant.stock < item.quantity) {
-          return next(
-            new Error(
-              `Stock insuficiente para ${variant.name}. Disponible: ${variant.stock}, Solicitado: ${item.quantity}`
-            )
-          );
-        }
-
-        // Crear movimiento de stock
-        await StockMovement.createMovement(
-          variant._id,
-          'sale',
-          -item.quantity,
-          `Venta - Orden ${this.orderNumber}`,
-          { orderId: this._id }
-        );
-      }
-    } catch (error) {
-      return next(error as Error);
-    }
-  }
-  next();
-});
-
-// Pre-save: restaurar stock al cancelar
-orderSchema.pre('save', async function (next) {
-  if (this.isModified('status') && this.status === 'cancelled' && !this.isNew) {
-    try {
-      // Restaurar stock de cada item
-      for (const item of this.items) {
-        await StockMovement.createMovement(
-          item.variant,
-          'cancellation',
-          item.quantity,
-          `Cancelación - Orden ${this.orderNumber}`,
-          {
-            orderId: this._id,
-            userId: this.cancelledBy,
-            notes: this.cancellationReason,
-          }
-        );
-      }
-
-      // Establecer fecha de cancelación si no existe
-      if (!this.cancelledAt) {
-        this.cancelledAt = new Date();
-      }
     } catch (error) {
       return next(error as Error);
     }

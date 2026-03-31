@@ -55,12 +55,8 @@ export interface CreateProductVariantInput {
   sku?: string;
   attributes: { [key: string]: string };
   price: number;
-  stock: number;
   images?: string[];
   description?: string;
-  trackStock?: boolean;
-  allowBackorder?: boolean;
-  lowStockThreshold?: number;
   fixedDiscount?: {
     enabled: boolean;
     type: 'percentage' | 'amount';
@@ -75,10 +71,6 @@ export interface CreateProductVariantInput {
 
 export interface UpdateProductVariantInput extends Partial<CreateProductVariantInput> {}
 
-export interface UpdateStockInput {
-  stock: number;
-  reason?: string;
-}
 
 export const adminProductService = {
   // ============================================================================
@@ -135,10 +127,8 @@ export const adminProductService = {
     data: {
       attributes: Record<string, string>;
       price: number;
-      stock: number;
       sku?: string;
       description?: string;
-      lowStockThreshold?: number;
     }
   ): Promise<{
     variant: ProductVariant;
@@ -157,11 +147,6 @@ export const adminProductService = {
 
   updateProductVariant: async (id: string, data: UpdateProductVariantInput): Promise<ProductVariant> => {
     const response = await adminApi.put<ApiResponse<ProductVariant>>(`/products/variants/${id}`, data);
-    return response.data.data;
-  },
-
-  updateVariantStock: async (id: string, data: UpdateStockInput): Promise<ProductVariant> => {
-    const response = await adminApi.patch<ApiResponse<ProductVariant>>(`/products/variants/${id}/stock`, data);
     return response.data.data;
   },
 
@@ -194,14 +179,6 @@ export const adminProductService = {
   // ============================================================================
   // BULK OPERATIONS
   // ============================================================================
-
-  bulkUpdateStock: async (updates: { variantId: string; stock: number }[]): Promise<void> => {
-    await Promise.all(
-      updates.map((update) =>
-        adminApi.patch(`/products/variants/${update.variantId}/stock`, { stock: update.stock })
-      )
-    );
-  },
 
   bulkToggleActive: async (productIds: string[], active: boolean): Promise<void> => {
     await Promise.all(

@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Warehouse,
   FolderTree,
   Tags,
   Users,
@@ -39,12 +38,6 @@ const menuItems = [
     href: '/admin/ordenes',
     icon: ShoppingCart,
     roles: ['admin'] as UserRole[], // Solo admin
-  },
-  {
-    title: 'Inventario',
-    href: '/admin/inventario',
-    icon: Warehouse,
-    roles: ['admin', 'funcionario'] as UserRole[],
   },
   {
     title: 'Categorías',

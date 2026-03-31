@@ -72,9 +72,6 @@ export function ProductCardPremium({
     ? variants.find((v) => v._id === selectedVariantId)
     : null;
 
-  // Check if out of stock
-  const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
-
   // Get images
   const mainImage = getSafeImageUrl(
     selectedVariant?.images?.[0] || product.images?.[0],
@@ -132,7 +129,7 @@ export function ProductCardPremium({
   const pricePerUnit = getPricePerUnit();
 
   const handleAddToCart = async () => {
-    if (!selectedVariant || isOutOfStock) return;
+    if (!selectedVariant) return;
 
     setIsAdding(true);
 
@@ -183,9 +180,7 @@ export function ProductCardPremium({
   };
 
   const incrementQuantity = () => {
-    if (selectedVariant && quantity < selectedVariant.stock) {
-      setQuantity((prev) => prev + 1);
-    }
+    setQuantity((prev) => prev + 1);
   };
 
   const decrementQuantity = () => {
@@ -212,7 +207,7 @@ export function ProductCardPremium({
           'group relative overflow-hidden transition-all duration-300',
           'hover:shadow-2xl border-border/50 bg-card',
           'transform-gpu backface-hidden h-full flex flex-col',
-          isOutOfStock && 'opacity-60'
+          !selectedVariant?.active && 'opacity-60'
         )}
       >
         {/* Image Section - Optimized aspect ratio */}
@@ -260,7 +255,7 @@ export function ProductCardPremium({
           </motion.button>
 
           {/* Discount Badge - Top Left */}
-          {hasDiscount && !isOutOfStock && discountBadge && (
+          {hasDiscount && discountBadge && (
             <motion.div
               initial={{ scale: 0, rotate: -12 }}
               animate={{ scale: 1, rotate: 0 }}
@@ -324,7 +319,6 @@ export function ProductCardPremium({
                 {variants.map((variant) => (
                   <SelectItem key={variant._id} value={variant._id}>
                     {variant.displayName || Object.values(variant.attributes || {}).join(' ') || 'Sin nombre'}
-                    {variant.stock === 0 && ' (Agotado)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -384,7 +378,7 @@ export function ProductCardPremium({
                 size="sm"
                 className="h-9 w-9 p-0 rounded-none hover:bg-primary/10"
                 onClick={incrementQuantity}
-                disabled={!selectedVariant || quantity >= selectedVariant.stock}
+                disabled={!selectedVariant}
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -395,7 +389,7 @@ export function ProductCardPremium({
               <Button
                 ref={addButtonRef}
                 onClick={handleAddToCart}
-                disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
+                disabled={isAdding || justAdded || !selectedVariant}
                 className={cn(
                   "w-full h-9 text-sm font-bold relative overflow-hidden",
                   "bg-red-600 hover:bg-red-700 text-white shadow-md",
@@ -420,8 +414,6 @@ export function ProductCardPremium({
                     <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     ...
                   </>
-                ) : isOutOfStock ? (
-                  'Agotado'
                 ) : !selectedVariant ? (
                   'Seleccionar'
                 ) : (
@@ -434,17 +426,6 @@ export function ProductCardPremium({
             </motion.div>
           </div>
 
-          {/* Stock Warning - Compact */}
-          {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[10px] text-amber-600 font-medium text-center flex items-center justify-center gap-1"
-            >
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
-              ¡Solo quedan {selectedVariant.stock}!
-            </motion.p>
-          )}
         </CardContent>
       </Card>
 

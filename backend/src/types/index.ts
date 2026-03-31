@@ -87,7 +87,6 @@ export interface ProductFilters extends PaginationQuery {
   brand?: string;
   minPrice?: number;
   maxPrice?: number;
-  inStock?: boolean;
   featured?: boolean;
   search?: string;
 }

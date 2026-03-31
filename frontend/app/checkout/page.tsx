@@ -158,11 +158,13 @@ export default function CheckoutPage() {
         router.push(`/pedido/${response.order.orderNumber}`);
       }
     } catch (err: any) {
-      console.error('Error creating order:', err);
-      setError(
-        err.response?.data?.message ||
-          'Error al crear el pedido. Por favor intenta nuevamente.'
-      );
+      console.error('Error creating order:', err?.response?.data || err?.message || err);
+      const message =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (typeof err === 'string' ? err : 'Error al crear el pedido. Por favor intenta nuevamente.');
+      setError(message);
       setIsSubmitting(false);
     }
   };

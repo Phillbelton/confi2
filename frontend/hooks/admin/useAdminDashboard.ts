@@ -26,12 +26,6 @@ export function useAdminDashboard() {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
-  const lowStockQuery = useQuery({
-    queryKey: ['admin-low-stock'],
-    queryFn: adminDashboardService.getLowStockVariants,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
   return {
     stats: statsQuery.data,
     isLoadingStats: statsQuery.isLoading,
@@ -41,14 +35,11 @@ export function useAdminDashboard() {
     isLoadingTopProducts: topProductsQuery.isLoading,
     recentOrders: recentOrdersQuery.data,
     isLoadingRecentOrders: recentOrdersQuery.isLoading,
-    lowStock: lowStockQuery.data,
-    isLoadingLowStock: lowStockQuery.isLoading,
     refetch: () => {
       statsQuery.refetch();
       salesDataQuery.refetch();
       topProductsQuery.refetch();
       recentOrdersQuery.refetch();
-      lowStockQuery.refetch();
     },
   };
 }

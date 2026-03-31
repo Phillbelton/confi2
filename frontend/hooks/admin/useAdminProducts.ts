@@ -12,7 +12,6 @@ import type {
   UpdateProductParentInput,
   CreateProductVariantInput,
   UpdateProductVariantInput,
-  UpdateStockInput,
 } from '@/services/admin/products';
 
 export function useAdminProducts(params?: ProductQueryParams) {
@@ -161,10 +160,8 @@ export function useAdminProductVariants(parentId: string) {
     mutationFn: (data: {
       attributes: Record<string, string>;
       price: number;
-      stock: number;
       sku?: string;
       description?: string;
-      lowStockThreshold?: number;
     }) => adminProductService.addVariantToParent(parentId, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
@@ -197,21 +194,6 @@ export function useAdminProductVariants(parentId: string) {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Error al actualizar la variante');
-    },
-  });
-
-  // Update stock mutation
-  const updateStockMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateStockInput }) =>
-      adminProductService.updateVariantStock(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
-      toast.success('Stock actualizado exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar el stock');
     },
   });
 
@@ -267,8 +249,6 @@ export function useAdminProductVariants(parentId: string) {
     isAddingVariant: addVariantToParentMutation.isPending,
     updateVariant: updateVariantMutation.mutate,
     isUpdatingVariant: updateVariantMutation.isPending,
-    updateStock: updateStockMutation.mutate,
-    isUpdatingStock: updateStockMutation.isPending,
     deleteVariant: deleteVariantMutation.mutate,
     isDeletingVariant: deleteVariantMutation.isPending,
     uploadVariantImages: uploadVariantImagesMutation.mutate,

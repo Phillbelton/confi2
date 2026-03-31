@@ -530,8 +530,7 @@ export default function AdminOrderDetailPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar Orden {order.orderNumber}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta accion no se puede deshacer. El stock reservado sera restaurado
-              automaticamente.
+              Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
 

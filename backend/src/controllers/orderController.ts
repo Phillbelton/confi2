@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { Order, IOrder, User } from '../models';
 import ProductVariant from '../models/ProductVariant';
 import ProductParent from '../models/ProductParent';
-import StockMovement from '../models/StockMovement';
 import { AuthRequest, ApiResponse, PaginatedResponse, OrderStatus } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { applyDiscountToCart } from '../services/discountService';
@@ -140,14 +139,6 @@ export const createOrder = asyncHandler(
           throw new AppError(404, `Variante ${item.variantId} no encontrada`);
         }
 
-        // Validar stock ANTES de crear la orden
-        if (variant.trackStock && !variant.allowBackorder && variant.stock < item.quantity) {
-          throw new AppError(
-            400,
-            `Stock insuficiente para ${variant.name}. Disponible: ${variant.stock}, Solicitado: ${item.quantity}`
-          );
-        }
-
         // Crear snapshot de la variante
         return {
           variant: variant._id,
@@ -172,7 +163,7 @@ export const createOrder = asyncHandler(
     const shippingCost = 0; // Se calcula manualmente por el funcionario
     const total = subtotal + shippingCost;
 
-    // Crear la orden (el pre-save hook deducirá el stock automáticamente)
+    // Crear la orden
     const order = await Order.create({
       customer: {
         ...customerData,
@@ -760,113 +751,7 @@ export const editOrderItems = asyncHandler(
       })
     );
 
-    // Comparar items viejos vs nuevos para ajustar stock
-    const oldItems = order.items;
-    const oldItemsMap = new Map();
-
-    // Mapear items viejos por variantId
-    oldItems.forEach((item) => {
-      const variantId = item.variant.toString();
-      oldItemsMap.set(variantId, item.quantity);
-    });
-
-    // Mapear items nuevos por variantId
-    const newItemsMap = new Map();
-    newOrderItems.forEach((item) => {
-      const variantId = item.variant.toString();
-      newItemsMap.set(variantId, item.quantity);
-    });
-
-    // Procesar cambios de stock
-    const stockChanges = [];
-
-    // 1. Items eliminados o con cantidad reducida
-    for (const [variantId, oldQuantity] of oldItemsMap) {
-      const newQuantity = newItemsMap.get(variantId) || 0;
-      const quantityDiff = oldQuantity - newQuantity;
-
-      if (quantityDiff > 0) {
-        // Item eliminado o cantidad reducida -> restaurar stock
-        stockChanges.push({
-          variantId,
-          quantityChange: quantityDiff, // positivo = restaurar
-          type: 'restoration' as const,
-        });
-      }
-    }
-
-    // 2. Items nuevos o con cantidad aumentada
-    for (const [variantId, newQuantity] of newItemsMap) {
-      const oldQuantity = oldItemsMap.get(variantId) || 0;
-      const quantityDiff = newQuantity - oldQuantity;
-
-      if (quantityDiff > 0) {
-        // Item nuevo o cantidad aumentada -> deducir stock
-        stockChanges.push({
-          variantId,
-          quantityChange: quantityDiff, // positivo = deducir
-          type: 'deduction' as const,
-        });
-      }
-    }
-
-    // Aplicar cambios de stock y crear StockMovements
-    for (const change of stockChanges) {
-      const variant = await ProductVariant.findById(change.variantId);
-
-      if (!variant) {
-        throw new AppError(404, `Variante ${change.variantId} no encontrada`);
-      }
-
-      if (change.type === 'deduction') {
-        // Verificar disponibilidad de stock para nuevos items
-        if (variant.trackStock && !variant.allowBackorder) {
-          if (variant.stock < change.quantityChange) {
-            throw new AppError(
-              400,
-              `Stock insuficiente para ${variant.name}. Disponible: ${variant.stock}, requerido: ${change.quantityChange}`
-            );
-          }
-        }
-
-        // Deducir stock
-        const previousStock = variant.stock;
-        variant.stock -= change.quantityChange;
-        await variant.save();
-
-        // Crear StockMovement de tipo 'adjustment' para edición
-        await StockMovement.create({
-          type: 'adjustment',
-          quantity: -change.quantityChange,
-          previousStock,
-          newStock: variant.stock,
-          variant: variant._id,
-          order: order._id,
-          user: req.user?.id,
-          reason: `Edición de orden ${order.orderNumber} - Item agregado/aumentado`,
-          notes: adminNotes || `Cantidad agregada: ${change.quantityChange}`,
-        });
-      } else {
-        // Restaurar stock
-        const previousStock = variant.stock;
-        variant.stock += change.quantityChange;
-        await variant.save();
-
-        // Crear StockMovement de tipo 'adjustment'
-        await StockMovement.create({
-          type: 'adjustment',
-          quantity: change.quantityChange,
-          previousStock,
-          newStock: variant.stock,
-          variant: variant._id,
-          order: order._id,
-          user: req.user?.id,
-          reason: `Edición de orden ${order.orderNumber} - Item eliminado/reducido`,
-          notes: adminNotes || `Cantidad restaurada: ${change.quantityChange}`,
-        });
-      }
-    }
-
+    // Actualizar items de la orden directamente (sin stock tracking)
     // Actualizar items de la orden
     order.items = newOrderItems as any;
 
@@ -909,11 +794,6 @@ export const editOrderItems = asyncHandler(
       message: 'Orden actualizada exitosamente',
       data: {
         order,
-        stockChanges: stockChanges.map((change) => ({
-          variantId: change.variantId,
-          quantityChange: change.quantityChange,
-          type: change.type,
-        })),
         whatsappMessage: message,
         whatsappURL,
       },

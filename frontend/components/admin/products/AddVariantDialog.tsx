@@ -31,7 +31,6 @@ interface AddVariantDialogProps {
   onAddVariant: (data: {
     attributes: Record<string, string>;
     price: number;
-    stock: number;
     sku?: string;
     description?: string;
   }) => void;
@@ -48,7 +47,6 @@ export function AddVariantDialog({
   const [selectedValues, setSelectedValues] = useState<Record<string, string>>({});
   const [newValues, setNewValues] = useState<Record<string, string>>({});
   const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('');
   const [sku, setSku] = useState('');
   const [description, setDescription] = useState('');
   const [showNewValueInput, setShowNewValueInput] = useState<Record<string, boolean>>({});
@@ -107,9 +105,7 @@ export function AddVariantDialog({
     allAttributesSelected &&
     !isDuplicate &&
     price &&
-    stock &&
-    parseFloat(price) > 0 &&
-    parseInt(stock) >= 0;
+    parseFloat(price) > 0;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -126,7 +122,6 @@ export function AddVariantDialog({
     onAddVariant({
       attributes,
       price: parseFloat(price),
-      stock: parseInt(stock),
       ...(sku && { sku }),
       ...(description && { description }),
     });
@@ -140,7 +135,6 @@ export function AddVariantDialog({
     setSelectedValues({});
     setNewValues({});
     setPrice('');
-    setStock('');
     setSku('');
     setDescription('');
     setShowNewValueInput({});
@@ -262,31 +256,18 @@ export function AddVariantDialog({
             </Alert>
           )}
 
-          {/* Price and Stock */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">Precio *</Label>
-              <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock Inicial *</Label>
-              <Input
-                id="stock"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
-              />
-            </div>
+          {/* Price */}
+          <div className="space-y-2">
+            <Label htmlFor="price">Precio *</Label>
+            <Input
+              id="price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
           </div>
 
           {/* Optional fields */}

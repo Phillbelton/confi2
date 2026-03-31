@@ -262,7 +262,6 @@ export function UpdateOrderStatus({ orderId, currentStatus }: UpdateOrderStatusP
           <HelpSection title="Confirmada - ¿Qué hacer?">
             <p>El cliente confirmó el pedido. Ahora es momento de prepararlo.</p>
             <ul className="list-disc ml-4 mt-2 space-y-1">
-              <li>Verifica que tengas stock de todos los productos</li>
               <li>Reúne los productos del almacén</li>
               <li>Cuando empieces a empacar, cambia a <strong>"En Preparación"</strong></li>
             </ul>
@@ -329,13 +328,9 @@ export function UpdateOrderStatus({ orderId, currentStatus }: UpdateOrderStatusP
             <ul className="list-disc ml-4 mt-2 space-y-1">
               <li>El cliente no respondió al WhatsApp (después de varios intentos)</li>
               <li>El cliente decidió no continuar con la compra</li>
-              <li>No hay stock disponible del producto</li>
               <li>Pedido duplicado o hecho por error</li>
               <li>Problemas de pago</li>
             </ul>
-            <p className="mt-2 text-sm">
-              <strong>Nota:</strong> Cuando cancelas un pedido, el stock reservado vuelve a estar disponible.
-            </p>
           </HelpSection>
 
           <HelpSection title="Notas Administrativas - ¿Para qué sirven?">
@@ -386,7 +381,7 @@ export function UpdateOrderStatus({ orderId, currentStatus }: UpdateOrderStatusP
                 <strong>No saltes estados:</strong> Sigue el flujo normal (salvo para cancelar)
               </li>
               <li>
-                <strong>Cancela rápido si es necesario:</strong> Si un cliente no responde en 48-72hs, cancela el pedido para liberar el stock
+                <strong>Cancela rápido si es necesario:</strong> Si un cliente no responde en 48-72hs, cancela el pedido
               </li>
             </ul>
           </HelpSection>

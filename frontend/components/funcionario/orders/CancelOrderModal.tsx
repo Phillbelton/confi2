@@ -70,7 +70,7 @@ export function CancelOrderModal({
             Cancelar Orden {order.orderNumber}
           </DialogTitle>
           <DialogDescription>
-            Esta acción no se puede deshacer. El stock será restaurado automáticamente.
+            Esta acción no se puede deshacer.
           </DialogDescription>
         </DialogHeader>
 
@@ -139,7 +139,6 @@ export function CancelOrderModal({
               Acciones automáticas:
             </p>
             <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-              <li>✓ El stock será restaurado automáticamente</li>
               <li>✓ La orden cambiará a estado "Cancelada"</li>
               <li>✓ Se registrará el motivo y fecha de cancelación</li>
             </ul>
