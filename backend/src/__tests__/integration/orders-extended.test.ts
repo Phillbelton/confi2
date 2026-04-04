@@ -8,9 +8,6 @@ import {
 } from '../setup/testUtils';
 import { Order } from '../../models/Order';
 import ProductVariant from '../../models/ProductVariant';
-import StockMovementModel from '../../models/StockMovement';
-
-const StockMovement = StockMovementModel;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EXTENDED ORDERS TEST SUITE
@@ -22,7 +19,7 @@ describe('Orders API — Extended', () => {
   // ─── POST /api/orders/validate-cart ───────────────────────────────────
   describe('POST /api/orders/validate-cart', () => {
     it('should validate cart with correct prices', async () => {
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const response = await request(app)
         .post('/api/orders/validate-cart')
@@ -46,7 +43,7 @@ describe('Orders API — Extended', () => {
     });
 
     it('should detect price discrepancy (anti-fraud)', async () => {
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const response = await request(app)
         .post('/api/orders/validate-cart')
@@ -70,7 +67,7 @@ describe('Orders API — Extended', () => {
     });
 
     it('should validate cart with fixed discount applied', async () => {
-      const variant = await createTestProductVariant({ price: 20000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 20000 });
       variant.fixedDiscount = {
         type: 'percentage',
         value: 25, // 25% off → 15000
@@ -116,8 +113,8 @@ describe('Orders API — Extended', () => {
     });
 
     it('should validate cart with multiple items', async () => {
-      const v1 = await createTestProductVariant({ price: 5000, stock: 50 });
-      const v2 = await createTestProductVariant({ price: 8000, stock: 50 });
+      const v1 = await createTestProductVariant({ price: 5000 });
+      const v2 = await createTestProductVariant({ price: 8000 });
 
       const response = await request(app)
         .post('/api/orders/validate-cart')
@@ -140,8 +137,8 @@ describe('Orders API — Extended', () => {
       const admin = await createTestUser({ role: 'admin' });
       const token = generateAuthToken(admin);
 
-      const v1 = await createTestProductVariant({ price: 10000, stock: 50 });
-      const v2 = await createTestProductVariant({ price: 8000, stock: 40 });
+      const v1 = await createTestProductVariant({ price: 10000 });
+      const v2 = await createTestProductVariant({ price: 8000 });
 
       const order = await createTestOrder({
         user: admin,
@@ -149,7 +146,6 @@ describe('Orders API — Extended', () => {
         status: 'confirmed',
       });
 
-      // Stock after order: v1=48
       const response = await request(app)
         .put(`/api/orders/${order._id}/items`)
         .set('Cookie', `token=${token}`)
@@ -163,26 +159,18 @@ describe('Orders API — Extended', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.order.items).toHaveLength(2);
-
-      // v2 stock should be deducted by 3
-      const updatedV2 = await ProductVariant.findById(v2._id);
-      expect(updatedV2?.stock).toBe(37);
-
-      // Should have stock change records
-      expect(response.body.data.stockChanges).toBeDefined();
     });
 
     it('should increase quantity of existing item', async () => {
       const funcionario = await createTestUser({ role: 'funcionario' });
       const token = generateAuthToken(funcionario);
-      const variant = await createTestProductVariant({ price: 5000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 5000 });
 
       const order = await createTestOrder({
         items: [{ variantId: variant._id, quantity: 2 }],
         status: 'pending_whatsapp',
       });
 
-      // Stock after order: 48
       const response = await request(app)
         .put(`/api/orders/${order._id}/items`)
         .set('Cookie', `token=${token}`)
@@ -193,23 +181,18 @@ describe('Orders API — Extended', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.order.items[0].quantity).toBe(5);
-
-      // Stock should be 48 - 3 (additional) = 45
-      const updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(45);
     });
 
-    it('should decrease quantity and restore stock', async () => {
+    it('should decrease quantity of existing item', async () => {
       const admin = await createTestUser({ role: 'admin' });
       const token = generateAuthToken(admin);
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const order = await createTestOrder({
         items: [{ variantId: variant._id, quantity: 10 }],
         status: 'confirmed',
       });
 
-      // Stock after order: 40
       const response = await request(app)
         .put(`/api/orders/${order._id}/items`)
         .set('Cookie', `token=${token}`)
@@ -218,18 +201,14 @@ describe('Orders API — Extended', () => {
         });
 
       expect(response.status).toBe(200);
-
-      // Stock should be restored: 40 + 7 = 47
-      const updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(47);
     });
 
-    it('should remove an item and restore its full stock', async () => {
+    it('should remove an item from order', async () => {
       const admin = await createTestUser({ role: 'admin' });
       const token = generateAuthToken(admin);
 
-      const v1 = await createTestProductVariant({ price: 10000, stock: 50 });
-      const v2 = await createTestProductVariant({ price: 5000, stock: 30 });
+      const v1 = await createTestProductVariant({ price: 10000 });
+      const v2 = await createTestProductVariant({ price: 5000 });
 
       const order = await createTestOrder({
         items: [
@@ -239,7 +218,6 @@ describe('Orders API — Extended', () => {
         status: 'preparing',
       });
 
-      // v1: 48, v2: 26
       // Send only v1, effectively removing v2
       const response = await request(app)
         .put(`/api/orders/${order._id}/items`)
@@ -250,16 +228,12 @@ describe('Orders API — Extended', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.order.items).toHaveLength(1);
-
-      // v2 should have stock fully restored
-      const updatedV2 = await ProductVariant.findById(v2._id);
-      expect(updatedV2?.stock).toBe(30);
     });
 
     it('should reject editing completed order', async () => {
       const admin = await createTestUser({ role: 'admin' });
       const token = generateAuthToken(admin);
-      const variant = await createTestProductVariant({ stock: 50 });
+      const variant = await createTestProductVariant();
       const order = await createTestOrder({
         items: [{ variantId: variant._id, quantity: 1 }],
         status: 'completed',
@@ -278,7 +252,7 @@ describe('Orders API — Extended', () => {
     it('should reject editing cancelled order', async () => {
       const admin = await createTestUser({ role: 'admin' });
       const token = generateAuthToken(admin);
-      const variant = await createTestProductVariant({ stock: 50 });
+      const variant = await createTestProductVariant();
       const order = await createTestOrder({
         items: [{ variantId: variant._id, quantity: 1 }],
         status: 'cancelled',
@@ -309,31 +283,10 @@ describe('Orders API — Extended', () => {
       expect(response.status).toBe(403);
     });
 
-    it('should reject when new item has insufficient stock', async () => {
-      const admin = await createTestUser({ role: 'admin' });
-      const token = generateAuthToken(admin);
-      const variant = await createTestProductVariant({ price: 10000, stock: 5 });
-
-      const order = await createTestOrder({
-        items: [{ variantId: variant._id, quantity: 2 }],
-        status: 'confirmed',
-      });
-
-      // Try to increase to more than available stock (stock=3 after initial deduction)
-      const response = await request(app)
-        .put(`/api/orders/${order._id}/items`)
-        .set('Cookie', `token=${token}`)
-        .send({
-          items: [{ variantId: variant._id.toString(), quantity: 10 }],
-        });
-
-      expect(response.status).toBe(400);
-    });
-
     it('should recalculate totals correctly after edit', async () => {
       const admin = await createTestUser({ role: 'admin' });
       const token = generateAuthToken(admin);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const order = await createTestOrder({
         items: [{ variantId: variant._id, quantity: 2 }],
@@ -363,7 +316,7 @@ describe('Orders API — Extended', () => {
     it('should return whatsapp data after edit', async () => {
       const admin = await createTestUser({ role: 'admin' });
       const token = generateAuthToken(admin);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const order = await createTestOrder({
         items: [{ variantId: variant._id, quantity: 2 }],
@@ -484,7 +437,7 @@ describe('Orders API — Extended', () => {
     it('should apply tiered discount when quantity threshold met', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // Add tiered discount: buy 5+, get 10% off
       variant.tieredDiscount = {
@@ -516,7 +469,7 @@ describe('Orders API — Extended', () => {
     it('should NOT apply tiered discount when below threshold', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       variant.tieredDiscount = {
         active: true,
@@ -545,7 +498,7 @@ describe('Orders API — Extended', () => {
     it('should stack fixed + tiered discounts', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 20000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 20000 });
 
       // Fixed: 10% off → 18000
       variant.fixedDiscount = {
@@ -585,7 +538,7 @@ describe('Orders API — Extended', () => {
     it('should apply the highest qualifying tier', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       variant.tieredDiscount = {
         active: true,
@@ -617,7 +570,7 @@ describe('Orders API — Extended', () => {
     it('should not apply expired tiered discount', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       variant.tieredDiscount = {
         active: true,
@@ -646,7 +599,7 @@ describe('Orders API — Extended', () => {
     it('should apply amount-based tiered discount', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       variant.tieredDiscount = {
         active: true,
@@ -678,7 +631,7 @@ describe('Orders API — Extended', () => {
     it('should follow full happy path: pending → confirmed → preparing → shipped → completed', async () => {
       const funcionario = await createTestUser({ role: 'funcionario' });
       const token = generateAuthToken(funcionario);
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // 1. Create order via API
       const user = await createTestUser();
@@ -779,12 +732,12 @@ describe('Orders API — Extended', () => {
 
   // ─── Order Creation Edge Cases ───────────────────────────────────────
   describe('Order creation edge cases', () => {
-    it('should create order with multiple items and deduct stock for each', async () => {
+    it('should create order with multiple items', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
 
-      const v1 = await createTestProductVariant({ price: 5000, stock: 20 });
-      const v2 = await createTestProductVariant({ price: 15000, stock: 30 });
+      const v1 = await createTestProductVariant({ price: 5000 });
+      const v2 = await createTestProductVariant({ price: 15000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -801,17 +754,12 @@ describe('Orders API — Extended', () => {
       expect(response.status).toBe(201);
       expect(response.body.data.order.items).toHaveLength(2);
       expect(response.body.data.order.subtotal).toBe(45000); // 3*5000 + 2*15000
-
-      const updatedV1 = await ProductVariant.findById(v1._id);
-      const updatedV2 = await ProductVariant.findById(v2._id);
-      expect(updatedV1?.stock).toBe(17);
-      expect(updatedV2?.stock).toBe(28);
     });
 
     it('should generate unique sequential order numbers on same day', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ stock: 100 });
+      const variant = await createTestProductVariant();
 
       const res1 = await request(app)
         .post('/api/orders')
@@ -844,7 +792,7 @@ describe('Orders API — Extended', () => {
     it('should store variant snapshot for price history', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 15000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 15000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -864,7 +812,7 @@ describe('Orders API — Extended', () => {
     });
 
     it('should create guest order with delivery address', async () => {
-      const variant = await createTestProductVariant({ price: 5000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 5000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -995,33 +943,6 @@ describe('Orders API — Extended', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.order.status).toBe('cancelled');
-    });
-
-    it('should restore stock for all items when cancelling multi-item order', async () => {
-      const user = await createTestUser();
-      const token = generateAuthToken(user);
-      const v1 = await createTestProductVariant({ price: 5000, stock: 20 });
-      const v2 = await createTestProductVariant({ price: 8000, stock: 30 });
-
-      const order = await createTestOrder({
-        user,
-        items: [
-          { variantId: v1._id, quantity: 3 },
-          { variantId: v2._id, quantity: 5 },
-        ],
-        status: 'confirmed',
-      });
-
-      // v1: 17, v2: 25
-      await request(app)
-        .put(`/api/orders/${order._id}/cancel`)
-        .set('Cookie', `token=${token}`)
-        .send({ cancellationReason: 'Cancelling multi-item order for testing' });
-
-      const updV1 = await ProductVariant.findById(v1._id);
-      const updV2 = await ProductVariant.findById(v2._id);
-      expect(updV1?.stock).toBe(20);
-      expect(updV2?.stock).toBe(30);
     });
 
     it('should return whatsapp cancellation message', async () => {

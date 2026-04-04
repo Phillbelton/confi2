@@ -330,7 +330,7 @@ export function EditOrderItemsModal({
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-sm">
-                  Los descuentos y el stock se recalcularán automáticamente al guardar.
+                  Los descuentos se recalcularán automáticamente al guardar.
                 </AlertDescription>
               </Alert>
             )}

@@ -158,16 +158,15 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: simpleProductParent._id,
           attributes: {}, // Sin atributos para producto simple
           price: 7500,
-          stock: 120,
+
           images: ['/uploads/chocolates/blanco-fresas.jpg'],
-          lowStockThreshold: 15,
+
         })
         .expect(201);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.price).toBe(7500);
-      expect(response.body.data.stock).toBe(120);
-      expect(response.body.data.lowStockThreshold).toBe(15);
+
 
       // Verificar en base de datos
       const variant = await ProductVariant.findById(response.body.data._id);
@@ -191,7 +190,7 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: simpleProductParent._id,
           attributes: {},
           price: 7500,
-          stock: 120,
+
           // SKU no proporcionado - debe autogenerarse
         })
         .expect(201);
@@ -209,7 +208,7 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: simpleProductParent._id,
           attributes: {},
           price: 7500,
-          stock: 120,
+
         })
         .expect(201);
 
@@ -227,7 +226,7 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: simpleProductParent._id,
           attributes: {},
           price: 7500,
-          stock: 120,
+
         })
         .expect(201);
 
@@ -239,7 +238,7 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: simpleProductParent._id,
           attributes: {},
           price: 8000,
-          stock: 50,
+
         })
         .expect(201);
 
@@ -284,24 +283,11 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: simpleProduct._id,
           attributes: {},
           price: 6500,
-          stock: 200,
-          lowStockThreshold: 25,
+
+
         });
 
       simpleVariant = variantResponse.body.data;
-    });
-
-    it('should update stock for simple product variant', async () => {
-      const response = await request(app)
-        .patch(`/api/products/variants/${simpleVariant._id}/stock`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          stock: 150,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.stock).toBe(150);
     });
 
     it('should update price for simple product variant', async () => {
@@ -334,7 +320,7 @@ describe('Simple Products - Products without variants', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.price).toBe(6500);
-      expect(response.body.data.stock).toBe(200);
+
     });
 
     it('should get simple product variant by SKU', async () => {
@@ -366,7 +352,7 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: simpleProduct._id,
           attributes: {},
           price: 7000,
-          stock: 50,
+
         });
 
       const variant2 = variant2Response.body.data;
@@ -430,7 +416,7 @@ describe('Simple Products - Products without variants', () => {
           parentProduct: parentResponse.body.data.productParent._id,
           attributes: {},
           price: 4500,
-          stock: 150,
+
         });
 
       simpleVariant = variantResponse.body.data;
@@ -501,95 +487,6 @@ describe('Simple Products - Products without variants', () => {
       expect(response.body.data.discountType).toBe('percentage');
       expect(response.body.data.discountValue).toBe(20);
       expect(response.body.data.discountedPrice).toBe(3600); // 4500 - 20% = 3600
-    });
-  });
-
-  // ==================== Stock management ====================
-
-  describe('Simple Products - Stock Management', () => {
-    let lowStockVariant: any;
-    let outOfStockVariant: any;
-
-    beforeEach(async () => {
-      // Producto con bajo stock
-      const parent1Response = await request(app)
-        .post('/api/products/parents')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Corazón de Chocolate Relleno',
-          description: 'Corazón de chocolate negro relleno de caramelo salado',
-          categories: [chocolateCategory._id],
-          brand: chocolateBrand._id,
-          variantAttributes: [],
-        });
-
-      const variant1Response = await request(app)
-        .post('/api/products/variants')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          parentProduct: parent1Response.body.data.productParent._id,
-          attributes: {},
-          price: 5000,
-          stock: 5,
-          lowStockThreshold: 10,
-          allowBackorder: false,
-        });
-
-      lowStockVariant = variant1Response.body.data;
-
-      // Producto sin stock
-      const parent2Response = await request(app)
-        .post('/api/products/parents')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Chocolate Ruby Natural',
-          description: 'Barra de 80g de chocolate ruby',
-          categories: [chocolateCategory._id],
-          brand: chocolateBrand._id,
-          variantAttributes: [],
-        });
-
-      const variant2Response = await request(app)
-        .post('/api/products/variants')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          parentProduct: parent2Response.body.data.productParent._id,
-          attributes: {},
-          price: 12000,
-          stock: 0,
-          lowStockThreshold: 5,
-          allowBackorder: false,
-        });
-
-      outOfStockVariant = variant2Response.body.data;
-    });
-
-    it('should detect low stock simple product', async () => {
-      const response = await request(app)
-        .get('/api/products/variants/stock/low')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
-
-      const found = response.body.data.find((v: any) => v._id === lowStockVariant._id);
-      expect(found).toBeTruthy();
-      expect(found.stock).toBeLessThanOrEqual(found.lowStockThreshold);
-    });
-
-    it('should detect out of stock simple product', async () => {
-      const response = await request(app)
-        .get('/api/products/variants/stock/out')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
-
-      const found = response.body.data.find((v: any) => v._id === outOfStockVariant._id);
-      expect(found).toBeTruthy();
-      expect(found.stock).toBe(0);
     });
   });
 

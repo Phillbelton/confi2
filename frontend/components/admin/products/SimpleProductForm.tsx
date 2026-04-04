@@ -27,7 +27,6 @@ const simpleProductSchema = z.object({
   brand: z.string().optional(),
   tags: z.array(z.string()).optional(),
   price: z.number().min(0, 'El precio no puede ser negativo'),
-  stock: z.number().min(0, 'El stock no puede ser negativo').int('El stock debe ser un número entero'),
   sku: z.string().optional(),
   seoTitle: z.string().max(70, 'El título SEO no puede exceder 70 caracteres').optional(),
   seoDescription: z.string().max(160, 'La descripción SEO no puede exceder 160 caracteres').optional(),
@@ -96,7 +95,6 @@ export function SimpleProductForm({
       brand: '',
       tags: [],
       price: 0,
-      stock: 0,
       sku: '',
       seoTitle: '',
       seoDescription: '',
@@ -159,7 +157,7 @@ export function SimpleProductForm({
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Crear Producto Simple</h1>
-            <p className="text-muted-foreground">Producto con un solo precio y stock</p>
+            <p className="text-muted-foreground">Producto con un solo precio</p>
           </div>
         </div>
         <SaveButtons />
@@ -204,13 +202,13 @@ export function SimpleProductForm({
           </CardContent>
         </Card>
 
-        {/* 2. Precio y Stock — arriba de todo lo demás */}
+        {/* 2. Precio y SKU */}
         <Card>
           <CardHeader>
-            <CardTitle>Precio y Stock</CardTitle>
+            <CardTitle>Precio</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormFieldWithHelp
                 label="Precio ($)"
                 htmlFor="price"
@@ -226,24 +224,6 @@ export function SimpleProductForm({
                 />
                 {form.formState.errors.price && (
                   <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>
-                )}
-              </FormFieldWithHelp>
-
-              <FormFieldWithHelp
-                label="Stock (unidades)"
-                htmlFor="stock"
-                tooltip="Cantidad disponible. Se descuenta automáticamente al realizarse ventas."
-                required
-              >
-                <Input
-                  id="stock"
-                  type="number"
-                  {...form.register('stock', { valueAsNumber: true })}
-                  placeholder="100"
-                  disabled={isSubmitting}
-                />
-                {form.formState.errors.stock && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.stock.message}</p>
                 )}
               </FormFieldWithHelp>
 

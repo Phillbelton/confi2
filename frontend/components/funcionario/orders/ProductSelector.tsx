@@ -22,12 +22,9 @@ interface ProductVariant {
   sku: string;
   name: string;
   price: number;
-  stock: number;
-  trackStock: boolean;
-  allowBackorder: boolean;
   attributes: Record<string, string>;
   image?: string;
-  images?: string[]; // Backend returns images array
+  images?: string[];
 }
 
 interface ProductSelectorProps {
@@ -93,9 +90,7 @@ export function ProductSelector({
   };
 
   const canAdd = selectedVariant && quantity > 0;
-  const maxQuantity = selectedVariant?.trackStock && !selectedVariant?.allowBackorder
-    ? selectedVariant.stock
-    : 99;
+  const maxQuantity = 99;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -161,14 +156,6 @@ export function ProductSelector({
                           <Badge variant="outline" className="text-xs">
                             {formatCurrency(variant.price)}
                           </Badge>
-                          {variant.trackStock && (
-                            <Badge
-                              variant={variant.stock > 5 ? 'outline' : 'destructive'}
-                              className="text-xs"
-                            >
-                              Stock: {variant.stock}
-                            </Badge>
-                          )}
                         </div>
                       </div>
                     </div>

@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { Order } from '../models/Order';
-import ProductVariant from '../models/ProductVariant';
 import ProductParent from '../models/ProductParent';
 import { User } from '../models/User';
 import { asyncHandler } from '../middleware/asyncHandler';
@@ -37,7 +36,6 @@ export const getDashboardStats = asyncHandler(
       weekSales,
       monthSales,
       pendingOrders,
-      lowStockVariants,
       totalProducts,
       totalCustomers,
     ] = await Promise.all([
@@ -100,12 +98,6 @@ export const getDashboardStats = asyncHandler(
         status: { $in: ['pending_whatsapp', 'confirmed'] },
       }),
 
-      // Low stock variants
-      ProductVariant.countDocuments({
-        active: true,
-        $expr: { $lte: ['$stock', '$lowStockThreshold'] },
-      }),
-
       // Total active products
       ProductParent.countDocuments({ active: true }),
 
@@ -121,7 +113,6 @@ export const getDashboardStats = asyncHandler(
         weekSales: weekSales[0]?.total || 0,
         monthSales: monthSales[0]?.total || 0,
         pendingOrders,
-        lowStockProducts: lowStockVariants,
         totalProducts,
         totalCustomers,
       },

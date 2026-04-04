@@ -844,7 +844,7 @@ async function seedProducts() {
             variant.name = productData.name;
             variant.attributes = {};
             variant.price = variantData.price;
-            variant.stock = variantData.stock;
+
             variant.parentProduct = parentProduct._id;
             await variant.save();
             updatedVariants++;
@@ -889,7 +889,7 @@ async function seedProducts() {
               variant.name = variantName;
               variant.attributes = variantData.attributeCombination;
               variant.price = variantData.price;
-              variant.stock = variantData.stock;
+  
               variant.order = order;
               variant.parentProduct = parentProduct._id;
               await variant.save();
@@ -927,7 +927,7 @@ async function seedProducts() {
               variant.name = variantName;
               variant.attributes = { [productData.variantAttributeName!]: variantData.value };
               variant.price = variantData.price;
-              variant.stock = variantData.stock;
+  
               variant.order = variantData.order;
               variant.parentProduct = parentProduct._id;
               await variant.save();

@@ -58,7 +58,6 @@ export default function NuevoProductoPage() {
       // Add default variant data for simple products
       const defaultVariant = {
         price: data.price,
-        stock: data.stock,
         ...(data.sku && { sku: data.sku }),
       };
       formData.append('defaultVariant', JSON.stringify(defaultVariant));
@@ -147,7 +146,6 @@ export default function NuevoProductoPage() {
       // Add default variant data for simple products
       const defaultVariant = {
         price: data.price,
-        stock: data.stock,
         ...(data.sku && { sku: data.sku }),
       };
       formData.append('defaultVariant', JSON.stringify(defaultVariant));
@@ -289,7 +287,6 @@ export default function NuevoProductoPage() {
         return {
           attributes: normalizedAttributes,
           price: combo.price,
-          stock: combo.stock,
           ...(combo.sku && { sku: combo.sku }),
         };
       });
@@ -514,7 +511,6 @@ export default function NuevoProductoPage() {
         return {
           attributes: normalizedAttributes,
           price: combo.price,
-          stock: combo.stock,
           ...(combo.sku && { sku: combo.sku }),
         };
       });

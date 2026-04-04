@@ -194,24 +194,10 @@ export const createProductVariantSchema = z.object({
       })
       .min(0, 'El precio no puede ser negativo'),
 
-    stock: z
-      .number({
-        invalid_type_error: 'El stock debe ser un número',
-      })
-      .int('El stock debe ser un número entero')
-      .min(0, 'El stock no puede ser negativo')
-      .default(0),
-
     images: z
       .array(z.string())
       .max(5, 'No puede tener más de 5 imágenes')
       .optional(), // 0 imágenes es válido según el modelo, acepta paths o URLs
-
-    trackStock: z.boolean().optional(),
-
-    allowBackorder: z.boolean().optional(),
-
-    lowStockThreshold: z.number().int().positive().optional(),
 
     fixedDiscount: fixedDiscountSchema.optional(),
 
@@ -248,22 +234,10 @@ export const updateProductVariantSchema = z.object({
       .min(0, 'El precio no puede ser negativo')
       .optional(),
 
-    stock: z
-      .number()
-      .int('El stock debe ser un número entero')
-      .min(0, 'El stock no puede ser negativo')
-      .optional(),
-
     images: z
       .array(z.string())
       .max(5, 'No puede tener más de 5 imágenes')
       .optional(), // Acepta paths o URLs
-
-    trackStock: z.boolean().optional(),
-
-    allowBackorder: z.boolean().optional(),
-
-    lowStockThreshold: z.number().int().positive().optional(),
 
     fixedDiscount: fixedDiscountSchema.optional(),
 
@@ -272,22 +246,6 @@ export const updateProductVariantSchema = z.object({
     order: z.number().int().optional(),
 
     active: z.boolean().optional(),
-  }),
-});
-
-// Schema para actualizar stock
-export const updateStockSchema = z.object({
-  params: z.object({
-    id: objectIdSchema,
-  }),
-  body: z.object({
-    stock: z
-      .number({
-        required_error: 'El stock es requerido',
-        invalid_type_error: 'El stock debe ser un número',
-      })
-      .int('El stock debe ser un número entero')
-      .min(0, 'El stock no puede ser negativo'),
   }),
 });
 
@@ -308,7 +266,6 @@ export const getProductsQuerySchema = z.object({
     tags: z.string().optional(), // Comma-separated IDs
     minPrice: z.string().regex(/^\d+(\.\d+)?$/).optional(),
     maxPrice: z.string().regex(/^\d+(\.\d+)?$/).optional(),
-    inStock: z.enum(['true', 'false']).optional(),
     active: z.enum(['true', 'false']).optional(),
     search: z.string().max(100).optional(),
     sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular']).optional(),
@@ -363,19 +320,11 @@ export const getDiscountPreviewSchema = z.object({
   }),
 });
 
-// Schema para obtener variantes con stock bajo/sin stock
-export const getStockVariantsSchema = z.object({
-  query: z.object({
-    limit: z.string().regex(/^\d+$/).optional(),
-  }),
-});
-
 // Tipos TypeScript inferidos
 export type CreateProductParentInput = z.infer<typeof createProductParentSchema>;
 export type UpdateProductParentInput = z.infer<typeof updateProductParentSchema>;
 export type CreateProductVariantInput = z.infer<typeof createProductVariantSchema>;
 export type UpdateProductVariantInput = z.infer<typeof updateProductVariantSchema>;
-export type UpdateStockInput = z.infer<typeof updateStockSchema>;
 export type GetProductByIdInput = z.infer<typeof getProductByIdSchema>;
 export type GetProductBySlugInput = z.infer<typeof getProductBySlugSchema>;
 export type DeleteProductInput = z.infer<typeof deleteProductSchema>;
@@ -384,4 +333,3 @@ export type GetFeaturedProductsInput = z.infer<typeof getFeaturedProductsSchema>
 export type GetProductsQueryInput = z.infer<typeof getProductsQuerySchema>;
 export type GetVariantBySkuInput = z.infer<typeof getVariantBySkuSchema>;
 export type GetDiscountPreviewInput = z.infer<typeof getDiscountPreviewSchema>;
-export type GetStockVariantsInput = z.infer<typeof getStockVariantsSchema>;

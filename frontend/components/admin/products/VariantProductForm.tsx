@@ -103,7 +103,6 @@ export function VariantProductForm({
           id: `combo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           attributes: { ...currentAttrs },
           price: 0,
-          stock: 0,
         });
         return;
       }
@@ -137,9 +136,9 @@ export function VariantProductForm({
 
   const handleFormSubmit = async (values: VariantProductFormValues, createAnother: boolean = false) => {
     // Validate that all combinations are configured
-    const unconfigured = variantCombinations.filter((c) => c.price <= 0 || c.stock < 0);
+    const unconfigured = variantCombinations.filter((c) => c.price <= 0);
     if (unconfigured.length > 0) {
-      alert(`Hay ${unconfigured.length} variante(s) sin configurar. Configura precio y stock para todas.`);
+      alert(`Hay ${unconfigured.length} variante(s) sin configurar. Configura precio para todas.`);
       return;
     }
 
@@ -172,7 +171,7 @@ export function VariantProductForm({
             <p className="text-muted-foreground">
               {step === 1
                 ? 'Paso 1: Información básica y atributos de variantes'
-                : 'Paso 2: Configurar precios y stock de variantes'}
+                : 'Paso 2: Configurar precios de variantes'}
             </p>
           </div>
         </div>

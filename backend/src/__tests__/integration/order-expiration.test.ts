@@ -77,9 +77,8 @@ async function createGuestOrder(data: {
 describe('Order Expiration Service', () => {
   describe('cancelExpiredGuestOrders', () => {
     it('should cancel guest order older than 48 hours in pending_whatsapp', async () => {
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
-      // Stock after order creation: 48 (order deducts 2)
       const order = await createGuestOrder({
         variantId: variant._id,
         quantity: 2,
@@ -95,14 +94,10 @@ describe('Order Expiration Service', () => {
       expect(updatedOrder?.status).toBe('cancelled');
       expect(updatedOrder?.cancellationReason).toContain('expirada automáticamente');
       expect(updatedOrder?.cancelledAt).toBeDefined();
-
-      // Verify stock was restored
-      const updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(50);
     });
 
     it('should NOT cancel guest order younger than 48 hours', async () => {
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const order = await createGuestOrder({
         variantId: variant._id,
@@ -116,15 +111,11 @@ describe('Order Expiration Service', () => {
 
       const updatedOrder = await Order.findById(order._id);
       expect(updatedOrder?.status).toBe('pending_whatsapp');
-
-      // Stock should still be deducted
-      const updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(48);
     });
 
     it('should NOT cancel registered user order even if older than 48h', async () => {
       const user = await createTestUser();
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const order = await createTestOrder({
         user,
@@ -147,7 +138,7 @@ describe('Order Expiration Service', () => {
     });
 
     it('should NOT cancel guest order already confirmed', async () => {
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const order = await createGuestOrder({
         variantId: variant._id,
@@ -165,27 +156,19 @@ describe('Order Expiration Service', () => {
     });
 
     it('should cancel multiple expired guest orders at once', async () => {
-      const variant = await createTestProductVariant({ price: 5000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 5000 });
 
       await createGuestOrder({ variantId: variant._id, quantity: 3, hoursAgo: 50 });
       await createGuestOrder({ variantId: variant._id, quantity: 5, hoursAgo: 60 });
       await createGuestOrder({ variantId: variant._id, quantity: 2, hoursAgo: 72 });
 
-      // Stock after 3 orders: 100 - 3 - 5 - 2 = 90
-      const variantBefore = await ProductVariant.findById(variant._id);
-      expect(variantBefore?.stock).toBe(90);
-
       const cancelled = await cancelExpiredGuestOrders();
 
       expect(cancelled).toBe(3);
-
-      // All stock should be restored: 90 + 3 + 5 + 2 = 100
-      const variantAfter = await ProductVariant.findById(variant._id);
-      expect(variantAfter?.stock).toBe(100);
     });
 
     it('should only cancel expired ones, leaving recent orders untouched', async () => {
-      const variant = await createTestProductVariant({ price: 10000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // Old — should be cancelled
       await createGuestOrder({ variantId: variant._id, quantity: 5, hoursAgo: 50 });
@@ -195,10 +178,6 @@ describe('Order Expiration Service', () => {
       const cancelled = await cancelExpiredGuestOrders();
 
       expect(cancelled).toBe(1);
-
-      // Stock restored: 100 - 5 - 3 + 5 (restored from cancelled) = 97
-      const updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(97);
     });
 
     it('should return 0 when no orders need cancellation', async () => {
@@ -207,7 +186,7 @@ describe('Order Expiration Service', () => {
     });
 
     it('should preserve order data after cancellation (historical record)', async () => {
-      const variant = await createTestProductVariant({ price: 15000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 15000 });
 
       const order = await createGuestOrder({
         variantId: variant._id,

@@ -221,7 +221,7 @@ describe('Chocolate Products - Variant Creation', () => {
             cacao: '70%',
           },
           price: 8500,
-          stock: 100,
+
           images: ['/uploads/chocolates/premium-100g-70.jpg'],
           description: 'Tableta de 100g con 70% de cacao',
         })
@@ -235,7 +235,7 @@ describe('Chocolate Products - Variant Creation', () => {
       expect(response.body.data.name).toContain('100g');
       expect(response.body.data.name).toContain('70%');
       expect(response.body.data.price).toBe(8500);
-      expect(response.body.data.stock).toBe(100);
+
 
       // Verificar que el SKU se generó correctamente
       expect(response.body.data.sku).toBeTruthy();
@@ -260,7 +260,7 @@ describe('Chocolate Products - Variant Creation', () => {
             cacao: '85%',
           },
           price: 15000,
-          stock: 50,
+
           images: ['/uploads/chocolates/premium-200g-85.jpg'],
           description: 'Tableta de 200g con 85% de cacao - Extra Bitter',
         })
@@ -270,7 +270,7 @@ describe('Chocolate Products - Variant Creation', () => {
       expect(response.body.data.name).toContain('200g');
       expect(response.body.data.name).toContain('85%');
       expect(response.body.data.price).toBe(15000);
-      expect(response.body.data.stock).toBe(50);
+
 
       // Verificar que el slug es único
       const variant = await ProductVariant.findById(response.body.data._id);
@@ -289,27 +289,27 @@ describe('Chocolate Products - Variant Creation', () => {
             cacao: '70%',
           },
           price: 35000,
-          stock: 20,
+
           images: ['/uploads/chocolates/premium-500g-70.jpg'],
           description: 'Tableta grande de 500g con 70% de cacao',
-          lowStockThreshold: 10,
+
         })
         .expect(201);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.name).toContain('500g');
       expect(response.body.data.price).toBe(35000);
-      expect(response.body.data.lowStockThreshold).toBe(10);
+
     });
 
     it('should create multiple variants for all combinations', async () => {
       const combinations = [
-        { peso: '100g', cacao: '70%', price: 8500, stock: 100 },
-        { peso: '100g', cacao: '85%', price: 9500, stock: 80 },
-        { peso: '200g', cacao: '70%', price: 14000, stock: 60 },
-        { peso: '200g', cacao: '85%', price: 16000, stock: 50 },
-        { peso: '500g', cacao: '70%', price: 32000, stock: 30 },
-        { peso: '500g', cacao: '85%', price: 38000, stock: 20 },
+        { peso: '100g', cacao: '70%', price: 8500 },
+        { peso: '100g', cacao: '85%', price: 9500 },
+        { peso: '200g', cacao: '70%', price: 14000 },
+        { peso: '200g', cacao: '85%', price: 16000 },
+        { peso: '500g', cacao: '70%', price: 32000 },
+        { peso: '500g', cacao: '85%', price: 38000 },
       ];
 
       for (const combo of combinations) {
@@ -323,7 +323,6 @@ describe('Chocolate Products - Variant Creation', () => {
               cacao: combo.cacao,
             },
             price: combo.price,
-            stock: combo.stock,
           })
           .expect(201);
 
@@ -355,7 +354,7 @@ describe('Chocolate Products - Variant Creation', () => {
             cacao: '95%', // Valor no válido - no está en los valores permitidos
           },
           price: 8500,
-          stock: 100,
+
         })
         .expect(500); // Model validation error
 
@@ -376,7 +375,7 @@ describe('Chocolate Products - Variant Creation', () => {
             // Falta el atributo 'cacao' - esto es permitido
           },
           price: 8500,
-          stock: 100,
+
         })
         .expect(201);
 
@@ -396,7 +395,7 @@ describe('Chocolate Products - Variant Creation', () => {
             sabor: 'naranja', // Atributo no definido en el padre
           },
           price: 8500,
-          stock: 100,
+
         })
         .expect(500); // Model validation error
 
@@ -448,7 +447,7 @@ describe('Chocolate Products - Variant Creation', () => {
             tipo: 'bitter',
           },
           price: 9000,
-          stock: 100,
+
         })
         .expect(201);
 
@@ -467,7 +466,7 @@ describe('Chocolate Products - Variant Creation', () => {
             tipo: 'leche',
           },
           price: 8000,
-          stock: 150,
+
         })
         .expect(201);
 
@@ -486,7 +485,7 @@ describe('Chocolate Products - Variant Creation', () => {
             tipo: 'almendras',
           },
           price: 10500,
-          stock: 80,
+
           description: 'Chocolate con leche y almendras tostadas',
         })
         .expect(201);
@@ -505,7 +504,7 @@ describe('Chocolate Products - Variant Creation', () => {
             tipo: 'naranja',
           },
           price: 10000,
-          stock: 70,
+
           description: 'Chocolate bitter con esencia natural de naranja',
         })
         .expect(201);
@@ -554,7 +553,7 @@ describe('Chocolate Products - Variant Creation', () => {
           parentProduct: chocolateParent._id,
           attributes: { peso: '100g' },
           price: 8000,
-          stock: 50,
+
         });
 
       await request(app)
@@ -564,7 +563,7 @@ describe('Chocolate Products - Variant Creation', () => {
           parentProduct: chocolateParent._id,
           attributes: { peso: '200g' },
           price: 14000,
-          stock: 30,
+
         });
     });
 
@@ -577,7 +576,7 @@ describe('Chocolate Products - Variant Creation', () => {
       expect(response.body.data).toHaveLength(2);
       expect(response.body.data[0]).toHaveProperty('attributes');
       expect(response.body.data[0]).toHaveProperty('price');
-      expect(response.body.data[0]).toHaveProperty('stock');
+
     });
 
     it('should get chocolate variant by ID', async () => {
@@ -607,111 +606,6 @@ describe('Chocolate Products - Variant Creation', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.sku).toBe(variantSku);
-    });
-  });
-
-  // ==================== Stock management para chocolates ====================
-
-  describe('ProductVariant - Gestión de stock de chocolates', () => {
-    let chocolateVariant: any;
-
-    beforeEach(async () => {
-      // Crear producto padre y variante
-      const parentResponse = await request(app)
-        .post('/api/products/parents')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Chocolate Diario',
-          description: 'Chocolate para consumo diario',
-          categories: [chocolateCategory._id.toString()],
-          brand: chocolateBrand._id.toString(),
-          variantAttributes: [
-            {
-              name: 'peso',
-              displayName: 'Peso',
-              order: 1,
-              values: [
-                { value: '50g', displayValue: '50g', order: 1 },
-                { value: '100g', displayValue: '100g', order: 2 },
-              ],
-            },
-          ],
-        });
-
-      const variantResponse = await request(app)
-        .post('/api/products/variants')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          parentProduct: parentResponse.body.data.productParent._id,
-          attributes: { peso: '100g' },
-          price: 5000,
-          stock: 100,
-          lowStockThreshold: 20,
-          allowBackorder: false, // Necesario para que aparezca en out of stock
-        });
-
-      chocolateVariant = variantResponse.body.data;
-    });
-
-    it('should update chocolate variant stock', async () => {
-      const response = await request(app)
-        .patch(`/api/products/variants/${chocolateVariant._id}/stock`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          stock: 150,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.stock).toBe(150);
-    });
-
-    it('should detect low stock chocolate variant', async () => {
-      // Actualizar stock a nivel bajo
-      await request(app)
-        .patch(`/api/products/variants/${chocolateVariant._id}/stock`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          stock: 15, // Debajo del threshold de 20
-        })
-        .expect(200);
-
-      // Consultar variantes con stock bajo
-      const response = await request(app)
-        .get('/api/products/variants/stock/low')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      const lowStockVariant = response.body.data.find(
-        (v: any) => v._id === chocolateVariant._id
-      );
-      expect(lowStockVariant).toBeTruthy();
-      expect(lowStockVariant.stock).toBe(15);
-    });
-
-    it('should detect out of stock chocolate variant', async () => {
-      // Actualizar stock a 0
-      await request(app)
-        .patch(`/api/products/variants/${chocolateVariant._id}/stock`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          stock: 0,
-        })
-        .expect(200);
-
-      // Consultar variantes sin stock
-      const response = await request(app)
-        .get('/api/products/variants/stock/out')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      const outOfStockVariant = response.body.data.find(
-        (v: any) => v._id === chocolateVariant._id
-      );
-      expect(outOfStockVariant).toBeTruthy();
-      expect(outOfStockVariant.stock).toBe(0);
     });
   });
 
@@ -749,7 +643,7 @@ describe('Chocolate Products - Variant Creation', () => {
           parentProduct: parentResponse.body.data.productParent._id,
           attributes: { tipo: 'bitter' },
           price: 10000,
-          stock: 100,
+
         });
 
       chocolateVariant = variantResponse.body.data;
@@ -880,7 +774,7 @@ describe('Chocolate Products - Variant Creation', () => {
             origen: 'ecuador',
           },
           price: 12000,
-          stock: 50,
+
         })
         .expect(201);
 
@@ -919,7 +813,7 @@ describe('Chocolate Products - Variant Creation', () => {
           parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '100g' },
           price: 5000,
-          stock: 100,
+
         })
         .expect(201);
 
@@ -930,7 +824,7 @@ describe('Chocolate Products - Variant Creation', () => {
           parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '200g' },
           price: 9000,
-          stock: 100,
+
         })
         .expect(201);
 
@@ -967,7 +861,7 @@ describe('Chocolate Products - Variant Creation', () => {
           parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '100g' },
           price: 5000,
-          stock: 100,
+
         })
         .expect(201);
 
@@ -978,7 +872,7 @@ describe('Chocolate Products - Variant Creation', () => {
           parentProduct: parentResponse.body.data.productParent._id,
           attributes: { peso: '200g' },
           price: 9000,
-          stock: 100,
+
         })
         .expect(201);
 

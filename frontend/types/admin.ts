@@ -26,7 +26,6 @@ export interface DashboardStats {
   todaySales: number;
   todayOrders: number;
   pendingOrders: number;
-  lowStockProducts: number;
   totalProducts: number;
   totalCustomers: number;
   weekSales: number;
@@ -57,18 +56,6 @@ export interface RecentOrder {
   total: number;
   status: string;
   createdAt: string;
-}
-
-export interface LowStockVariant {
-  _id: string;
-  sku: string;
-  name: string;
-  stock: number;
-  lowStockThreshold: number;
-  parent: {
-    _id: string;
-    name: string;
-  };
 }
 
 export interface AdminPaginationParams {

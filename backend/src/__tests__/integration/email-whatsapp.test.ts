@@ -18,7 +18,7 @@ describe('Email & WhatsApp Integration Tests', () => {
     it('should send confirmation email when order is created', async () => {
       const user = await createTestUser({ role: 'cliente' });
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -51,7 +51,7 @@ describe('Email & WhatsApp Integration Tests', () => {
     it('should generate WhatsApp URL when order is created', async () => {
       const user = await createTestUser({ role: 'cliente' });
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 5000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 5000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -69,7 +69,7 @@ describe('Email & WhatsApp Integration Tests', () => {
     });
 
     it('should create order for guest and send email', async () => {
-      const variant = await createTestProductVariant({ price: 8000, stock: 200 });
+      const variant = await createTestProductVariant({ price: 8000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -101,7 +101,7 @@ describe('Email & WhatsApp Integration Tests', () => {
       const admin = await createTestUser({ role: 'admin' });
       const adminToken = generateAuthToken(admin);
       const user = await createTestUser({ role: 'cliente' });
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // Crear orden
       const orderResponse = await request(app)
@@ -142,7 +142,7 @@ describe('Email & WhatsApp Integration Tests', () => {
       const admin = await createTestUser({ role: 'admin' });
       const adminToken = generateAuthToken(admin);
       const user = await createTestUser({ role: 'cliente' });
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // Crear orden
       const orderResponse = await request(app)
@@ -175,7 +175,7 @@ describe('Email & WhatsApp Integration Tests', () => {
     it('should send cancellation email when order is cancelled', async () => {
       const user = await createTestUser({ role: 'cliente' });
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // Crear orden
       const orderResponse = await request(app)
@@ -215,7 +215,7 @@ describe('Email & WhatsApp Integration Tests', () => {
     it('should generate cancellation WhatsApp message', async () => {
       const user = await createTestUser({ role: 'cliente' });
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // Crear orden
       const orderResponse = await request(app)
@@ -248,7 +248,7 @@ describe('Email & WhatsApp Integration Tests', () => {
       const admin = await createTestUser({ role: 'admin' });
       const adminToken = generateAuthToken(admin);
       const user = await createTestUser({ role: 'cliente' });
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       // Crear orden
       const orderResponse = await request(app)

@@ -12,7 +12,6 @@ type UserRole = 'admin' | 'funcionario' | 'cliente';
 const roleRoutePermissions: Record<string, UserRole[]> = {
   '/admin': ['admin', 'funcionario'], // Dashboard
   '/admin/productos': ['admin', 'funcionario'],
-  '/admin/inventario': ['admin', 'funcionario'],
   '/admin/ordenes': ['admin'], // Solo admin
   '/admin/categorias': ['admin'], // Solo admin
   '/admin/marcas': ['admin'], // Solo admin

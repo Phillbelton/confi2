@@ -21,7 +21,7 @@ import logger from '../config/logger';
  * 1. JSON puro: enviar datos en body
  * 2. Multipart/form-data: enviar datos en body + archivos en req.files
  *
- * Para productos simples, enviar defaultVariant: { price, stock }
+ * Para productos simples, enviar defaultVariant: { price }
  * Esto creará automáticamente una variante default sin atributos
  */
 export const createProductParent = asyncHandler(
@@ -37,7 +37,7 @@ export const createProductParent = asyncHandler(
       seoDescription,
       variantAttributes,
       featured,
-      defaultVariant, // NUEVO: { price, stock, sku? }
+      defaultVariant, // { price, sku? }
     } = req.body;
 
     // Procesar archivos de imagen si existen (enfoque híbrido)
@@ -85,12 +85,8 @@ export const createProductParent = asyncHandler(
         parentProduct: productParent._id,
         // name y sku se generan automáticamente en pre-save hooks
         price: defaultVariant.price,
-        stock: defaultVariant.stock || 0,
         sku: defaultVariant.sku, // Opcional, será auto-generado si no se provee
         attributes: {}, // Sin atributos para producto simple
-        trackStock: defaultVariant.trackStock !== false, // Default true
-        allowBackorder: defaultVariant.allowBackorder !== false, // Default true
-        lowStockThreshold: defaultVariant.lowStockThreshold || 5,
         active: true,
         createdBy: req.user?.id,
       });

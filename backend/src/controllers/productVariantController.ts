@@ -27,20 +27,16 @@ export const createProductVariant = asyncHandler(
       description,
       name,
       price,
-      stock,
       images,
-      trackStock,
-      allowBackorder,
-      lowStockThreshold,
       fixedDiscount,
       order,
     } = req.body;
 
     // Validaciones básicas
-    if (!parentProduct || !price || stock === undefined) {
+    if (!parentProduct || !price) {
       throw new AppError(
         400,
-        'Faltan campos requeridos (parentProduct, price, stock)'
+        'Faltan campos requeridos (parentProduct, price)'
       );
     }
 
@@ -58,11 +54,7 @@ export const createProductVariant = asyncHandler(
       description,
       name: name || sku, // Si no hay name, usar SKU
       price,
-      stock,
       images: images || [],
-      trackStock: trackStock !== undefined ? trackStock : true,
-      allowBackorder: allowBackorder !== undefined ? allowBackorder : true,
-      lowStockThreshold: lowStockThreshold || 5,
       fixedDiscount,
       order: order || 0,
       active: true,
@@ -175,11 +167,7 @@ export const updateProductVariant = asyncHandler(
       description,
       name,
       price,
-      stock,
       images,
-      trackStock,
-      allowBackorder,
-      lowStockThreshold,
       fixedDiscount,
       tieredDiscount,
       active,
@@ -199,12 +187,7 @@ export const updateProductVariant = asyncHandler(
     if (description !== undefined) variant.description = description;
     if (name !== undefined) variant.name = name;
     if (price !== undefined) variant.price = price;
-    if (stock !== undefined) variant.stock = stock;
     if (images !== undefined) variant.images = images;
-    if (trackStock !== undefined) variant.trackStock = trackStock;
-    if (allowBackorder !== undefined) variant.allowBackorder = allowBackorder;
-    if (lowStockThreshold !== undefined)
-      variant.lowStockThreshold = lowStockThreshold;
     if (fixedDiscount !== undefined) variant.fixedDiscount = fixedDiscount;
     if (tieredDiscount !== undefined) variant.tieredDiscount = tieredDiscount;
     if (active !== undefined) variant.active = active;
@@ -332,152 +315,6 @@ export const getVariantDiscountPreview = asyncHandler(
 );
 
 /**
- * Actualizar stock de una variante (solo admin/funcionario)
- * PATCH /api/products/variants/:id/stock
- * Role: admin, funcionario
- */
-export const updateVariantStock = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<IProductVariant>>) => {
-    const { id } = req.params;
-    const { stock } = req.body;
-
-    // Obtener la variante
-    const variant = await ProductVariant.findById(id);
-
-    if (!variant) {
-      throw new AppError(404, 'Variante no encontrada');
-    }
-
-    // Actualizar stock directamente
-    variant.stock = stock;
-    await variant.save();
-
-    return res.status(200).json({
-      success: true,
-      message: 'Stock actualizado exitosamente',
-      data: variant,
-    });
-  }
-);
-
-/**
- * Obtener variantes con stock bajo
- * GET /api/products/variants/stock/low
- * Role: admin, funcionario
- */
-export const getLowStockVariants = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
-    const { limit = '50' } = req.query as any;
-
-    const lowStockVariants = await ProductVariant.aggregate([
-      {
-        $match: {
-          active: true,
-          trackStock: true,
-          $expr: {
-            $and: [
-              { $gt: ['$stock', 0] },
-              { $lte: ['$stock', '$lowStockThreshold'] },
-            ],
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: 'productparents',
-          localField: 'parentProduct',
-          foreignField: '_id',
-          as: 'parent',
-        },
-      },
-      {
-        $unwind: '$parent',
-      },
-      {
-        $project: {
-          _id: 1,
-          sku: 1,
-          name: 1,
-          stock: 1,
-          lowStockThreshold: 1,
-          price: 1,
-          attributes: 1,
-          'parent.name': 1,
-          'parent.slug': 1,
-        },
-      },
-      {
-        $sort: { stock: 1 },
-      },
-      {
-        $limit: parseInt(limit),
-      },
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      data: lowStockVariants,
-    });
-  }
-);
-
-/**
- * Obtener variantes sin stock
- * GET /api/products/variants/stock/out
- * Role: admin, funcionario
- */
-export const getOutOfStockVariants = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
-    const { limit = '50' } = req.query as any;
-
-    const outOfStockVariants = await ProductVariant.aggregate([
-      {
-        $match: {
-          active: true,
-          trackStock: true,
-          stock: { $lte: 0 },
-        },
-      },
-      {
-        $lookup: {
-          from: 'productparents',
-          localField: 'parentProduct',
-          foreignField: '_id',
-          as: 'parent',
-        },
-      },
-      {
-        $unwind: '$parent',
-      },
-      {
-        $project: {
-          _id: 1,
-          sku: 1,
-          name: 1,
-          stock: 1,
-          lowStockThreshold: 1,
-          price: 1,
-          attributes: 1,
-          'parent.name': 1,
-          'parent.slug': 1,
-        },
-      },
-      {
-        $sort: { 'parent.name': 1 },
-      },
-      {
-        $limit: parseInt(limit),
-      },
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      data: outOfStockVariants,
-    });
-  }
-);
-
-/**
  * Crear variantes en batch (múltiples a la vez)
  * POST /api/products/parents/:id/variants/batch
  * Role: admin, funcionario
@@ -523,8 +360,8 @@ export const createVariantsBatch = asyncHandler(
 
       try {
         // Validar campos requeridos
-        if (variantData.price === undefined || variantData.stock === undefined) {
-          throw new Error('Faltan campos requeridos (price, stock)');
+        if (variantData.price === undefined) {
+          throw new Error('Faltan campos requeridos (price)');
         }
 
         // Crear la variante
@@ -534,11 +371,7 @@ export const createVariantsBatch = asyncHandler(
           attributes: variantData.attributes || {},
           description: variantData.description,
           price: variantData.price,
-          stock: variantData.stock,
           images: variantData.images || [],
-          trackStock: variantData.trackStock !== false,
-          allowBackorder: variantData.allowBackorder !== false,
-          lowStockThreshold: variantData.lowStockThreshold || 5,
           fixedDiscount: variantData.fixedDiscount,
           order: variantData.order || i,
           active: true,
@@ -581,11 +414,11 @@ export const createVariantsBatch = asyncHandler(
 export const addVariantToParent = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const { id: parentProductId } = req.params;
-    const { attributes, price, stock, sku, description, lowStockThreshold } = req.body;
+    const { attributes, price, sku, description } = req.body;
 
     // Validaciones básicas
-    if (price === undefined || stock === undefined) {
-      throw new AppError(400, 'Faltan campos requeridos (price, stock)');
+    if (price === undefined) {
+      throw new AppError(400, 'Falta campo requerido (price)');
     }
 
     if (!attributes || typeof attributes !== 'object' || Object.keys(attributes).length === 0) {
@@ -697,10 +530,6 @@ export const addVariantToParent = asyncHandler(
       attributes,
       description,
       price,
-      stock,
-      trackStock: true,
-      allowBackorder: true,
-      lowStockThreshold: lowStockThreshold || 5,
       active: true,
       createdBy: req.user?.id,
     });

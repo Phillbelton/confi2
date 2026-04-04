@@ -4,7 +4,6 @@ import type {
   SalesData,
   TopProduct,
   RecentOrder,
-  LowStockVariant,
 } from '@/types/admin';
 
 interface ApiResponse<T> {
@@ -51,11 +50,4 @@ export const adminDashboardService = {
     return data.data;
   },
 
-  /**
-   * Get low stock products
-   */
-  getLowStockVariants: async (): Promise<LowStockVariant[]> => {
-    const { data } = await adminApi.get<ApiResponse<LowStockVariant[]>>('/products/variants/stock/low');
-    return data.data;
-  },
 };

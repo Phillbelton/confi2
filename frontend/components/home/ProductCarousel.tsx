@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useScroll, useTransform } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ProductCardWithVariants } from '@/components/products/ProductCardWithVariants';
+import { ProductCardUnified } from '@/components/products/ProductCardUnified';
 import { cn } from '@/lib/utils';
 import type { ProductParent } from '@/types';
 
@@ -250,7 +250,7 @@ export function ProductCarousel({
                 transition: { duration: 0.2, ease: 'easeOut' as const },
               }}
             >
-              <ProductCardWithVariants product={product} />
+              <ProductCardUnified product={product} autoFetchVariants />
             </motion.div>
           ))}
         </div>

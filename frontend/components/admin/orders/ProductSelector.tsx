@@ -23,11 +23,9 @@ interface ProductVariant {
   sku: string;
   name: string;
   price: number;
-  stock: number;
   attributes: Record<string, string>;
   images: string[];
   active: boolean;
-  inStock: boolean;
 }
 
 interface ProductSelectorProps {
@@ -157,15 +155,6 @@ export function ProductSelector({
                         <span className="font-semibold">
                           ${variant.price.toLocaleString('es-PY')}
                         </span>
-                        {variant.stock > 0 ? (
-                          <Badge variant="outline" className="text-xs">
-                            Stock: {variant.stock}
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs">
-                            Sin stock
-                          </Badge>
-                        )}
                       </div>
                     </div>
 
