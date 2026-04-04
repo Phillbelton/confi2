@@ -20,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { ProductCardCentral } from '@/components/products/ProductCardCentral';
+import { ProductCardUnified } from '@/components/products/ProductCardUnified';
 import { FiltersSidebarCentral } from '@/components/products/FiltersSidebarCentral';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -38,6 +38,9 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const isUpdatingFromUrl = useRef(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Pending filters for mobile — accumulate changes, apply on "Aplicar"
+  const [pendingFilters, setPendingFilters] = useState<Filters>({});
 
   const [filters, setFilters] = useState<Filters>({
     search: searchParams.get('search') || undefined,
@@ -97,8 +100,12 @@ function ProductsContent() {
     router.replace(newUrl, { scroll: false });
   }, [filters, currentPage, sortBy, router, pathname]);
 
-  const handleCategoryChange = (categoryId: string | undefined, subcategoryId?: string) => {
-    setFilters(prev => ({ ...prev, category: categoryId, subcategory: subcategoryId }));
+  const handleCategoryChange = (categoryId: string | undefined, subcategoryIds?: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      category: categoryId,
+      subcategory: subcategoryIds?.length ? subcategoryIds.join(',') : undefined,
+    }));
     setCurrentPage(1);
   };
   const handleBrandChange = (brandIds: string[]) => {
@@ -119,6 +126,51 @@ function ProductsContent() {
   };
   const handleClearFilters = () => { setFilters({}); setCurrentPage(1); };
 
+  // ── Mobile pending filter handlers ──
+  // Sync pending filters when opening the sheet
+  const handleOpenMobileFilters = (open: boolean) => {
+    if (open) {
+      setPendingFilters({ ...filters });
+    }
+    setMobileFiltersOpen(open);
+  };
+
+  const handlePendingCategoryChange = (categoryId: string | undefined, subcategoryIds?: string[]) => {
+    setPendingFilters(prev => ({
+      ...prev,
+      category: categoryId,
+      subcategory: subcategoryIds?.length ? subcategoryIds.join(',') : undefined,
+    }));
+  };
+  const handlePendingBrandChange = (brandIds: string[]) => {
+    setPendingFilters(prev => ({ ...prev, brands: brandIds.length > 0 ? brandIds : undefined }));
+  };
+  const handlePendingPriceChange = (range: [number, number]) => {
+    setPendingFilters(prev => ({
+      ...prev,
+      minPrice: range[0] > 0 ? range[0] : undefined,
+      maxPrice: range[1] < 100000 ? range[1] : undefined,
+    }));
+  };
+  const handlePendingPromotionChange = (hasPromotion: boolean) => {
+    setPendingFilters(prev => ({ ...prev, onSale: hasPromotion || undefined }));
+  };
+  const handlePendingClearFilters = () => {
+    setPendingFilters({});
+  };
+  const handleApplyMobileFilters = () => {
+    setFilters(pendingFilters);
+    setCurrentPage(1);
+    setMobileFiltersOpen(false);
+  };
+
+  const pendingFilterCount =
+    (pendingFilters.category ? 1 : 0) +
+    (pendingFilters.subcategory?.split(',').filter(Boolean).length || 0) +
+    (pendingFilters.brands?.length || 0) +
+    (pendingFilters.minPrice || pendingFilters.maxPrice ? 1 : 0) +
+    (pendingFilters.onSale ? 1 : 0);
+
   const categories = categoriesData || [];
   const brands = brandsData || [];
   const products = productsData?.data || [];
@@ -127,28 +179,32 @@ function ProductsContent() {
   const selectedCategory = filters.category
     ? categories.find((cat) => cat._id === filters.category)
     : undefined;
-  const selectedSubcategory = filters.subcategory && selectedCategory?.subcategories
-    ? selectedCategory.subcategories.find((sub: { _id: string }) => sub._id === filters.subcategory)
-    : undefined;
+  const subcategoryIds = filters.subcategory?.split(',').filter(Boolean) || [];
+  const selectedSubcategories = selectedCategory?.subcategories
+    ? selectedCategory.subcategories.filter((sub: { _id: string }) => subcategoryIds.includes(sub._id))
+    : [];
 
-  const pageTitle = selectedSubcategory?.name || selectedCategory?.name || 'Todos los productos';
+  const pageTitle =
+    selectedSubcategories.length === 1
+      ? selectedSubcategories[0].name
+      : selectedCategory?.name || 'Todos los productos';
 
   const activeFilterCount =
     (filters.category ? 1 : 0) +
-    (filters.subcategory ? 1 : 0) +
+    subcategoryIds.length +
     (filters.brands?.length || 0) +
     (filters.minPrice || filters.maxPrice ? 1 : 0) +
     (filters.onSale ? 1 : 0);
 
   return (
-    <div className="min-h-screen bg-secondary candy-bg">
-      <div className="relative z-10">
+    <div className="min-h-screen theme-catalog bg-background">
+      <div>
 
         {/* ── Top bar: breadcrumb + title ── */}
         <div className="container mx-auto px-4 pt-5 pb-4">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-xs text-white/40 mb-3">
-            <Link href="/" className="hover:text-white/70 transition-colors flex items-center gap-1">
+          <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+            <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
               <Home className="h-3 w-3" />
               Inicio
             </Link>
@@ -157,28 +213,36 @@ function ProductsContent() {
               <>
                 <Link
                   href={`/productos?categoria=${selectedCategory._id}`}
-                  className="hover:text-white/70 transition-colors"
+                  className="hover:text-foreground transition-colors"
                 >
                   {selectedCategory.name}
                 </Link>
-                {selectedSubcategory && (
+                {selectedSubcategories.length === 1 && (
                   <>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-cyan-300/80">{selectedSubcategory.name}</span>
+                    <span className="text-foreground font-medium">{selectedSubcategories[0].name}</span>
+                  </>
+                )}
+                {selectedSubcategories.length > 1 && (
+                  <>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-foreground font-medium">
+                      {selectedSubcategories.map((s: { name: string }) => s.name).join(', ')}
+                    </span>
                   </>
                 )}
               </>
             ) : (
-              <span className="text-cyan-300/80">Productos</span>
+              <span className="text-foreground font-medium">Productos</span>
             )}
           </nav>
 
           {/* Title + count */}
-          <h1 className="font-display text-xl md:text-2xl font-bold text-white leading-tight">
+          <h1 className="font-display text-xl md:text-2xl font-bold text-foreground leading-tight">
             {pageTitle}
           </h1>
           {pagination && (
-            <p className="text-xs text-white/30 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {pagination.totalDocs} producto{pagination.totalDocs !== 1 ? 's' : ''}
             </p>
           )}
@@ -193,7 +257,7 @@ function ProductsContent() {
               <div className="sticky top-24">
                 <FiltersSidebarCentral
                   selectedCategory={filters.category}
-                  selectedSubcategory={filters.subcategory}
+                  selectedSubcategories={filters.subcategory?.split(',').filter(Boolean) || []}
                   selectedBrands={filters.brands || []}
                   priceRange={[filters.minPrice || 0, filters.maxPrice || 100000]}
                   hasPromotion={filters.onSale || false}
@@ -210,12 +274,12 @@ function ProductsContent() {
             {/* Products column */}
             <div className="flex-1 min-w-0">
 
-              {/* ── Toolbar: recessed well with filter + sort ── */}
-              <div className="jc-well flex items-center justify-between gap-3 px-3 py-2.5 mb-4">
+              {/* ── Toolbar: sticky on mobile ── */}
+              <div className="sticky top-0 z-30 bg-card rounded-lg border border-border shadow-sm flex items-center justify-between gap-3 px-3 py-2.5 mb-4">
                 {/* Mobile filter */}
-                <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                <Sheet open={mobileFiltersOpen} onOpenChange={handleOpenMobileFilters}>
                   <SheetTrigger asChild>
-                    <button className="lg:hidden jc-raised flex items-center gap-2 px-3 py-2 text-sm text-white/80 font-medium">
+                    <button className="lg:hidden flex items-center gap-2 h-10 px-3 text-sm text-foreground font-medium rounded-lg border border-border hover:bg-muted transition-colors">
                       <SlidersHorizontal className="h-4 w-4" />
                       Filtros
                       {activeFilterCount > 0 && (
@@ -227,89 +291,125 @@ function ProductsContent() {
                   </SheetTrigger>
                   <SheetContent
                     side="left"
-                    className="w-[320px] bg-secondary/95 backdrop-blur-xl border-white/10 p-0"
+                    className="theme-catalog w-[320px] bg-background border-border p-0 flex flex-col"
                   >
-                    <SheetHeader className="p-4 border-b border-white/[0.06]">
-                      <SheetTitle className="text-white font-display">Filtros</SheetTitle>
+                    {/* Header */}
+                    <SheetHeader className="p-4 border-b border-border flex-shrink-0">
+                      <div className="flex items-center justify-between">
+                        <SheetTitle className="text-foreground font-display">Filtros</SheetTitle>
+                        {pendingFilterCount > 0 && (
+                          <button
+                            onClick={handlePendingClearFilters}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            Limpiar todo
+                          </button>
+                        )}
+                      </div>
                     </SheetHeader>
-                    <div className="overflow-y-auto h-[calc(100vh-64px)]">
+
+                    {/* Scrollable filters */}
+                    <div className="flex-1 overflow-y-auto">
                       <FiltersSidebarCentral
-                        selectedCategory={filters.category}
-                        selectedSubcategory={filters.subcategory}
-                        selectedBrands={filters.brands || []}
-                        priceRange={[filters.minPrice || 0, filters.maxPrice || 100000]}
-                        hasPromotion={filters.onSale || false}
-                        onCategoryChange={(cat, sub) => { handleCategoryChange(cat, sub); setMobileFiltersOpen(false); }}
-                        onBrandChange={handleBrandChange}
-                        onPriceChange={handlePriceChange}
-                        onPromotionChange={handlePromotionChange}
-                        onClearFilters={() => { handleClearFilters(); setMobileFiltersOpen(false); }}
-                        onApplyFilters={() => setMobileFiltersOpen(false)}
+                        selectedCategory={pendingFilters.category}
+                        selectedSubcategories={pendingFilters.subcategory?.split(',').filter(Boolean) || []}
+                        selectedBrands={pendingFilters.brands || []}
+                        priceRange={[pendingFilters.minPrice || 0, pendingFilters.maxPrice || 100000]}
+                        hasPromotion={pendingFilters.onSale || false}
+                        onCategoryChange={handlePendingCategoryChange}
+                        onBrandChange={handlePendingBrandChange}
+                        onPriceChange={handlePendingPriceChange}
+                        onPromotionChange={handlePendingPromotionChange}
+                        onClearFilters={handlePendingClearFilters}
+                        onApplyFilters={handleApplyMobileFilters}
+                        hideHeader
                         className="bg-transparent border-0 shadow-none rounded-none"
                       />
+                    </div>
+
+                    {/* Sticky Apply Bar */}
+                    <div className="flex-shrink-0 border-t border-border bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                      <Button
+                        onClick={handleApplyMobileFilters}
+                        className="w-full h-12 font-display font-bold text-sm bg-primary hover:bg-primary/90 text-white rounded-lg transition-all active:scale-[0.98]"
+                      >
+                        Aplicar filtros
+                        {pendingFilterCount > 0 && (
+                          <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 rounded text-xs">
+                            {pendingFilterCount}
+                          </span>
+                        )}
+                      </Button>
                     </div>
                   </SheetContent>
                 </Sheet>
 
                 {/* Result count — desktop */}
-                <div className="hidden lg:flex items-center gap-1.5 text-xs text-white/35">
+                <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>{pagination?.totalDocs || 0} resultados</span>
                 </div>
 
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-auto sm:w-44 jc-raised !border-white/[0.12] text-white/70 text-sm font-medium gap-2 h-9 px-3">
-                    <ArrowUpDown className="h-3.5 w-3.5 text-white/40 shrink-0" />
+                  <SelectTrigger className="w-auto sm:w-44 border-border text-foreground text-sm font-medium gap-2 h-10 px-3 rounded-lg">
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Ordenar" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a3a4a] border-white/10 rounded-2xl shadow-xl p-1">
-                    <SelectItem value="newest" className="text-white/80 focus:bg-white/10 focus:text-white rounded-xl text-sm">Más recientes</SelectItem>
-                    <SelectItem value="price_asc" className="text-white/80 focus:bg-white/10 focus:text-white rounded-xl text-sm">Menor precio</SelectItem>
-                    <SelectItem value="price_desc" className="text-white/80 focus:bg-white/10 focus:text-white rounded-xl text-sm">Mayor precio</SelectItem>
-                    <SelectItem value="name_asc" className="text-white/80 focus:bg-white/10 focus:text-white rounded-xl text-sm">A - Z</SelectItem>
-                    <SelectItem value="name_desc" className="text-white/80 focus:bg-white/10 focus:text-white rounded-xl text-sm">Z - A</SelectItem>
-                    <SelectItem value="popular" className="text-white/80 focus:bg-white/10 focus:text-white rounded-xl text-sm">Más populares</SelectItem>
+                  <SelectContent className="bg-popover border-border rounded-lg shadow-lg">
+                    <SelectItem value="newest" className="text-popover-foreground rounded-md text-sm">Más recientes</SelectItem>
+                    <SelectItem value="price_asc" className="text-popover-foreground rounded-md text-sm">Menor precio</SelectItem>
+                    <SelectItem value="price_desc" className="text-popover-foreground rounded-md text-sm">Mayor precio</SelectItem>
+                    <SelectItem value="name_asc" className="text-popover-foreground rounded-md text-sm">A - Z</SelectItem>
+                    <SelectItem value="name_desc" className="text-popover-foreground rounded-md text-sm">Z - A</SelectItem>
+                    <SelectItem value="popular" className="text-popover-foreground rounded-md text-sm">Más populares</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* ── Active filters — Joy-Con pills ── */}
+              {/* ── Active filters ── */}
               {activeFilterCount > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
+                <div className="flex flex-wrap gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
                   {selectedCategory && (
-                    <button onClick={() => handleCategoryChange(undefined)} className="jc-pill flex items-center gap-1.5 px-3 py-1.5 text-cyan-200 text-xs font-medium hover:bg-white/12">
+                    <button onClick={() => handleCategoryChange(undefined)} className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-full text-foreground text-xs font-medium hover:bg-border transition-colors">
                       {selectedCategory.name}
-                      <X className="h-3 w-3 text-white/40" />
+                      <X className="h-3 w-3 text-muted-foreground" />
                     </button>
                   )}
-                  {selectedSubcategory && (
-                    <button onClick={() => handleCategoryChange(filters.category)} className="jc-pill flex items-center gap-1.5 px-3 py-1.5 text-cyan-200 text-xs font-medium hover:bg-white/12">
-                      {selectedSubcategory.name}
-                      <X className="h-3 w-3 text-white/40" />
+                  {selectedSubcategories.map((sub: { _id: string; name: string }) => (
+                    <button
+                      key={sub._id}
+                      onClick={() => {
+                        const remaining = subcategoryIds.filter(id => id !== sub._id);
+                        handleCategoryChange(filters.category, remaining.length > 0 ? remaining : undefined);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-full text-foreground text-xs font-medium hover:bg-border transition-colors"
+                    >
+                      {sub.name}
+                      <X className="h-3 w-3 text-muted-foreground" />
                     </button>
-                  )}
+                  ))}
                   {filters.brands?.map(brandId => {
                     const brand = brands.find((b: { _id: string }) => b._id === brandId);
                     return brand ? (
-                      <button key={brandId} onClick={() => handleBrandChange(filters.brands?.filter(id => id !== brandId) || [])} className="jc-pill flex items-center gap-1.5 px-3 py-1.5 text-cyan-200 text-xs font-medium hover:bg-white/12">
+                      <button key={brandId} onClick={() => handleBrandChange(filters.brands?.filter(id => id !== brandId) || [])} className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-full text-foreground text-xs font-medium hover:bg-border transition-colors">
                         {brand.name}
-                        <X className="h-3 w-3 text-white/40" />
+                        <X className="h-3 w-3 text-muted-foreground" />
                       </button>
                     ) : null;
                   })}
                   {(filters.minPrice || filters.maxPrice) && (
-                    <button onClick={() => handlePriceChange([0, 100000])} className="jc-pill flex items-center gap-1.5 px-3 py-1.5 text-cyan-200 text-xs font-medium hover:bg-white/12">
+                    <button onClick={() => handlePriceChange([0, 100000])} className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-full text-foreground text-xs font-medium hover:bg-border transition-colors">
                       ${filters.minPrice?.toLocaleString('es-CL') || 0} - ${filters.maxPrice?.toLocaleString('es-CL') || '100.000'}
-                      <X className="h-3 w-3 text-white/40" />
+                      <X className="h-3 w-3 text-muted-foreground" />
                     </button>
                   )}
                   {filters.onSale && (
-                    <button onClick={() => handlePromotionChange(false)} className="jc-pill flex items-center gap-1.5 px-3 py-1.5 text-pink-200 text-xs font-medium hover:bg-white/12">
+                    <button onClick={() => handlePromotionChange(false)} className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-full text-accent text-xs font-medium hover:bg-accent/15 transition-colors">
                       Con descuento
-                      <X className="h-3 w-3 text-white/40" />
+                      <X className="h-3 w-3 text-muted-foreground" />
                     </button>
                   )}
-                  <button onClick={handleClearFilters} className="px-2 py-1.5 text-white/30 hover:text-white text-xs transition-colors">
+                  <button onClick={handleClearFilters} className="px-2 py-1.5 text-muted-foreground hover:text-foreground text-xs transition-colors">
                     Limpiar
                   </button>
                 </div>
@@ -317,35 +417,35 @@ function ProductsContent() {
 
               {/* ── Products Grid ── */}
               {productsLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                   {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-                    <div key={i} className="jc-panel overflow-hidden">
-                      <Skeleton className="aspect-square bg-white/[0.04]" />
+                    <div key={i} className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                      <Skeleton className="aspect-square bg-muted" />
                       <div className="p-3 space-y-2.5">
-                        <Skeleton className="h-4 w-3/4 bg-white/[0.06] rounded-lg" />
-                        <Skeleton className="h-5 w-1/2 bg-white/[0.06] rounded-lg" />
-                        <Skeleton className="h-9 w-full bg-white/[0.04] rounded-xl" />
+                        <Skeleton className="h-4 w-3/4 bg-muted rounded-md" />
+                        <Skeleton className="h-5 w-1/2 bg-muted rounded-md" />
+                        <Skeleton className="h-9 w-full bg-muted rounded-lg" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : products.length === 0 ? (
-                <div className="jc-panel text-center py-16 px-6">
-                  <div className="w-16 h-16 mx-auto mb-5 jc-well rounded-full flex items-center justify-center">
-                    <Search className="h-7 w-7 text-white/25" />
+                <div className="bg-card rounded-lg border border-border shadow-sm text-center py-16 px-6">
+                  <div className="w-16 h-16 mx-auto mb-5 bg-muted rounded-full flex items-center justify-center">
+                    <Search className="h-7 w-7 text-muted-foreground" />
                   </div>
-                  <h2 className="text-lg font-display font-bold text-white mb-1.5">No encontramos productos</h2>
-                  <p className="text-white/35 mb-5 text-sm max-w-xs mx-auto">
+                  <h2 className="text-lg font-display font-bold text-foreground mb-1.5">No encontramos productos</h2>
+                  <p className="text-muted-foreground mb-5 text-sm max-w-xs mx-auto">
                     Intenta con otros filtros o busca algo diferente
                   </p>
-                  <Button onClick={handleClearFilters} className="bg-primary hover:bg-primary/90 text-white rounded-2xl font-display font-bold h-10 px-6">
+                  <Button onClick={handleClearFilters} className="bg-primary hover:bg-primary/90 text-white rounded-lg font-bold h-10 px-6">
                     Limpiar filtros
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                   {products.map((product: ProductParent & { variants?: ProductVariant[] }) => (
-                    <ProductCardCentral
+                    <ProductCardUnified
                       key={product._id}
                       product={product}
                       variants={product.variants || []}
@@ -360,7 +460,7 @@ function ProductsContent() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={!pagination.hasPrevPage}
-                    className="jc-raised w-10 h-10 flex items-center justify-center text-white/60 disabled:opacity-25 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
@@ -384,10 +484,10 @@ function ProductsContent() {
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
                           className={cn(
-                            'w-10 h-10 rounded-xl font-display font-bold text-sm transition-all duration-150',
+                            'w-10 h-10 rounded-lg font-bold text-sm transition-all duration-150',
                             isActive
-                              ? 'bg-primary text-white shadow-md shadow-primary/25'
-                              : 'jc-raised text-white/50 hover:text-white'
+                              ? 'bg-primary text-white shadow-sm'
+                              : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted'
                           )}
                         >
                           {pageNum}
@@ -399,7 +499,7 @@ function ProductsContent() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
                     disabled={!pagination.hasNextPage}
-                    className="jc-raised w-10 h-10 flex items-center justify-center text-white/60 disabled:opacity-25 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
@@ -420,27 +520,27 @@ export default function ProductsPage() {
       <main className="flex-1">
         <Suspense
           fallback={
-            <div className="min-h-screen bg-secondary candy-bg">
-              <div className="container mx-auto px-4 py-8 relative z-10">
-                <Skeleton className="h-4 w-24 mb-3 bg-white/[0.06] rounded-lg" />
-                <Skeleton className="h-7 w-48 mb-5 bg-white/[0.08] rounded-lg" />
+            <div className="min-h-screen theme-catalog bg-background">
+              <div className="container mx-auto px-4 py-8">
+                <Skeleton className="h-4 w-24 mb-3 bg-muted rounded-md" />
+                <Skeleton className="h-7 w-48 mb-5 bg-muted rounded-md" />
                 <div className="flex gap-6">
                   <div className="hidden lg:block w-[260px]">
-                    <div className="jc-panel p-4 space-y-4">
+                    <div className="bg-card rounded-lg border border-border p-4 space-y-4">
                       {Array.from({ length: 4 }).map((_, i) => (
-                        <Skeleton key={i} className="h-8 w-full bg-white/[0.04] rounded-xl" />
+                        <Skeleton key={i} className="h-8 w-full bg-muted rounded-md" />
                       ))}
                     </div>
                   </div>
                   <div className="flex-1">
-                    <Skeleton className="jc-well h-12 w-full mb-4" />
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <Skeleton className="h-12 w-full mb-4 bg-card rounded-lg border border-border" />
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                       {Array.from({ length: 12 }).map((_, i) => (
-                        <div key={i} className="jc-panel overflow-hidden">
-                          <Skeleton className="aspect-square bg-white/[0.04]" />
+                        <div key={i} className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                          <Skeleton className="aspect-square bg-muted" />
                           <div className="p-3 space-y-2">
-                            <Skeleton className="h-4 w-3/4 bg-white/[0.06] rounded-lg" />
-                            <Skeleton className="h-9 w-full bg-white/[0.04] rounded-xl" />
+                            <Skeleton className="h-4 w-3/4 bg-muted rounded-md" />
+                            <Skeleton className="h-9 w-full bg-muted rounded-lg" />
                           </div>
                         </div>
                       ))}

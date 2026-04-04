@@ -22,5 +22,4 @@ export { QuickFilterCardPremium } from './QuickFilterCardPremium';
 export { ActiveFiltersPanelPremium } from './ActiveFiltersPanelPremium';
 
 // Product Components
-export { ProductGridPremium } from './ProductGridPremium';
-export { ProductCardPremium } from './ProductCardPremium';
+// ProductGridPremium and ProductCardPremium removed — use ProductCardUnified instead

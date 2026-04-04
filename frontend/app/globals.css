@@ -233,6 +233,21 @@
   --sidebar-primary: #dc2626;
 }
 
+/* Catálogo: tema claro comercial — cards neutras, fotos protagonistas */
+.theme-catalog {
+  --background: #fafbfc;
+  --foreground: #1a1a2e;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+  --muted: #f1f3f5;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #0ABDC6;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a2e;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

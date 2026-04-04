@@ -12,11 +12,11 @@ import type { Category, Brand } from '@/types';
 
 interface FiltersSidebarCentralProps {
   selectedCategory?: string;
-  selectedSubcategory?: string;
+  selectedSubcategories?: string[];
   selectedBrands?: string[];
   priceRange?: [number, number];
   hasPromotion?: boolean;
-  onCategoryChange?: (categoryId: string | undefined, subcategoryId?: string) => void;
+  onCategoryChange?: (categoryId: string | undefined, subcategoryIds?: string[]) => void;
   onBrandChange?: (brandIds: string[]) => void;
   onPriceChange?: (range: [number, number]) => void;
   onPromotionChange?: (hasPromotion: boolean) => void;
@@ -24,6 +24,8 @@ interface FiltersSidebarCentralProps {
   onApplyFilters?: () => void;
   maxPrice?: number;
   className?: string;
+  /** Hide the internal header (used when embedded in Sheet with its own header) */
+  hideHeader?: boolean;
 }
 
 interface CollapsibleSectionProps {
@@ -44,21 +46,21 @@ function CollapsibleSection({ title, icon, defaultOpen = true, children, badge }
         className="flex items-center justify-between w-full py-3 text-left group transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-[10px] jc-well flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+          <div className="w-7 h-7 rounded-[10px] bg-muted rounded-lg flex items-center justify-center group-hover:bg-primary/15 transition-colors">
             {icon}
           </div>
-          <span className="font-display font-semibold text-sm text-white/90 group-hover:text-white transition-colors">
+          <span className="font-display font-semibold text-sm text-foreground group-hover:text-foreground transition-colors">
             {title}
           </span>
           {badge !== undefined && badge > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary/25 text-cyan-200 shadow-sm">
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary/15 text-primary shadow-sm">
               {badge}
             </span>
           )}
         </div>
         <ChevronDown
           className={cn(
-            'h-4 w-4 text-white/40 group-hover:text-white/70 transition-all duration-200',
+            'h-4 w-4 text-muted-foreground group-hover:text-muted-foreground transition-all duration-200',
             isOpen && 'rotate-180'
           )}
         />
@@ -71,15 +73,15 @@ function CollapsibleSection({ title, icon, defaultOpen = true, children, badge }
       >
         {children}
       </div>
-      {/* Joy-Con groove separator */}
-      <div className="jc-groove" />
+      {/* Section separator */}
+      <div className="border-b border-border" />
     </div>
   );
 }
 
 export function FiltersSidebarCentral({
   selectedCategory,
-  selectedSubcategory,
+  selectedSubcategories = [],
   selectedBrands = [],
   priceRange = [0, 100000],
   hasPromotion = false,
@@ -91,12 +93,18 @@ export function FiltersSidebarCentral({
   onApplyFilters,
   maxPrice = 100000,
   className,
+  hideHeader = false,
 }: FiltersSidebarCentralProps) {
   const { data: categories } = useMainCategories();
   const { data: brands } = useBrands();
 
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>(priceRange);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setLocalPriceRange(priceRange);
@@ -131,36 +139,38 @@ export function FiltersSidebarCentral({
 
   const activeFilters =
     (selectedCategory ? 1 : 0) +
-    (selectedSubcategory ? 1 : 0) +
+    selectedSubcategories.length +
     selectedBrands.length +
     (priceRange[0] > 0 || priceRange[1] < maxPrice ? 1 : 0) +
     (hasPromotion ? 1 : 0);
 
   return (
-    <aside className={cn('jc-panel overflow-hidden', className)}>
-      {/* Header — raised bumper feel */}
-      <div className="px-4 py-3 bg-white/[0.04] border-b border-white/[0.06]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-cyan-300" />
-            <span className="font-display font-bold text-white text-sm">Filtros</span>
+    <aside className={cn('bg-card rounded-lg border border-border shadow-sm overflow-hidden', className)}>
+      {/* Header — hidden when inside mobile Sheet */}
+      {!hideHeader && (
+        <div className="px-4 py-3 bg-muted border-b border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="font-display font-bold text-foreground text-sm">Filtros</span>
+            </div>
+            {activeFilters > 0 && (
+              <button
+                onClick={onClearFilters}
+                className="rounded-full px-2.5 py-1 text-[11px] text-primary hover:text-foreground font-medium"
+              >
+                Limpiar ({activeFilters})
+              </button>
+            )}
           </div>
-          {activeFilters > 0 && (
-            <button
-              onClick={onClearFilters}
-              className="jc-pill px-2.5 py-1 text-[11px] text-cyan-300 hover:text-white font-medium"
-            >
-              Limpiar ({activeFilters})
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
       <div className="px-4 pt-1">
-        {/* Price */}
+        {/* 1. Price — only section open by default */}
         <CollapsibleSection
           title="Precio"
-          icon={<DollarSign className="h-3.5 w-3.5 text-cyan-300" />}
+          icon={<DollarSign className="h-3.5 w-3.5 text-primary" />}
           badge={priceRange[0] > 0 || priceRange[1] < maxPrice ? 1 : 0}
         >
           <div className="space-y-3 px-1">
@@ -174,14 +184,14 @@ export function FiltersSidebarCentral({
               className="py-2"
             />
             <div className="flex items-center justify-between gap-2">
-              <div className="flex-1 jc-well px-3 py-1.5 text-center">
-                <span className="text-xs text-white/70 font-medium">
+              <div className="flex-1 bg-muted rounded-lg px-3 py-1.5 text-center">
+                <span className="text-xs text-muted-foreground font-medium" suppressHydrationWarning>
                   ${localPriceRange[0].toLocaleString('es-CL')}
                 </span>
               </div>
-              <div className="w-3 h-px bg-white/15" />
-              <div className="flex-1 jc-well px-3 py-1.5 text-center">
-                <span className="text-xs text-white/70 font-medium">
+              <div className="w-3 h-px bg-border" />
+              <div className="flex-1 bg-muted rounded-lg px-3 py-1.5 text-center">
+                <span className="text-xs text-muted-foreground font-medium" suppressHydrationWarning>
                   ${localPriceRange[1].toLocaleString('es-CL')}
                 </span>
               </div>
@@ -189,33 +199,15 @@ export function FiltersSidebarCentral({
           </div>
         </CollapsibleSection>
 
-        {/* Promotions */}
-        <CollapsibleSection
-          title="Ofertas"
-          icon={<Gift className="h-3.5 w-3.5 text-cyan-300" />}
-          badge={hasPromotion ? 1 : 0}
-        >
-          <label className="flex items-center gap-3 cursor-pointer group px-2 py-1.5 rounded-xl hover:bg-white/[0.04] transition-colors">
-            <Checkbox
-              checked={hasPromotion}
-              onCheckedChange={(checked) => onPromotionChange?.(checked as boolean)}
-              className="border-white/25 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-[6px]"
-            />
-            <span className="text-sm text-white/70 group-hover:text-white transition-colors flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              Solo con descuento
-            </span>
-          </label>
-        </CollapsibleSection>
-
-        {/* Categories */}
+        {/* 2. Categories — collapsed by default */}
         <CollapsibleSection
           title="Categorías"
-          icon={<Layers className="h-3.5 w-3.5 text-cyan-300" />}
+          icon={<Layers className="h-3.5 w-3.5 text-primary" />}
           badge={selectedCategory ? 1 : 0}
+          defaultOpen={false}
         >
           <div className="space-y-0.5 max-h-56 overflow-y-auto pr-1">
-            {categories?.map((category: Category & { subcategories?: Category[] }) => {
+            {mounted && categories?.map((category: Category & { subcategories?: Category[] }) => {
               const isSelected = selectedCategory === category._id;
               const hasSubcategories = category.subcategories && category.subcategories.length > 0;
               const isExpanded = expandedCategories.includes(category._id);
@@ -226,7 +218,7 @@ export function FiltersSidebarCentral({
                     {hasSubcategories && (
                       <button
                         onClick={() => toggleCategoryExpand(category._id)}
-                        className="p-1.5 text-white/40 hover:text-white transition-colors"
+                        className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <ChevronRight
                           className={cn(
@@ -237,12 +229,20 @@ export function FiltersSidebarCentral({
                       </button>
                     )}
                     <button
-                      onClick={() => onCategoryChange?.(isSelected ? undefined : category._id)}
+                      onClick={() => {
+                        if (isSelected) {
+                          onCategoryChange?.(undefined);
+                        } else {
+                          // Select this category, collapse all others
+                          setExpandedCategories([category._id]);
+                          onCategoryChange?.(category._id);
+                        }
+                      }}
                       className={cn(
-                        'flex-1 text-left py-1.5 px-2.5 rounded-xl text-sm transition-all duration-150',
+                        'flex-1 text-left py-2.5 px-2.5 rounded-xl text-sm transition-all duration-150',
                         isSelected
-                          ? 'text-cyan-200 jc-well !bg-primary/15 font-semibold'
-                          : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                          ? 'bg-white text-primary font-semibold border border-primary/30'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       )}
                     >
                       {category.name}
@@ -250,18 +250,26 @@ export function FiltersSidebarCentral({
                   </div>
 
                   {hasSubcategories && isExpanded && (
-                    <div className="ml-5 pl-3 border-l border-white/[0.08] space-y-0.5 my-1">
+                    <div className="ml-5 pl-3 border-l border-border space-y-0.5 my-1">
                       {category.subcategories?.map((subcat: Category) => {
-                        const isSubSelected = selectedSubcategory === subcat._id;
+                        const isSubSelected = selectedSubcategories.includes(subcat._id);
+                        const toggleSub = () => {
+                          const newSubs = isSubSelected
+                            ? selectedSubcategories.filter(id => id !== subcat._id)
+                            : [...selectedSubcategories, subcat._id];
+                          // Keep only this category expanded
+                          setExpandedCategories([category._id]);
+                          onCategoryChange?.(category._id, newSubs.length > 0 ? newSubs : undefined);
+                        };
                         return (
                           <button
                             key={subcat._id}
-                            onClick={() => onCategoryChange?.(category._id, isSubSelected ? undefined : subcat._id)}
+                            onClick={toggleSub}
                             className={cn(
-                              'w-full text-left py-1.5 px-2.5 rounded-xl text-sm transition-all duration-150',
+                              'w-full text-left py-2.5 px-2.5 rounded-xl text-sm transition-all duration-150',
                               isSubSelected
-                                ? 'text-cyan-200 bg-primary/10 font-medium'
-                                : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                                ? 'bg-white text-primary font-medium border border-primary/30'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                             )}
                           >
                             {subcat.name}
@@ -276,33 +284,34 @@ export function FiltersSidebarCentral({
           </div>
         </CollapsibleSection>
 
-        {/* Brands */}
+        {/* 3. Brands — collapsed by default */}
         <CollapsibleSection
           title="Marca"
-          icon={<Tag className="h-3.5 w-3.5 text-cyan-300" />}
+          icon={<Tag className="h-3.5 w-3.5 text-primary" />}
           badge={selectedBrands.length}
+          defaultOpen={false}
         >
           <div className="space-y-0.5 max-h-48 overflow-y-auto pr-1">
-            {brands?.map((brand: Brand) => (
+            {mounted && brands?.map((brand: Brand) => (
               <label
                 key={brand._id}
                 className={cn(
-                  'flex items-center gap-3 cursor-pointer group px-2 py-1.5 rounded-xl transition-all duration-150',
+                  'flex items-center gap-3 cursor-pointer group px-2 py-2.5 rounded-xl transition-all duration-150',
                   selectedBrands.includes(brand._id)
-                    ? 'bg-primary/10'
-                    : 'hover:bg-white/[0.04]'
+                    ? 'bg-white border border-primary/30'
+                    : 'hover:bg-muted'
                 )}
               >
                 <Checkbox
                   checked={selectedBrands.includes(brand._id)}
                   onCheckedChange={() => handleBrandToggle(brand._id)}
-                  className="border-white/25 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-[6px]"
+                  className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-[6px]"
                 />
                 <span className={cn(
                   'text-sm transition-colors',
                   selectedBrands.includes(brand._id)
-                    ? 'text-cyan-200 font-medium'
-                    : 'text-white/60 group-hover:text-white'
+                    ? 'text-primary font-medium'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 )}>
                   {brand.name}
                 </span>
@@ -310,17 +319,28 @@ export function FiltersSidebarCentral({
             ))}
           </div>
         </CollapsibleSection>
+
+        {/* 4. Promotions — last, collapsed by default */}
+        <CollapsibleSection
+          title="Ofertas"
+          icon={<Gift className="h-3.5 w-3.5 text-primary" />}
+          badge={hasPromotion ? 1 : 0}
+          defaultOpen={false}
+        >
+          <label className="flex items-center gap-3 cursor-pointer group px-2 py-2.5 rounded-xl hover:bg-muted transition-colors">
+            <Checkbox
+              checked={hasPromotion}
+              onCheckedChange={(checked) => onPromotionChange?.(checked as boolean)}
+              className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-[6px]"
+            />
+            <span className="text-sm text-foreground group-hover:text-foreground transition-colors flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              Solo con descuento
+            </span>
+          </label>
+        </CollapsibleSection>
       </div>
 
-      {/* Apply — Mobile */}
-      <div className="px-4 py-3 border-t border-white/[0.06] lg:hidden">
-        <Button
-          onClick={onApplyFilters}
-          className="w-full bg-primary hover:bg-primary/90 text-white font-display font-bold rounded-2xl h-11"
-        >
-          Aplicar filtros
-        </Button>
-      </div>
     </aside>
   );
 }

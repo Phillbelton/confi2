@@ -304,7 +304,7 @@ export interface ProductFilters {
   search?: string;
   categories?: string[]; // Deprecated: use category instead
   category?: string; // Single category filter from navbar (matches backend)
-  subcategory?: string; // Single subcategory filter (matches backend)
+  subcategory?: string; // Subcategory filter — comma-separated for multiple
   brands?: string[];
   tags?: string[];
   minPrice?: number;
