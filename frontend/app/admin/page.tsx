@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { DollarSign, ShoppingCart, Package, Users, TrendingUp } from 'lucide-react';
+import { DollarSign, ShoppingCart, TrendingUp } from 'lucide-react';
 import { StatsCard } from '@/components/admin/dashboard/StatsCard';
 import { useAdminDashboard } from '@/hooks/admin/useAdminDashboard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,11 +22,6 @@ const TopProducts = dynamic(
   { loading: () => <Skeleton className="h-[400px]" /> }
 );
 
-const LowStockAlert = dynamic(
-  () => import('@/components/admin/dashboard/LowStockAlert').then(mod => ({ default: mod.LowStockAlert })),
-  { loading: () => <Skeleton className="h-[300px]" /> }
-);
-
 export default function AdminDashboardPage() {
   const {
     stats,
@@ -37,8 +32,6 @@ export default function AdminDashboardPage() {
     isLoadingTopProducts,
     recentOrders,
     isLoadingRecentOrders,
-    lowStock,
-    isLoadingLowStock,
   } = useAdminDashboard();
 
   return (
@@ -52,10 +45,10 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         {isLoadingStats ? (
           <>
-            {[...Array(4)].map((_, i) => (
+            {[...Array(3)].map((_, i) => (
               <Skeleton key={i} className="h-32" />
             ))}
           </>
@@ -72,12 +65,6 @@ export default function AdminDashboardPage() {
               value={stats?.pendingOrders || 0}
               description="Órdenes por confirmar"
               icon={ShoppingCart}
-            />
-            <StatsCard
-              title="Stock Bajo"
-              value={stats?.lowStockProducts || 0}
-              description="Productos por reabastecer"
-              icon={Package}
             />
             <StatsCard
               title="Total Productos"
@@ -119,14 +106,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Low Stock Alert */}
-      <div>
-        {isLoadingLowStock ? (
-          <Skeleton className="h-[300px]" />
-        ) : (
-          <LowStockAlert variants={lowStock || []} />
-        )}
-      </div>
     </div>
   );
 }

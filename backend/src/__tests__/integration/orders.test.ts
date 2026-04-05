@@ -4,16 +4,13 @@ import { createTestUser, generateAuthToken, createTestProductVariant, createTest
 import { Order } from '../../models/Order';
 import ProductVariant from '../../models/ProductVariant';
 import ProductParent from '../../models/ProductParent';
-import StockMovementModel, { IStockMovement } from '../../models/StockMovement';
-
-const StockMovement = StockMovementModel;
 
 describe('Orders API', () => {
   describe('POST /api/orders', () => {
-    it('should create order as authenticated user with stock deduction', async () => {
+    it('should create order as authenticated user', async () => {
       const user = await createTestUser({ role: 'cliente' });
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ price: 10000, stock: 50 });
+      const variant = await createTestProductVariant({ price: 10000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -32,19 +29,10 @@ describe('Orders API', () => {
       expect(response.body.data.order.orderNumber).toMatch(/^QUE-\d{8}-\d{3}$/);
       expect(response.body.data.order.total).toBe(20000);
       expect(response.body.data.order.status).toBe('pending_whatsapp');
-
-      // Verify stock was deducted
-      const updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(48);
-
-      // Verify stock movement was created
-      const stockMovement = await StockMovement.findOne({ variant: variant._id });
-      expect(stockMovement?.type).toBe('sale');
-      expect(stockMovement?.quantity).toBe(-2);
     });
 
     it('should create order as guest with customer data', async () => {
-      const variant = await createTestProductVariant({ price: 5000, stock: 100 });
+      const variant = await createTestProductVariant({ price: 5000 });
 
       const response = await request(app)
         .post('/api/orders')
@@ -71,7 +59,6 @@ describe('Orders API', () => {
       const token = generateAuthToken(user);
       const variant = await createTestProductVariant({
         price: 10000,
-        stock: 100,
       });
 
       // Add fixed discount to variant
@@ -96,24 +83,6 @@ describe('Orders API', () => {
       expect(response.status).toBe(201);
       // Verify the order was created successfully
       expect(response.body.data.order).toBeDefined();
-    });
-
-    it('should reject order with insufficient stock', async () => {
-      const user = await createTestUser();
-      const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ stock: 5 });
-
-      const response = await request(app)
-        .post('/api/orders')
-        .set('Cookie', `token=${token}`)
-        .send({
-          items: [{ variantId: variant._id, quantity: 10 }],
-          deliveryMethod: 'pickup',
-          paymentMethod: 'cash',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
     });
 
     it('should reject guest order without customer data', async () => {
@@ -398,19 +367,13 @@ describe('Orders API', () => {
   });
 
   describe('PUT /api/orders/:id/cancel', () => {
-    it('should cancel order and restore stock', async () => {
+    it('should cancel order', async () => {
       const user = await createTestUser();
       const token = generateAuthToken(user);
-      const variant = await createTestProductVariant({ stock: 50 });
       const order = await createTestOrder({
         user,
-        items: [{ variantId: variant._id, quantity: 5 }],
         status: 'confirmed',
       });
-
-      // Stock should be 45 after order creation
-      let updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(45);
 
       const response = await request(app)
         .put(`/api/orders/${order._id}/cancel`)
@@ -419,17 +382,6 @@ describe('Orders API', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.order.status).toBe('cancelled');
-
-      // Stock should be restored to 50
-      updatedVariant = await ProductVariant.findById(variant._id);
-      expect(updatedVariant?.stock).toBe(50);
-
-      // Verify cancellation stock movement
-      const stockMovement = await StockMovement.findOne({
-        variant: variant._id,
-        type: 'cancellation',
-      });
-      expect(stockMovement?.quantity).toBe(5);
     });
 
     it('should allow admin to cancel any order', async () => {

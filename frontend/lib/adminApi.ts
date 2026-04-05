@@ -36,7 +36,7 @@ adminApi.interceptors.response.use(
   (error) => {
     if (error.response) {
       const status = error.response.status;
-      const message = error.response.data?.message || 'An error occurred';
+      const message = error.response.data?.error || error.response.data?.message || 'An error occurred';
 
       if (status === 401 && typeof window !== 'undefined') {
         // Clear admin token

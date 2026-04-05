@@ -26,7 +26,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       const status = error.response.status;
-      const message = error.response.data?.message || 'An error occurred';
+      const message = error.response.data?.error || error.response.data?.message || 'An error occurred';
 
       return Promise.reject({
         status,

@@ -36,6 +36,7 @@ export const validate = (schema: ZodSchema) => {
         res.status(400).json({
           success: false,
           error: 'Error de validación',
+          message: 'Error de validación',
           details: errors,
         });
       } else {
@@ -47,6 +48,7 @@ export const validate = (schema: ZodSchema) => {
         res.status(500).json({
           success: false,
           error: 'Error interno del servidor',
+          message: 'Error interno del servidor',
         });
       }
     }
@@ -78,6 +80,7 @@ export const validateBody = (schema: ZodSchema) => {
         res.status(400).json({
           success: false,
           error: 'Error de validación',
+          message: 'Error de validación',
           details: errors,
         });
       } else {
@@ -88,6 +91,7 @@ export const validateBody = (schema: ZodSchema) => {
         res.status(500).json({
           success: false,
           error: 'Error interno del servidor',
+          message: 'Error interno del servidor',
         });
       }
     }
@@ -119,6 +123,7 @@ export const validateParams = (schema: ZodSchema) => {
         res.status(400).json({
           success: false,
           error: 'Parámetros inválidos',
+          message: 'Parámetros inválidos',
           details: errors,
         });
       } else {
@@ -129,6 +134,7 @@ export const validateParams = (schema: ZodSchema) => {
         res.status(500).json({
           success: false,
           error: 'Error interno del servidor',
+          message: 'Error interno del servidor',
         });
       }
     }
@@ -160,6 +166,7 @@ export const validateQuery = (schema: ZodSchema) => {
         res.status(400).json({
           success: false,
           error: 'Parámetros de consulta inválidos',
+          message: 'Parámetros de consulta inválidos',
           details: errors,
         });
       } else {
@@ -170,6 +177,7 @@ export const validateQuery = (schema: ZodSchema) => {
         res.status(500).json({
           success: false,
           error: 'Error interno del servidor',
+          message: 'Error interno del servidor',
         });
       }
     }

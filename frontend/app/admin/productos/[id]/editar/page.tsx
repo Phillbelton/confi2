@@ -38,7 +38,6 @@ export default function EditarProductoPage() {
     isAddingVariant,
     updateVariant,
     deleteVariant,
-    updateStock,
     uploadVariantImages,
     isUploadingVariantImages,
     deleteVariantImage,
@@ -64,10 +63,7 @@ export default function EditarProductoPage() {
     deleteImage({ id: productId, filename });
   };
 
-  const handleUpdateVariant = (variantId: string, data: { price?: number; stock?: number; active?: boolean }) => {
-    if (data.stock !== undefined) {
-      updateStock({ id: variantId, data: { stock: data.stock } });
-    }
+  const handleUpdateVariant = (variantId: string, data: { price?: number; active?: boolean }) => {
     if (data.price !== undefined) {
       updateVariant({ id: variantId, data: { price: data.price } });
     }
@@ -100,7 +96,6 @@ export default function EditarProductoPage() {
   const handleAddVariant = (data: {
     attributes: Record<string, string>;
     price: number;
-    stock: number;
     sku?: string;
     description?: string;
   }) => {

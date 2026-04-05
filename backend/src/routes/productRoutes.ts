@@ -14,7 +14,6 @@ import {
   updateProductParentSchema,
   createProductVariantSchema,
   updateProductVariantSchema,
-  updateStockSchema,
   getProductByIdSchema,
   getProductsQuerySchema,
   getProductBySlugSchema,
@@ -23,7 +22,6 @@ import {
   getFeaturedProductsSchema,
   getVariantBySkuSchema,
   getDiscountPreviewSchema,
-  getStockVariantsSchema,
 } from '../schemas/productSchemas';
 
 const router = Router();
@@ -85,12 +83,7 @@ router.post('/variants', authenticate, authorize('admin', 'funcionario'), valida
 router.post('/parents/:id/variants/batch', authenticate, authorize('admin', 'funcionario'), auditLog('variant', 'create'), productVariantController.createVariantsBatch);
 router.post('/parents/:id/variants', authenticate, authorize('admin', 'funcionario'), auditLog('variant', 'create'), productVariantController.addVariantToParent);
 router.put('/variants/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductVariant), validate(updateProductVariantSchema), auditLog('variant', 'update'), productVariantController.updateProductVariant);
-router.patch('/variants/:id/stock', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductVariant), validate(updateStockSchema), auditLog('variant', 'update'), productVariantController.updateVariantStock);
 router.delete('/variants/:id', authenticate, authorize('admin'), captureBeforeState(ProductVariant), validate(deleteProductSchema), auditLog('variant', 'delete'), productVariantController.deleteProductVariant);
-
-// Stock monitoring routes
-router.get('/variants/stock/low', authenticate, authorize('admin', 'funcionario'), validate(getStockVariantsSchema), productVariantController.getLowStockVariants);
-router.get('/variants/stock/out', authenticate, authorize('admin', 'funcionario'), validate(getStockVariantsSchema), productVariantController.getOutOfStockVariants);
 
 // Image upload routes for ProductVariant
 router.post(

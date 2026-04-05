@@ -60,10 +60,11 @@ export const errorHandler = (
     });
   }
 
-  // Response al cliente
+  // Response al cliente — enviar en ambos campos para compatibilidad
   const response: ApiResponse = {
     success: false,
     error: message,
+    message,
   };
 
   // En desarrollo, enviar stack trace

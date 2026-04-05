@@ -222,9 +222,8 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
 
       <CardContent className="space-y-4">
         {/* Warning */}
-        <InlineHelp variant="warning">
-          Los cambios en productos afectarán el stock automáticamente. Los descuentos se
-          recalcularán según las reglas actuales.
+        <InlineHelp variant="info">
+          Los descuentos se recalcularán según las reglas actuales.
         </InlineHelp>
 
         {/* Items list */}

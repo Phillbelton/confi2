@@ -35,11 +35,7 @@ export interface IProductVariant extends Document {
   slug: string;
   description?: string;
   price: number;
-  stock: number;
   images: string[];
-  trackStock: boolean;
-  allowBackorder: boolean;
-  lowStockThreshold: number;
   fixedDiscount?: IFixedDiscount;
   tieredDiscount?: ITieredDiscountVariant;
   active: boolean;
@@ -52,8 +48,6 @@ export interface IProductVariant extends Document {
   updatedAt: Date;
 
   // Virtuals
-  inStock: boolean;
-  lowStock: boolean;
   hasActiveDiscount: boolean;
   hasActiveTieredDiscount: boolean;
 }
@@ -105,11 +99,6 @@ const productVariantSchema = new Schema<IProductVariant>(
       required: [true, 'El precio es requerido'],
       min: [0, 'El precio no puede ser negativo'],
     },
-    stock: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
     images: {
       type: [String],
       validate: {
@@ -120,19 +109,6 @@ const productVariantSchema = new Schema<IProductVariant>(
         message: 'La variante debe tener entre 0 y 5 imágenes',
       },
       default: [],
-    },
-    trackStock: {
-      type: Boolean,
-      default: true,
-    },
-    allowBackorder: {
-      type: Boolean,
-      default: true,
-    },
-    lowStockThreshold: {
-      type: Number,
-      default: 5,
-      min: 0,
     },
     fixedDiscount: {
       enabled: {
@@ -221,7 +197,6 @@ const productVariantSchema = new Schema<IProductVariant>(
 // Índices
 productVariantSchema.index({ parentProduct: 1, active: 1 });
 productVariantSchema.index({ price: 1 });
-productVariantSchema.index({ stock: 1 });
 productVariantSchema.index({ createdAt: -1 });
 // Índices dinámicos por atributos comunes (se crearán en runtime si es necesario)
 productVariantSchema.index({ 'attributes.tamaño': 1 });
@@ -229,18 +204,8 @@ productVariantSchema.index({ 'attributes.sabor': 1 });
 productVariantSchema.index({ 'attributes.color': 1 });
 
 // Índice compuesto para queries frecuentes
-productVariantSchema.index({ parentProduct: 1, active: 1, stock: 1 });
+productVariantSchema.index({ parentProduct: 1, active: 1 });
 productVariantSchema.index({ price: 1, active: 1 });
-
-// Virtual: inStock
-productVariantSchema.virtual('inStock').get(function () {
-  return this.stock > 0 && this.active;
-});
-
-// Virtual: lowStock
-productVariantSchema.virtual('lowStock').get(function () {
-  return this.stock > 0 && this.stock <= this.lowStockThreshold;
-});
 
 // Virtual: hasActiveDiscount
 productVariantSchema.virtual('hasActiveDiscount').get(function () {
@@ -537,16 +502,6 @@ productVariantSchema.pre('save', function (next) {
         );
       }
     }
-  }
-  next();
-});
-
-// Validación: stock no puede ser negativo si allowBackorder = false
-productVariantSchema.pre('save', function (next) {
-  if (!this.allowBackorder && this.stock < 0) {
-    return next(
-      new Error('El stock no puede ser negativo cuando no se permite sobreventa')
-    );
   }
   next();
 });

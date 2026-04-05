@@ -77,12 +77,9 @@ export interface ProductVariant {
   _id: string;
   parent: string | ProductParent;
   sku: string;
-  name?: string; // Optional name field (returned by some API endpoints like low-stock)
+  name?: string;
   price: number;
   compareAtPrice?: number;
-  stock: number;
-  lowStockThreshold: number;
-  allowBackorder: boolean;
   weight?: number;
   dimensions?: {
     length: number;
@@ -101,8 +98,6 @@ export interface ProductVariant {
   createdAt: string;
   updatedAt: string;
   // Virtuals
-  isLowStock?: boolean;
-  isOutOfStock?: boolean;
   displayName?: string;
   hasActiveDiscount?: boolean;
   hasActiveTieredDiscount?: boolean;
@@ -309,12 +304,11 @@ export interface ProductFilters {
   search?: string;
   categories?: string[]; // Deprecated: use category instead
   category?: string; // Single category filter from navbar (matches backend)
-  subcategory?: string; // Single subcategory filter (matches backend)
+  subcategory?: string; // Subcategory filter — comma-separated for multiple
   brands?: string[];
   tags?: string[];
   minPrice?: number;
   maxPrice?: number;
-  inStock?: boolean;
   featured?: boolean;
   onSale?: boolean;
 }
@@ -405,8 +399,6 @@ export interface FilterSidebarProps {
 export interface DashboardStats {
   totalProducts: number;
   activeProducts: number;
-  lowStockProducts: number;
-  outOfStockProducts: number;
   pendingOrders: number;
   totalOrders: number;
   completedOrders: number;

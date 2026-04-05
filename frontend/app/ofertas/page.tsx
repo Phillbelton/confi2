@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ProductCardWithVariants } from '@/components/products/ProductCardWithVariants';
+import { ProductCardUnified } from '@/components/products/ProductCardUnified';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -372,7 +372,7 @@ function OfertasContent() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {products.map((product: ProductParent) => (
-                <ProductCardWithVariants key={product._id} product={product} />
+                <ProductCardUnified autoFetchVariants key={product._id} product={product} />
               ))}
             </div>
           )}
@@ -439,7 +439,7 @@ export default function OfertasPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
 
-      <main className="flex-1">
+      <main className="flex-1 theme-catalog">
         <div className="container px-4 py-6 sm:py-8 md:px-6 md:py-12">
           <Suspense
             fallback={

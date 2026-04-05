@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { ChevronLeft, ShoppingCart, Check, Minus, Plus } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { ProductCard } from '@/components/products/ProductCard';
+import { ProductCardUnified } from '@/components/products/ProductCardUnified';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +21,7 @@ import {
 import { useProductBySlug, useProducts, useProductVariants } from '@/hooks/useProducts';
 import { useCartStore } from '@/store/useCartStore';
 import { toast } from 'sonner';
-import type { ProductParent, ProductVariant } from '@/types';
+import type { ProductParent, ProductVariant, Brand } from '@/types';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -51,9 +51,6 @@ export default function ProductDetailPage() {
     limit: 4,
   });
 
-  // FIX: Correct access to the nested data structure
-  // relatedData.data is ApiPaginatedResponse which has { data, pagination }
-  // So we need relatedData.data.data to get the array
   const relatedProducts = relatedData?.data?.data?.filter((p: ProductParent) => p._id !== product?._id) || [];
 
   // State
@@ -72,23 +69,29 @@ export default function ProductDetailPage() {
     }
   }, [variants, selectedVariantId]);
 
-  // Reset image index when variant changes (to avoid out of bounds index)
+  // Reset image index when variant changes
   useEffect(() => {
     setMainImageIndex(0);
   }, [selectedVariantId]);
+
+  // Extract brand name
+  const brandName =
+    product?.brand && typeof product.brand === 'object'
+      ? (product.brand as Brand).name
+      : null;
 
   // Error handling
   if (error) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-2">Producto no encontrado</h1>
+        <main className="flex-1 theme-catalog bg-background flex items-center justify-center">
+          <div className="text-center px-4">
+            <h1 className="font-display text-2xl font-bold mb-2">Producto no encontrado</h1>
             <p className="text-muted-foreground mb-4">
               El producto que buscas no existe o ha sido eliminado.
             </p>
-            <Button asChild>
+            <Button asChild className="h-12">
               <Link href="/productos">Ver todos los productos</Link>
             </Button>
           </div>
@@ -103,13 +106,14 @@ export default function ProductDetailPage() {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="flex-1">
+        <main className="flex-1 theme-catalog bg-background">
           <div className="container px-4 py-8 md:px-6 md:py-12">
             <Skeleton className="h-8 w-48 mb-8" />
             <div className="grid lg:grid-cols-2 gap-8">
-              <Skeleton className="aspect-square w-full" />
+              <Skeleton className="aspect-square w-full rounded-lg" />
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-10 w-3/4" />
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-12 w-full" />
               </div>
@@ -122,10 +126,8 @@ export default function ProductDetailPage() {
   }
 
   const selectedVariant = variants.find((v) => v._id === selectedVariantId) || variants[0];
-  const isOutOfStock = selectedVariant && selectedVariant.stock === 0;
-  const maxQuantity = selectedVariant?.allowBackorder ? 999 : (selectedVariant?.stock || 0);
 
-  // Get images: use variant images if available, otherwise use parent images
+  // Get images
   const allImages = (selectedVariant?.images && selectedVariant.images.length > 0
     ? selectedVariant.images
     : product.images || []
@@ -147,10 +149,9 @@ export default function ProductDetailPage() {
     if (!selectedVariant) return null;
 
     let totalDiscount = 0;
-    let currentPrice = selectedVariant.price; // Track current price as discounts are applied
+    let currentPrice = selectedVariant.price;
     const discountDetails: string[] = [];
 
-    // 1. Apply fixed discount
     if (hasFixedDiscount) {
       let fixedDiscountAmount = 0;
       if (selectedVariant.fixedDiscount!.type === 'percentage') {
@@ -161,10 +162,9 @@ export default function ProductDetailPage() {
         discountDetails.push(`-$${fixedDiscountAmount.toLocaleString()} fijo`);
       }
       totalDiscount += fixedDiscountAmount;
-      currentPrice -= fixedDiscountAmount; // Update price after fixed discount
+      currentPrice -= fixedDiscountAmount;
     }
 
-    // 2. Apply variant tiered discount ON THE DISCOUNTED PRICE
     if (hasVariantTieredDiscount) {
       const applicableTier = [...selectedVariant.tieredDiscount!.tiers]
         .sort((a, b) => b.minQuantity - a.minQuantity)
@@ -177,7 +177,6 @@ export default function ProductDetailPage() {
       if (applicableTier) {
         let tierDiscountAmount = 0;
         if (applicableTier.type === 'percentage') {
-          // Apply percentage on current price (after fixed discount)
           tierDiscountAmount = (currentPrice * applicableTier.value) / 100;
           discountDetails.push(`-${applicableTier.value}% por cantidad`);
         } else {
@@ -185,7 +184,7 @@ export default function ProductDetailPage() {
           discountDetails.push(`-$${tierDiscountAmount.toLocaleString()} por cantidad`);
         }
         totalDiscount += tierDiscountAmount;
-        currentPrice -= tierDiscountAmount; // Update price after tiered discount
+        currentPrice -= tierDiscountAmount;
       }
     }
 
@@ -202,9 +201,10 @@ export default function ProductDetailPage() {
   };
 
   const discount = getApplicableDiscount();
+  const displayPrice = discount ? discount.finalPrice : selectedVariant?.price || 0;
 
   const handleAddToCart = async () => {
-    if (!selectedVariant || isOutOfStock) return;
+    if (!selectedVariant) return;
 
     setIsAdding(true);
 
@@ -229,9 +229,7 @@ export default function ProductDetailPage() {
   };
 
   const incrementQuantity = () => {
-    if (quantity < maxQuantity) {
-      setQuantity(quantity + 1);
-    }
+    setQuantity(quantity + 1);
   };
 
   const decrementQuantity = () => {
@@ -244,42 +242,52 @@ export default function ProductDetailPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
 
-      <main className="flex-1">
-        <div className="container px-4 py-8 md:px-6 md:py-12">
+      <main className="flex-1 theme-catalog bg-background">
+        {/* Add bottom padding on mobile to account for sticky CTA bar */}
+        <div className="container px-4 py-6 md:py-12 pb-28 lg:pb-12">
           {/* Breadcrumb */}
-          <div className="mb-6">
-            <Button variant="ghost" asChild className="mb-4">
+          <div className="mb-4 md:mb-6">
+            <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground h-10">
               <Link href="/productos">
-                <ChevronLeft className="mr-2 h-4 w-4" />
+                <ChevronLeft className="mr-1.5 h-4 w-4" />
                 Volver a productos
               </Link>
             </Button>
           </div>
 
           {/* Product Details Grid */}
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 mb-12 lg:mb-16">
             {/* Images */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Main Image */}
-              <div className="aspect-square relative overflow-hidden rounded-lg bg-muted">
+              <div className="aspect-square relative overflow-hidden rounded-lg bg-white border border-border shadow-sm">
                 <Image
                   src={mainImage}
                   alt={product.name}
                   fill
-                  className="object-cover"
+                  className="object-contain p-4"
                   priority
                   sizes="(max-width: 1024px) 100vw, 50vw"
                 />
 
-                {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  {product.featured && (
-                    <Badge className="bg-secondary text-secondary-foreground">
-                      Destacado
-                    </Badge>
-                  )}
-                  {isOutOfStock && <Badge variant="destructive">Agotado</Badge>}
-                </div>
+                {/* Fixed Discount Badge — top left */}
+                {hasFixedDiscount && selectedVariant && (
+                  <div className="absolute top-3 left-3 z-10">
+                    <div className="bg-accent text-white font-bold text-xs px-2.5 py-1.5 rounded-md shadow-sm">
+                      {selectedVariant.fixedDiscount?.badge ||
+                        (selectedVariant.fixedDiscount!.type === 'percentage'
+                          ? `-${selectedVariant.fixedDiscount!.value}%`
+                          : `-$${selectedVariant.fixedDiscount!.value.toLocaleString()}`)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Featured Badge */}
+                {product.featured && (
+                  <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground z-10">
+                    Destacado
+                  </Badge>
+                )}
               </div>
 
               {/* Thumbnail Gallery */}
@@ -289,17 +297,17 @@ export default function ProductDetailPage() {
                     <button
                       key={index}
                       onClick={() => setMainImageIndex(index)}
-                      className={`aspect-square relative overflow-hidden rounded-md border-2 transition-all ${
+                      className={`aspect-square relative overflow-hidden rounded-md border-2 transition-all min-h-[48px] ${
                         index === mainImageIndex
-                          ? 'border-primary'
-                          : 'border-transparent hover:border-muted-foreground'
+                          ? 'border-primary shadow-sm'
+                          : 'border-border hover:border-muted-foreground'
                       }`}
                     >
                       <Image
                         src={image}
                         alt={`${product.name} - imagen ${index + 1}`}
                         fill
-                        className="object-cover"
+                        className="object-contain bg-white p-1"
                         sizes="(max-width: 1024px) 25vw, 12.5vw"
                       />
                     </button>
@@ -309,48 +317,51 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Product Info */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-5">
               {/* Brand */}
-              {typeof product.brand === 'object' && product.brand && (
-                <p className="text-sm text-muted-foreground">{product.brand.name}</p>
+              {brandName && (
+                <span className="font-sans text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {brandName}
+                </span>
               )}
 
               {/* Title */}
               <div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2">
+                <h1 className="font-display text-xl md:text-3xl font-bold tracking-tight text-foreground">
                   {product.name}
                 </h1>
                 {selectedVariant?.displayName && product.hasVariants && (
-                  <p className="text-lg text-muted-foreground">
+                  <p className="font-display text-sm md:text-lg text-muted-foreground mt-1">
                     {selectedVariant.displayName}
                   </p>
                 )}
               </div>
 
               {/* Description */}
-              <div className="prose prose-sm max-w-none">
-                <p className="text-muted-foreground">{product.description}</p>
-              </div>
+              {product.description && (
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {product.description}
+                </p>
+              )}
 
               {/* Variant Selector */}
               {product.hasVariants && variants.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Seleccionar variante:
+                  <label className="font-sans text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
+                    Variante
                   </label>
                   <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 bg-card border-border text-foreground text-base">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover border-border">
                       {variants.map((variant) => (
                         <SelectItem
                           key={variant._id}
                           value={variant._id}
-                          disabled={variant.stock === 0}
+                          className="text-popover-foreground h-11"
                         >
                           {variant.displayName}
-                          {variant.stock === 0 && ' (Agotado)'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -358,62 +369,49 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Price */}
+              {/* Price Block */}
               {selectedVariant && (
-                <div className="bg-muted p-4 rounded-lg space-y-2">
+                <div className="bg-card border border-border rounded-lg p-4 space-y-3">
                   <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-bold text-primary">
-                      ${discount ? discount.finalPrice.toLocaleString() : selectedVariant.price.toLocaleString()}
+                    <span className="font-sans text-2xl md:text-3xl font-bold text-primary" suppressHydrationWarning>
+                      ${discount ? discount.finalPrice.toLocaleString('es-CL') : selectedVariant.price.toLocaleString('es-CL')}
                     </span>
                     {discount && (
-                      <span className="text-lg text-muted-foreground line-through">
-                        ${selectedVariant.price.toLocaleString()}
+                      <span className="font-sans text-base md:text-lg text-muted-foreground line-through" suppressHydrationWarning>
+                        ${selectedVariant.price.toLocaleString('es-CL')}
                       </span>
                     )}
                   </div>
 
                   {discount && (
-                    <div className="space-y-1">
-                      <Badge className="bg-accent text-accent-foreground">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="bg-accent/10 text-accent border border-accent/20 text-xs font-bold px-2 py-1 rounded-md">
                         {discount.details}
-                      </Badge>
-                      <p className="text-sm text-success">
-                        Ahorras ${discount.totalSavings.toLocaleString()} en total
-                      </p>
+                      </div>
+                      <span className="text-sm text-emerald-600 font-medium" suppressHydrationWarning>
+                        Ahorras ${discount.totalSavings.toLocaleString('es-CL')}
+                      </span>
                     </div>
                   )}
 
                   {selectedVariant.compareAtPrice && (
-                    <p className="text-sm text-muted-foreground">
-                      Precio de lista: ${selectedVariant.compareAtPrice.toLocaleString()}
+                    <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                      Precio de lista: ${selectedVariant.compareAtPrice.toLocaleString('es-CL')}
                     </p>
                   )}
                 </div>
               )}
 
-              {/* Fixed Discount Info */}
-              {hasFixedDiscount && selectedVariant && (
-                <div className="border rounded-lg p-4 space-y-2">
-                  <p className="font-semibold text-sm">
-                    {selectedVariant.fixedDiscount?.badge || 'Descuento especial'}
-                  </p>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedVariant.fixedDiscount!.type === 'percentage'
-                      ? `-${selectedVariant.fixedDiscount!.value}% de descuento`
-                      : `-$${selectedVariant.fixedDiscount!.value.toLocaleString()} de descuento`}
-                  </div>
-                </div>
-              )}
-
-              {/* Variant Tiered Discounts Info */}
+              {/* Tiered Discounts Table */}
               {hasVariantTieredDiscount && selectedVariant && (
-                <div className="border rounded-lg p-4 space-y-2">
-                  <p className="font-semibold text-sm">
-                    {selectedVariant.tieredDiscount?.badge || 'Descuentos por cantidad:'}
-                  </p>
-                  <div className="space-y-1">
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-muted px-4 py-2.5 border-b border-border">
+                    <p className="font-sans text-xs font-semibold uppercase tracking-wider text-foreground">
+                      {selectedVariant.tieredDiscount?.badge || 'Descuentos por cantidad'}
+                    </p>
+                  </div>
+                  <div className="divide-y divide-border">
                     {selectedVariant.tieredDiscount!.tiers.map((tier, index) => {
-                      // Calculate base price after fixed discount (if any)
                       let basePrice = selectedVariant.price;
                       if (hasFixedDiscount) {
                         if (selectedVariant.fixedDiscount!.type === 'percentage') {
@@ -423,7 +421,6 @@ export default function ProductDetailPage() {
                         }
                       }
 
-                      // Apply tiered discount on the base price (after fixed discount)
                       let discountAmount = 0;
                       if (tier.type === 'percentage') {
                         discountAmount = (basePrice * tier.value) / 100;
@@ -435,17 +432,17 @@ export default function ProductDetailPage() {
                       return (
                         <div
                           key={index}
-                          className="flex justify-between text-sm"
+                          className="flex items-center justify-between px-4 py-3 text-sm"
                         >
                           <span className="text-muted-foreground">
                             {tier.maxQuantity
-                              ? `${tier.minQuantity}-${tier.maxQuantity} un`
+                              ? `${tier.minQuantity}–${tier.maxQuantity} un`
                               : `${tier.minQuantity}+ un`}
                           </span>
-                          <span className="font-semibold">
-                            ${finalPrice.toLocaleString()} c/u
+                          <span className="font-sans font-bold text-foreground" suppressHydrationWarning>
+                            ${finalPrice.toLocaleString('es-CL')} c/u
                           </span>
-                          <span className="text-success">
+                          <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
                             -{tier.type === 'percentage' ? `${tier.value}%` : `$${tier.value}`}
                           </span>
                         </div>
@@ -455,82 +452,62 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Stock info */}
-              {selectedVariant && selectedVariant.isLowStock && !isOutOfStock && (
-                <p className="text-sm text-amber-600">
-                  ¡Últimas {selectedVariant.stock} unidades disponibles!
-                </p>
-              )}
-
-              {/* Quantity Selector */}
-              {selectedVariant && !isOutOfStock && (
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Cantidad:</label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center border rounded-lg">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={decrementQuantity}
-                        disabled={quantity <= 1}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-12 text-center font-semibold">{quantity}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={incrementQuantity}
-                        disabled={quantity >= maxQuantity}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      {maxQuantity} disponibles
-                    </span>
+              {/* Quantity + Add to Cart — DESKTOP ONLY (hidden on mobile, shown in sticky bar) */}
+              {selectedVariant && (
+                <div className="hidden lg:flex items-center gap-3">
+                  {/* Quantity Selector */}
+                  <div className="flex items-center border border-border rounded-lg h-12">
+                    <button
+                      onClick={decrementQuantity}
+                      disabled={quantity <= 1}
+                      className="flex items-center justify-center w-12 h-full text-foreground hover:bg-muted transition-colors disabled:opacity-40 rounded-l-lg"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="font-sans w-10 text-center font-bold text-foreground">{quantity}</span>
+                    <button
+                      onClick={incrementQuantity}
+                      className="flex items-center justify-center w-12 h-full text-foreground hover:bg-muted transition-colors rounded-r-lg"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
                   </div>
+
+                  {/* CTA Button */}
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={isAdding || justAdded || !selectedVariant}
+                    className="flex-1 h-12 font-display font-bold text-base rounded-lg bg-primary hover:bg-primary/90 text-white transition-all active:scale-[0.98]"
+                    size="lg"
+                  >
+                    {justAdded ? (
+                      <>
+                        <Check className="mr-2 h-5 w-5" />
+                        Agregado
+                      </>
+                    ) : isAdding ? (
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <>
+                        <ShoppingCart className="mr-2 h-5 w-5" />
+                        Agregar al carrito
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
 
-              {/* Add to Cart Button */}
-              <Button
-                onClick={handleAddToCart}
-                disabled={isAdding || justAdded || isOutOfStock || !selectedVariant}
-                className="w-full h-12 text-lg"
-                size="lg"
-              >
-                {justAdded ? (
-                  <>
-                    <Check className="mr-2 h-5 w-5" />
-                    Agregado al carrito
-                  </>
-                ) : isAdding ? (
-                  <>
-                    <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Agregando...
-                  </>
-                ) : isOutOfStock ? (
-                  'Agotado'
-                ) : (
-                  <>
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    Agregar al carrito
-                  </>
-                )}
-              </Button>
-
               {/* Additional Info */}
               {selectedVariant && (
-                <div className="border-t pt-6 space-y-2 text-sm">
+                <div className="border-t border-border pt-4 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">SKU:</span>
-                    <span className="font-medium">{selectedVariant.sku}</span>
+                    <span className="text-muted-foreground">SKU</span>
+                    <span className="font-sans font-medium text-foreground">{selectedVariant.sku}</span>
                   </div>
                   {selectedVariant.weight && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Peso:</span>
-                      <span className="font-medium">{selectedVariant.weight}g</span>
+                      <span className="text-muted-foreground">Peso</span>
+                      <span className="font-sans font-medium text-foreground">{selectedVariant.weight}g</span>
                     </div>
                   )}
                 </div>
@@ -540,14 +517,16 @@ export default function ProductDetailPage() {
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (
-            <div className="mt-16">
-              <h2 className="text-2xl font-bold mb-6">Productos relacionados</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="border-t border-border pt-8 lg:pt-10">
+              <h2 className="font-display text-lg md:text-2xl font-bold text-foreground mb-4 md:mb-6">
+                Productos relacionados
+              </h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {relatedProducts.map((relatedProduct: ProductParent) => (
-                  <ProductCard
+                  <ProductCardUnified
                     key={relatedProduct._id}
                     product={relatedProduct}
-                    variants={[]}
+                    autoFetchVariants
                   />
                 ))}
               </div>
@@ -555,6 +534,64 @@ export default function ProductDetailPage() {
           )}
         </div>
       </main>
+
+      {/* Mobile Sticky CTA Bar — only visible on mobile/tablet */}
+      {selectedVariant && (
+        <div className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-3">
+            {/* Price */}
+            <div className="flex flex-col min-w-0">
+              <span className="font-sans text-lg font-bold text-primary leading-tight" suppressHydrationWarning>
+                ${displayPrice.toLocaleString('es-CL')}
+              </span>
+              {discount && (
+                <span className="font-sans text-xs text-muted-foreground line-through leading-tight" suppressHydrationWarning>
+                  ${selectedVariant.price.toLocaleString('es-CL')}
+                </span>
+              )}
+            </div>
+
+            {/* Quantity Selector */}
+            <div className="flex items-center border border-border rounded-lg h-12">
+              <button
+                onClick={decrementQuantity}
+                disabled={quantity <= 1}
+                className="flex items-center justify-center w-10 h-full text-foreground hover:bg-muted transition-colors disabled:opacity-40 rounded-l-lg"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="font-sans w-8 text-center font-bold text-foreground text-sm">{quantity}</span>
+              <button
+                onClick={incrementQuantity}
+                className="flex items-center justify-center w-10 h-full text-foreground hover:bg-muted transition-colors rounded-r-lg"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* CTA Button */}
+            <Button
+              onClick={handleAddToCart}
+              disabled={isAdding || justAdded || !selectedVariant}
+              className="flex-1 h-12 font-display font-bold text-sm rounded-lg bg-primary hover:bg-primary/90 text-white transition-all active:scale-[0.98]"
+            >
+              {justAdded ? (
+                <>
+                  <Check className="mr-1.5 h-4 w-4" />
+                  Agregado
+                </>
+              ) : isAdding ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <>
+                  <ShoppingCart className="mr-1.5 h-4 w-4" />
+                  Agregar
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

@@ -30,33 +30,24 @@ export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps
     });
   };
 
-  const handleInStockChange = (value: string) => {
-    onFiltersChange({
-      ...filters,
-      inStock: value === 'all' ? undefined : value === 'true',
-    });
-  };
-
   const handleClearFilters = () => {
     onFiltersChange({
       search: '',
       categories: [],
       brands: [],
       featured: undefined,
-      inStock: undefined,
     });
   };
 
   const hasActiveFilters =
     filters.search ||
     filters.featured !== undefined ||
-    filters.inStock !== undefined ||
     (filters.categories && filters.categories.length > 0) ||
     (filters.brands && filters.brands.length > 0);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search */}
         <div className="md:col-span-2">
           <Label>Buscar producto</Label>
@@ -95,29 +86,6 @@ export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps
           </Select>
         </div>
 
-        {/* Stock Filter */}
-        <div>
-          <Label>Stock</Label>
-          <Select
-            value={
-              filters.inStock === undefined
-                ? 'all'
-                : filters.inStock
-                ? 'true'
-                : 'false'
-            }
-            onValueChange={handleInStockChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="true">Con stock</SelectItem>
-              <SelectItem value="false">Sin stock</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       {/* Clear Filters Button */}

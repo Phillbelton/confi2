@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, DollarSign, Package, HelpCircle } from 'lucide-react';
+import { Upload, DollarSign, HelpCircle } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -31,7 +31,6 @@ export interface VariantCombination {
   id: string;
   attributes: Record<string, string>;
   price: number;
-  stock: number;
   images?: VariantImageFile[];
   sku?: string;
 }
@@ -48,15 +47,14 @@ export function VariantConfigurationTable({
   disabled = false,
 }: VariantConfigurationTableProps) {
   const [bulkPrice, setBulkPrice] = useState('');
-  const [bulkStock, setBulkStock] = useState('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  const handleUpdateVariant = (id: string, field: 'price' | 'stock' | 'sku', value: string | number) => {
+  const handleUpdateVariant = (id: string, field: 'price' | 'sku', value: string | number) => {
     const updated = combinations.map((combo) => {
       if (combo.id === id) {
         return {
           ...combo,
-          [field]: field === 'price' || field === 'stock' ? Number(value) : value,
+          [field]: field === 'price' ? Number(value) : value,
         };
       }
       return combo;
@@ -76,18 +74,6 @@ export function VariantConfigurationTable({
     }
   };
 
-  const handleApplyBulkStock = () => {
-    const stock = parseInt(bulkStock, 10);
-    if (!isNaN(stock) && stock >= 0) {
-      const updated = combinations.map((combo) => ({
-        ...combo,
-        stock,
-      }));
-      onChange(updated);
-      setBulkStock('');
-    }
-  };
-
   const handleUpdateVariantImages = (id: string, images: VariantImageFile[]) => {
     const updated = combinations.map((combo) => {
       if (combo.id === id) {
@@ -104,9 +90,8 @@ export function VariantConfigurationTable({
   // Calculate summary stats
   const totalVariants = combinations.length;
   const configuredVariants = combinations.filter(
-    (c) => c.price > 0 && c.stock >= 0
+    (c) => c.price > 0
   ).length;
-  const totalStock = combinations.reduce((sum, c) => sum + (c.stock || 0), 0);
   const avgPrice = combinations.length > 0
     ? combinations.reduce((sum, c) => sum + (c.price || 0), 0) / combinations.length
     : 0;
@@ -115,7 +100,7 @@ export function VariantConfigurationTable({
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <Package className="h-12 w-12 mb-4" />
+          <DollarSign className="h-12 w-12 mb-4" />
           <p className="text-lg font-medium mb-1">No hay combinaciones</p>
           <p className="text-sm">Define atributos de variantes para generar combinaciones</p>
         </CardContent>
@@ -130,7 +115,7 @@ export function VariantConfigurationTable({
           <div className="flex-1">
             <CardTitle>Configuración de Variantes</CardTitle>
             <CardDescription>
-              Configure precio y stock para cada variante. Las imágenes son opcionales.
+              Configure precio para cada variante. Las imágenes son opcionales.
             </CardDescription>
           </div>
           <Button
@@ -156,59 +141,34 @@ export function VariantConfigurationTable({
               — rellena primero, luego ajusta individualmente
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="flex gap-2 items-center">
-              <Input
-                id="bulkPrice"
-                type="number"
-                placeholder="Precio ($) para todas"
-                value={bulkPrice}
-                onChange={(e) => setBulkPrice(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleApplyBulkPrice()}
-                disabled={disabled}
-                min="0"
-                step="0.01"
-                className="flex-1 h-9"
-              />
-              <Button
-                type="button"
-                onClick={handleApplyBulkPrice}
-                disabled={disabled || !bulkPrice}
-                size="sm"
-                className="h-9 shrink-0"
-              >
-                <DollarSign className="h-3.5 w-3.5 mr-1" />
-                Precio
-              </Button>
-            </div>
-            <div className="flex gap-2 items-center">
-              <Input
-                id="bulkStock"
-                type="number"
-                placeholder="Stock para todas"
-                value={bulkStock}
-                onChange={(e) => setBulkStock(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleApplyBulkStock()}
-                disabled={disabled}
-                min="0"
-                className="flex-1 h-9"
-              />
-              <Button
-                type="button"
-                onClick={handleApplyBulkStock}
-                disabled={disabled || !bulkStock}
-                size="sm"
-                className="h-9 shrink-0"
-              >
-                <Package className="h-3.5 w-3.5 mr-1" />
-                Stock
-              </Button>
-            </div>
+          <div className="flex gap-2 items-center">
+            <Input
+              id="bulkPrice"
+              type="number"
+              placeholder="Precio ($) para todas"
+              value={bulkPrice}
+              onChange={(e) => setBulkPrice(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyBulkPrice()}
+              disabled={disabled}
+              min="0"
+              step="0.01"
+              className="flex-1 h-9"
+            />
+            <Button
+              type="button"
+              onClick={handleApplyBulkPrice}
+              disabled={disabled || !bulkPrice}
+              size="sm"
+              className="h-9 shrink-0"
+            >
+              <DollarSign className="h-3.5 w-3.5 mr-1" />
+              Precio
+            </Button>
           </div>
         </div>
 
         <InlineHelp variant="info">
-          <strong>Tip:</strong> Aplica precio y stock a todas arriba, luego ajusta fila por fila si alguna variante es diferente.
+          <strong>Tip:</strong> Aplica precio a todas arriba, luego ajusta fila por fila si alguna variante es diferente.
         </InlineHelp>
 
         {/* Variants Table */}
@@ -219,7 +179,6 @@ export function VariantConfigurationTable({
                 <TableHead>Variante</TableHead>
                 <TableHead>SKU (Opcional)</TableHead>
                 <TableHead>Precio ($) *</TableHead>
-                <TableHead>Stock *</TableHead>
                 <TableHead>Imágenes</TableHead>
               </TableRow>
             </TableHeader>
@@ -268,20 +227,6 @@ export function VariantConfigurationTable({
                       />
                     </TableCell>
 
-                    {/* Stock */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={combo.stock || ''}
-                        onChange={(e) => handleUpdateVariant(combo.id, 'stock', e.target.value)}
-                        placeholder="0"
-                        disabled={disabled}
-                        min="0"
-                        className="w-24"
-                        required
-                      />
-                    </TableCell>
-
                     {/* Images */}
                     <TableCell>
                       <Dialog>
@@ -319,7 +264,7 @@ export function VariantConfigurationTable({
         </div>
 
         {/* Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg text-sm">
           <div>
             <p className="text-muted-foreground">Total Variantes</p>
             <p className="text-2xl font-bold">{totalVariants}</p>
@@ -327,10 +272,6 @@ export function VariantConfigurationTable({
           <div>
             <p className="text-muted-foreground">Configuradas</p>
             <p className="text-2xl font-bold text-green-600">{configuredVariants}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Stock Total</p>
-            <p className="text-2xl font-bold">{totalStock}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Precio Promedio</p>
@@ -344,7 +285,7 @@ export function VariantConfigurationTable({
             <p className="font-medium">⚠️ Atención</p>
             <p>
               Hay {totalVariants - configuredVariants} variante(s) sin configurar.
-              Asegúrate de establecer precio y stock para todas las variantes.
+              Asegúrate de establecer precio para todas las variantes.
             </p>
           </div>
         )}
@@ -373,7 +314,7 @@ export function VariantConfigurationTable({
               El sistema genera automáticamente todas las combinaciones posibles de los atributos que definiste.
             </p>
             <p className="mt-2">
-              Cada combinación es única y necesita su propia configuración de precio y stock.
+              Cada combinación es única y necesita su propia configuración de precio.
             </p>
           </HelpSection>
 
@@ -402,9 +343,6 @@ export function VariantConfigurationTable({
                 <strong>Precio (Obligatorio):</strong> Precio de venta en Pesos chilenos. Puede ser diferente para cada variante
               </li>
               <li>
-                <strong>Stock (Obligatorio):</strong> Cantidad disponible. Se descuenta automáticamente con cada venta
-              </li>
-              <li>
                 <strong>Imágenes (Opcional):</strong> Hasta 5 imágenes específicas de esta variante
               </li>
             </ul>
@@ -412,9 +350,9 @@ export function VariantConfigurationTable({
 
           <HelpExample title="Ejemplo: Precios diferentes por tamaño">
             <div className="text-sm space-y-1">
-              <p><strong>Shampoo Coco 250ml:</strong> $25.000, Stock: 50</p>
-              <p><strong>Shampoo Coco 500ml:</strong> $45.000, Stock: 30</p>
-              <p><strong>Shampoo Coco 1L:</strong> $80.000, Stock: 20</p>
+              <p><strong>Shampoo Coco 250ml:</strong> $25.000</p>
+              <p><strong>Shampoo Coco 500ml:</strong> $45.000</p>
+              <p><strong>Shampoo Coco 1L:</strong> $80.000</p>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Nota: El precio por litro es más bajo en presentaciones grandes
@@ -425,8 +363,7 @@ export function VariantConfigurationTable({
             <p>Usa las acciones masivas cuando:</p>
             <ul className="list-disc ml-4 mt-2 space-y-1">
               <li><strong>Todas tienen el mismo precio:</strong> Por ejemplo, todos los colores al mismo precio</li>
-              <li><strong>Todas tienen el mismo stock inicial:</strong> Acabas de recibir 100 unidades de cada variante</li>
-              <li><strong>Quieres empezar rápido:</strong> Aplica valores base y luego ajusta las excepciones manualmente</li>
+              <li><strong>Quieres empezar rápido:</strong> Aplica el precio base y luego ajusta las excepciones manualmente</li>
             </ul>
           </HelpSection>
 
@@ -437,11 +374,8 @@ export function VariantConfigurationTable({
                 <p>1️⃣ Aplicar precio masivo: <strong>$35.000</strong></p>
                 <p className="text-muted-foreground text-xs">→ Todas las camisetas quedan a $35.000</p>
 
-                <p className="mt-2">2️⃣ Aplicar stock masivo: <strong>50 unidades</strong></p>
-                <p className="text-muted-foreground text-xs">→ Todas tienen 50 unidades de stock</p>
-
-                <p className="mt-2">3️⃣ Ajustar manualmente si es necesario:</p>
-                <p className="text-muted-foreground text-xs">→ Si el color rojo tiene más demanda, aumentar su stock a 80</p>
+                <p className="mt-2">2️⃣ Ajustar manualmente si es necesario:</p>
+                <p className="text-muted-foreground text-xs">→ Si alguna variante tiene precio diferente, editar individualmente</p>
               </div>
             </div>
           </HelpExample>
@@ -501,8 +435,7 @@ export function VariantConfigurationTable({
             <p>El panel inferior muestra estadísticas útiles:</p>
             <ul className="list-disc ml-4 mt-2 space-y-1">
               <li><strong>Total Variantes:</strong> Cantidad total de combinaciones generadas</li>
-              <li><strong>Configuradas:</strong> Variantes que ya tienen precio y stock definidos</li>
-              <li><strong>Stock Total:</strong> Suma del stock de todas las variantes</li>
+              <li><strong>Configuradas:</strong> Variantes que ya tienen precio definido</li>
               <li><strong>Precio Promedio:</strong> Precio promedio de todas las variantes</li>
             </ul>
           </HelpSection>
@@ -512,13 +445,7 @@ export function VariantConfigurationTable({
               <div>
                 <p className="font-medium">⚠️ "Hay X variantes sin configurar"</p>
                 <p className="text-sm ml-4 text-muted-foreground">
-                  Algunas variantes no tienen precio o stock. Revisa la tabla y completa los campos obligatorios (marcados con *).
-                </p>
-              </div>
-              <div>
-                <p className="font-medium">⚠️ Stock quedó en 0 después de una venta</p>
-                <p className="text-sm ml-4 text-muted-foreground">
-                  Normal. El sistema descuenta automáticamente. Vuelve a agregar stock cuando recibas nueva mercadería.
+                  Algunas variantes no tienen precio. Revisa la tabla y completa los campos obligatorios (marcados con *).
                 </p>
               </div>
               <div>
@@ -533,7 +460,7 @@ export function VariantConfigurationTable({
           <HelpSection title="Consejos y Buenas Prácticas">
             <ul className="list-disc ml-4 space-y-2">
               <li>
-                <strong>Usa valores masivos primero:</strong> Ahorra tiempo aplicando precio/stock base a todas, luego ajusta manualmente las excepciones
+                <strong>Usa valores masivos primero:</strong> Ahorra tiempo aplicando precio base a todas, luego ajusta manualmente las excepciones
               </li>
               <li>
                 <strong>Nombra bien los atributos:</strong> Usa nombres claros como "Tamaño: 250ml" en vez de "T1", "T2"
@@ -543,9 +470,6 @@ export function VariantConfigurationTable({
               </li>
               <li>
                 <strong>Imágenes de calidad:</strong> Si subes imágenes, usa fotos claras y bien iluminadas
-              </li>
-              <li>
-                <strong>Stock conservador:</strong> Es mejor empezar con stock bajo y aumentarlo, que prometer productos que no tienes
               </li>
             </ul>
           </HelpSection>
