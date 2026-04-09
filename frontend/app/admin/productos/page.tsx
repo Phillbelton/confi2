@@ -76,14 +76,14 @@ export default function ProductosPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Productos</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Productos</h1>
           <p className="text-muted-foreground">
             Gestiona tus productos y variantes
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button onClick={() => refetch()} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar

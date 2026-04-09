@@ -81,7 +81,7 @@ export function UpdateStatusModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent fullScreenMobile className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Actualizar Estado de Orden</DialogTitle>
           <DialogDescription>

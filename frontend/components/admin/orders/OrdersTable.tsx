@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import type { Order } from '@/types/order';
 
@@ -39,7 +40,85 @@ export function OrdersTable({
 
   return (
     <>
-      <div className="rounded-md border">
+      {/* Mobile card view */}
+      <div className="md:hidden space-y-3">
+        {orders.map((order) => (
+          <Card key={order._id}>
+            <CardContent className="p-4 space-y-3">
+              {/* Top row: order number + status */}
+              <div className="flex items-center justify-between">
+                <Link
+                  href={`/admin/ordenes/${order._id}`}
+                  className="font-mono text-sm hover:text-primary hover:underline"
+                >
+                  {order.orderNumber}
+                </Link>
+                <OrderStatusBadge status={order.status} />
+              </div>
+
+              {/* Customer info */}
+              <div>
+                <p className="font-medium">{order.customer.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {order.customer.email || order.customer.phone}
+                </p>
+              </div>
+
+              {/* Total + badges */}
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold">
+                  ${order.total.toLocaleString()}
+                </span>
+                <div className="flex gap-1.5">
+                  <Badge variant="outline" className="text-xs">
+                    {order.deliveryMethod === 'delivery' ? 'Delivery' : 'Retiro'}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {order.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Bottom row: date + actions */}
+              <div className="flex items-center justify-between border-t pt-3">
+                <span className="text-sm text-muted-foreground">
+                  {formatDistanceToNow(new Date(order.createdAt), {
+                    addSuffix: true,
+                    locale: es,
+                  })}
+                </span>
+                <div className="flex items-center gap-2">
+                  {order.whatsappSent ? (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      Enviado
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[44px]"
+                      onClick={() => onWhatsAppClick(order._id)}
+                      disabled={isMarkingWhatsApp}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Marcar
+                    </Button>
+                  )}
+                  <Link href={`/admin/ordenes/${order._id}`}>
+                    <Button variant="ghost" size="sm" className="min-h-[44px]">
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

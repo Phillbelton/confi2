@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClientHeader } from '@/components/client/ClientHeader';
+import { Header } from '@/components/layout/Header';
 import { ClientSidebar } from '@/components/client/ClientSidebar';
 import { ClientBottomNav } from '@/components/client/ClientBottomNav';
 import { useClientAuth } from '@/hooks/client/useClientAuth';
@@ -59,14 +59,14 @@ export default function ClientLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <ClientHeader />
+      <Header />
 
       <div className="flex">
         {/* Sidebar - Solo desktop */}
         <ClientSidebar />
 
         {/* Contenido principal */}
-        <main className="flex-1 min-h-[calc(100vh-56px)] pb-20 lg:pb-0 lg:ml-[280px]">
+        <main className="flex-1 min-h-[calc(100vh-56px)] pb-20 lg:min-h-[calc(100vh-96px)] lg:pb-0 lg:ml-[280px]">
           <div className="container mx-auto px-4 py-6 lg:px-8 lg:py-8 max-w-4xl">
             {children}
           </div>

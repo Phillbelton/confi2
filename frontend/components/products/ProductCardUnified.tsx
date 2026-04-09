@@ -155,14 +155,16 @@ export function ProductCardUnified({
     >
       {/* Image */}
       <Link href={`/productos/${product.slug}`} className="block relative">
-        <div className="aspect-square relative overflow-hidden bg-white">
-          <Image
-            src={mainImage}
-            alt={product.name}
-            fill
-            className="object-contain p-2 transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-          />
+        <div className="aspect-square relative overflow-hidden bg-white px-[15%]">
+          <div className="relative w-full h-full rounded-lg overflow-hidden">
+            <Image
+              src={mainImage}
+              alt={product.name}
+              fill
+              className="object-contain transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            />
+          </div>
 
           {/* Favorite */}
           <button

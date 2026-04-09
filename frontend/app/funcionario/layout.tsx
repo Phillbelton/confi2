@@ -17,6 +17,15 @@ export default function FuncionarioLayout({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const isLoginPage = pathname === '/funcionario/login';
 
+  // Agrega .theme-funcionario al <body> para que los portales de Radix UI
+  // (Dialog, Popover, Tooltip) hereden las variables CSS del tema funcionario
+  useEffect(() => {
+    if (!isLoginPage) {
+      document.body.classList.add('theme-funcionario');
+      return () => document.body.classList.remove('theme-funcionario');
+    }
+  }, [isLoginPage]);
+
   // Keyboard shortcut: Ctrl+K or Cmd+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

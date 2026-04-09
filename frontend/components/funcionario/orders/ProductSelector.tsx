@@ -94,7 +94,7 @@ export function ProductSelector({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent fullScreenMobile className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Agregar Producto</DialogTitle>
           <DialogDescription>
@@ -115,7 +115,7 @@ export function ProductSelector({
           </div>
 
           {/* Product List */}
-          <ScrollArea className="h-[300px] border rounded-lg">
+          <ScrollArea className="h-[40vh] sm:h-[300px] border rounded-lg">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -128,12 +128,12 @@ export function ProductSelector({
                 </p>
               </div>
             ) : (
-              <div className="p-2 space-y-2">
+              <div className="p-2 space-y-2 sm:space-y-2">
                 {filteredVariants.map((variant) => (
                   <button
                     key={variant._id}
                     onClick={() => setSelectedVariant(variant)}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                    className={`w-full text-left p-4 sm:p-3 rounded-xl sm:rounded-lg border transition-colors ${
                       selectedVariant?._id === variant._id
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -167,13 +167,13 @@ export function ProductSelector({
 
           {/* Selected Product & Quantity */}
           {selectedVariant && (
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
                 Producto seleccionado:
               </p>
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <p className="font-semibold">{selectedVariant.name}</p>
+              <div className="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{selectedVariant.name}</p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     {formatCurrency(selectedVariant.price)} × cantidad
                   </p>
@@ -182,6 +182,7 @@ export function ProductSelector({
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-9 w-9 sm:h-10 sm:w-10"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     disabled={quantity <= 1}
                   >
@@ -194,32 +195,33 @@ export function ProductSelector({
                       const val = parseInt(e.target.value) || 1;
                       setQuantity(Math.min(maxQuantity, Math.max(1, val)));
                     }}
-                    className="w-20 text-center"
+                    className="w-16 sm:w-20 text-center"
                     min="1"
                     max={maxQuantity}
                   />
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-9 w-9 sm:h-10 sm:w-10"
                     onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
                     disabled={quantity >= maxQuantity}
                   >
                     +
                   </Button>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                    {formatCurrency(selectedVariant.price * quantity)}
+                  </span>
                 </div>
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                Subtotal: <span className="font-semibold">{formatCurrency(selectedVariant.price * quantity)}</span>
-              </p>
             </div>
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="min-h-[44px] sm:min-h-0">
             Cancelar
           </Button>
-          <Button onClick={handleSelect} disabled={!canAdd} className="gap-2">
+          <Button onClick={handleSelect} disabled={!canAdd} className="gap-2 min-h-[44px] sm:min-h-0">
             <Plus className="h-4 w-4" />
             Agregar Producto
           </Button>

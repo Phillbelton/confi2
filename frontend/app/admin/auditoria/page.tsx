@@ -37,7 +37,7 @@ export default function AuditoriaPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Auditoría</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Auditoría</h1>
         <p className="text-muted-foreground">
           Historial completo de acciones administrativas del sistema
         </p>

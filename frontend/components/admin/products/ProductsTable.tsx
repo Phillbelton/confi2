@@ -113,7 +113,123 @@ export function ProductsTable({ products, onEdit, onDelete, isDeleting }: Produc
 
   return (
     <>
-      <div className="rounded-md border bg-card overflow-x-auto">
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {products.map((product) => {
+          const primaryImage =
+            product.images && product.images.length > 0 ? product.images[0] : null;
+
+          const categoryList = Array.isArray(product.categories)
+            ? product.categories.map((cat: any) =>
+                typeof cat === 'string' ? cat : cat.name
+              )
+            : [];
+
+          const brandName = product.brand
+            ? typeof product.brand === 'string'
+              ? product.brand
+              : product.brand.name
+            : null;
+
+          const variantCount = product.variantAttributes?.length || 0;
+
+          return (
+            <div
+              key={product._id}
+              className="rounded-md border bg-card p-3"
+            >
+              {/* Top row: image + info */}
+              <div className="flex gap-3">
+                {/* Thumbnail */}
+                <div className="w-[60px] h-[60px] rounded-md border bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {primaryImage ? (
+                    <img
+                      src={getImageUrl(primaryImage)}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{product.name}</p>
+                    {product.featured && (
+                      <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                    )}
+                  </div>
+                  {brandName && (
+                    <p className="text-xs text-muted-foreground truncate">{brandName}</p>
+                  )}
+                  {categoryList.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {categoryList.map((name: string) => (
+                        <Badge key={name} variant="outline" className="text-[10px] px-1.5 py-0">
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom row: variant count + status + actions */}
+              <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {variantCount} {variantCount === 1 ? 'atrib.' : 'atribs.'}
+                  </Badge>
+                  {product.active ? (
+                    <Badge variant="default" className="bg-green-600 text-xs">Activo</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">Inactivo</Badge>
+                  )}
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px]">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onEdit(product._id)}
+                      className="min-h-[44px]"
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => window.open(`/productos/${product.slug}`, '_blank')}
+                      className="min-h-[44px]"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Ver en tienda
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteClick(product)}
+                      className="text-red-600 focus:text-red-600 min-h-[44px]"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-md border bg-card overflow-x-auto">
         <Table style={{ tableLayout: 'fixed', width: '100%', minWidth: 600 }}>
           <TableHeader>
             <TableRow>

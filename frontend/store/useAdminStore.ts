@@ -36,7 +36,10 @@ export const useAdminStore = create<AdminStore>()(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       setLoading: (isLoading) => set({ isLoading }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => {
+        localStorage.removeItem('admin-token');
+        set({ user: null, isAuthenticated: false });
+      },
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),

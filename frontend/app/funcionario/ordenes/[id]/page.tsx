@@ -178,16 +178,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
           <Link href="/funcionario/ordenes">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold font-mono">{order.orderNumber}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold font-mono">{order.orderNumber}</h1>
               <OrderStatusBadge status={order.status} />
             </div>
             <p className="text-sm text-slate-500">
@@ -201,17 +201,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 self-end sm:self-auto">
           <RefreshCw className="h-4 w-4" />
           Actualizar
         </Button>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {order.customer.phone && (
           <Button
-            className="gap-2 bg-green-600 hover:bg-green-700"
+            className="gap-2 bg-green-600 hover:bg-green-700 min-h-[44px] sm:min-h-0"
             onClick={() => setWhatsappHelperOpen(true)}
           >
             <MessageCircle className="h-4 w-4" />
@@ -221,7 +221,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {canConfirm && (
           <Button
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 min-h-[44px] sm:min-h-0"
             onClick={() => setConfirmModalOpen(true)}
           >
             <CheckCircle className="h-4 w-4" />
@@ -232,7 +232,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         {canChangeStatus && !canConfirm && (
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 min-h-[44px] sm:min-h-0"
             onClick={() => setUpdateStatusModalOpen(true)}
           >
             <ArrowRight className="h-4 w-4" />
@@ -243,7 +243,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         {canEdit && (
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 min-h-[44px] sm:min-h-0"
             onClick={() => setEditItemsModalOpen(true)}
           >
             <Edit className="h-4 w-4" />
@@ -254,7 +254,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         {canCancel && (
           <Button
             variant="destructive"
-            className="gap-2"
+            className="gap-2 min-h-[44px] sm:min-h-0"
             onClick={() => setCancelModalOpen(true)}
           >
             <XCircle className="h-4 w-4" />
@@ -265,18 +265,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Quick Status Actions */}
       {canChangeStatus && !canConfirm && (
-        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
           <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-3">
-            ⚡ Acciones rápidas de estado:
+            Acciones rapidas de estado:
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {order.status === 'confirmed' && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleQuickStatusChange('preparing')}
                 disabled={isUpdatingStatus}
-                className="gap-2"
+                className="gap-2 min-h-[44px] sm:min-h-0"
               >
                 <Package className="h-4 w-4" />
                 Marcar como Preparando
@@ -288,7 +288,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 variant="outline"
                 onClick={() => handleQuickStatusChange('shipped')}
                 disabled={isUpdatingStatus}
-                className="gap-2"
+                className="gap-2 min-h-[44px] sm:min-h-0"
               >
                 <Truck className="h-4 w-4" />
                 Marcar como Enviada
@@ -300,7 +300,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 variant="outline"
                 onClick={() => handleQuickStatusChange('completed')}
                 disabled={isUpdatingStatus}
-                className="gap-2 text-green-600 border-green-600 hover:bg-green-50"
+                className="gap-2 min-h-[44px] sm:min-h-0 text-green-600 border-green-600 hover:bg-green-50"
               >
                 <CheckCircle className="h-4 w-4" />
                 Marcar como Completada
@@ -371,7 +371,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           {/* Products */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
               <CardTitle className="text-base">
                 Productos ({order.items.length})
               </CardTitle>
@@ -379,6 +379,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <Button
                   variant="outline"
                   size="sm"
+                  className="min-h-[44px] sm:min-h-0 shrink-0"
                   onClick={() => setEditItemsModalOpen(true)}
                 >
                   Editar
@@ -388,54 +389,56 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <CardContent>
               <div className="space-y-4">
                 {order.items.map((item, index) => (
-                  <div key={index} className="flex gap-4 pb-4 border-b last:border-0">
-                    {/* Product Image */}
-                    {item.variantSnapshot.image && (
-                      <div className="w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
-                        <img
-                          src={item.variantSnapshot.image}
-                          alt={item.variantSnapshot.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
+                  <div key={index} className="pb-4 border-b last:border-0">
+                    <div className="flex gap-3">
+                      {/* Product Image */}
+                      {item.variantSnapshot.image && (
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
+                          <img
+                            src={item.variantSnapshot.image}
+                            alt={item.variantSnapshot.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
 
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">{item.variantSnapshot.name}</p>
-                      <p className="text-xs text-slate-500 font-mono">
-                        SKU: {item.variantSnapshot.sku}
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{item.variantSnapshot.name}</p>
+                        <p className="text-xs text-slate-500 font-mono">
+                          SKU: {item.variantSnapshot.sku}
+                        </p>
+
+                        {/* Attributes */}
+                        {item.variantSnapshot.attributes &&
+                          Object.keys(item.variantSnapshot.attributes).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {Object.entries(item.variantSnapshot.attributes).map(([key, value]) => (
+                                <Badge key={key} variant="outline" className="text-xs">
+                                  {key}: {value}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                      </div>
+                    </div>
+
+                    {/* Pricing - below on mobile for better layout */}
+                    <div className="mt-2 ml-0 sm:ml-[calc(theme(spacing.16)+theme(spacing.3))] space-y-1">
+                      <p className="text-sm">
+                        {item.quantity} × {formatCurrency(item.pricePerUnit)} ={' '}
+                        <span className="font-semibold">
+                          {formatCurrency(item.quantity * item.pricePerUnit)}
+                        </span>
                       </p>
-
-                      {/* Attributes */}
-                      {item.variantSnapshot.attributes &&
-                        Object.keys(item.variantSnapshot.attributes).length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {Object.entries(item.variantSnapshot.attributes).map(([key, value]) => (
-                              <Badge key={key} variant="outline" className="text-xs">
-                                {key}: {value}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                      {/* Pricing */}
-                      <div className="mt-2 space-y-1">
-                        <p className="text-sm">
-                          {item.quantity} × {formatCurrency(item.pricePerUnit)} ={' '}
-                          <span className="font-semibold">
-                            {formatCurrency(item.quantity * item.pricePerUnit)}
-                          </span>
+                      {item.discount > 0 && (
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          Descuento: -{formatCurrency(item.discount)}
                         </p>
-                        {item.discount > 0 && (
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            Descuento: -{formatCurrency(item.discount)}
-                          </p>
-                        )}
-                        <p className="text-sm font-semibold">
-                          Subtotal: {formatCurrency(item.subtotal)}
-                        </p>
-                      </div>
+                      )}
+                      <p className="text-sm font-semibold">
+                        Subtotal: {formatCurrency(item.subtotal)}
+                      </p>
                     </div>
                   </div>
                 ))}

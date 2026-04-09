@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 import type { Brand } from '@/types';
 
 interface BrandsTableProps {
@@ -52,8 +53,80 @@ export function BrandsTable({
         </div>
       </div>
 
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {filteredBrands.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {search ? 'No se encontraron marcas' : 'No hay marcas'}
+          </div>
+        ) : (
+          filteredBrands.map((brand) => (
+            <Card key={`mobile-${brand._id}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    {brand.logo ? (
+                      <AvatarImage src={brand.logo} alt={brand.name} />
+                    ) : (
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {brand.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium">{brand.name}</p>
+                      {brand.active ? (
+                        <Badge variant="default" className="bg-green-600">
+                          Activa
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Inactiva</Badge>
+                      )}
+                    </div>
+                    {brand.slug && (
+                      <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
+                        {brand.slug}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="min-h-[44px] min-w-[44px]"
+                      onClick={() => onEdit(brand)}
+                      disabled={isDeleting}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="min-h-[44px] min-w-[44px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `¿Estás seguro de eliminar la marca "${brand.name}"?`
+                          )
+                        ) {
+                          onDelete(brand._id);
+                        }
+                      }}
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
