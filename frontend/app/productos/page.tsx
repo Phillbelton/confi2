@@ -253,7 +253,7 @@ function ProductsContent() {
           <div className="flex gap-5 lg:gap-6">
 
             {/* Sidebar — Desktop */}
-            <div className="hidden lg:block w-[260px] flex-shrink-0">
+            <div className="hidden lg:block w-[240px] flex-shrink-0">
               <div className="sticky top-24">
                 <FiltersSidebarCentral
                   selectedCategory={filters.category}

@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 import { AuditLogDetailModal } from './AuditLogDetailModal';
 import type { AuditLog } from '@/types/audit';
 import { AUDIT_ACTION_LABELS, AUDIT_ACTION_COLORS, AUDIT_ENTITY_LABELS } from '@/types/audit';
@@ -79,7 +80,48 @@ export function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
 
   return (
     <>
-      <div className="rounded-md border">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {logs.map((log) => (
+          <Card key={`mobile-${log._id}`}>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">{log.user.name}</p>
+                  <p className="text-sm text-muted-foreground">{log.user.email}</p>
+                </div>
+                <Badge className={AUDIT_ACTION_COLORS[log.action]}>
+                  {AUDIT_ACTION_LABELS[log.action]}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium">{AUDIT_ENTITY_LABELS[log.entity]}</p>
+                <p className="text-xs text-muted-foreground font-mono">{log.entityId}</p>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  {formatDistanceToNow(new Date(log.createdAt), {
+                    addSuffix: true,
+                    locale: es,
+                  })}
+                </span>
+                <span className="font-mono">{log.ipAddress}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full min-h-[44px]"
+                onClick={() => setSelectedLog(log)}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Ver detalles
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

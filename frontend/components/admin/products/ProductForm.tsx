@@ -92,7 +92,7 @@ export function ProductForm({ product, onSubmit, isSubmitting, mode }: ProductFo
             Volver
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
               {mode === 'create' ? 'Crear Producto' : 'Editar Producto'}
             </h1>
             <p className="text-muted-foreground">

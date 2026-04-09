@@ -160,14 +160,14 @@ export function VariantProductForm({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Crear Producto con Variantes</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Crear Producto con Variantes</h1>
             <p className="text-muted-foreground">
               {step === 1
                 ? 'Paso 1: Información básica y atributos de variantes'

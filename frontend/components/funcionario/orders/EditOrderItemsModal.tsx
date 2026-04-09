@@ -151,7 +151,7 @@ export function EditOrderItemsModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent fullScreenMobile className="sm:max-w-[700px] sm:max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="h-5 w-5" />
@@ -162,67 +162,61 @@ export function EditOrderItemsModal({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto py-4 space-y-5 sm:space-y-4">
             {/* Current Items */}
-            <div className="space-y-3">
+            <div className="space-y-4 sm:space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Productos Actuales ({items.length})</Label>
+                <Label className="text-base sm:text-sm">Productos ({items.length})</Label>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setProductSelectorOpen(true)}
-                  className="gap-2"
+                  className="gap-2 min-h-[44px] sm:min-h-0"
                 >
                   <Plus className="h-4 w-4" />
-                  Agregar Producto
+                  Agregar
                 </Button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4 sm:space-y-2">
                 {items.map((item, index) => (
                   <div
                     key={index}
-                    className="flex gap-3 p-3 border rounded-lg bg-slate-50 dark:bg-slate-900"
+                    className="p-4 sm:p-3 border rounded-xl sm:rounded-lg bg-slate-50 dark:bg-slate-900 space-y-3 sm:space-y-2"
                   >
-                    {/* Product Image */}
-                    {item.image && (
-                      <div className="w-16 h-16 rounded bg-slate-200 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">{item.name}</p>
-                      <p className="text-xs text-slate-500 font-mono">SKU: {item.sku}</p>
-                      {Object.keys(item.attributes).length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {Object.entries(item.attributes).map(([key, value]) => (
-                            <Badge key={key} variant="outline" className="text-xs">
-                              {key}: {value}
-                            </Badge>
-                          ))}
+                    {/* Product info row */}
+                    <div className="flex gap-3 items-start">
+                      {item.image && (
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-slate-200 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       )}
-                      <p className="text-sm mt-1">
-                        {formatCurrency(item.pricePerUnit)} × {item.quantity} ={' '}
-                        <span className="font-semibold">
-                          {formatCurrency(item.pricePerUnit * item.quantity)}
-                        </span>
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm leading-tight">{item.name}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">SKU: {item.sku}</p>
+                        {Object.keys(item.attributes).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {Object.entries(item.attributes).map(([key, value]) => (
+                              <Badge key={key} variant="outline" className="text-xs">
+                                {key}: {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Quantity Controls */}
-                    <div className="flex flex-col gap-2 items-end">
-                      <div className="flex items-center gap-1">
+                    {/* Price + Quantity + Delete row */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-1.5">
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg"
                           onClick={() => handleQuantityChange(index, item.quantity - 1)}
                           disabled={item.quantity <= 1}
                         >
@@ -234,27 +228,31 @@ export function EditOrderItemsModal({
                           onChange={(e) =>
                             handleQuantityChange(index, parseInt(e.target.value) || 1)
                           }
-                          className="w-16 h-8 text-center"
+                          className="w-14 h-10 sm:w-16 sm:h-8 text-center text-base sm:text-sm rounded-lg"
                           min="1"
                         />
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg"
                           onClick={() => handleQuantityChange(index, item.quantity + 1)}
                         >
                           +
                         </Button>
                       </div>
+
+                      <p className="text-sm font-semibold whitespace-nowrap">
+                        {formatCurrency(item.pricePerUnit * item.quantity)}
+                      </p>
+
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleRemoveItem(index)}
                         disabled={items.length <= 1}
-                        className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-10 w-10 sm:h-8 sm:w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0"
                       >
-                        <Trash2 className="h-3 w-3" />
-                        Eliminar
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -336,14 +334,14 @@ export function EditOrderItemsModal({
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving} className="min-h-[44px] sm:min-h-0">
               Cancelar
             </Button>
             <Button
               onClick={handleSave}
               disabled={isSaving || !hasChanges || items.length === 0}
-              className="gap-2"
+              className="gap-2 min-h-[44px] sm:min-h-0"
             >
               {isSaving ? (
                 <>

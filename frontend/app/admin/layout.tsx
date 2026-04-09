@@ -25,6 +25,7 @@ export default function AdminLayout({
     }
   }, [isLoginPage]);
 
+
   // Login page doesn't need protection or layout
   if (isLoginPage) {
     return <>{children}</>;

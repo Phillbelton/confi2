@@ -250,9 +250,9 @@ export default function UsuariosPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Usuarios</h1>
           <p className="text-muted-foreground">
             Gestiona administradores y funcionarios del sistema
           </p>
@@ -369,7 +369,95 @@ export default function UsuariosPage() {
             </div>
           ) : (
             <>
-              <div className="border rounded-lg overflow-hidden">
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {users.map((user: AdminUser) => (
+                  <div key={`mobile-${user.id}`} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        {user.role === 'admin' ? (
+                          <Shield className="h-5 w-5 text-primary" />
+                        ) : (
+                          <UserCog className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium">{user.name}</p>
+                          <Badge className={roleColors[user.role] || roleColors.cliente}>
+                            {roleLabels[user.role] || user.role}
+                          </Badge>
+                          <Badge variant={user.active ? 'default' : 'secondary'}>
+                            {user.active ? 'Activo' : 'Inactivo'}
+                          </Badge>
+                        </div>
+                        <div className="mt-1 space-y-0.5">
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            {user.email}
+                          </p>
+                          {user.phone && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Phone className="h-3 w-3 shrink-0" />
+                              {user.phone}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            {user.createdAt
+                              ? formatDistanceToNow(new Date(user.createdAt), {
+                                  addSuffix: true,
+                                  locale: es,
+                                })
+                              : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px] shrink-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {user.role !== 'cliente' && (
+                            <>
+                              <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openPasswordDialog(user)}>
+                                <Key className="mr-2 h-4 w-4" />
+                                Cambiar contraseña
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => handleToggleActive(user)}
+                            className={user.active ? 'text-destructive' : 'text-green-600'}
+                          >
+                            {user.active ? (
+                              <>
+                                <PowerOff className="mr-2 h-4 w-4" />
+                                Desactivar
+                              </>
+                            ) : (
+                              <>
+                                <Power className="mr-2 h-4 w-4" />
+                                Activar
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>

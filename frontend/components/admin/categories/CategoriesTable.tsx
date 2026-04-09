@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 import type { Category } from '@/types';
 import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 import { cn } from '@/lib/utils';
@@ -231,8 +232,189 @@ export function CategoriesTable({
         </div>
       </div>
 
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {filteredCategories.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {search ? 'No se encontraron categorías' : 'No hay categorías'}
+          </div>
+        ) : (
+          filteredCategories.map((category) => {
+            const hasSubcategories =
+              category.subcategories && category.subcategories.length > 0;
+            const isExpanded = expandedCategories.has(category._id);
+
+            return (
+              <Fragment key={`mobile-${category._id}`}>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-10 w-10 shrink-0">
+                        {category.image ? (
+                          <AvatarImage src={category.image} alt={category.name} />
+                        ) : (
+                          <AvatarFallback
+                            style={{
+                              backgroundColor: category.color || '#e5e7eb',
+                              color: '#fff',
+                            }}
+                          >
+                            {category.icon || category.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium">{category.name}</p>
+                          {category.active ? (
+                            <Badge variant="default" className="bg-green-600">
+                              Activo
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">Inactivo</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          {category.color && (
+                            <div className="flex items-center gap-1">
+                              <div
+                                className="h-4 w-4 rounded border"
+                                style={{ backgroundColor: category.color }}
+                              />
+                              <span className="text-xs text-muted-foreground font-mono">
+                                {category.color}
+                              </span>
+                            </div>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            Orden: {category.order}
+                          </span>
+                        </div>
+                        {hasSubcategories && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="mt-1 h-7 px-2 text-xs"
+                            onClick={() => toggleExpand(category._id)}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-3 w-3 mr-1" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3 mr-1" />
+                            )}
+                            {category.subcategories!.length}{' '}
+                            {category.subcategories!.length === 1
+                              ? 'subcategoría'
+                              : 'subcategorías'}
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="min-h-[44px] min-w-[44px]"
+                          onClick={() => onEdit(category)}
+                          disabled={isDeleting}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="min-h-[44px] min-w-[44px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `¿Estás seguro de eliminar la categoría "${category.name}"?`
+                              )
+                            ) {
+                              onDelete(category._id);
+                            }
+                          }}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Expanded subcategories */}
+                    {hasSubcategories && isExpanded && (
+                      <div className="mt-3 pl-4 border-l-2 border-border space-y-2">
+                        {category.subcategories!.map((sub) => (
+                          <div
+                            key={sub._id}
+                            className="flex items-center gap-3 py-2"
+                          >
+                            <Avatar className="h-8 w-8 shrink-0">
+                              {sub.image ? (
+                                <AvatarImage src={sub.image} alt={sub.name} />
+                              ) : (
+                                <AvatarFallback
+                                  style={{
+                                    backgroundColor: sub.color || '#e5e7eb',
+                                    color: '#fff',
+                                  }}
+                                >
+                                  {sub.icon || sub.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium">{sub.name}</p>
+                                {sub.active ? (
+                                  <Badge variant="default" className="bg-green-600 text-xs">
+                                    Activo
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">Inactivo</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="min-h-[44px] min-w-[44px]"
+                                onClick={() => onEdit(sub)}
+                                disabled={isDeleting}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="min-h-[44px] min-w-[44px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `¿Estás seguro de eliminar la categoría "${sub.name}"?`
+                                    )
+                                  ) {
+                                    onDelete(sub._id);
+                                  }
+                                }}
+                                disabled={isDeleting}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </Fragment>
+            );
+          })
+        )}
+      </div>
+
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

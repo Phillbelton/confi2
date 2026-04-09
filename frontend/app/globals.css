@@ -73,22 +73,22 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  /* Vibrant theme - Store */
-  --background: #0ABDC6; /* Turquesa vibrante como fondo base */
-  --foreground: #ffffff; /* Texto blanco principal */
+  /* Base neutro — no se filtra a secciones que no lo esperan */
+  --background: #fafbfc;
+  --foreground: #1a1a2e;
 
-  --card: rgba(255, 255, 255, 0.12); /* Glass cards */
-  --card-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
 
   --popover: #ffffff;
-  --popover-foreground: #1a3a4a;
+  --popover-foreground: #1a1a2e;
 
-  --muted: rgba(255, 255, 255, 0.08); /* Glass muted */
-  --muted-foreground: rgba(255, 255, 255, 0.7);
+  --muted: #f1f3f5;
+  --muted-foreground: #6b7280;
 
-  --border: rgba(255, 255, 255, 0.2); /* Glass borders */
-  --input: rgba(255, 255, 255, 0.15);
-  --ring: #ffffff;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #0ABDC6;
 
   /* Charts */
   --chart-1: #0ABDC6; /* Turquesa */
@@ -233,6 +233,24 @@
   --sidebar-primary: #dc2626;
 }
 
+/*
+  Landing / Homepage — Fondo turquesa vibrante con glass morphism.
+  Solo se aplica al homepage, no se filtra al resto del sitio.
+*/
+.theme-landing {
+  --background: #0ABDC6;
+  --foreground: #ffffff;
+  --card: rgba(255, 255, 255, 0.12);
+  --card-foreground: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #1a3a4a;
+  --muted: rgba(255, 255, 255, 0.08);
+  --muted-foreground: rgba(255, 255, 255, 0.7);
+  --border: rgba(255, 255, 255, 0.2);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #ffffff;
+}
+
 /* Catálogo: tema claro comercial — cards neutras, fotos protagonistas */
 .theme-catalog {
   --background: #fafbfc;
@@ -268,27 +286,10 @@
     @apply outline-2 outline-offset-2 outline-ring;
   }
 
-  /* Container customization - optimized for readability and visual hierarchy */
+  /* Container customization */
   .container {
-    @apply mx-auto px-4 md:px-6;
-  }
-
-  @media (min-width: 1280px) {
-    .container {
-      max-width: 1280px !important;
-    }
-  }
-
-  @media (min-width: 1536px) {
-    .container {
-      max-width: 1400px !important;
-    }
-  }
-
-  @media (min-width: 1920px) {
-    .container {
-      max-width: 1536px !important;
-    }
+    @apply mx-auto px-4 md:px-6 lg:px-8;
+    max-width: none !important;
   }
 }
 

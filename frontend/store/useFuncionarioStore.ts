@@ -36,7 +36,10 @@ export const useFuncionarioStore = create<FuncionarioStore>()(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       setLoading: (isLoading) => set({ isLoading }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => {
+        localStorage.removeItem('funcionario-token');
+        set({ user: null, isAuthenticated: false });
+      },
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),

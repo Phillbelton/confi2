@@ -44,7 +44,7 @@ export function ClientHeader({
     <>
       <header
         className={cn(
-          'sticky top-0 z-50 h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b',
+          'sticky top-0 z-50 h-14 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-border shadow-sm',
           className
         )}
       >
