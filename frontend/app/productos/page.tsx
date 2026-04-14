@@ -197,8 +197,9 @@ function ProductsContent() {
     (filters.onSale ? 1 : 0);
 
   return (
-    <div className="min-h-screen theme-catalog bg-background">
-      <div>
+    <div className="min-h-screen theme-catalog bg-background section-with-pattern">
+      <div className="pattern-dots absolute inset-0 pointer-events-none" aria-hidden="true" />
+      <div className="relative z-10">
 
         {/* ── Top bar: breadcrumb + title ── */}
         <div className="container mx-auto px-4 pt-5 pb-4">
@@ -294,9 +295,9 @@ function ProductsContent() {
                     className="theme-catalog w-[320px] bg-background border-border p-0 flex flex-col"
                   >
                     {/* Header */}
-                    <SheetHeader className="p-4 border-b border-border flex-shrink-0">
+                    <SheetHeader className="p-4 border-b border-border flex-shrink-0 bg-warm-cream">
                       <div className="flex items-center justify-between">
-                        <SheetTitle className="text-foreground font-display">Filtros</SheetTitle>
+                        <SheetTitle className="text-handwriting text-lg text-foreground">Filtros</SheetTitle>
                         {pendingFilterCount > 0 && (
                           <button
                             onClick={handlePendingClearFilters}
@@ -435,7 +436,7 @@ function ProductsContent() {
                     <Search className="h-7 w-7 text-muted-foreground" />
                   </div>
                   <h2 className="text-lg font-display font-bold text-foreground mb-1.5">No encontramos productos</h2>
-                  <p className="text-muted-foreground mb-5 text-sm max-w-xs mx-auto">
+                  <p className="text-handwriting text-lg text-muted-foreground mb-5 max-w-xs mx-auto">
                     Intenta con otros filtros o busca algo diferente
                   </p>
                   <Button onClick={handleClearFilters} className="bg-primary hover:bg-primary/90 text-white rounded-lg font-bold h-10 px-6">

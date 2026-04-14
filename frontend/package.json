@@ -7,9 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:perf": "npx playwright test",
-    "test:perf:ui": "npx playwright test --ui",
-    "test:perf:report": "npx playwright show-report tests/performance/report"
+    "test:perf": "npx playwright test --project=perf-desktop --project=perf-mobile",
+    "test:perf:ui": "npx playwright test --project=perf-desktop --project=perf-mobile --ui",
+    "test:perf:report": "npx playwright show-report tests/report",
+    "test:e2e": "npx playwright test --project=e2e-desktop --project=e2e-mobile",
+    "test:e2e:desktop": "npx playwright test --project=e2e-desktop",
+    "test:e2e:mobile": "npx playwright test --project=e2e-mobile",
+    "test:e2e:ui": "npx playwright test --project=e2e-desktop --project=e2e-mobile --ui",
+    "test:e2e:report": "npx playwright show-report tests/report"
   },
   "dependencies": {
     "@formkit/auto-animate": "^0.9.0",

@@ -73,8 +73,8 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  /* Base neutro — no se filtra a secciones que no lo esperan */
-  --background: #fafbfc;
+  /* Base cálido — crema sutil para evocar calidez de confitería */
+  --background: #FFFBF7;
   --foreground: #1a1a2e;
 
   --card: #ffffff;
@@ -83,11 +83,17 @@
   --popover: #ffffff;
   --popover-foreground: #1a1a2e;
 
-  --muted: #f1f3f5;
+  --muted: #FFF5EE;
   --muted-foreground: #6b7280;
 
-  --border: #e5e7eb;
-  --input: #e5e7eb;
+  --border: #E8E3DE;
+  --input: #E8E3DE;
+
+  /* Warm section backgrounds — para secciones con personalidad */
+  --warm-cream: #FFF8F0;
+  --warm-pink: #FFF0F5;
+  --warm-yellow: #FFFDE7;
+  --brush-bg: url('/brand/badges/brush-stroke-alpha.png');
   --ring: #0ABDC6;
 
   /* Charts */
@@ -251,16 +257,16 @@
   --ring: #ffffff;
 }
 
-/* Catálogo: tema claro comercial — cards neutras, fotos protagonistas */
+/* Catálogo: tema claro comercial cálido — crema sutil, cards blancas protagonistas */
 .theme-catalog {
-  --background: #fafbfc;
+  --background: #FFFBF7;
   --foreground: #1a1a2e;
   --card: #ffffff;
   --card-foreground: #1a1a2e;
-  --muted: #f1f3f5;
+  --muted: #FFF5EE;
   --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
+  --border: #E8E3DE;
+  --input: #E8E3DE;
   --ring: #0ABDC6;
   --popover: #ffffff;
   --popover-foreground: #1a1a2e;
@@ -780,4 +786,167 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
   }
+}
+
+/* ===========================================
+   PERSONALIDAD DE MARCA - CONFITERÍA QUELITA
+   Minimal Playful + Neo-Retro Confitería
+   =========================================== */
+
+/* Warm section backgrounds */
+.bg-warm-cream { background-color: var(--warm-cream); }
+.bg-warm-pink { background-color: var(--warm-pink); }
+.bg-warm-yellow { background-color: var(--warm-yellow); }
+
+/* SVG Pattern Backgrounds — sutiles, 5% opacity */
+.pattern-dots {
+  background-image: radial-gradient(circle, var(--primary) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.05;
+}
+
+.pattern-diagonal {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    var(--primary) 10px,
+    var(--primary) 11px
+  );
+  opacity: 0.04;
+}
+
+.pattern-confetti {
+  background-image:
+    radial-gradient(circle at 20% 30%, var(--primary) 2px, transparent 2px),
+    radial-gradient(circle at 70% 60%, var(--accent) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 40% 80%, var(--secondary) 1px, transparent 1px),
+    radial-gradient(circle at 85% 20%, var(--accent) 2px, transparent 2px);
+  background-size: 120px 120px;
+  opacity: 0.06;
+}
+
+/* Sticker badge effect — rotación sutil + sombra offset */
+.sticker-badge {
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.sticker-badge:hover {
+  transform: rotate(-1deg) scale(1.05);
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.15);
+}
+
+.sticker-badge-alt {
+  transform: rotate(2deg);
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.12);
+}
+
+/* Card top accent border — franja de color tipo packaging */
+.card-accent-top {
+  border-top: 3px solid var(--primary);
+}
+.card-accent-top-accent {
+  border-top: 3px solid var(--accent);
+}
+.card-accent-top-secondary {
+  border-top: 3px solid var(--secondary);
+}
+
+/* Handwriting accent text — usa Caveat */
+.text-handwriting {
+  font-family: var(--font-handwriting), "Caveat", cursive;
+  font-weight: 700;
+}
+
+/* Candy spinner — loading con personalidad */
+@keyframes candy-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.1); }
+  50% { transform: rotate(180deg) scale(1); }
+  75% { transform: rotate(270deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+.candy-spinner {
+  animation: candy-spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Section pattern overlay — para agregar patterns sin modificar el background del contenedor */
+.section-with-pattern {
+  position: relative;
+}
+.section-with-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Category pattern overlay — patrón SVG por categoría detrás de imagen de producto */
+.category-pattern-overlay {
+  position: relative;
+  background-color: white;
+}
+.category-pattern-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--pattern-bg, none);
+  background-repeat: repeat;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Brush stroke badge — descuento con forma orgánica */
+.brush-badge {
+  position: relative;
+  background-color: transparent;
+  background-image: var(--brush-bg);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 0;
+  padding: 14px 18px 18px;
+  margin: 1px 1px 1px -10px;
+  filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.15));
+  transform: rotate(-2deg);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.brush-badge:hover {
+  transform: rotate(-1deg) scale(1.05);
+  filter: drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.2));
+}
+/* Fallback cuando no hay imagen de brush — sólido con accent */
+.brush-badge--solid {
+  background-image: none;
+  background-color: var(--accent);
+  border-radius: 0.375rem;
+  padding: 6px 8px;
+}
+
+/* Tier tag — etiqueta de confitería para descuentos escalonados */
+.tier-tag {
+  position: relative;
+  border-radius: 0.5rem;
+  padding: 3px 8px 3px 16px;
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+/* Agujero de etiqueta de precio */
+.tier-tag::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+.tier-tag:hover {
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.12);
 }

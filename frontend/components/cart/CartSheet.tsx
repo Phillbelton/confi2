@@ -70,8 +70,8 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
             <p className="text-gray-600 text-center font-medium">
               Tu carrito está vacío
             </p>
-            <p className="text-gray-400 text-sm text-center">
-              Agrega productos para comenzar tu compra
+            <p className="text-handwriting text-lg text-gray-400 text-center">
+              Agrega productos y arma tu pedido
             </p>
             <Button
               onClick={() => onOpenChange(false)}
@@ -154,7 +154,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                                   ${((item.unitPrice - item.discount) * item.quantity).toLocaleString('es-CL')}
                                 </span>
                                 {item.discount > 0 && (
-                                  <span className="text-xs text-gray-400 line-through">
+                                  <span className="text-handwriting text-sm text-gray-400 line-through">
                                     ${(item.unitPrice * item.quantity).toLocaleString('es-CL')}
                                   </span>
                                 )}

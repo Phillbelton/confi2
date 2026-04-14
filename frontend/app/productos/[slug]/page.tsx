@@ -273,7 +273,7 @@ export default function ProductDetailPage() {
                 {/* Fixed Discount Badge — top left */}
                 {hasFixedDiscount && selectedVariant && (
                   <div className="absolute top-3 left-3 z-10">
-                    <div className="bg-accent text-white font-bold text-xs px-2.5 py-1.5 rounded-md shadow-sm">
+                    <div className="text-white font-bold text-xs brush-badge">
                       {selectedVariant.fixedDiscount?.badge ||
                         (selectedVariant.fixedDiscount!.type === 'percentage'
                           ? `-${selectedVariant.fixedDiscount!.value}%`
@@ -377,7 +377,7 @@ export default function ProductDetailPage() {
                       ${discount ? discount.finalPrice.toLocaleString('es-CL') : selectedVariant.price.toLocaleString('es-CL')}
                     </span>
                     {discount && (
-                      <span className="font-sans text-base md:text-lg text-muted-foreground line-through" suppressHydrationWarning>
+                      <span className="text-handwriting text-lg md:text-xl text-muted-foreground line-through" suppressHydrationWarning>
                         ${selectedVariant.price.toLocaleString('es-CL')}
                       </span>
                     )}
@@ -545,7 +545,7 @@ export default function ProductDetailPage() {
                 ${displayPrice.toLocaleString('es-CL')}
               </span>
               {discount && (
-                <span className="font-sans text-xs text-muted-foreground line-through leading-tight" suppressHydrationWarning>
+                <span className="text-handwriting text-sm text-muted-foreground line-through leading-tight" suppressHydrationWarning>
                   ${selectedVariant.price.toLocaleString('es-CL')}
                 </span>
               )}

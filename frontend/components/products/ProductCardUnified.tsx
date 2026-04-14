@@ -16,14 +16,23 @@ import { useCartStore } from '@/store/useCartStore';
 import { useProductVariants } from '@/hooks/useProducts';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { toast } from 'sonner';
-import type { ProductParent, ProductVariant, Brand } from '@/types';
+import type { ProductParent, ProductVariant, Brand, Category } from '@/types';
 import { cn } from '@/lib/utils';
+import { getCategoryPattern } from '@/lib/category-patterns';
 import {
   calculateItemDiscount,
   getDiscountBadge,
   getDiscountTiers,
   hasActiveDiscount,
 } from '@/lib/discountCalculator';
+
+/** Color progression for tiered discount tags: cool → hot */
+const TIER_TAG_COLORS = [
+  '#0ABDC6', // primary teal
+  '#3B82F6', // blue
+  '#7C3AED', // purple
+  '#E63946', // accent red
+];
 
 interface ProductCardUnifiedProps {
   product: ProductParent;
@@ -104,6 +113,21 @@ export function ProductCardUnified({
         ? product.brand
         : null;
 
+  // Extract category colors for dynamic top border
+  const categoryColors = (product.categories || [])
+    .map((cat) => (typeof cat === 'object' && cat !== null ? (cat as Category).color : null))
+    .filter((c): c is string => Boolean(c));
+
+  const topBorderStyle = categoryColors.length >= 2
+    ? { borderTopColor: 'transparent', backgroundImage: `linear-gradient(to right, ${categoryColors[0]}, ${categoryColors[1]})`, backgroundSize: '100% 3px', backgroundRepeat: 'no-repeat', backgroundPosition: 'top' }
+    : categoryColors.length === 1
+      ? { borderTopColor: categoryColors[0] }
+      : undefined;
+
+  const patternStyle = categoryColors.length > 0
+    ? getCategoryPattern(categoryColors[0])
+    : undefined;
+
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
 
@@ -146,17 +170,21 @@ export function ProductCardUnified({
         'group relative flex flex-col h-full',
         'bg-card rounded-lg overflow-hidden',
         'border border-border',
+        'border-t-[3px]',
+        categoryColors.length === 0 && 'border-t-primary',
+        categoryColors.length >= 2 && 'border-t-transparent',
         'shadow-sm hover:shadow-md',
         'transition-all duration-150',
         'hover:-translate-y-0.5',
         !selectedVariant?.active && 'opacity-60',
         className
       )}
+      style={topBorderStyle}
     >
       {/* Image */}
       <Link href={`/productos/${product.slug}`} className="block relative">
-        <div className="aspect-square relative overflow-hidden bg-white px-[15%]">
-          <div className="relative w-full h-full rounded-lg overflow-hidden">
+        <div className="aspect-square relative overflow-hidden category-pattern-overlay px-[15%]" style={patternStyle}>
+          <div className="relative z-[1] w-full h-full rounded-lg overflow-hidden">
             <Image
               src={mainImage}
               alt={product.name}
@@ -179,25 +207,29 @@ export function ProductCardUnified({
             <Heart className={cn('h-4 w-4', isFavorite && 'fill-current')} />
           </button>
 
-          {/* Fixed Discount Badge — top left */}
+          {/* Fixed Discount Badge — top left, sticker style */}
           {hasDiscount && discountBadge && (
             <div className="absolute top-2 left-2 z-10">
-              <div className="bg-accent text-white font-bold text-[11px] leading-none px-2 py-1.5 rounded-md shadow-sm">
+              <div className="text-white font-bold text-[13px] leading-none brush-badge">
                 {discountBadge}
               </div>
             </div>
           )}
 
-          {/* Tiered Discount Badges — top right */}
+          {/* Tiered Discount Tags — etiquetas de confitería */}
           {tiers && tiers.length > 0 && (
             <div className="absolute top-2 right-2 flex flex-col gap-1 z-10 items-end">
               {tiers.map((tier, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-1 px-1.5 py-1 rounded-md bg-amber-500 shadow-sm"
+                  className="tier-tag flex items-center gap-1.5"
+                  style={{
+                    backgroundColor: TIER_TAG_COLORS[Math.min(i, TIER_TAG_COLORS.length - 1)],
+                    transform: `rotate(${i % 2 === 0 ? -1.5 : 1.5}deg)`,
+                  }}
                 >
-                  <span className="text-[9px] sm:text-[10px] text-white/80 font-medium">{tier.range}</span>
-                  <span className="text-[10px] sm:text-[11px] font-bold text-white">{tier.price}</span>
+                  <span className="text-handwriting text-xs text-white">{tier.discount}</span>
+                  <span className="text-[8px] text-white/70 font-medium">{tier.range}</span>
                 </div>
               ))}
             </div>
@@ -206,7 +238,7 @@ export function ProductCardUnified({
       </Link>
 
       {/* Content */}
-      <div className="flex flex-col flex-1 px-3 pb-3">
+      <div className="flex flex-col flex-1 px-3 pt-1.5 pb-3">
         <div className="flex-1 space-y-0.5">
           {/* Brand */}
           {brandName && (
@@ -256,7 +288,7 @@ export function ProductCardUnified({
               ${displayPrice.toLocaleString('es-CL')}
             </span>
             {hasFixedDiscountApplied && (
-              <span className="font-sans text-[11px] text-muted-foreground line-through whitespace-nowrap" suppressHydrationWarning>
+              <span className="text-handwriting text-sm text-muted-foreground line-through whitespace-nowrap" suppressHydrationWarning>
                 ${originalPrice.toLocaleString('es-CL')}
               </span>
             )}

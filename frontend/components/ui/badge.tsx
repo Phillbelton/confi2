@@ -17,6 +17,15 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        // Brand personality variants
+        discount:
+          "border-transparent bg-accent text-white font-bold rounded-md shadow-[2px_2px_0px_rgba(0,0,0,0.12)] -rotate-2 hover:rotate-0 hover:scale-105 transition-transform",
+        nuevo:
+          "border-transparent bg-emerald-500 text-white font-bold rounded-md shadow-[2px_2px_0px_rgba(0,0,0,0.12)] rotate-1 hover:rotate-0 transition-transform",
+        popular:
+          "border-transparent bg-amber-500 text-white font-bold rounded-md shadow-[2px_2px_0px_rgba(0,0,0,0.12)] -rotate-1 hover:rotate-0 transition-transform",
+        combo:
+          "border-transparent bg-secondary text-white font-bold rounded-md shadow-[2px_2px_0px_rgba(0,0,0,0.12)] rotate-2 hover:rotate-0 transition-transform",
       },
     },
     defaultVariants: {
