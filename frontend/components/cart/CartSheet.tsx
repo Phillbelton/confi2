@@ -133,7 +133,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-gray-400 hover:text-red-500 -mt-1 -mr-1"
+                                className="h-9 w-9 text-gray-400 hover:text-red-500 -mt-1 -mr-1"
                                 onClick={() => handleRemove(item.variantId)}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -165,10 +165,10 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 hover:bg-white"
+                                  className="h-9 w-9 hover:bg-white"
                                   onClick={() => handleQuantityChange(item, -1)}
                                 >
-                                  <Minus className="h-3 w-3" />
+                                  <Minus className="h-4 w-4" />
                                 </Button>
                                 <span className="w-8 text-center text-sm font-medium text-gray-900">
                                   {item.quantity}
@@ -176,10 +176,10 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 hover:bg-white"
+                                  className="h-9 w-9 hover:bg-white"
                                   onClick={() => handleQuantityChange(item, 1)}
                                 >
-                                  <Plus className="h-3 w-3" />
+                                  <Plus className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>

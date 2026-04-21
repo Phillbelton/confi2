@@ -25,7 +25,7 @@ export interface IOrder extends Document {
   customer: {
     user?: mongoose.Types.ObjectId;
     name: string;
-    email: string;
+    email?: string;
     phone: string;
     address?: {
       street: string;
@@ -163,7 +163,7 @@ const orderSchema = new Schema<IOrder>(
       },
       email: {
         type: String,
-        required: [true, 'El email del cliente es requerido'],
+        required: false,
         lowercase: true,
         trim: true,
         match: [/^\S+@\S+\.\S+$/, 'Email inválido'],

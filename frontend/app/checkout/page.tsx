@@ -118,7 +118,7 @@ export default function CheckoutPage() {
       const phoneClean = formData.phone.replace(/\s/g, '');
       const customer = {
         name: formData.name,
-        email: formData.email,
+        email: formData.email.trim() || undefined,
         phone: `+56${phoneClean}`,
         address:
           formData.deliveryMethod === 'delivery'
@@ -375,7 +375,7 @@ export default function CheckoutPage() {
 
                         <div>
                           <Label htmlFor="email" className="text-foreground">
-                            Email {isAuthenticated ? '(opcional)' : <span className="text-destructive">*</span>}
+                            Email <span className="text-muted-foreground text-sm">(opcional)</span>
                           </Label>
                           <Input
                             id="email"
@@ -383,8 +383,7 @@ export default function CheckoutPage() {
                             type="email"
                             value={formData.email}
                             onChange={handleInputChange}
-                            required={!isAuthenticated}
-                            placeholder="juan@ejemplo.com"
+                            placeholder="chester@gmail.com"
                             className="h-12 text-base border-border bg-card"
                           />
                         </div>

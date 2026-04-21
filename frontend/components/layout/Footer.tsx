@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Facebook, Instagram, Mail, MapPin, Phone, Clock } from 'lucide-react';
 
 const footerLinks = {
@@ -30,9 +31,11 @@ export function Footer() {
           <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-5">
             {/* Brand */}
             <div className="lg:col-span-1 space-y-4">
-              <img
+              <Image
                 src="/brand/logo.png"
                 alt="Confitería Quelita"
+                width={1024}
+                height={667}
                 className="h-14 w-auto drop-shadow-lg"
               />
               <p className="text-sm text-white/50">

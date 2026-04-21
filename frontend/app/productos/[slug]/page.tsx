@@ -267,7 +267,7 @@ export default function ProductDetailPage() {
                   fill
                   className="object-contain p-4"
                   priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  sizes="(max-width: 1024px) 100vw, (max-width: 1440px) 50vw, 720px"
                 />
 
                 {/* Fixed Discount Badge — top left */}
@@ -521,7 +521,7 @@ export default function ProductDetailPage() {
               <h2 className="font-display text-lg md:text-2xl font-bold text-foreground mb-4 md:mb-6">
                 Productos relacionados
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {relatedProducts.map((relatedProduct: ProductParent) => (
                   <ProductCardUnified
                     key={relatedProduct._id}

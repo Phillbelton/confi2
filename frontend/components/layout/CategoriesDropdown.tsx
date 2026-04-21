@@ -51,7 +51,7 @@ export function CategoriesDropdown() {
       <DropdownMenuContent
         align="start"
         sideOffset={8}
-        className="w-[800px] p-0 bg-white border-0 shadow-2xl rounded-lg overflow-hidden"
+        className="w-[min(800px,calc(100vw-2rem))] p-0 bg-white border-0 shadow-2xl rounded-lg overflow-hidden"
       >
         <div className="grid grid-cols-12 min-h-[400px]">
           {/* Main Categories - Left Column */}

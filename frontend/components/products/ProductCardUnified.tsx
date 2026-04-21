@@ -183,14 +183,14 @@ export function ProductCardUnified({
     >
       {/* Image */}
       <Link href={`/productos/${product.slug}`} className="block relative">
-        <div className="aspect-square relative overflow-hidden category-pattern-overlay px-[15%]" style={patternStyle}>
-          <div className="relative z-[1] w-full h-full rounded-lg overflow-hidden">
+        <div className="aspect-[5/4] relative overflow-hidden category-pattern-overlay px-[15%]" style={patternStyle}>
+          <div className="relative z-[1] w-full h-full rounded-t-lg overflow-hidden">
             <Image
               src={mainImage}
               alt={product.name}
               fill
-              className="object-contain transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              className="object-contain object-bottom transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
             />
           </div>
 
@@ -238,7 +238,7 @@ export function ProductCardUnified({
       </Link>
 
       {/* Content */}
-      <div className="flex flex-col flex-1 px-3 pt-1.5 pb-3">
+      <div className="flex flex-col flex-1 px-3 pt-0 pb-3">
         <div className="flex-1 space-y-0.5">
           {/* Brand */}
           {brandName && (

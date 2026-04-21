@@ -61,12 +61,12 @@ export default function ClientLayout({
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="flex">
+      <div className="lg:grid lg:grid-cols-[280px_1fr]">
         {/* Sidebar - Solo desktop */}
         <ClientSidebar />
 
         {/* Contenido principal */}
-        <main className="flex-1 min-h-[calc(100vh-56px)] pb-20 lg:min-h-[calc(100vh-96px)] lg:pb-0 lg:ml-[280px]">
+        <main className="min-h-[calc(100vh-56px)] pb-20 lg:min-h-[calc(100vh-var(--header-height-desktop))] lg:pb-0">
           <div className="container mx-auto px-4 py-6 lg:px-8 lg:py-8 max-w-4xl">
             {children}
           </div>

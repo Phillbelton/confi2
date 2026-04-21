@@ -53,6 +53,9 @@
 */
 
 :root {
+  /* Layout tokens */
+  --header-height-desktop: 6rem; /* 96px - alto del header en desktop (info bar + nav) */
+
   /* Border radius system */
   --radius: 0.625rem; /* 10px - slightly rounder for candy feel */
 
@@ -295,7 +298,7 @@
   /* Container customization */
   .container {
     @apply mx-auto px-4 md:px-6 lg:px-8;
-    max-width: none !important;
+    max-width: 1440px;
   }
 }
 

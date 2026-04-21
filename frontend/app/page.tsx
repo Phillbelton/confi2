@@ -83,7 +83,7 @@ export default function HomePage() {
         {/* Benefits Bar */}
         <section className="bg-secondary candy-bg border-b border-white/10">
           <div className="container mx-auto px-4 py-6 relative z-10">
-            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {[
                 { icon: Truck, title: 'Envío en 24hrs', desc: 'Peñalolén, La Florida, Macul, La Reina', color: 'text-cyan-300' },
                 { icon: CreditCard, title: 'Pago seguro', desc: 'Múltiples opciones', color: 'text-cyan-300' },

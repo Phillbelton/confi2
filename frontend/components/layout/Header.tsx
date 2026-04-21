@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ShoppingCart, Search, User, MapPin, Phone, ChevronDown, Menu, X, Grid3x3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -133,9 +134,12 @@ export function Header() {
           <div className="hidden lg:flex h-16 items-center gap-4">
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 transition-transform hover:scale-105">
-              <img
+              <Image
                 src="/brand/logo.png"
                 alt="Confitería Quelita"
+                width={1024}
+                height={667}
+                priority
                 className="h-12 w-auto drop-shadow-md"
               />
             </Link>
@@ -216,7 +220,14 @@ export function Header() {
           {/* Mobile Header */}
           <div className="flex lg:hidden h-14 items-center justify-between gap-1">
             <Link href="/" className="flex-shrink-0">
-              <img src="/brand/logo.png" alt="Quelita" className="h-10 w-auto drop-shadow-md" />
+              <Image
+                src="/brand/logo.png"
+                alt="Quelita"
+                width={1024}
+                height={667}
+                priority
+                className="h-10 w-auto drop-shadow-md"
+              />
             </Link>
 
             <div className="flex items-center gap-0.5">
