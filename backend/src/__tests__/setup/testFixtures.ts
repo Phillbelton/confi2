@@ -114,7 +114,7 @@ export const testAddresses = [
   {
     street: 'Av. Mariscal López',
     number: '1234',
-    city: 'Asunción',
+    city: 'Santiago',
     neighborhood: 'Villa Morra',
     reference: 'Cerca del Shopping del Sol',
     isDefault: true,
@@ -122,7 +122,7 @@ export const testAddresses = [
   {
     street: 'Calle Palma',
     number: '567',
-    city: 'Asunción',
+    city: 'Santiago',
     neighborhood: 'Centro',
     reference: 'Entre Alberdi e Independencia Nacional',
     isDefault: false,

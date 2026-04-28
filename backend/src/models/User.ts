@@ -157,6 +157,10 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
     toJSON: {
       transform: (doc, ret) => {
+        // Exponer `id` (string) además de `_id` para consistencia con el frontend
+        if (ret._id) {
+          (ret as any).id = ret._id.toString();
+        }
         delete (ret as any).password;
         delete (ret as any).__v;
         return ret;

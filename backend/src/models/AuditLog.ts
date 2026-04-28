@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 // Types
 export type AuditAction = 'create' | 'update' | 'delete' | 'cancel' | 'block';
-export type AuditEntity = 'product' | 'variant' | 'order' | 'user' | 'category' | 'brand' | 'tag';
+export type AuditEntity = 'product' | 'variant' | 'order' | 'user' | 'category' | 'brand' | 'tag' | 'collection';
 
 // Interface
 export interface IAuditLog extends Document {

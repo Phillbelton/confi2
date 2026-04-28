@@ -162,7 +162,7 @@ export function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
                       })}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(log.createdAt).toLocaleString('es-PY')}
+                      {new Date(log.createdAt).toLocaleString('es-CL')}
                     </p>
                   </div>
                 </TableCell>

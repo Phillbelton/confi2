@@ -106,7 +106,7 @@ describe('Orders API', () => {
         label: 'Casa',
         street: 'Default Street',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: true,
       } as any);

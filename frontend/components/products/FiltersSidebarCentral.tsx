@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Tag, Gift, DollarSign, Layers } from 'lucide-react';
+import { ChevronDown, ChevronRight, Tag, Gift, DollarSign, Layers, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
@@ -154,8 +154,10 @@ export function FiltersSidebarCentral({
             {activeFilters > 0 && (
               <button
                 onClick={onClearFilters}
-                className="rounded-full px-2.5 py-1 text-[11px] text-primary hover:text-foreground font-medium"
+                className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                title="Limpiar todos los filtros"
               >
+                <RotateCcw className="h-3 w-3" />
                 Limpiar ({activeFilters})
               </button>
             )}

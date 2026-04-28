@@ -52,7 +52,7 @@ export function AuditLogDetailModal({ log, open, onClose }: AuditLogDetailModalP
             </Badge>
           </DialogTitle>
           <DialogDescription>
-            {AUDIT_ENTITY_LABELS[log.entity]} · {new Date(log.createdAt).toLocaleString('es-PY')}
+            {AUDIT_ENTITY_LABELS[log.entity]} · {new Date(log.createdAt).toLocaleString('es-CL')}
           </DialogDescription>
         </DialogHeader>
 
@@ -79,7 +79,7 @@ export function AuditLogDetailModal({ log, open, onClose }: AuditLogDetailModalP
               </div>
               <div>
                 <p className="text-muted-foreground">Fecha y hora</p>
-                <p>{new Date(log.createdAt).toLocaleString('es-PY')}</p>
+                <p>{new Date(log.createdAt).toLocaleString('es-CL')}</p>
               </div>
             </div>
 

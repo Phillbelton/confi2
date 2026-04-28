@@ -8,6 +8,8 @@ import { ChevronLeft, ShoppingCart, Check, Minus, Plus } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductCardUnified } from '@/components/products/ProductCardUnified';
+import { DiscountSticker } from '@/components/products/DiscountSticker';
+import { showCartToast } from '@/lib/cart-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -214,15 +216,19 @@ export default function ProductDetailPage() {
       addItem(product, selectedVariant, quantity);
 
       setJustAdded(true);
-      toast.success('Producto agregado al carrito', {
-        description: `${quantity}x ${product.name} ${
-          product.hasVariants ? `- ${selectedVariant.displayName}` : ''
-        }`,
+      showCartToast({
+        product,
+        variant: selectedVariant,
+        quantity,
+        pricePerUnit: displayPrice,
+        variantLabel: product.hasVariants ? selectedVariant.displayName || null : null,
       });
 
       setTimeout(() => setJustAdded(false), 2000);
     } catch (error) {
-      toast.error('Error al agregar el producto');
+      toast.error('No pudimos agregar el producto', {
+        description: 'Intentá de nuevo en un momento.',
+      });
     } finally {
       setIsAdding(false);
     }
@@ -270,15 +276,18 @@ export default function ProductDetailPage() {
                   sizes="(max-width: 1024px) 100vw, (max-width: 1440px) 50vw, 720px"
                 />
 
-                {/* Fixed Discount Badge — top left */}
+                {/* Fixed Discount Badge — flush top-left (dimak sticker) */}
                 {hasFixedDiscount && selectedVariant && (
-                  <div className="absolute top-3 left-3 z-10">
-                    <div className="text-white font-bold text-xs brush-badge">
-                      {selectedVariant.fixedDiscount?.badge ||
+                  <div className="absolute top-3 left-0 z-10">
+                    <DiscountSticker
+                      size="lg"
+                      badge={
+                        selectedVariant.fixedDiscount?.badge ||
                         (selectedVariant.fixedDiscount!.type === 'percentage'
                           ? `-${selectedVariant.fixedDiscount!.value}%`
-                          : `-$${selectedVariant.fixedDiscount!.value.toLocaleString()}`)}
-                    </div>
+                          : `-$${selectedVariant.fixedDiscount!.value.toLocaleString()}`)
+                      }
+                    />
                   </div>
                 )}
 

@@ -21,8 +21,11 @@ export const ENV = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || '5000'}`,
 
-  // WhatsApp
-  WHATSAPP_BUSINESS_NUMBER: process.env.WHATSAPP_BUSINESS_NUMBER || '',
+  // WhatsApp — soporta dos nombres por compatibilidad histórica
+  WHATSAPP_BUSINESS_NUMBER:
+    process.env.WHATSAPP_BUSINESS_NUMBER ||
+    process.env.WHATSAPP_BUSINESS_PHONE ||
+    '',
 
   // Frontend
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',

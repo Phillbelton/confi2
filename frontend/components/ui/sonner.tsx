@@ -11,15 +11,19 @@ import {
 } from "lucide-react"
 
 /**
- * Toaster Component - Notificaciones Toast mejoradas
+ * Toaster — notificaciones estilo Confitería Quelita.
  *
- * Mejores prácticas implementadas:
- * - Posicionamiento: bottom-center en móvil, top-right en desktop
- * - Duración: 4 segundos (500ms por palabra promedio)
- * - richColors: colores semánticos (verde éxito, rojo error, etc.)
- * - closeButton: permite cerrar manualmente para accesibilidad
- * - Animaciones suaves con expand habilitado
- * - Estilos consistentes con el tema oscuro del sitio
+ * Paleta:
+ *  - success → turquesa (primary #0ABDC6)
+ *  - error   → magenta  (accent  #D6006C)
+ *  - info    → azul petróleo (secondary #1B6B8A)
+ *  - warning → ámbar cálido
+ *
+ * Fondo crema cálido con borde del color del tipo. Coherente con el resto del sitio
+ * (que usa `bg-card` blanco sobre `bg-background` crema).
+ *
+ * Posición: top-center en mobile (evita colisión con sticky CTAs del checkout y
+ * con la bottom-nav del cliente), top-right en desktop.
  */
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
@@ -28,12 +32,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      position="bottom-center"
-      expand={true}
-      richColors
+      position="top-center"
+      expand={false}
       closeButton
-      duration={4000}
-      gap={12}
+      duration={3500}
+      gap={10}
+      offset={16}
+      mobileOffset={12}
       icons={{
         success: <CheckCircle2 className="h-5 w-5" />,
         error: <AlertCircle className="h-5 w-5" />,
@@ -42,81 +47,56 @@ const Toaster = ({ ...props }: ToasterProps) => {
         loading: <Loader2 className="h-5 w-5 animate-spin" />,
       }}
       toastOptions={{
+        unstyled: false,
         classNames: {
-          toast: `
-            group toast
-            group-[.toaster]:bg-gradient-to-r group-[.toaster]:from-slate-800 group-[.toaster]:to-slate-900
-            group-[.toaster]:text-white
-            group-[.toaster]:border group-[.toaster]:border-white/10
-            group-[.toaster]:shadow-2xl
-            group-[.toaster]:rounded-xl
-            group-[.toaster]:px-4 group-[.toaster]:py-3
-            group-[.toaster]:backdrop-blur-sm
-            group-[.toaster]:min-w-[300px] group-[.toaster]:max-w-[400px]
-            sm:group-[.toaster]:min-w-[350px]
-          `,
-          title: `
-            group-[.toast]:text-sm group-[.toast]:font-semibold
-            group-[.toast]:text-white
-          `,
-          description: `
-            group-[.toast]:text-sm
-            group-[.toast]:text-gray-300
-          `,
-          actionButton: `
-            group-[.toast]:bg-primary
-            group-[.toast]:text-primary-foreground
-            group-[.toast]:font-medium
-            group-[.toast]:rounded-lg
-            group-[.toast]:px-3 group-[.toast]:py-1.5
-            group-[.toast]:text-sm
-            group-[.toast]:hover:bg-primary/90
-            group-[.toast]:transition-colors
-          `,
-          cancelButton: `
-            group-[.toast]:bg-white/10
-            group-[.toast]:text-gray-300
-            group-[.toast]:font-medium
-            group-[.toast]:rounded-lg
-            group-[.toast]:px-3 group-[.toast]:py-1.5
-            group-[.toast]:text-sm
-            group-[.toast]:hover:bg-white/20
-            group-[.toast]:transition-colors
-          `,
-          closeButton: `
-            group-[.toast]:bg-white/10
-            group-[.toast]:text-gray-400
-            group-[.toast]:hover:bg-white/20
-            group-[.toast]:hover:text-white
-            group-[.toast]:border-white/10
-            group-[.toast]:transition-all
-          `,
-          // Colores por tipo de toast (richColors)
-          success: `
-            group-[.toaster]:!bg-gradient-to-r group-[.toaster]:!from-emerald-900/95 group-[.toaster]:!to-emerald-800/95
-            group-[.toaster]:!border-emerald-500/30
-            [&>svg]:!text-emerald-400
-          `,
-          error: `
-            group-[.toaster]:!bg-gradient-to-r group-[.toaster]:!from-red-900/95 group-[.toaster]:!to-red-800/95
-            group-[.toaster]:!border-red-500/30
-            [&>svg]:!text-red-400
-          `,
-          warning: `
-            group-[.toaster]:!bg-gradient-to-r group-[.toaster]:!from-amber-900/95 group-[.toaster]:!to-amber-800/95
-            group-[.toaster]:!border-amber-500/30
-            [&>svg]:!text-amber-400
-          `,
-          info: `
-            group-[.toaster]:!bg-gradient-to-r group-[.toaster]:!from-blue-900/95 group-[.toaster]:!to-blue-800/95
-            group-[.toaster]:!border-blue-500/30
-            [&>svg]:!text-blue-400
-          `,
-          loading: `
-            group-[.toaster]:!bg-gradient-to-r group-[.toaster]:!from-slate-800/95 group-[.toaster]:!to-slate-700/95
-            group-[.toaster]:!border-slate-500/30
-            [&>svg]:!text-slate-400
-          `,
+          toast: [
+            "group toast",
+            "!bg-card !text-card-foreground",
+            "!border !border-border",
+            "!shadow-premium",
+            "!rounded-2xl",
+            "!px-4 !py-3",
+            "!min-w-[300px] sm:!min-w-[340px] !max-w-[420px]",
+            "!backdrop-blur-sm",
+          ].join(" "),
+          title: "!text-sm !font-semibold !text-card-foreground !font-display",
+          description: "!text-xs !text-muted-foreground !mt-0.5",
+          actionButton: [
+            "!bg-primary !text-primary-foreground !font-semibold",
+            "!rounded-lg !px-3 !py-1.5 !text-sm",
+            "hover:!bg-primary/90 !transition-colors",
+          ].join(" "),
+          cancelButton: [
+            "!bg-muted !text-muted-foreground !font-medium",
+            "!rounded-lg !px-3 !py-1.5 !text-sm",
+            "hover:!bg-muted/80 !transition-colors",
+          ].join(" "),
+          closeButton: [
+            "!bg-muted !text-muted-foreground",
+            "hover:!bg-muted/80 hover:!text-card-foreground",
+            "!border !border-border !transition-colors",
+          ].join(" "),
+          // Tipos: borde izquierdo de color + ícono coloreado
+          success: [
+            "!border-l-4 !border-l-primary",
+            "[&>svg]:!text-primary",
+          ].join(" "),
+          error: [
+            "!border-l-4 !border-l-accent",
+            "[&>svg]:!text-accent",
+          ].join(" "),
+          warning: [
+            "!border-l-4 !border-l-amber-500",
+            "[&>svg]:!text-amber-500",
+          ].join(" "),
+          info: [
+            "!border-l-4 !border-l-secondary",
+            "[&>svg]:!text-secondary",
+          ].join(" "),
+          loading: [
+            "!border-l-4 !border-l-muted-foreground/40",
+            "[&>svg]:!text-muted-foreground",
+          ].join(" "),
         },
       }}
       {...props}

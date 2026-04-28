@@ -357,6 +357,50 @@
   animation: fly-to-cart 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* Stepper feedback: bump the quantity when it changes */
+@keyframes stepper-bump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.28); }
+  70%  { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+.stepper-bump {
+  animation: stepper-bump 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Stepper feedback: subtle background flash on the container */
+@keyframes stepper-flash {
+  0%   { background-color: color-mix(in srgb, var(--primary) 5%, transparent); }
+  40%  { background-color: color-mix(in srgb, var(--primary) 22%, transparent); }
+  100% { background-color: color-mix(in srgb, var(--primary) 5%, transparent); }
+}
+
+.stepper-flash {
+  animation: stepper-flash 0.4s ease-out;
+}
+
+/* Stepper feedback: floating +1/-1 delta indicator */
+@keyframes delta-float-up {
+  0%   { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
+  20%  { transform: translate(-50%, -6px) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -26px) scale(0.9); opacity: 0; }
+}
+
+@keyframes delta-float-down {
+  0%   { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
+  20%  { transform: translate(-50%, 6px) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, 26px) scale(0.9); opacity: 0; }
+}
+
+.delta-float-up {
+  animation: delta-float-up 0.65s cubic-bezier(0.25, 0.8, 0.3, 1) forwards;
+}
+
+.delta-float-down {
+  animation: delta-float-down 0.65s cubic-bezier(0.25, 0.8, 0.3, 1) forwards;
+}
+
 .touch-target {
   min-width: 44px;
   min-height: 44px;
@@ -953,3 +997,47 @@
 .tier-tag:hover {
   box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.12);
 }
+
+/* ============================================================
+   /m PROTOTYPE — utilidades mobile-app shell
+   ============================================================ */
+
+/* Marquee horizontal infinito — promo strip header /m */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@layer utilities {
+  /* Carruseles snap horizontales */
+  .snap-x-mandatory {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .scroll-pl-safe {
+    scroll-padding-left: 1rem;
+  }
+  .scroll-pr-safe {
+    scroll-padding-right: 1rem;
+  }
+  /* Scrollbar oculta — usado en chips y carruseles */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  /* Touch target mínimo 44x44 (Apple HIG / WCAG) */
+  .tappable {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+

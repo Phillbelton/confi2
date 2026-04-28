@@ -86,7 +86,7 @@ export default function ContactoPage() {
                   <p className="text-sm text-muted-foreground">
                     Av. Principal 123
                     <br />
-                    Asunción, Paraguay
+                    Santiago, Chile
                   </p>
                 </CardContent>
               </Card>

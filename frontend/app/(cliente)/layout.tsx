@@ -41,7 +41,7 @@ export default function ClientLayout({
         </div>
 
         {/* Content skeleton */}
-        <div className="container mx-auto px-4 py-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="space-y-4">
             <Skeleton className="h-32 w-full rounded-lg" />
             <Skeleton className="h-24 w-full rounded-lg" />
@@ -67,7 +67,7 @@ export default function ClientLayout({
 
         {/* Contenido principal */}
         <main className="min-h-[calc(100vh-56px)] pb-20 lg:min-h-[calc(100vh-var(--header-height-desktop))] lg:pb-0">
-          <div className="container mx-auto px-4 py-6 lg:px-8 lg:py-8 max-w-4xl">
+          <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             {children}
           </div>
         </main>

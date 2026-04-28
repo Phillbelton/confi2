@@ -153,7 +153,7 @@ export function ProductSelector({
 
                       <div className="flex items-center gap-3 mt-1">
                         <span className="font-semibold">
-                          ${variant.price.toLocaleString('es-PY')}
+                          ${variant.price.toLocaleString('es-CL')}
                         </span>
                       </div>
                     </div>

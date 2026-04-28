@@ -46,11 +46,16 @@ export const createOrder = asyncHandler(
         throw new AppError(404, 'Usuario no encontrado');
       }
 
+      // Aceptar overrides del body para contacto de este pedido específico
+      // (el usuario puede querer recibir el email en otra dirección, o
+      // actualizar nombre/teléfono solo para este pedido sin modificar su perfil).
+      const bodyCustomer = req.body.customer || {};
+
       customerData = {
         user: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
+        name: bodyCustomer.name?.trim() || user.name,
+        email: bodyCustomer.email?.trim() || user.email,
+        phone: bodyCustomer.phone?.trim() || user.phone,
       };
 
       // Si proporcionó un useAddressId, usar esa dirección
@@ -183,8 +188,15 @@ export const createOrder = asyncHandler(
       whatsappSent: false,
     });
 
-    // Al crear orden: Solo WhatsApp, NO email
-    // El email se enviará cuando el funcionario confirme el pedido
+    // Al crear orden: enviar email de "pedido recibido" si el cliente proporcionó email.
+    // No bloquea la respuesta — los errores se loggean pero no fallan el checkout.
+    // El email de "pedido confirmado" (con costo de envío final) se enviará después
+    // cuando el funcionario llame a confirmOrder.
+    if (order.customer.email) {
+      emailService
+        .sendOrderReceivedEmail(order, order.customer.email, order.customer.name)
+        .catch((err) => console.error('Error enviando email de pedido recibido:', err));
+    }
 
     // Generar URL de WhatsApp hacia el negocio con el detalle completo del pedido.
     // El cliente abre el link → WhatsApp pre-rellena el mensaje → cliente envía al negocio.
@@ -364,7 +376,7 @@ export const getOrderById = asyncHandler(
 
 // @desc    Obtener orden por número de orden
 // @route   GET /api/orders/number/:orderNumber
-// @access  Public
+// @access  Private (admin, funcionario, o cliente dueño)
 export const getOrderByNumber = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const { orderNumber } = req.params;
@@ -376,6 +388,17 @@ export const getOrderByNumber = asyncHandler(
 
     if (!order) {
       throw new AppError(404, 'Orden no encontrada');
+    }
+
+    // Ownership check — admin/funcionario pasan; cliente sólo si es dueño.
+    if (req.user) {
+      const userId = order.customer.user?._id?.toString() || order.customer.user?.toString();
+      const isOwner = userId === req.user.id;
+      const isAdminOrFuncionario = ['admin', 'funcionario'].includes(req.user.role);
+
+      if (!isOwner && !isAdminOrFuncionario) {
+        throw new AppError(403, 'No tienes permisos para ver esta orden');
+      }
     }
 
     res.status(200).json({

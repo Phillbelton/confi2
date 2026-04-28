@@ -26,6 +26,7 @@ export default function CheckoutPage() {
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const [error, setError] = useState('');
   const [continueAsGuest, setContinueAsGuest] = useState(false);
   const [phoneRegistered, setPhoneRegistered] = useState(false);
@@ -63,12 +64,14 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, user]);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty — pero NO después de colocar la orden
+  // (al confirmar, vaciamos el carrito y redirigimos a la orden: este effect
+  // no debe interferir con ese flujo).
   useEffect(() => {
-    if (items.length === 0) {
+    if (items.length === 0 && !orderPlaced && !isSubmitting) {
       router.push('/productos');
     }
-  }, [items, router]);
+  }, [items, router, orderPlaced, isSubmitting]);
 
   // Show auth gate if not authenticated and hasn't chosen to continue as guest
   const showAuthGate = _hasHydrated && !isAuthenticated && !continueAsGuest;
@@ -147,15 +150,37 @@ export default function CheckoutPage() {
         customerNotes: formData.customerNotes || undefined,
       });
 
+      // Marcar que se colocó la orden ANTES de vaciar el carrito, para que
+      // el useEffect de "carrito vacío → /productos" no interfiera con el
+      // redirect a la vista de detalle del pedido.
+      setOrderPlaced(true);
+
       // Clear cart
       clearCart();
 
-      // Redirect to WhatsApp
-      if (response.whatsappURL) {
-        window.location.href = response.whatsappURL;
+      // Redirect to order detail view
+      const orderNumber = response.order.orderNumber;
+
+      if (isAuthenticated) {
+        // Registered users: go to their authenticated order detail
+        router.push(`/mis-ordenes/${orderNumber}`);
       } else {
-        // Fallback: redirect to order confirmation page
-        router.push(`/pedido/${response.order.orderNumber}`);
+        // Guest: persist order snapshot in sessionStorage so the confirmation
+        // page can render it without hitting the API.
+        try {
+          sessionStorage.setItem(
+            'confi2:last-order',
+            JSON.stringify({
+              orderNumber,
+              createdAt: new Date().toISOString(),
+              order: response.order,
+              whatsappURL: response.whatsappURL,
+            })
+          );
+        } catch {
+          // sessionStorage puede fallar (modo privado, quota). No bloquea el flujo.
+        }
+        router.push(`/pedido/${orderNumber}`);
       }
     } catch (err: any) {
       console.error('Error creating order:', err?.response?.data || err?.message || err);
@@ -169,7 +194,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && !orderPlaced && !isSubmitting) {
     return null; // Will redirect via useEffect
   }
 
@@ -485,7 +510,7 @@ export default function CheckoutPage() {
                               value={formData.city}
                               onChange={handleInputChange}
                               required={formData.deliveryMethod === 'delivery'}
-                              placeholder="Asunción"
+                              placeholder="Santiago"
                               className="h-12 text-base border-border bg-card"
                             />
                           </div>
@@ -684,7 +709,9 @@ export default function CheckoutPage() {
                         </Button>
 
                         <p className="text-xs text-center text-muted-foreground">
-                          Al confirmar, serás redirigido a WhatsApp para finalizar tu pedido
+                          {isAuthenticated
+                            ? 'Al confirmar, te llevaremos al detalle de tu pedido'
+                            : 'Al confirmar, recibirás los datos de tu pedido y nos contactaremos contigo por WhatsApp'}
                         </p>
                       </div>
                     </CardContent>

@@ -11,7 +11,7 @@ describe('Addresses API', () => {
         label: 'Casa',
         street: 'Test Street',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: true,
       } as any);
@@ -62,7 +62,7 @@ describe('Addresses API', () => {
           label: 'Oficina',
           street: 'Av. Mariscal López',
           number: '1234',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Villa Morra',
           reference: 'Cerca del Shopping',
           isDefault: true,
@@ -89,7 +89,7 @@ describe('Addresses API', () => {
           label: 'Casa',
           street: 'Test Street',
           number: '123',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Centro',
         });
 
@@ -103,7 +103,7 @@ describe('Addresses API', () => {
         label: 'Casa',
         street: 'Old Default',
         number: '111',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: true,
       } as any);
@@ -118,7 +118,7 @@ describe('Addresses API', () => {
           label: 'Oficina',
           street: 'New Default',
           number: '222',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Villa Morra',
           isDefault: true,
         });
@@ -158,7 +158,7 @@ describe('Addresses API', () => {
           label: 'Casa',
           street: 'AB', // Too short
           number: '123',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Centro',
         });
 
@@ -172,7 +172,7 @@ describe('Addresses API', () => {
           label: 'Casa',
           street: 'Test Street',
           number: '123',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Centro',
         });
 
@@ -187,7 +187,7 @@ describe('Addresses API', () => {
         label: 'Trabajo',
         street: 'Old Street',
         number: '111',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: false,
       } as any);
@@ -208,7 +208,7 @@ describe('Addresses API', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.address.street).toBe('Updated Street');
       expect(response.body.data.address.number).toBe('999');
-      expect(response.body.data.address.city).toBe('Asunción'); // Unchanged
+      expect(response.body.data.address.city).toBe('Santiago'); // Unchanged
     });
 
     it('should return 404 for non-existent address', async () => {
@@ -232,7 +232,7 @@ describe('Addresses API', () => {
         label: 'Casa',
         street: 'Test Street',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: false,
       } as any);
@@ -269,7 +269,7 @@ describe('Addresses API', () => {
         label: 'Oficina',
         street: 'Delete Me',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: false,
       } as any);
@@ -297,7 +297,7 @@ describe('Addresses API', () => {
           label: 'Casa',
           street: 'Default Address',
           number: '123',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Centro',
           isDefault: true,
         } as any,
@@ -305,7 +305,7 @@ describe('Addresses API', () => {
           label: 'Trabajo',
           street: 'Other Address',
           number: '456',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Villa Morra',
           isDefault: false,
         } as any
@@ -329,7 +329,7 @@ describe('Addresses API', () => {
         label: 'Casa',
         street: 'Only Address',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: true,
       } as any);
@@ -378,7 +378,7 @@ describe('Addresses API', () => {
           label: 'Casa',
           street: 'Old Default',
           number: '111',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Centro',
           isDefault: true,
         } as any,
@@ -386,7 +386,7 @@ describe('Addresses API', () => {
           label: 'Oficina',
           street: 'New Default',
           number: '222',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Villa Morra',
           isDefault: false,
         } as any
@@ -428,7 +428,7 @@ describe('Addresses API', () => {
         label: 'Casa',
         street: 'Already Default',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Centro',
         isDefault: true,
       } as any);
@@ -486,7 +486,7 @@ describe('Addresses API', () => {
           label: 'Casa',
           street: 'A'.repeat(201), // Too long (max is 200)
           number: '123',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Centro',
         });
 
@@ -504,7 +504,7 @@ describe('Addresses API', () => {
           label: 'Oficina',
           street: 'Av. José de San Martín',
           number: '123-A',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Ñuñoa',
           reference: 'Al lado del árbol grande',
         });

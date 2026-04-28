@@ -1,12 +1,55 @@
 import { Response } from 'express';
 import ProductParent, { IProductParent } from '../models/ProductParent';
 import ProductVariant from '../models/ProductVariant';
+import Collection from '../models/Collection';
 import { AuthRequest, ApiResponse, PaginatedResponse } from '../types';
 import { getVisibleTierPreviews } from '../services/discountService';
 import mongoose from 'mongoose';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { uploadImagesHybrid } from '../utils/imageUploadHelper';
 import logger from '../config/logger';
+
+/**
+ * Helper: devuelve los IDs de ProductParent cuyas variantes activas
+ * tienen un descuento (fixedDiscount o tieredDiscount) válido en la fecha actual.
+ * Espeja la lógica de hasActiveDiscount() del modelo ProductVariant.
+ */
+async function getParentIdsOnSale(): Promise<mongoose.Types.ObjectId[]> {
+  const now = new Date();
+
+  const dateValid = (field: string) => ({
+    $and: [
+      {
+        $or: [
+          { [`${field}.startDate`]: { $exists: false } },
+          { [`${field}.startDate`]: null },
+          { [`${field}.startDate`]: { $lte: now } },
+        ],
+      },
+      {
+        $or: [
+          { [`${field}.endDate`]: { $exists: false } },
+          { [`${field}.endDate`]: null },
+          { [`${field}.endDate`]: { $gte: now } },
+        ],
+      },
+    ],
+  });
+
+  const parentIds = await ProductVariant.find({
+    active: true,
+    $or: [
+      { 'fixedDiscount.enabled': true, ...dateValid('fixedDiscount') },
+      {
+        'tieredDiscount.active': true,
+        'tieredDiscount.tiers.0': { $exists: true },
+        ...dateValid('tieredDiscount'),
+      },
+    ],
+  }).distinct('parentProduct');
+
+  return parentIds as mongoose.Types.ObjectId[];
+}
 
 /**
  * Controller para ProductParent
@@ -140,6 +183,7 @@ export const getProductParents = asyncHandler(
       active = 'true',
       featured,
       onSale,
+      collection: collectionSlug,
       sort,
     } = req.query as any;
 
@@ -196,6 +240,39 @@ export const getProductParents = asyncHandler(
     // Búsqueda por texto
     if (search) {
       filter.$text = { $search: search };
+    }
+
+    // Filtro de colección (por slug) — interseca _id del listado con products de la Collection
+    if (collectionSlug) {
+      const coll = await Collection.findOne({
+        slug: collectionSlug,
+        active: true,
+      })
+        .select('products')
+        .lean();
+
+      const collProductIds = coll?.products || [];
+      if (collProductIds.length === 0) {
+        // Colección inexistente, inactiva o sin productos → resultset vacío
+        filter._id = { $in: [] };
+      } else {
+        filter._id = { $in: collProductIds };
+      }
+    }
+
+    // Filtro de productos en oferta (descuento fijo o escalonado activo)
+    if (onSale === 'true') {
+      const onSaleParentIds = await getParentIdsOnSale();
+      if (filter._id?.$in) {
+        // Intersección con filtro previo (ej: collection)
+        const onSaleSet = new Set(onSaleParentIds.map((id) => id.toString()));
+        const intersected = (filter._id.$in as any[]).filter((id) =>
+          onSaleSet.has(id.toString())
+        );
+        filter._id = { $in: intersected };
+      } else {
+        filter._id = { $in: onSaleParentIds };
+      }
     }
 
     // Calcular paginación

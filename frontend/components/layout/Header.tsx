@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useCartStore } from '@/store/useCartStore';
 import { useClientStore } from '@/store/useClientStore';
+import { useUIStore } from '@/store/useUIStore';
 import { CartSheet } from '@/components/cart/CartSheet';
 import { UserDropdown } from './UserDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
@@ -29,7 +30,8 @@ import {
 
 export function Header() {
   const router = useRouter();
-  const [cartOpen, setCartOpen] = useState(false);
+  const cartOpen = useUIStore((s) => s.cartSheetOpen);
+  const setCartOpen = useUIStore((s) => s.setCartSheetOpen);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -103,7 +105,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full">
       {/* Top Info Bar - Darker turquoise */}
       <div className="hidden sm:block bg-secondary/90 text-white relative overflow-hidden">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex h-8 items-center justify-between text-xs relative z-10">
             <div className="flex items-center gap-2 text-white/80">
               <MapPin className="h-3 w-3" />
@@ -129,7 +131,7 @@ export function Header() {
             : 'bg-primary/95 border-b border-white/10'
         )}
       >
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Desktop Header */}
           <div className="hidden lg:flex h-16 items-center gap-4">
             {/* Logo */}
@@ -180,7 +182,7 @@ export function Header() {
             </div>
 
             {/* User Login/Account */}
-            <div className="flex items-center">
+            <div className="flex items-center ml-auto">
               {_hasHydrated && isAuthenticated && user ? (
                 <UserDropdown user={user} />
               ) : _hasHydrated ? (
@@ -303,7 +305,7 @@ export function Header() {
             exit={{ opacity: 0, y: -10 }}
             className="lg:hidden fixed inset-0 z-50 bg-gradient-to-b from-primary to-secondary"
           >
-            <div className="container mx-auto px-4 py-4">
+            <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center gap-3">
                 <form onSubmit={(e) => { handleSearch(e); setMobileSearchOpen(false); }} className="flex-1 relative">
                   <Input

@@ -25,6 +25,8 @@ import {
   getDiscountTiers,
   hasActiveDiscount,
 } from '@/lib/discountCalculator';
+import { DiscountSticker } from './DiscountSticker';
+import { showCartToast } from '@/lib/cart-toast';
 
 /** Color progression for tiered discount tags: cool → hot */
 const TIER_TAG_COLORS = [
@@ -61,6 +63,14 @@ export function ProductCardUnified({
   });
   const [isAdding, setIsAdding] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  /**
+   * Feedback visual del stepper (+/-):
+   *  - `stepperTick` remonta la animación en cada click (key change).
+   *  - `stepperDir` dispara el delta flotante "+1" o "-1" por encima/debajo.
+   */
+  const [stepperTick, setStepperTick] = useState(0);
+  const [stepperDir, setStepperDir] = useState<'up' | 'down' | null>(null);
 
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -135,13 +145,17 @@ export function ProductCardUnified({
     try {
       await new Promise((resolve) => setTimeout(resolve, 200));
       addItem(product, selectedVariant, 1);
-      toast.success('Producto agregado al carrito', {
-        description: `${product.name}${
-          product.hasVariants ? ` - ${getDisplayName(selectedVariant)}` : ''
-        }`,
+      showCartToast({
+        product,
+        variant: selectedVariant,
+        quantity: 1,
+        pricePerUnit: priceInfo?.finalPrice ?? selectedVariant.price,
+        variantLabel: product.hasVariants ? getDisplayName(selectedVariant) : null,
       });
     } catch (error) {
-      toast.error('Error al agregar el producto');
+      toast.error('No pudimos agregar el producto', {
+        description: 'Intentá de nuevo en un momento.',
+      });
     } finally {
       setIsAdding(false);
     }
@@ -150,11 +164,15 @@ export function ProductCardUnified({
   const handleIncrement = () => {
     if (!selectedVariant) return;
     updateQuantity(selectedVariant._id, quantityInCart + 1);
+    setStepperDir('up');
+    setStepperTick((t) => t + 1);
   };
 
   const handleDecrement = () => {
     if (!selectedVariant) return;
     updateQuantity(selectedVariant._id, quantityInCart - 1);
+    setStepperDir('down');
+    setStepperTick((t) => t + 1);
   };
 
   const toggleFavorite = (e: React.MouseEvent) => {
@@ -207,12 +225,10 @@ export function ProductCardUnified({
             <Heart className={cn('h-4 w-4', isFavorite && 'fill-current')} />
           </button>
 
-          {/* Fixed Discount Badge — top left, sticker style */}
+          {/* Fixed Discount Badge — flush top-left, sticker style (dimak) */}
           {hasDiscount && discountBadge && (
-            <div className="absolute top-2 left-2 z-10">
-              <div className="text-white font-bold text-[13px] leading-none brush-badge">
-                {discountBadge}
-              </div>
+            <div className="absolute top-2 left-0 z-10">
+              <DiscountSticker badge={discountBadge} size="md" />
             </div>
           )}
 
@@ -282,29 +298,30 @@ export function ProductCardUnified({
 
         {/* Price + Cart Controls — horizontal row */}
         <div className="mt-2.5 flex items-center gap-2">
-          {/* Price */}
-          <div className="flex items-baseline gap-1.5 min-w-0 flex-shrink">
+          {/* Price — sólo precio final; el badge rojo (sticker) ya comunica el descuento */}
+          <div className="flex items-baseline min-w-0 flex-shrink">
             <span className="font-sans text-base font-bold text-primary whitespace-nowrap" suppressHydrationWarning>
               ${displayPrice.toLocaleString('es-CL')}
             </span>
-            {hasFixedDiscountApplied && (
-              <span className="text-handwriting text-sm text-muted-foreground line-through whitespace-nowrap" suppressHydrationWarning>
-                ${originalPrice.toLocaleString('es-CL')}
-              </span>
-            )}
           </div>
 
           {/* Cart button / quantity stepper — right side */}
           <div className="ml-auto flex-shrink-0">
             {quantityInCart > 0 ? (
-              <div className="flex items-center h-8 rounded-lg overflow-hidden border border-primary/30 bg-primary/5">
+              <div
+                key={`stepper-${stepperTick}`}
+                className="relative flex items-center h-8 rounded-lg overflow-hidden border border-primary/30 stepper-flash"
+              >
                 <button
                   onClick={handleDecrement}
                   className="flex items-center justify-center w-8 h-full text-card-foreground hover:bg-primary/10 transition-colors active:scale-95"
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
-                <span className="w-7 text-center text-sm font-bold text-card-foreground">
+                <span
+                  key={`qty-${stepperTick}`}
+                  className="w-7 text-center text-sm font-bold text-card-foreground stepper-bump inline-block"
+                >
                   {quantityInCart}
                 </span>
                 <button
@@ -313,6 +330,22 @@ export function ProductCardUnified({
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
+
+                {/* Delta flotante: +1 sale hacia arriba, -1 hacia abajo */}
+                {stepperDir && (
+                  <span
+                    key={`delta-${stepperTick}`}
+                    className={cn(
+                      'pointer-events-none absolute left-1/2 text-xs font-bold select-none',
+                      stepperDir === 'up'
+                        ? 'top-0 text-primary delta-float-up'
+                        : 'bottom-0 text-accent delta-float-down'
+                    )}
+                    aria-hidden="true"
+                  >
+                    {stepperDir === 'up' ? '+1' : '−1'}
+                  </span>
+                )}
               </div>
             ) : (
               <Button

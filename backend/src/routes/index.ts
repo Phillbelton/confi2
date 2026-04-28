@@ -9,6 +9,7 @@ import userRoutes from './userRoutes';
 import addressRoutes from './addressRoutes';
 import auditRoutes from './auditRoutes';
 import dashboardRoutes from './dashboardRoutes';
+import collectionRoutes from './collectionRoutes';
 
 const router = Router();
 
@@ -33,6 +34,7 @@ router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/tags', tagRoutes);
 router.use('/brands', brandRoutes);
+router.use('/collections', collectionRoutes);
 router.use('/orders', orderRoutes);
 // IMPORTANT: More specific routes must come BEFORE general routes
 // Otherwise /users middleware (admin-only) will intercept /users/me/addresses

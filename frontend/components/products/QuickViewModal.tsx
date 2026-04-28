@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/store/useCartStore';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { toast } from 'sonner';
+import { showCartToast } from '@/lib/cart-toast';
 import type { ProductParent, ProductVariant } from '@/types';
 import { cn } from '@/lib/utils';
 import {
@@ -90,10 +91,12 @@ export function QuickViewModal({
       addItem(product, selectedVariant, quantity);
 
       setJustAdded(true);
-      toast.success('Producto agregado al carrito', {
-        description: `${quantity}x ${product.name} ${
-          product.hasVariants ? `- ${selectedVariant.displayName}` : ''
-        }`,
+      showCartToast({
+        product,
+        variant: selectedVariant,
+        quantity,
+        pricePerUnit: displayPrice,
+        variantLabel: product.hasVariants ? selectedVariant.displayName || null : null,
       });
 
       setTimeout(() => {
@@ -101,7 +104,9 @@ export function QuickViewModal({
         setQuantity(1);
       }, 2000);
     } catch (error) {
-      toast.error('Error al agregar el producto');
+      toast.error('No pudimos agregar el producto', {
+        description: 'Intentá de nuevo en un momento.',
+      });
     } finally {
       setIsAdding(false);
     }

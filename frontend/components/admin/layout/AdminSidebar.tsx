@@ -13,6 +13,7 @@ import {
   FileText,
   Activity,
   ChevronLeft,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -50,6 +51,12 @@ const menuItems = [
     href: '/admin/marcas',
     icon: Tags,
     roles: ['admin'] as UserRole[], // Solo admin
+  },
+  {
+    title: 'Colecciones',
+    href: '/admin/colecciones',
+    icon: Sparkles,
+    roles: ['admin', 'funcionario'] as UserRole[],
   },
   {
     title: 'Usuarios',

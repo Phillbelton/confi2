@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Home, SlidersHorizontal, X, Search, ArrowUpDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, SlidersHorizontal, X, Search, ArrowUpDown, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -127,10 +127,18 @@ function ProductsContent() {
   const handleClearFilters = () => { setFilters({}); setCurrentPage(1); };
 
   // ── Mobile pending filter handlers ──
-  // Sync pending filters when opening the sheet
+  // Sync pending filters when opening the sheet; auto-aplicar al cerrar
+  // (si el usuario cierra el sheet sin tocar "Aplicar", tomamos sus cambios
+  // pendientes como intención y los aplicamos igual).
   const handleOpenMobileFilters = (open: boolean) => {
     if (open) {
       setPendingFilters({ ...filters });
+    } else {
+      const changed = JSON.stringify(pendingFilters) !== JSON.stringify(filters);
+      if (changed) {
+        setFilters(pendingFilters);
+        setCurrentPage(1);
+      }
     }
     setMobileFiltersOpen(open);
   };
@@ -202,7 +210,7 @@ function ProductsContent() {
       <div className="relative z-10">
 
         {/* ── Top bar: breadcrumb + title ── */}
-        <div className="container mx-auto px-4 pt-5 pb-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pt-5 pb-4">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
             <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
@@ -250,7 +258,7 @@ function ProductsContent() {
         </div>
 
         {/* ── Main layout ── */}
-        <div className="container mx-auto px-4 pb-12">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-12">
           <div className="flex gap-5 lg:gap-6">
 
             {/* Sidebar — Desktop */}
@@ -301,8 +309,9 @@ function ProductsContent() {
                         {pendingFilterCount > 0 && (
                           <button
                             onClick={handlePendingClearFilters}
-                            className="text-xs text-primary hover:underline"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-semibold hover:bg-accent/15 transition-colors"
                           >
+                            <RotateCcw className="h-3 w-3" />
                             Limpiar todo
                           </button>
                         )}
@@ -410,8 +419,13 @@ function ProductsContent() {
                       <X className="h-3 w-3 text-muted-foreground" />
                     </button>
                   )}
-                  <button onClick={handleClearFilters} className="px-2 py-1.5 text-muted-foreground hover:text-foreground text-xs transition-colors">
-                    Limpiar
+                  <button
+                    onClick={handleClearFilters}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 rounded-full text-accent text-xs font-semibold hover:bg-accent/15 transition-colors active:scale-[0.98]"
+                    title="Limpiar todos los filtros"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Limpiar todo
                   </button>
                 </div>
               )}
@@ -522,7 +536,7 @@ export default function ProductsPage() {
         <Suspense
           fallback={
             <div className="min-h-screen theme-catalog bg-background">
-              <div className="container mx-auto px-4 py-8">
+              <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
                 <Skeleton className="h-4 w-24 mb-3 bg-muted rounded-md" />
                 <Skeleton className="h-7 w-48 mb-5 bg-muted rounded-md" />
                 <div className="flex gap-6">
