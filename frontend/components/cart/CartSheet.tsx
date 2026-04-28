@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Trash2, Plus, Minus, ShoppingCart, X, ArrowRight } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingCart, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,27 +39,17 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md flex flex-col h-full p-0 bg-white border-l border-gray-200">
-        {/* Header */}
-        <SheetHeader className="px-4 py-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center gap-2 text-gray-900">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              Tu Carrito
-              {items.length > 0 && (
-                <span className="text-sm font-normal text-gray-500">
-                  ({items.length} {items.length === 1 ? 'producto' : 'productos'})
-                </span>
-              )}
-            </SheetTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8 text-gray-500 hover:text-gray-700"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        {/* Header — la X de cierre la provee SheetContent (top-4 right-4) */}
+        <SheetHeader className="px-4 py-4 pr-12 border-b border-gray-200 bg-white">
+          <SheetTitle className="flex items-center gap-2 text-gray-900">
+            <ShoppingCart className="h-5 w-5 text-primary" />
+            Tu Carrito
+            {items.length > 0 && (
+              <span className="text-sm font-normal text-gray-500">
+                ({items.length} {items.length === 1 ? 'producto' : 'productos'})
+              </span>
+            )}
+          </SheetTitle>
         </SheetHeader>
 
         {items.length === 0 ? (
@@ -70,8 +60,8 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
             <p className="text-gray-600 text-center font-medium">
               Tu carrito está vacío
             </p>
-            <p className="text-gray-400 text-sm text-center">
-              Agrega productos para comenzar tu compra
+            <p className="text-handwriting text-lg text-gray-400 text-center">
+              Agrega productos y arma tu pedido
             </p>
             <Button
               onClick={() => onOpenChange(false)}
@@ -133,7 +123,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-gray-400 hover:text-red-500 -mt-1 -mr-1"
+                                className="h-9 w-9 text-gray-400 hover:text-red-500 -mt-1 -mr-1"
                                 onClick={() => handleRemove(item.variantId)}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -154,7 +144,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                                   ${((item.unitPrice - item.discount) * item.quantity).toLocaleString('es-CL')}
                                 </span>
                                 {item.discount > 0 && (
-                                  <span className="text-xs text-gray-400 line-through">
+                                  <span className="text-handwriting text-sm text-gray-400 line-through">
                                     ${(item.unitPrice * item.quantity).toLocaleString('es-CL')}
                                   </span>
                                 )}
@@ -165,10 +155,10 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 hover:bg-white"
+                                  className="h-9 w-9 hover:bg-white"
                                   onClick={() => handleQuantityChange(item, -1)}
                                 >
-                                  <Minus className="h-3 w-3" />
+                                  <Minus className="h-4 w-4" />
                                 </Button>
                                 <span className="w-8 text-center text-sm font-medium text-gray-900">
                                   {item.quantity}
@@ -176,10 +166,10 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 hover:bg-white"
+                                  className="h-9 w-9 hover:bg-white"
                                   onClick={() => handleQuantityChange(item, 1)}
                                 >
-                                  <Plus className="h-3 w-3" />
+                                  <Plus className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>

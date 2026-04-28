@@ -14,7 +14,7 @@ Lee este archivo PRIMERO antes de continuar con implementaciones.
 
 ### ¿Qué es este proyecto?
 
-**Confitería Quelita** es un ecommerce React para venta de productos de confitería en Paraguay.
+**Confitería Quelita** es un ecommerce React para venta de productos de confitería en Chile.
 
 **Stack actual:**
 - Next.js 16.0.1 + React 19.2.0

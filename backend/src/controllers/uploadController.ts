@@ -4,6 +4,7 @@ import ProductParent from '../models/ProductParent';
 import ProductVariant from '../models/ProductVariant';
 import { Category } from '../models/Category';
 import { Brand } from '../models/Brand';
+import Collection from '../models/Collection';
 import { imageService } from '../services/imageService';
 import { deleteFile } from '../middleware/upload';
 import { asyncHandler } from '../middleware/asyncHandler';
@@ -392,6 +393,65 @@ export const uploadBrandLogo = asyncHandler(
       success: true,
       message: 'Logo subido exitosamente',
       data: { logo: logoUrl },
+    });
+  }
+);
+
+/**
+ * Subir imagen a Colección
+ * POST /api/collections/:id/image
+ * Role: admin, funcionario
+ */
+export const uploadCollectionImage = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse<{ image: string }>>) => {
+    const { id } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      throw new AppError(400, 'No se subió ningún archivo');
+    }
+
+    const collection = await Collection.findById(id);
+    if (!collection) {
+      await deleteFile(file.path);
+      throw new AppError(404, 'Colección no encontrada');
+    }
+
+    // Eliminar imagen anterior si existe
+    if (collection.image) {
+      try {
+        await imageService.deleteImage(collection.image);
+      } catch (error: any) {
+        logger.warn('No se pudo eliminar imagen anterior de colección', {
+          error: error.message,
+        });
+      }
+    }
+
+    // Subir nueva imagen — landscape 5:3 para tarjetas del carrusel double-row
+    const result = await imageService.uploadImage(file.path, {
+      folder: 'collections',
+      width: 600,
+      height: 360,
+      quality: 90,
+      format: 'webp',
+    });
+
+    const imageUrl = result.url;
+
+    collection.image = imageUrl;
+    if (req.user?.id) collection.updatedBy = req.user.id as any;
+    await collection.save();
+
+    logger.info('Imagen subida a colección', {
+      collectionId: id,
+      userId: req.user?.id,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Imagen subida exitosamente',
+      data: { image: imageUrl },
     });
   }
 );

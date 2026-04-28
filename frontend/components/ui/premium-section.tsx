@@ -80,7 +80,7 @@ export function PremiumSection({
       {/* Content */}
       <div
         className={cn(
-          'relative z-10 container mx-auto px-4',
+          'relative z-10 w-full px-4 sm:px-6 lg:px-8',
           'py-12 md:py-16 lg:py-20',
           contentClassName
         )}

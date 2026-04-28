@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Tag, Gift, DollarSign, Layers, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronRight, Tag, Gift, DollarSign, Layers, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
@@ -148,17 +148,16 @@ export function FiltersSidebarCentral({
     <aside className={cn('bg-card rounded-lg border border-border shadow-sm overflow-hidden', className)}>
       {/* Header — hidden when inside mobile Sheet */}
       {!hideHeader && (
-        <div className="px-4 py-3 bg-muted border-b border-border">
+        <div className="px-4 py-3 bg-warm-cream border-b border-border">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="font-display font-bold text-foreground text-sm">Filtros</span>
-            </div>
+            <span className="text-handwriting text-lg text-foreground">Filtros</span>
             {activeFilters > 0 && (
               <button
                 onClick={onClearFilters}
-                className="rounded-full px-2.5 py-1 text-[11px] text-primary hover:text-foreground font-medium"
+                className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+                title="Limpiar todos los filtros"
               >
+                <RotateCcw className="h-3 w-3" />
                 Limpiar ({activeFilters})
               </button>
             )}
@@ -233,31 +232,45 @@ export function FiltersSidebarCentral({
                         if (isSelected) {
                           onCategoryChange?.(undefined);
                         } else {
-                          // Select this category, collapse all others
                           setExpandedCategories([category._id]);
                           onCategoryChange?.(category._id);
                         }
                       }}
                       className={cn(
-                        'flex-1 text-left py-2.5 px-2.5 rounded-xl text-sm transition-all duration-150',
+                        'flex-1 flex items-center gap-2 text-left py-2.5 px-2.5 rounded-xl text-sm transition-all duration-150',
                         isSelected
-                          ? 'bg-white text-primary font-semibold border border-primary/30'
+                          ? 'bg-white font-semibold shadow-sm'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       )}
+                      style={isSelected && category.color ? {
+                        color: category.color,
+                        border: `1px solid ${category.color}33`,
+                      } : undefined}
                     >
-                      {category.name}
+                      {category.icon && (
+                        <span className="text-base leading-none flex-shrink-0">{category.icon}</span>
+                      )}
+                      {!category.icon && category.color && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: category.color }}
+                        />
+                      )}
+                      <span className="truncate">{category.name}</span>
                     </button>
                   </div>
 
                   {hasSubcategories && isExpanded && (
-                    <div className="ml-5 pl-3 border-l border-border space-y-0.5 my-1">
+                    <div
+                      className="ml-5 pl-3 border-l-2 space-y-0.5 my-1"
+                      style={{ borderLeftColor: category.color || 'var(--border)' }}
+                    >
                       {category.subcategories?.map((subcat: Category) => {
                         const isSubSelected = selectedSubcategories.includes(subcat._id);
                         const toggleSub = () => {
                           const newSubs = isSubSelected
                             ? selectedSubcategories.filter(id => id !== subcat._id)
                             : [...selectedSubcategories, subcat._id];
-                          // Keep only this category expanded
                           setExpandedCategories([category._id]);
                           onCategoryChange?.(category._id, newSubs.length > 0 ? newSubs : undefined);
                         };
@@ -268,9 +281,13 @@ export function FiltersSidebarCentral({
                             className={cn(
                               'w-full text-left py-2.5 px-2.5 rounded-xl text-sm transition-all duration-150',
                               isSubSelected
-                                ? 'bg-white text-primary font-medium border border-primary/30'
+                                ? 'bg-white font-medium shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                             )}
+                            style={isSubSelected && category.color ? {
+                              color: category.color,
+                              border: `1px solid ${category.color}33`,
+                            } : undefined}
                           >
                             {subcat.name}
                           </button>
@@ -327,13 +344,21 @@ export function FiltersSidebarCentral({
           badge={hasPromotion ? 1 : 0}
           defaultOpen={false}
         >
-          <label className="flex items-center gap-3 cursor-pointer group px-2 py-2.5 rounded-xl hover:bg-muted transition-colors">
+          <label className={cn(
+            'flex items-center gap-3 cursor-pointer group px-2 py-2.5 rounded-xl transition-all duration-150',
+            hasPromotion
+              ? 'bg-accent/5 border border-accent/20'
+              : 'hover:bg-muted'
+          )}>
             <Checkbox
               checked={hasPromotion}
               onCheckedChange={(checked) => onPromotionChange?.(checked as boolean)}
-              className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-[6px]"
+              className="border-border data-[state=checked]:bg-accent data-[state=checked]:border-accent rounded-[6px]"
             />
-            <span className="text-sm text-foreground group-hover:text-foreground transition-colors flex items-center gap-2">
+            <span className={cn(
+              'text-sm transition-colors flex items-center gap-2',
+              hasPromotion ? 'text-accent font-medium' : 'text-foreground group-hover:text-foreground'
+            )}>
               <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               Solo con descuento
             </span>

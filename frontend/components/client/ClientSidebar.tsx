@@ -53,7 +53,7 @@ export function ClientSidebar() {
   };
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-[280px] lg:fixed lg:inset-y-0 lg:top-[96px] lg:border-r bg-white">
+    <aside className="hidden lg:flex lg:flex-col lg:sticky lg:top-[var(--header-height-desktop)] lg:h-[calc(100vh-var(--header-height-desktop))] lg:border-r bg-white">
       {/* User Info */}
       <div className="p-6">
         <div className="flex items-center gap-4">

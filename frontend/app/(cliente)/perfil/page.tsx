@@ -144,11 +144,19 @@ export default function ProfilePage() {
 
   // Stats calculados
   const orders = ordersData?.data || [];
-  const totalOrders = orders.length;
-  const totalSpent = orders.reduce((sum: number, order: any) => sum + order.total, 0);
   const inProgressOrders = orders.filter(
     (order: any) => !['completed', 'cancelled'].includes(order.status)
   ).length;
+  const completedOrders = orders.filter(
+    (order: any) => order.status === 'completed'
+  ).length;
+  const now = new Date();
+  const thisMonthOrders = orders.filter((order: any) => {
+    const d = new Date(order.createdAt);
+    return (
+      d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    );
+  }).length;
 
   if (authLoading) {
     return <ProfileSkeleton />;
@@ -207,29 +215,27 @@ export default function ProfilePage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 {ordersLoading ? (
-                  <Skeleton className="h-8 w-12 mx-auto mb-1" />
-                ) : (
-                  <p className="text-2xl font-bold text-primary">{totalOrders}</p>
-                )}
-                <p className="text-xs text-muted-foreground">Pedidos</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                {ordersLoading ? (
-                  <Skeleton className="h-8 w-16 mx-auto mb-1" />
-                ) : (
-                  <p className="text-2xl font-bold text-primary">
-                    ${totalSpent.toLocaleString()}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">Total</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                {ordersLoading ? (
                   <Skeleton className="h-8 w-8 mx-auto mb-1" />
                 ) : (
                   <p className="text-2xl font-bold text-primary">{inProgressOrders}</p>
                 )}
                 <p className="text-xs text-muted-foreground">En proceso</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                {ordersLoading ? (
+                  <Skeleton className="h-8 w-8 mx-auto mb-1" />
+                ) : (
+                  <p className="text-2xl font-bold text-primary">{completedOrders}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Completados</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                {ordersLoading ? (
+                  <Skeleton className="h-8 w-8 mx-auto mb-1" />
+                ) : (
+                  <p className="text-2xl font-bold text-primary">{thisMonthOrders}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Este mes</p>
               </div>
             </div>
           </CardContent>

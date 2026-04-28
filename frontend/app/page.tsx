@@ -22,7 +22,7 @@ export default function HomePage() {
           <div className="absolute top-0 left-1/4 w-60 h-60 bg-secondary/30 rounded-full blur-3xl blob pointer-events-none" />
           <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-accent/15 rounded-full blur-3xl blob-delayed pointer-events-none" />
 
-          <div className="container mx-auto px-4 text-center relative z-[3]">
+          <div className="w-full px-4 sm:px-6 lg:px-8 text-center relative z-[3]">
             {/* Logo as centerpiece with glow */}
             <motion.div
               initial={{ opacity: 0, scale: 0.7, rotate: -5 }}
@@ -82,21 +82,21 @@ export default function HomePage() {
 
         {/* Benefits Bar */}
         <section className="bg-secondary candy-bg border-b border-white/10">
-          <div className="container mx-auto px-4 py-6 relative z-10">
-            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-5 md:py-6 relative z-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
               {[
                 { icon: Truck, title: 'Envío en 24hrs', desc: 'Peñalolén, La Florida, Macul, La Reina', color: 'text-cyan-300' },
                 { icon: CreditCard, title: 'Pago seguro', desc: 'Múltiples opciones', color: 'text-cyan-300' },
                 { icon: Phone, title: 'WhatsApp', desc: '+56 9 6426 9246', color: 'text-green-300' },
                 { icon: Clock, title: 'Horario', desc: 'L-S 08:30-20:30 · Dom 10:00-16:00', color: 'text-cyan-300' },
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                    <item.icon className={`h-5 w-5 ${item.color}`} />
+                <div key={i} className="flex items-center gap-2.5 md:gap-3 min-w-0">
+                  <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                    <item.icon className={`h-4 w-4 md:h-5 md:w-5 ${item.color}`} />
                   </div>
-                  <div>
-                    <p className="font-display font-bold text-sm text-white">{item.title}</p>
-                    <p className="text-xs text-white/50">{item.desc}</p>
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-xs md:text-sm text-white leading-tight">{item.title}</p>
+                    <p className="text-[10.5px] md:text-xs text-white/50 leading-snug mt-0.5 line-clamp-2 md:line-clamp-1">{item.desc}</p>
                   </div>
                 </div>
               ))}

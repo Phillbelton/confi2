@@ -40,7 +40,9 @@ export function generateOrderMessage(order: IOrder): string {
     // Datos del cliente
     lines.push('👤 *DATOS DEL CLIENTE*');
     lines.push(`Nombre: ${order.customer.name}`);
-    lines.push(`Email: ${order.customer.email}`);
+    if (order.customer.email) {
+      lines.push(`Email: ${order.customer.email}`);
+    }
     lines.push(`Teléfono: ${order.customer.phone}`);
     lines.push('');
 

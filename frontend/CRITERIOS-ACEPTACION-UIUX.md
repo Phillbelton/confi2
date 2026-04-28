@@ -293,8 +293,8 @@
 
    📍 DATOS:
    Nombre: Juan Pérez
-   WhatsApp: +595 981 234567
-   Dirección: Calle 123, Asunción
+   WhatsApp: +56 9 8123 4567
+   Dirección: Calle 123, Santiago
 
    Número de orden: #QUE-20251108-001
 

@@ -322,9 +322,9 @@ export async function applyDiscountToCart(
  */
 export function formatDiscountBadges(previews: TierPreview[]): string[] {
   return previews.map((preview) => {
-    const formattedPrice = preview.pricePerUnit.toLocaleString('es-PY', {
+    const formattedPrice = preview.pricePerUnit.toLocaleString('es-CL', {
       style: 'currency',
-      currency: 'PYG',
+      currency: 'CLP',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });

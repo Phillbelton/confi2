@@ -266,7 +266,7 @@ export const getProductsQuerySchema = z.object({
     tags: z.string().optional(), // Comma-separated IDs
     minPrice: z.string().regex(/^\d+(\.\d+)?$/).optional(),
     maxPrice: z.string().regex(/^\d+(\.\d+)?$/).optional(),
-    active: z.enum(['true', 'false']).optional(),
+    active: z.enum(['true', 'false', 'all']).optional(),
     search: z.string().max(100).optional(),
     sort: z.enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'newest', 'oldest', 'popular']).optional(),
   }),

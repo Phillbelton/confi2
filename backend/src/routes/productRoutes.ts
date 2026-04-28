@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as productParentController from '../controllers/productParentController';
 import * as productVariantController from '../controllers/productVariantController';
+import * as productFacetsController from '../controllers/productFacetsController';
 import * as uploadController from '../controllers/uploadController';
 import { authenticate, authorize } from '../middleware/auth';
 import { uploadMultiple, uploadSingle, handleMulterError } from '../middleware/upload';
@@ -33,6 +34,8 @@ const router = Router();
 // Public routes
 router.get('/parents', validate(getProductsQuerySchema), productParentController.getProductParents);
 router.get('/parents/featured', validate(getFeaturedProductsSchema), productParentController.getFeaturedProducts);
+// IMPORTANTE: /parents/facets debe ir ANTES de /parents/:id para no ser interceptada
+router.get('/parents/facets', productFacetsController.getProductFacets);
 router.get('/parents/:id', validate(getProductByIdSchema), productParentController.getProductParentById);
 router.get('/parents/slug/:slug', validate(getProductBySlugSchema), productParentController.getProductParentBySlug);
 router.get('/parents/:id/variants', validate(getProductVariantsSchema), productParentController.getProductParentVariants);

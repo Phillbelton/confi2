@@ -42,3 +42,15 @@ logs/
 
 # MCP config (contiene credenciales de conexión)
 .mcp.json
+
+# Test results and reports
+frontend/test-results/
+frontend/tests/report/
+
+# Temp badge assets
+frontend/public/brand/badges/*-raw.png
+frontend/public/brand/badges/*-preview.png
+frontend/public/brand/badges/badgesescalonados.png
+frontend/public/brand/badges/tier4Test.png
+frontend/public/brand/badges/brush-stroke.png
+frontend/public/brand/badges/*.svg

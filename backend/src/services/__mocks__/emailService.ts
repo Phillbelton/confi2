@@ -7,23 +7,35 @@
 
 // Mock methods that match the real EmailService class
 const sendPasswordResetEmail = jest.fn().mockResolvedValue(true);
+const sendOrderReceivedEmail = jest.fn().mockResolvedValue(true);
 const sendOrderConfirmationEmail = jest.fn().mockResolvedValue(true);
 const sendOrderStatusUpdateEmail = jest.fn().mockResolvedValue(true);
+const sendOrderCancellationEmail = jest.fn().mockResolvedValue(true);
+const sendOrderEditedEmail = jest.fn().mockResolvedValue(true);
+const sendWelcomeEmail = jest.fn().mockResolvedValue(true);
 const verifyConnection = jest.fn().mockResolvedValue(true);
 
 // Export singleton instance that matches the real emailService structure
 export const emailService = {
   sendPasswordResetEmail,
+  sendOrderReceivedEmail,
   sendOrderConfirmationEmail,
   sendOrderStatusUpdateEmail,
+  sendOrderCancellationEmail,
+  sendOrderEditedEmail,
+  sendWelcomeEmail,
   verifyConnection,
 };
 
 // Helper to reset all email mocks (for use in test setup)
 export const resetEmailMocks = () => {
   sendPasswordResetEmail.mockClear();
+  sendOrderReceivedEmail.mockClear();
   sendOrderConfirmationEmail.mockClear();
   sendOrderStatusUpdateEmail.mockClear();
+  sendOrderCancellationEmail.mockClear();
+  sendOrderEditedEmail.mockClear();
+  sendWelcomeEmail.mockClear();
   verifyConnection.mockClear();
 };
 

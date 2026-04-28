@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Home, SlidersHorizontal, X, Search, ArrowUpDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, SlidersHorizontal, X, Search, ArrowUpDown, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -127,10 +127,18 @@ function ProductsContent() {
   const handleClearFilters = () => { setFilters({}); setCurrentPage(1); };
 
   // ── Mobile pending filter handlers ──
-  // Sync pending filters when opening the sheet
+  // Sync pending filters when opening the sheet; auto-aplicar al cerrar
+  // (si el usuario cierra el sheet sin tocar "Aplicar", tomamos sus cambios
+  // pendientes como intención y los aplicamos igual).
   const handleOpenMobileFilters = (open: boolean) => {
     if (open) {
       setPendingFilters({ ...filters });
+    } else {
+      const changed = JSON.stringify(pendingFilters) !== JSON.stringify(filters);
+      if (changed) {
+        setFilters(pendingFilters);
+        setCurrentPage(1);
+      }
     }
     setMobileFiltersOpen(open);
   };
@@ -197,11 +205,12 @@ function ProductsContent() {
     (filters.onSale ? 1 : 0);
 
   return (
-    <div className="min-h-screen theme-catalog bg-background">
-      <div>
+    <div className="min-h-screen theme-catalog bg-background section-with-pattern">
+      <div className="pattern-dots absolute inset-0 pointer-events-none" aria-hidden="true" />
+      <div className="relative z-10">
 
         {/* ── Top bar: breadcrumb + title ── */}
-        <div className="container mx-auto px-4 pt-5 pb-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pt-5 pb-4">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
             <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
@@ -249,12 +258,12 @@ function ProductsContent() {
         </div>
 
         {/* ── Main layout ── */}
-        <div className="container mx-auto px-4 pb-12">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-12">
           <div className="flex gap-5 lg:gap-6">
 
             {/* Sidebar — Desktop */}
-            <div className="hidden lg:block w-[240px] flex-shrink-0">
-              <div className="sticky top-24">
+            <div className="hidden lg:block w-60 flex-shrink-0">
+              <div className="sticky top-[var(--header-height-desktop)]">
                 <FiltersSidebarCentral
                   selectedCategory={filters.category}
                   selectedSubcategories={filters.subcategory?.split(',').filter(Boolean) || []}
@@ -283,7 +292,7 @@ function ProductsContent() {
                       <SlidersHorizontal className="h-4 w-4" />
                       Filtros
                       {activeFilterCount > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-primary text-white text-[11px] flex items-center justify-center font-bold">
+                        <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
                           {activeFilterCount}
                         </span>
                       )}
@@ -291,17 +300,18 @@ function ProductsContent() {
                   </SheetTrigger>
                   <SheetContent
                     side="left"
-                    className="theme-catalog w-[320px] bg-background border-border p-0 flex flex-col"
+                    className="theme-catalog w-[min(320px,85vw)] bg-background border-border p-0 flex flex-col"
                   >
                     {/* Header */}
-                    <SheetHeader className="p-4 border-b border-border flex-shrink-0">
+                    <SheetHeader className="p-4 border-b border-border flex-shrink-0 bg-warm-cream">
                       <div className="flex items-center justify-between">
-                        <SheetTitle className="text-foreground font-display">Filtros</SheetTitle>
+                        <SheetTitle className="text-handwriting text-lg text-foreground">Filtros</SheetTitle>
                         {pendingFilterCount > 0 && (
                           <button
                             onClick={handlePendingClearFilters}
-                            className="text-xs text-primary hover:underline"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-semibold hover:bg-accent/15 transition-colors"
                           >
+                            <RotateCcw className="h-3 w-3" />
                             Limpiar todo
                           </button>
                         )}
@@ -409,15 +419,20 @@ function ProductsContent() {
                       <X className="h-3 w-3 text-muted-foreground" />
                     </button>
                   )}
-                  <button onClick={handleClearFilters} className="px-2 py-1.5 text-muted-foreground hover:text-foreground text-xs transition-colors">
-                    Limpiar
+                  <button
+                    onClick={handleClearFilters}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 rounded-full text-accent text-xs font-semibold hover:bg-accent/15 transition-colors active:scale-[0.98]"
+                    title="Limpiar todos los filtros"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Limpiar todo
                   </button>
                 </div>
               )}
 
               {/* ── Products Grid ── */}
               {productsLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                   {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                     <div key={i} className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                       <Skeleton className="aspect-square bg-muted" />
@@ -435,7 +450,7 @@ function ProductsContent() {
                     <Search className="h-7 w-7 text-muted-foreground" />
                   </div>
                   <h2 className="text-lg font-display font-bold text-foreground mb-1.5">No encontramos productos</h2>
-                  <p className="text-muted-foreground mb-5 text-sm max-w-xs mx-auto">
+                  <p className="text-handwriting text-lg text-muted-foreground mb-5 max-w-xs mx-auto">
                     Intenta con otros filtros o busca algo diferente
                   </p>
                   <Button onClick={handleClearFilters} className="bg-primary hover:bg-primary/90 text-white rounded-lg font-bold h-10 px-6">
@@ -443,7 +458,7 @@ function ProductsContent() {
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                   {products.map((product: ProductParent & { variants?: ProductVariant[] }) => (
                     <ProductCardUnified
                       key={product._id}
@@ -521,11 +536,11 @@ export default function ProductsPage() {
         <Suspense
           fallback={
             <div className="min-h-screen theme-catalog bg-background">
-              <div className="container mx-auto px-4 py-8">
+              <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
                 <Skeleton className="h-4 w-24 mb-3 bg-muted rounded-md" />
                 <Skeleton className="h-7 w-48 mb-5 bg-muted rounded-md" />
                 <div className="flex gap-6">
-                  <div className="hidden lg:block w-[260px]">
+                  <div className="hidden lg:block w-64">
                     <div className="bg-card rounded-lg border border-border p-4 space-y-4">
                       {Array.from({ length: 4 }).map((_, i) => (
                         <Skeleton key={i} className="h-8 w-full bg-muted rounded-md" />
@@ -534,7 +549,7 @@ export default function ProductsPage() {
                   </div>
                   <div className="flex-1">
                     <Skeleton className="h-12 w-full mb-4 bg-card rounded-lg border border-border" />
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                       {Array.from({ length: 12 }).map((_, i) => (
                         <div key={i} className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                           <Skeleton className="aspect-square bg-muted" />

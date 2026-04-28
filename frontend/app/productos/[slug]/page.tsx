@@ -8,6 +8,8 @@ import { ChevronLeft, ShoppingCart, Check, Minus, Plus } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductCardUnified } from '@/components/products/ProductCardUnified';
+import { DiscountSticker } from '@/components/products/DiscountSticker';
+import { showCartToast } from '@/lib/cart-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -214,15 +216,19 @@ export default function ProductDetailPage() {
       addItem(product, selectedVariant, quantity);
 
       setJustAdded(true);
-      toast.success('Producto agregado al carrito', {
-        description: `${quantity}x ${product.name} ${
-          product.hasVariants ? `- ${selectedVariant.displayName}` : ''
-        }`,
+      showCartToast({
+        product,
+        variant: selectedVariant,
+        quantity,
+        pricePerUnit: displayPrice,
+        variantLabel: product.hasVariants ? selectedVariant.displayName || null : null,
       });
 
       setTimeout(() => setJustAdded(false), 2000);
     } catch (error) {
-      toast.error('Error al agregar el producto');
+      toast.error('No pudimos agregar el producto', {
+        description: 'Intentá de nuevo en un momento.',
+      });
     } finally {
       setIsAdding(false);
     }
@@ -267,18 +273,21 @@ export default function ProductDetailPage() {
                   fill
                   className="object-contain p-4"
                   priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  sizes="(max-width: 1024px) 100vw, (max-width: 1440px) 50vw, 720px"
                 />
 
-                {/* Fixed Discount Badge — top left */}
+                {/* Fixed Discount Badge — flush top-left (dimak sticker) */}
                 {hasFixedDiscount && selectedVariant && (
-                  <div className="absolute top-3 left-3 z-10">
-                    <div className="bg-accent text-white font-bold text-xs px-2.5 py-1.5 rounded-md shadow-sm">
-                      {selectedVariant.fixedDiscount?.badge ||
+                  <div className="absolute top-3 left-0 z-10">
+                    <DiscountSticker
+                      size="lg"
+                      badge={
+                        selectedVariant.fixedDiscount?.badge ||
                         (selectedVariant.fixedDiscount!.type === 'percentage'
                           ? `-${selectedVariant.fixedDiscount!.value}%`
-                          : `-$${selectedVariant.fixedDiscount!.value.toLocaleString()}`)}
-                    </div>
+                          : `-$${selectedVariant.fixedDiscount!.value.toLocaleString()}`)
+                      }
+                    />
                   </div>
                 )}
 
@@ -377,7 +386,7 @@ export default function ProductDetailPage() {
                       ${discount ? discount.finalPrice.toLocaleString('es-CL') : selectedVariant.price.toLocaleString('es-CL')}
                     </span>
                     {discount && (
-                      <span className="font-sans text-base md:text-lg text-muted-foreground line-through" suppressHydrationWarning>
+                      <span className="text-handwriting text-lg md:text-xl text-muted-foreground line-through" suppressHydrationWarning>
                         ${selectedVariant.price.toLocaleString('es-CL')}
                       </span>
                     )}
@@ -521,7 +530,7 @@ export default function ProductDetailPage() {
               <h2 className="font-display text-lg md:text-2xl font-bold text-foreground mb-4 md:mb-6">
                 Productos relacionados
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {relatedProducts.map((relatedProduct: ProductParent) => (
                   <ProductCardUnified
                     key={relatedProduct._id}
@@ -545,7 +554,7 @@ export default function ProductDetailPage() {
                 ${displayPrice.toLocaleString('es-CL')}
               </span>
               {discount && (
-                <span className="font-sans text-xs text-muted-foreground line-through leading-tight" suppressHydrationWarning>
+                <span className="text-handwriting text-sm text-muted-foreground line-through leading-tight" suppressHydrationWarning>
                   ${selectedVariant.price.toLocaleString('es-CL')}
                 </span>
               )}

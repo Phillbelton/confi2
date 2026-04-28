@@ -203,10 +203,107 @@ class EmailService {
   }
 
   /**
+   * Envía email de "pedido recibido" inmediatamente después de crear la orden.
+   * Se envía antes de que el funcionario confirme y calcule el costo de envío,
+   * por lo que el total puede no incluir todavía el envío.
+   */
+  async sendOrderReceivedEmail(order: IOrder, userEmail: string, userName: string): Promise<boolean> {
+    const orderUrl = `${ENV.FRONTEND_URL}/mis-ordenes/${order.orderNumber}`;
+    const whatsappNumber = ENV.WHATSAPP_BUSINESS_NUMBER;
+
+    const itemsHtml = order.items
+      .map(
+        (item) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.variantSnapshot.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.pricePerUnit.toLocaleString('es-CL')}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.subtotal.toLocaleString('es-CL')}</td>
+      </tr>
+    `
+      )
+      .join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Pedido Recibido</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; max-width: 700px; margin: 0 auto; padding: 20px; }
+    .container { background-color: #f9f9f9; border-radius: 10px; padding: 30px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { color: #e91e63; margin: 0; }
+    .content { background: white; padding: 25px; border-radius: 8px; }
+    .order-number { background: #e91e63; color: white; padding: 15px; border-radius: 5px; text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0; }
+    .info-box { background: #fff8e1; border-left: 4px solid #ffb300; padding: 12px 15px; margin: 15px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th { background: #f5f5f5; padding: 12px; text-align: left; }
+    .total-row { background: #f5f5f5; font-weight: bold; }
+    .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍬 Confitería Quelita</h1>
+      <p style="color:#ffb300; font-size: 18px;">📥 Pedido recibido</p>
+    </div>
+    <div class="content">
+      <h2>¡Gracias por tu pedido, ${userName}!</h2>
+      <p>Recibimos tu pedido. En breve nos contactaremos contigo por WhatsApp para confirmar los detalles y coordinar el envío.</p>
+
+      <div class="order-number">Pedido #${order.orderNumber}</div>
+
+      <div class="info-box">
+        <strong>⏳ Estado actual:</strong> Pendiente de confirmación.<br>
+        Te avisaremos por WhatsApp${userEmail ? ' y por email' : ''} cuando esté confirmado y conozcamos el costo de envío.
+      </div>
+
+      <h3>Detalle del pedido</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th style="text-align:center;">Cantidad</th>
+            <th style="text-align:right;">Precio Unit.</th>
+            <th style="text-align:right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>${itemsHtml}</tbody>
+        <tfoot>
+          <tr><td colspan="3" style="padding:10px; text-align:right;">Subtotal:</td><td style="padding:10px; text-align:right;">$${order.subtotal.toLocaleString('es-CL')}</td></tr>
+          <tr><td colspan="3" style="padding:10px; text-align:right; color:#666;">Envío:</td><td style="padding:10px; text-align:right; color:#666;">Por confirmar</td></tr>
+          <tr class="total-row"><td colspan="3" style="padding:15px; text-align:right;">Total estimado:</td><td style="padding:15px; text-align:right;">$${order.total.toLocaleString('es-CL')}</td></tr>
+        </tfoot>
+      </table>
+
+      <p style="text-align:center;">
+        <a href="${orderUrl}" style="display:inline-block; background:#e91e63; color:white; padding:12px 28px; border-radius:5px; text-decoration:none; font-weight:bold;">Ver mi pedido</a>
+      </p>
+    </div>
+    <div class="footer">
+      <p>Si tienes preguntas, contáctanos por WhatsApp: ${whatsappNumber}</p>
+      <p>&copy; ${new Date().getFullYear()} Confitería Quelita. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    return this.sendEmail({
+      to: userEmail,
+      subject: `📥 Pedido recibido #${order.orderNumber} - Confitería Quelita`,
+      html,
+    });
+  }
+
+  /**
    * Envía email de confirmación de pedido
    */
   async sendOrderConfirmationEmail(order: IOrder, userEmail: string, userName: string): Promise<boolean> {
-    const orderUrl = `${ENV.FRONTEND_URL}/orders/${order._id}`;
+    const orderUrl = `${ENV.FRONTEND_URL}/mis-ordenes/${order.orderNumber}`;
 
     // Formatear items del pedido
     const itemsHtml = order.items
@@ -215,8 +312,8 @@ class EmailService {
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.variantSnapshot.name}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.pricePerUnit.toLocaleString('es-PY')}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.subtotal.toLocaleString('es-PY')}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.pricePerUnit.toLocaleString('es-CL')}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.subtotal.toLocaleString('es-CL')}</td>
       </tr>
     `
       )
@@ -346,7 +443,7 @@ class EmailService {
         <tfoot>
           <tr class="total-row">
             <td colspan="3" style="padding: 15px; text-align: right;">Total:</td>
-            <td style="padding: 15px; text-align: right;">$${order.total.toLocaleString('es-PY')}</td>
+            <td style="padding: 15px; text-align: right;">$${order.total.toLocaleString('es-CL')}</td>
           </tr>
         </tfoot>
       </table>
@@ -385,7 +482,7 @@ class EmailService {
     userName: string,
     newStatus: string
   ): Promise<boolean> {
-    const orderUrl = `${ENV.FRONTEND_URL}/orders/${order._id}`;
+    const orderUrl = `${ENV.FRONTEND_URL}/mis-ordenes/${order.orderNumber}`;
     const statusInfo = this.getStatusInfo(newStatus);
 
     const html = `
@@ -688,7 +785,7 @@ class EmailService {
    * Envía email de orden editada (con lista de productos actualizada)
    */
   async sendOrderEditedEmail(order: IOrder, userEmail: string, userName: string): Promise<boolean> {
-    const orderUrl = `${ENV.FRONTEND_URL}/orders/${order._id}`;
+    const orderUrl = `${ENV.FRONTEND_URL}/mis-ordenes/${order.orderNumber}`;
 
     // Formatear items del pedido
     const itemsHtml = order.items

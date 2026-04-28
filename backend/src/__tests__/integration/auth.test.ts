@@ -662,7 +662,7 @@ describe('Authentication API', () => {
         label: 'Home',
         street: 'Av. Mariscal López',
         number: '1234',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Villa Morra',
         isDefault: true,
       });

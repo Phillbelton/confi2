@@ -92,7 +92,7 @@ async function seedOrders() {
         address: {
           street: 'Av. España',
           number: '1234',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Villa Morra',
         },
       },
@@ -124,7 +124,7 @@ async function seedOrders() {
         address: {
           street: 'Mcal. López',
           number: '567',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Centro',
         },
       },
@@ -182,7 +182,7 @@ async function seedOrders() {
         address: {
           street: 'Av. Mariscal López',
           number: '890',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Recoleta',
         },
       },
@@ -212,7 +212,7 @@ async function seedOrders() {
         address: {
           street: 'Av. Artigas',
           number: '123',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Sajonia',
         },
       },
@@ -242,7 +242,7 @@ async function seedOrders() {
         address: {
           street: 'Av. Quesada',
           number: '456',
-          city: 'Asunción',
+          city: 'Santiago',
           neighborhood: 'Barrio Jara',
         },
       },

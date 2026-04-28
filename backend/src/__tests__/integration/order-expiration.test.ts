@@ -35,7 +35,7 @@ async function createGuestOrder(data: {
       address: {
         street: 'Test Street',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
       },
     },
     items: [

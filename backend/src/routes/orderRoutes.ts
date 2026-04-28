@@ -23,7 +23,7 @@ const router = Router();
 // Public routes (crear orden - visita puede crear orden, pero si está autenticado se vincula al usuario)
 router.post('/validate-cart', orderController.validateCart);
 router.post('/', optionalAuth, validate(createOrderSchema), auditLog('order', 'create'), orderController.createOrder);
-router.get('/number/:orderNumber', validate(getOrderByNumberSchema), orderController.getOrderByNumber);
+router.get('/number/:orderNumber', authenticate, validate(getOrderByNumberSchema), orderController.getOrderByNumber);
 
 // Protected routes (admin, funcionario) - specific routes BEFORE /:id
 router.get('/', authenticate, authorize('admin', 'funcionario'), validate(getOrdersQuerySchema), orderController.getOrders);

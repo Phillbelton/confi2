@@ -241,7 +241,7 @@ export async function createTestOrder(data?: {
       address: {
         street: 'Test Street',
         number: '123',
-        city: 'Asunción',
+        city: 'Santiago',
         neighborhood: 'Test Neighborhood',
       },
     },

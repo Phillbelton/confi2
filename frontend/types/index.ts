@@ -311,6 +311,49 @@ export interface ProductFilters {
   maxPrice?: number;
   featured?: boolean;
   onSale?: boolean;
+  /** Slug de la colección curada (lista cerrada de productos) */
+  collection?: string;
+}
+
+// ============================================================================
+// COLLECTIONS — listas curadas de productos
+// ============================================================================
+
+export interface Collection {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  emoji?: string;
+  gradient?: string;
+  /** ObjectIds o productos populados según endpoint */
+  products: string[] | ProductParent[];
+  productCount?: number; // calculado por el backend en GET /api/collections
+  active: boolean;
+  showOnHome: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
+// FACETS (búsqueda facetada con counts dinámicos)
+// ============================================================================
+
+export interface FacetEntry {
+  _id: string;
+  name: string;
+  slug: string;
+  count: number;
+}
+
+export interface ProductFacets {
+  total: number;
+  subcategories: FacetEntry[];
+  brands: FacetEntry[];
+  collections: FacetEntry[];
+  promos: { onSale: number; featured: number };
 }
 
 export interface ProductSort {

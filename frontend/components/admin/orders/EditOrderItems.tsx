@@ -249,7 +249,7 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
                     <p className="font-medium truncate">{item.name}</p>
                     {hasDiscount && (
                       <Badge variant="secondary" className="text-xs">
-                        -{item.discountPerUnit.toLocaleString('es-PY')} Gs
+                        -${item.discountPerUnit.toLocaleString('es-CL')}
                       </Badge>
                     )}
                   </div>
@@ -266,15 +266,15 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
                     {hasDiscount ? (
                       <>
                         <span className="line-through text-muted-foreground">
-                          ${item.originalPrice.toLocaleString('es-PY')}
+                          ${item.originalPrice.toLocaleString('es-CL')}
                         </span>
                         <span className="font-semibold text-primary">
-                          ${item.finalPrice.toLocaleString('es-PY')} c/u
+                          ${item.finalPrice.toLocaleString('es-CL')} c/u
                         </span>
                       </>
                     ) : (
                       <span className="font-semibold">
-                        ${item.finalPrice.toLocaleString('es-PY')} c/u
+                        ${item.finalPrice.toLocaleString('es-CL')} c/u
                       </span>
                     )}
                   </div>
@@ -297,7 +297,7 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
                 <div className="text-right min-w-[100px]">
                   <p className="text-sm text-muted-foreground">Subtotal</p>
                   <p className="font-semibold">
-                    ${item.subtotal.toLocaleString('es-PY')}
+                    ${item.subtotal.toLocaleString('es-CL')}
                   </p>
                 </div>
 
@@ -333,33 +333,33 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal anterior:</span>
-            <span className="line-through">${order.subtotal.toLocaleString('es-PY')}</span>
+            <span className="line-through">${order.subtotal.toLocaleString('es-CL')}</span>
           </div>
           <div className="flex justify-between font-semibold">
             <span>Nuevo subtotal:</span>
-            <span className="text-primary">${newSubtotal.toLocaleString('es-PY')}</span>
+            <span className="text-primary">${newSubtotal.toLocaleString('es-CL')}</span>
           </div>
           {totalDiscount > 0 && (
             <div className="flex justify-between text-sm text-green-600">
               <span>Descuentos aplicados:</span>
-              <span>-${totalDiscount.toLocaleString('es-PY')}</span>
+              <span>-${totalDiscount.toLocaleString('es-CL')}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Costo de envío:</span>
-            <span>${order.shippingCost.toLocaleString('es-PY')}</span>
+            <span>${order.shippingCost.toLocaleString('es-CL')}</span>
           </div>
           <Separator />
           <div className="flex justify-between text-lg font-bold">
             <span>Total nuevo:</span>
-            <span className="text-primary">${newTotal.toLocaleString('es-PY')}</span>
+            <span className="text-primary">${newTotal.toLocaleString('es-CL')}</span>
           </div>
           {hasChanges && (
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Diferencia:</span>
               <span className={newTotal > order.total ? 'text-green-600' : 'text-red-600'}>
                 {newTotal > order.total ? '+' : ''}$
-                {(newTotal - order.total).toLocaleString('es-PY')}
+                {(newTotal - order.total).toLocaleString('es-CL')}
               </span>
             </div>
           )}
