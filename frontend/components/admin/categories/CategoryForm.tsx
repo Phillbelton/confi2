@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Upload, X, Info } from 'lucide-react';
+import { Loader2, Upload, X, Info, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -28,7 +28,16 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { InlineHelp } from '@/components/ui/inline-help';
-import type { Category } from '@/types';
+import type { Category, FacetableAttribute } from '@/types';
+
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
 
 const categoryFormSchema = z.object({
   name: z
@@ -47,6 +56,22 @@ const categoryFormSchema = z.object({
     .optional(),
   order: z.number().int().min(0, 'El orden no puede ser negativo').optional(),
   active: z.boolean().optional(),
+  facetableAttributes: z
+    .array(
+      z.object({
+        key: z.string().min(1).max(60),
+        label: z.string().min(1).max(80),
+        options: z.array(
+          z.object({
+            value: z.string().min(1).max(60),
+            label: z.string().min(1).max(80),
+          })
+        ),
+        multiSelect: z.boolean(),
+        order: z.number().int().min(0),
+      })
+    )
+    .optional(),
 });
 
 type CategoryFormValues = z.infer<typeof categoryFormSchema>;
@@ -98,6 +123,7 @@ export function CategoryForm({
       color: category?.color || '#F97316',
       order: category?.order || 0,
       active: category?.active ?? true,
+      facetableAttributes: category?.facetableAttributes || [],
     },
   });
 
@@ -114,18 +140,26 @@ export function CategoryForm({
         color: category.color || '#F97316',
         order: category.order || 0,
         active: category.active ?? true,
+        facetableAttributes: category.facetableAttributes || [],
       });
       setImagePreview(category.image || null);
     }
   }, [category, form]);
 
   const handleSubmit = (values: CategoryFormValues) => {
-    // Clean up empty strings
+    // Clean up empty strings y limpieza defensiva de atributos vacíos
+    const cleanedAttrs = (values.facetableAttributes || [])
+      .filter((a) => a.key && a.label)
+      .map((a) => ({
+        ...a,
+        options: (a.options || []).filter((o) => o.value && o.label),
+      }));
     const cleanedValues = {
       ...values,
       parent: values.parent || undefined,
       icon: values.icon || undefined,
       description: values.description || undefined,
+      facetableAttributes: cleanedAttrs,
     };
     onSubmit(cleanedValues);
   };
@@ -440,6 +474,13 @@ export function CategoryForm({
             />
           </div>
 
+          {/* Atributos facetables */}
+          <FacetableAttributesEditor
+            attributes={form.watch('facetableAttributes') || []}
+            onChange={(next) => form.setValue('facetableAttributes', next, { shouldDirty: true })}
+            disabled={isSubmitting}
+          />
+
           {/* Form Actions */}
           <div className="flex justify-end gap-2 pt-4">
             {onCancel && (
@@ -465,6 +506,211 @@ export function CategoryForm({
           </div>
         </form>
       </Form>
+    </div>
+  );
+}
+
+interface FacetableAttributesEditorProps {
+  attributes: FacetableAttribute[];
+  onChange: (next: FacetableAttribute[]) => void;
+  disabled?: boolean;
+}
+
+function FacetableAttributesEditor({
+  attributes,
+  onChange,
+  disabled,
+}: FacetableAttributesEditorProps) {
+  const [open, setOpen] = useState(attributes.length > 0);
+
+  const addAttribute = () => {
+    onChange([
+      ...attributes,
+      {
+        key: '',
+        label: '',
+        options: [],
+        multiSelect: false,
+        order: attributes.length,
+      },
+    ]);
+  };
+
+  const updateAttr = (idx: number, patch: Partial<FacetableAttribute>) => {
+    const next = attributes.map((a, i) => (i === idx ? { ...a, ...patch } : a));
+    onChange(next);
+  };
+
+  const removeAttr = (idx: number) => {
+    onChange(attributes.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between p-3 text-sm font-medium"
+        disabled={disabled}
+      >
+        <span className="flex items-center gap-2">
+          {open ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+          Atributos facetables ({attributes.length})
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="text-xs">
+              Atributos para filtrar productos (ej. "% Cacao"). Los productos
+              de subcategorías heredan estos atributos automáticamente.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </button>
+
+      {open && (
+        <div className="p-3 space-y-3 border-t">
+          {attributes.map((attr, idx) => (
+            <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/20">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Etiqueta</label>
+                  <Input
+                    value={attr.label}
+                    onChange={(e) => {
+                      const label = e.target.value;
+                      updateAttr(idx, {
+                        label,
+                        key: attr.key || slugify(label),
+                      });
+                    }}
+                    placeholder="Ej: % Cacao"
+                    disabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Slug (key)</label>
+                  <Input
+                    value={attr.key}
+                    onChange={(e) => updateAttr(idx, { key: slugify(e.target.value) })}
+                    placeholder="ej: cacao_percent"
+                    disabled={disabled}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 text-sm">
+                <label className="flex items-center gap-2">
+                  <Switch
+                    checked={attr.multiSelect}
+                    onCheckedChange={(v) => updateAttr(idx, { multiSelect: v })}
+                    disabled={disabled}
+                  />
+                  Multi-select
+                </label>
+                <div className="ml-auto flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Orden</span>
+                  <Input
+                    type="number"
+                    value={attr.order}
+                    onChange={(e) =>
+                      updateAttr(idx, { order: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-16 h-8"
+                    disabled={disabled}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeAttr(idx)}
+                    disabled={disabled}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Opciones */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Opciones</label>
+                {(attr.options || []).map((opt, oIdx) => (
+                  <div key={oIdx} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                    <Input
+                      value={opt.label}
+                      onChange={(e) => {
+                        const label = e.target.value;
+                        const newOpts = [...attr.options];
+                        newOpts[oIdx] = {
+                          ...opt,
+                          label,
+                          value: opt.value || slugify(label),
+                        };
+                        updateAttr(idx, { options: newOpts });
+                      }}
+                      placeholder="Etiqueta (ej: 70%)"
+                      disabled={disabled}
+                    />
+                    <Input
+                      value={opt.value}
+                      onChange={(e) => {
+                        const newOpts = [...attr.options];
+                        newOpts[oIdx] = { ...opt, value: slugify(e.target.value) };
+                        updateAttr(idx, { options: newOpts });
+                      }}
+                      placeholder="slug (ej: 70-percent)"
+                      disabled={disabled}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const newOpts = attr.options.filter((_, i) => i !== oIdx);
+                        updateAttr(idx, { options: newOpts });
+                      }}
+                      disabled={disabled}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    updateAttr(idx, {
+                      options: [...(attr.options || []), { value: '', label: '' }],
+                    })
+                  }
+                  disabled={disabled}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Agregar opción
+                </Button>
+              </div>
+            </div>
+          ))}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addAttribute}
+            disabled={disabled}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Agregar atributo
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

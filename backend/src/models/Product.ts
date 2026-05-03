@@ -1,57 +1,98 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import slugify from 'slugify';
-import { ProductDiscount } from '../types';
+
+/**
+ * Modelo Product (Quelita) — colapsa el split parent+variant.
+ * Cada documento es un producto único con:
+ *   - precio por unidad (`unitPrice`)
+ *   - presentación de venta principal (`saleUnit`) que se muestra como badge
+ *   - tramos opcionales de descuento por cantidad (`tiers`)
+ *   - atributos físicos filtrables (`format`, `flavor`)
+ */
+
+export type SaleUnitType = 'unidad' | 'cantidadMinima' | 'display' | 'embalaje';
+
+export interface ISaleUnit {
+  type: SaleUnitType;
+  /** Cuántas unidades base contiene esta presentación. 1 para unidad. */
+  quantity: number;
+}
+
+export interface ITier {
+  /** Cantidad mínima (en unidades base) a partir de la cual aplica el tier. */
+  minQuantity: number;
+  /** Precio efectivo por unidad cuando se alcanza este tier. */
+  pricePerUnit: number;
+  /** Etiqueta opcional visible al cliente: "Display", "Embalaje". */
+  label?: string;
+}
+
+export interface IFixedDiscount {
+  enabled: boolean;
+  type: 'percentage' | 'amount';
+  value: number;
+  startDate?: Date;
+  endDate?: Date;
+  badge?: string;
+}
 
 export interface IProduct extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
   slug: string;
   description: string;
-  price: number;
-  stock: number;
-  category: mongoose.Types.ObjectId;
   brand?: mongoose.Types.ObjectId;
+  categories: mongoose.Types.ObjectId[];
+  format?: mongoose.Types.ObjectId;
+  flavor?: mongoose.Types.ObjectId;
+  barcode?: string;
+  provider?: string;
+
+  unitPrice: number;
+  saleUnit: ISaleUnit;
+  tiers: ITier[];
+  fixedDiscount?: IFixedDiscount;
+
   images: string[];
   featured: boolean;
   active: boolean;
-  discount?: ProductDiscount;
+  views: number;
+  attributes: Map<string, string[]>;
+
+  createdBy?: mongoose.Types.ObjectId;
+  updatedBy?: mongoose.Types.ObjectId;
+  deletedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 
-  // Métodos
-  calculateDiscount(quantity: number): {
-    hasDiscount: boolean;
-    originalPrice: number;
-    discountedPrice: number;
-    discountAmount: number;
-    discountPercentage: number;
-    badge?: string;
-  };
-  isDiscountActive(): boolean;
+  // Virtuals
+  hasActiveDiscount: boolean;
+  hasActiveTieredDiscount: boolean;
 }
 
-const tieredDiscountTierSchema = new Schema(
+const saleUnitSubSchema = new Schema<ISaleUnit>(
   {
-    minQuantity: {
-      type: Number,
-      required: true,
-      min: [1, 'La cantidad mínima debe ser al menos 1'],
-    },
-    maxQuantity: {
-      type: Number,
-      default: null,
-      min: [1, 'La cantidad máxima debe ser al menos 1'],
-    },
     type: {
       type: String,
-      enum: ['percentage', 'amount'],
+      enum: ['unidad', 'cantidadMinima', 'display', 'embalaje'],
       required: true,
+      default: 'unidad',
     },
-    value: {
+    quantity: {
       type: Number,
       required: true,
-      min: [0, 'El valor del descuento no puede ser negativo'],
+      min: [1, 'La cantidad debe ser >= 1'],
+      default: 1,
     },
+  },
+  { _id: false }
+);
+
+const tierSubSchema = new Schema<ITier>(
+  {
+    minQuantity: { type: Number, required: true, min: 1 },
+    pricePerUnit: { type: Number, required: true, min: 0 },
+    label: { type: String, trim: true, maxlength: 40 },
   },
   { _id: false }
 );
@@ -64,7 +105,6 @@ const productSchema = new Schema<IProduct>(
       trim: true,
       minlength: [3, 'El nombre debe tener al menos 3 caracteres'],
       maxlength: [200, 'El nombre no puede exceder 200 caracteres'],
-      index: 'text',
     },
     slug: {
       type: String,
@@ -75,75 +115,61 @@ const productSchema = new Schema<IProduct>(
     description: {
       type: String,
       required: [true, 'La descripción es requerida'],
-      trim: true,
       minlength: [10, 'La descripción debe tener al menos 10 caracteres'],
-      maxlength: [2000, 'La descripción no puede exceder 2000 caracteres'],
-      index: 'text',
+      maxlength: [5000, 'La descripción no puede exceder 5000 caracteres'],
     },
-    price: {
-      type: Number,
-      required: [true, 'El precio es requerido'],
-      min: [0, 'El precio no puede ser negativo'],
-      index: true,
-    },
-    stock: {
-      type: Number,
-      required: [true, 'El stock es requerido'],
-      min: [0, 'El stock no puede ser negativo'],
-      default: 0,
-      index: true,
-    },
-    category: {
-      type: Schema.Types.ObjectId,
+    brand: { type: Schema.Types.ObjectId, ref: 'Brand' },
+    categories: {
+      type: [Schema.Types.ObjectId],
       ref: 'Category',
-      required: [true, 'La categoría es requerida'],
-      index: true,
+      required: [true, 'Al menos una categoría es requerida'],
+      validate: {
+        validator: (v: mongoose.Types.ObjectId[]) => v && v.length > 0,
+        message: 'Al menos una categoría es requerida',
+      },
     },
-    brand: {
-      type: Schema.Types.ObjectId,
-      ref: 'Brand',
-      index: true,
+    format: { type: Schema.Types.ObjectId, ref: 'Format' },
+    flavor: { type: Schema.Types.ObjectId, ref: 'Flavor' },
+    barcode: { type: String, trim: true, maxlength: 32 },
+    provider: { type: String, trim: true, maxlength: 120 },
+
+    unitPrice: {
+      type: Number,
+      required: [true, 'El precio unitario es requerido'],
+      min: [0, 'El precio no puede ser negativo'],
     },
+    saleUnit: { type: saleUnitSubSchema, required: true, default: () => ({ type: 'unidad', quantity: 1 }) },
+    tiers: { type: [tierSubSchema], default: [] },
+
+    fixedDiscount: {
+      enabled: { type: Boolean, default: false },
+      type: { type: String, enum: ['percentage', 'amount'] },
+      value: { type: Number, min: 0 },
+      startDate: Date,
+      endDate: Date,
+      badge: String,
+    },
+
     images: {
       type: [String],
+      default: [],
       validate: {
-        validator: function (v: string[]) {
-          return v && v.length >= 1 && v.length <= 5;
-        },
-        message: 'Debe haber entre 1 y 5 imágenes',
-      },
-      required: [true, 'Al menos una imagen es requerida'],
-    },
-    featured: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    active: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-    discount: {
-      fixed: {
-        enabled: { type: Boolean, default: false },
-        type: {
-          type: String,
-          enum: ['percentage', 'amount'],
-        },
-        value: {
-          type: Number,
-          min: [0, 'El valor del descuento no puede ser negativo'],
-        },
-        startDate: Date,
-        endDate: Date,
-        badge: String,
-      },
-      tiered: {
-        enabled: { type: Boolean, default: false },
-        tiers: [tieredDiscountTierSchema],
+        validator: (v: string[]) => v.length <= 5,
+        message: 'Máximo 5 imágenes',
       },
     },
+    featured: { type: Boolean, default: false },
+    active: { type: Boolean, default: true },
+    views: { type: Number, default: 0 },
+    attributes: {
+      type: Map,
+      of: [String],
+      default: () => new Map<string, string[]>(),
+    },
+
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   },
   {
     timestamps: true,
@@ -152,113 +178,97 @@ const productSchema = new Schema<IProduct>(
   }
 );
 
-// Índices compuestos
-productSchema.index({ name: 'text', description: 'text' });
-productSchema.index({ category: 1, active: 1 });
+// Índices
+productSchema.index({ categories: 1, active: 1 });
 productSchema.index({ brand: 1, active: 1 });
-productSchema.index({ price: 1 });
-productSchema.index({ stock: 1 });
+productSchema.index({ format: 1, active: 1 });
+productSchema.index({ flavor: 1, active: 1 });
 productSchema.index({ featured: 1, active: 1 });
+productSchema.index({ unitPrice: 1, active: 1 });
+productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ createdAt: -1 });
+productSchema.index(
+  { barcode: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { barcode: { $type: 'string' } },
+  }
+);
+// Wildcard index para soportar filtros sobre claves dinámicas en `attributes`
+productSchema.index({ 'attributes.$**': 1 });
 
-// Middleware pre-save: Generar slug
-productSchema.pre('save', function (next) {
-  if (this.isModified('name')) {
+// Virtual: hasActiveDiscount
+productSchema.virtual('hasActiveDiscount').get(function () {
+  if (!this.fixedDiscount?.enabled) return false;
+  const now = new Date();
+  const startValid = !this.fixedDiscount.startDate || this.fixedDiscount.startDate <= now;
+  const endValid = !this.fixedDiscount.endDate || this.fixedDiscount.endDate >= now;
+  return startValid && endValid;
+});
+
+// Virtual: hasActiveTieredDiscount
+productSchema.virtual('hasActiveTieredDiscount').get(function () {
+  return Array.isArray(this.tiers) && this.tiers.length > 0;
+});
+
+// Pre-save: generar slug
+productSchema.pre('save', async function (next) {
+  if (this.isModified('name') || !this.slug) {
     this.slug = slugify(this.name, {
       lower: true,
       strict: true,
-      locale: 'es',
+      remove: /[*+~.()'"!:@]/g,
     });
+    const existing = await mongoose.models.Product.findOne({
+      slug: this.slug,
+      _id: { $ne: this._id },
+    });
+    if (existing) {
+      this.slug = `${this.slug}-${Date.now()}`;
+    }
   }
   next();
 });
 
-// Método: Verificar si el descuento fijo está activo
-productSchema.methods.isDiscountActive = function (): boolean {
-  if (!this.discount?.fixed?.enabled) return false;
-
-  const now = new Date();
-  const { startDate, endDate } = this.discount.fixed;
-
-  if (startDate && now < new Date(startDate)) return false;
-  if (endDate && now > new Date(endDate)) return false;
-
-  return true;
-};
-
-// Método: Calcular descuento según cantidad
-productSchema.methods.calculateDiscount = function (quantity: number = 1) {
-  const result = {
-    hasDiscount: false,
-    originalPrice: this.price,
-    discountedPrice: this.price,
-    discountAmount: 0,
-    discountPercentage: 0,
-    badge: undefined as string | undefined,
-  };
-
-  let bestDiscount = 0;
-  let bestBadge: string | undefined;
-
-  // 1. Verificar descuento fijo
-  if (this.isDiscountActive()) {
-    const { type, value, badge } = this.discount.fixed;
-
-    if (type === 'percentage') {
-      bestDiscount = (this.price * value) / 100;
-      bestBadge = badge || `${value}% OFF`;
-    } else if (type === 'amount') {
-      bestDiscount = value;
-      bestBadge = badge || `$${value} OFF`;
-    }
+// Pre-save: ordenar tiers por minQuantity asc
+productSchema.pre('save', function (next) {
+  if (Array.isArray(this.tiers) && this.tiers.length > 0) {
+    this.tiers.sort((a, b) => a.minQuantity - b.minQuantity);
   }
-
-  // 2. Verificar descuento escalonado
-  if (this.discount?.tiered?.enabled && this.discount.tiered.tiers.length > 0) {
-    // Encontrar el tier que aplica
-    const applicableTier = this.discount.tiered.tiers.find((tier: any) => {
-      const inMinRange = quantity >= tier.minQuantity;
-      const inMaxRange = tier.maxQuantity === null || quantity <= tier.maxQuantity;
-      return inMinRange && inMaxRange;
-    });
-
-    if (applicableTier) {
-      let tieredDiscount = 0;
-
-      if (applicableTier.type === 'percentage') {
-        tieredDiscount = (this.price * applicableTier.value) / 100;
-      } else if (applicableTier.type === 'amount') {
-        tieredDiscount = applicableTier.value;
-      }
-
-      // Aplicar el mejor descuento (el mayor)
-      if (tieredDiscount > bestDiscount) {
-        bestDiscount = tieredDiscount;
-        bestBadge = `${quantity}+ unidades`;
-      }
-    }
-  }
-
-  // 3. Aplicar descuento si existe
-  if (bestDiscount > 0) {
-    result.hasDiscount = true;
-    result.discountAmount = bestDiscount;
-    result.discountedPrice = Math.max(0, this.price - bestDiscount);
-    result.discountPercentage = (bestDiscount / this.price) * 100;
-    result.badge = bestBadge;
-  }
-
-  return result;
-};
-
-// Virtual: Verificar si está en stock
-productSchema.virtual('inStock').get(function () {
-  return this.stock > 0;
+  next();
 });
 
-// Virtual: Verificar si el stock es bajo
-productSchema.virtual('lowStock').get(function () {
-  return this.stock > 0 && this.stock <= 5;
+// Pre-save: descartar keys/values en `attributes` que no existan en los
+// `facetableAttributes` efectivos de las categorías del producto. Defensivo
+// para evitar arrastrar datos huérfanos cuando se borran opciones en admin.
+productSchema.pre('save', async function (next) {
+  try {
+    if (!this.attributes || (this.attributes as any).size === 0) return next();
+    if (!Array.isArray(this.categories) || this.categories.length === 0) {
+      this.attributes = new Map();
+      return next();
+    }
+    const Category = mongoose.model('Category');
+    const effective: Array<{ key: string; options: Array<{ value: string }> }> = await (
+      Category as any
+    ).getEffectiveFacetableAttributes(this.categories);
+    const allowed = new Map<string, Set<string>>(
+      effective.map((a) => [a.key, new Set(a.options.map((o) => o.value))])
+    );
+    const cleaned = new Map<string, string[]>();
+    for (const [key, values] of (this.attributes as Map<string, string[]>).entries()) {
+      const allowedValues = allowed.get(key);
+      if (!allowedValues) continue;
+      const filtered = (values || []).filter((v) => allowedValues.has(v));
+      if (filtered.length > 0) cleaned.set(key, filtered);
+    }
+    this.attributes = cleaned;
+    next();
+  } catch (err) {
+    next(err as Error);
+  }
 });
 
 export const Product = mongoose.model<IProduct>('Product', productSchema);
+export default Product;

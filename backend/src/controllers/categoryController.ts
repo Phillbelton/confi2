@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { Category } from '../models/Category';
-import ProductParent from '../models/ProductParent';
+import Product from "../models/Product";
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 
@@ -55,8 +55,8 @@ export const getCategoryById = asyncHandler(
       active: true,
     }).sort({ order: 1 });
 
-    // Contar productos usando ProductParent
-    const productCount = await ProductParent.countDocuments({
+    // Contar productos usando Product
+    const productCount = await Product.countDocuments({
       categories: category._id,
       active: true,
     });
@@ -91,7 +91,7 @@ export const getCategoryBySlug = asyncHandler(
       active: true,
     }).sort({ order: 1 });
 
-    const productCount = await ProductParent.countDocuments({
+    const productCount = await Product.countDocuments({
       categories: category._id,
       active: true,
     });
@@ -120,7 +120,7 @@ export const getMainCategories = asyncHandler(
     // Contar productos por categoría
     const categoriesWithCount = await Promise.all(
       categories.map(async (category) => {
-        const productCount = await ProductParent.countDocuments({
+        const productCount = await Product.countDocuments({
           categories: category._id,
           active: true,
         });
@@ -177,7 +177,16 @@ export const getSubcategories = asyncHandler(
 // @access  Admin, Funcionario
 export const createCategory = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { name, description, icon, color, parent, order, active } = req.body;
+    const {
+      name,
+      description,
+      icon,
+      color,
+      parent,
+      order,
+      active,
+      facetableAttributes,
+    } = req.body;
 
     // Validar jerarquía de 2 niveles máximo
     if (parent) {
@@ -195,6 +204,7 @@ export const createCategory = asyncHandler(
       parent,
       order,
       active,
+      facetableAttributes,
     });
 
     res.status(201).json({
@@ -216,7 +226,16 @@ export const updateCategory = asyncHandler(
       throw new AppError(404, 'Categoría no encontrada');
     }
 
-    const { name, description, icon, color, parent, order, active } = req.body;
+    const {
+      name,
+      description,
+      icon,
+      color,
+      parent,
+      order,
+      active,
+      facetableAttributes,
+    } = req.body;
 
     // Validar jerarquía de 2 niveles máximo si se está cambiando el parent
     if (parent !== undefined && parent !== null) {
@@ -233,6 +252,9 @@ export const updateCategory = asyncHandler(
     if (parent !== undefined) category.parent = parent;
     if (order !== undefined) category.order = order;
     if (active !== undefined) category.active = active;
+    if (facetableAttributes !== undefined) {
+      category.facetableAttributes = facetableAttributes;
+    }
 
     await category.save();
 
@@ -256,7 +278,7 @@ export const deleteCategory = asyncHandler(
     }
 
     // Verificar que no tenga productos
-    const productCount = await ProductParent.countDocuments({
+    const productCount = await Product.countDocuments({
       categories: category._id,
     });
 
@@ -284,6 +306,25 @@ export const deleteCategory = asyncHandler(
     res.status(200).json({
       success: true,
       message: 'Categoría eliminada exitosamente',
+    });
+  }
+);
+
+// @desc    Obtener facetableAttributes efectivos (self + ancestors deduplicados)
+// @route   GET /api/categories/:id/facetable-attributes
+// @access  Public
+export const getFacetableAttributes = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const category = await Category.findById(req.params.id).select('_id').lean();
+    if (!category) throw new AppError(404, 'Categoría no encontrada');
+
+    const attributes = await (Category as any).getEffectiveFacetableAttributes([
+      category._id,
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: { attributes },
     });
   }
 );

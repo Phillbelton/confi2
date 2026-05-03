@@ -1,5 +1,5 @@
 import { api } from '@/lib/axios';
-import type { Category, ApiResponse } from '@/types';
+import type { Category, FacetableAttribute, ApiResponse } from '@/types';
 import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 
@@ -54,6 +54,14 @@ export const categoryService = {
     );
     // Backend returns { success: true, data: { subcategories: [...] } }
     return (data.data as any)?.subcategories || [];
+  },
+
+  // Get effective facetable attributes for a category (self + ancestors deduped)
+  getFacetableAttributes: async (categoryId: string): Promise<FacetableAttribute[]> => {
+    const { data } = await api.get<ApiResponse<{ attributes: FacetableAttribute[] }>>(
+      `/categories/${categoryId}/facetable-attributes`
+    );
+    return (data.data as any)?.attributes || [];
   },
 };
 

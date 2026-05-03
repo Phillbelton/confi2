@@ -1,62 +1,18 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import ProductParent from '../models/ProductParent';
-import ProductVariant from '../models/ProductVariant';
+import Product from '../models/Product';
 import { Category } from '../models/Category';
 import { Brand } from '../models/Brand';
+import { Format } from '../models/Format';
+import { Flavor } from '../models/Flavor';
 import Collection from '../models/Collection';
 import { AuthRequest, ApiResponse } from '../types';
 import { asyncHandler } from '../middleware/errorHandler';
 
 /**
- * Helper local: IDs de ProductParent con descuento activo (variant fixed o tiered).
- * Espeja la lógica del modelo ProductVariant.hasActiveDiscount.
- */
-async function getOnSaleParentIds(): Promise<mongoose.Types.ObjectId[]> {
-  const now = new Date();
-  const dateValid = (field: string) => ({
-    $and: [
-      {
-        $or: [
-          { [`${field}.startDate`]: { $exists: false } },
-          { [`${field}.startDate`]: null },
-          { [`${field}.startDate`]: { $lte: now } },
-        ],
-      },
-      {
-        $or: [
-          { [`${field}.endDate`]: { $exists: false } },
-          { [`${field}.endDate`]: null },
-          { [`${field}.endDate`]: { $gte: now } },
-        ],
-      },
-    ],
-  });
-
-  const ids = await ProductVariant.find({
-    active: true,
-    $or: [
-      { 'fixedDiscount.enabled': true, ...dateValid('fixedDiscount') },
-      {
-        'tieredDiscount.active': true,
-        'tieredDiscount.tiers.0': { $exists: true },
-        ...dateValid('tieredDiscount'),
-      },
-    ],
-  }).distinct('parentProduct');
-
-  return ids as mongoose.Types.ObjectId[];
-}
-
-/**
- * GET /api/products/parents/facets
- *
- * Devuelve los counts de facetas (subcategorías, marcas, colecciones, promos)
- * según un filtro base (category, search, price, collection, active).
- *
- * Cascada UNIDIRECCIONAL: solo `category + search + price` filtra el set base.
- * Marcas y colecciones NO se influyen entre sí — facilita el caching y simplifica
- * el agregado a una sola pasada.
+ * GET /api/products/facets
+ * Devuelve counts de cada dimensión filtrable según el filtro base.
+ * Cascada unidireccional: solo `category + search + price + collection`.
  */
 export const getProductFacets = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
@@ -68,12 +24,8 @@ export const getProductFacets = asyncHandler(
       collection: collectionSlug,
     } = req.query as Record<string, string | undefined>;
 
-    // ---------------------------------------------------------------
-    // 1. Construir baseMatch para ProductParent
-    // ---------------------------------------------------------------
     const baseMatch: any = { active: true };
 
-    // Categoría: aceptar slug o ID
     let categoryId: mongoose.Types.ObjectId | undefined;
     if (category) {
       if (mongoose.Types.ObjectId.isValid(category)) {
@@ -85,66 +37,46 @@ export const getProductFacets = asyncHandler(
         if (cat) categoryId = cat._id as mongoose.Types.ObjectId;
       }
       if (categoryId) {
-        baseMatch.categories = { $in: [categoryId] };
+        // Incluir descendientes (3 niveles) — filtrar por L1 trae también L2 y L3
+        const descendantIds = await (Category as any).getDescendantIds(categoryId);
+        baseMatch.categories = { $in: descendantIds };
       } else {
-        // categoría inexistente → todo vacío
         baseMatch._id = { $in: [] };
       }
     }
 
-    // Búsqueda por texto
-    if (search) {
-      baseMatch.$text = { $search: search };
-    }
+    if (search) baseMatch.$text = { $search: search };
 
-    // Colección (intersecar con products[]). Como faceta es unidireccional,
-    // sólo se aplica si el cliente la mandó como filtro activo.
     if (collectionSlug) {
-      const coll = await Collection.findOne({
-        slug: collectionSlug,
-        active: true,
-      })
+      const coll = await Collection.findOne({ slug: collectionSlug, active: true })
         .select('products')
         .lean();
-      if (coll && coll.products?.length) {
-        baseMatch._id = { $in: coll.products };
-      } else {
-        baseMatch._id = { $in: [] };
-      }
+      if (coll && coll.products?.length) baseMatch._id = { $in: coll.products };
+      else baseMatch._id = { $in: [] };
     }
 
-    // ---------------------------------------------------------------
-    // 2. Filtro de precio (por variantes) — restringe el universo previo
-    // ---------------------------------------------------------------
     if (minPrice || maxPrice) {
-      const variantPriceFilter: any = { active: true };
-      if (minPrice) variantPriceFilter.price = { $gte: parseFloat(minPrice) };
-      if (maxPrice) {
-        variantPriceFilter.price = {
-          ...(variantPriceFilter.price || {}),
-          $lte: parseFloat(maxPrice),
-        };
-      }
-      const parentIdsInPriceRange = await ProductVariant.find(variantPriceFilter).distinct(
-        'parentProduct'
-      );
-      const existing = baseMatch._id?.$in;
-      if (existing) {
-        const set = new Set(parentIdsInPriceRange.map((i: any) => i.toString()));
-        baseMatch._id = {
-          $in: existing.filter((id: any) => set.has(id.toString())),
-        };
-      } else {
-        baseMatch._id = { $in: parentIdsInPriceRange };
-      }
+      baseMatch.unitPrice = {};
+      if (minPrice) baseMatch.unitPrice.$gte = parseFloat(minPrice);
+      if (maxPrice) baseMatch.unitPrice.$lte = parseFloat(maxPrice);
     }
 
-    // ---------------------------------------------------------------
-    // 3. Aggregation pipeline con $facet — counts por dimensión
-    // ---------------------------------------------------------------
-    const onSaleIds = await getOnSaleParentIds();
+    // Filtros dinámicos `attr_<key>=v1,v2` → attributes.<key>: { $in: [...] }
+    const activeAttrFilters = new Map<string, string[]>();
+    for (const [qKey, qValRaw] of Object.entries(req.query as Record<string, any>)) {
+      if (!qKey.startsWith('attr_') || qValRaw == null) continue;
+      const attrKey = qKey.slice(5);
+      if (!attrKey) continue;
+      const values = String(qValRaw)
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean);
+      if (values.length === 0) continue;
+      activeAttrFilters.set(attrKey, values);
+      baseMatch[`attributes.${attrKey}`] = { $in: values };
+    }
 
-    const facetResult = await ProductParent.aggregate([
+    const facetResult = await Product.aggregate([
       { $match: baseMatch },
       {
         $facet: {
@@ -158,13 +90,34 @@ export const getProductFacets = asyncHandler(
             { $unwind: '$categories' },
             { $group: { _id: '$categories', count: { $sum: 1 } } },
           ],
-          featuredAgg: [
-            { $match: { featured: true } },
+          formatsAgg: [
+            { $match: { format: { $exists: true, $ne: null } } },
+            { $group: { _id: '$format', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ],
+          flavorsAgg: [
+            { $match: { flavor: { $exists: true, $ne: null } } },
+            { $group: { _id: '$flavor', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ],
+          featuredAgg: [{ $match: { featured: true } }, { $count: 'count' }],
+          onSaleAgg: [
+            {
+              $match: {
+                $or: [
+                  { 'tiers.0': { $exists: true } },
+                  { 'fixedDiscount.enabled': true },
+                ],
+              },
+            },
             { $count: 'count' },
           ],
-          onSaleAgg: [
-            { $match: { _id: { $in: onSaleIds } } },
-            { $count: 'count' },
+          attributesAgg: [
+            { $match: { attributes: { $exists: true, $ne: null } } },
+            { $project: { attrs: { $objectToArray: '$attributes' } } },
+            { $unwind: '$attrs' },
+            { $unwind: '$attrs.v' },
+            { $group: { _id: { key: '$attrs.k', value: '$attrs.v' }, count: { $sum: 1 } } },
           ],
           allIds: [{ $project: { _id: 1 } }],
         },
@@ -175,68 +128,42 @@ export const getProductFacets = asyncHandler(
     const total = result.totalAgg?.[0]?.count || 0;
     const featuredCount = result.featuredAgg?.[0]?.count || 0;
     const onSaleCount = result.onSaleAgg?.[0]?.count || 0;
-    const allParentIds: mongoose.Types.ObjectId[] = (result.allIds || []).map(
-      (p: any) => p._id
-    );
+    const allIds: mongoose.Types.ObjectId[] = (result.allIds || []).map((p: any) => p._id);
 
-    // ---------------------------------------------------------------
-    // 4. Resolver Brands con name+slug
-    // ---------------------------------------------------------------
+    // Resolver Brands
     const brandIds = (result.brandsAgg || []).map((b: any) => b._id).filter(Boolean);
-    const brandsDocs = (await Brand.find({ _id: { $in: brandIds }, active: true })
+    const brandsDocs = await Brand.find({ _id: { $in: brandIds }, active: true })
       .select('name slug')
-      .lean()) as Array<{ _id: any; name: string; slug: string }>;
-    const brandMap = new Map(brandsDocs.map((b) => [b._id.toString(), b]));
-
+      .lean();
+    const brandMap = new Map(brandsDocs.map((b: any) => [b._id.toString(), b]));
     const brands = (result.brandsAgg || [])
       .map((b: any) => {
         const doc = brandMap.get(b._id?.toString());
         if (!doc) return null;
-        return {
-          _id: doc._id.toString(),
-          name: doc.name,
-          slug: doc.slug,
-          count: b.count as number,
-        };
+        return { _id: doc._id.toString(), name: doc.name, slug: doc.slug, count: b.count };
       })
       .filter(Boolean);
 
-    // ---------------------------------------------------------------
-    // 5. Resolver Subcategorías
-    //    - Si hay categoría activa: solo devolver hijas de esa categoría
-    //    - Si no: devolver todas las categorías presentes en el resultset
-    // ---------------------------------------------------------------
-    const subcatIdsInResults = (result.subcategoriesAgg || []).map((s: any) => s._id);
-
-    let subcategoryDocs: any[];
+    // Subcategorías
+    const subIds = (result.subcategoriesAgg || []).map((s: any) => s._id);
+    let subDocs: any[];
     if (categoryId) {
-      // Solo hijas directas de la categoría activa
-      subcategoryDocs = await Category.find({
-        _id: { $in: subcatIdsInResults },
+      subDocs = await Category.find({
+        _id: { $in: subIds },
         parent: categoryId,
         active: true,
-      })
-        .select('name slug parent')
-        .lean();
+      }).select('name slug parent').lean();
     } else {
-      // Categorías raíz presentes
-      subcategoryDocs = await Category.find({
-        _id: { $in: subcatIdsInResults },
+      subDocs = await Category.find({
+        _id: { $in: subIds },
         parent: null,
         active: true,
-      })
-        .select('name slug')
-        .lean();
+      }).select('name slug').lean();
     }
-
     const subCountMap: Map<string, number> = new Map(
-      (result.subcategoriesAgg || []).map((s: any) => [
-        s._id.toString(),
-        s.count as number,
-      ])
+      (result.subcategoriesAgg || []).map((s: any) => [s._id.toString(), s.count])
     );
-
-    const subcategories = subcategoryDocs
+    const subcategories = subDocs
       .map((sc: any) => ({
         _id: sc._id.toString(),
         name: sc.name,
@@ -246,48 +173,111 @@ export const getProductFacets = asyncHandler(
       .filter((sc) => sc.count > 0)
       .sort((a, b) => b.count - a.count);
 
-    // ---------------------------------------------------------------
-    // 6. Resolver Colecciones (cuáles tienen products en el resultset)
-    // ---------------------------------------------------------------
-    const allParentIdSet = new Set(allParentIds.map((id) => id.toString()));
-    const allCollections = await Collection.find({
-      active: true,
-      showOnHome: true,
-    })
+    // Formats
+    const formatIds = (result.formatsAgg || []).map((f: any) => f._id).filter(Boolean);
+    const formatDocs = await Format.find({ _id: { $in: formatIds }, active: true })
+      .select('label value unit slug')
+      .lean();
+    const formatMap = new Map(formatDocs.map((f: any) => [f._id.toString(), f]));
+    const formats = (result.formatsAgg || [])
+      .map((f: any) => {
+        const doc = formatMap.get(f._id?.toString());
+        if (!doc) return null;
+        return { _id: doc._id.toString(), label: doc.label, value: doc.value, unit: doc.unit, slug: doc.slug, count: f.count };
+      })
+      .filter(Boolean);
+
+    // Flavors
+    const flavorIds = (result.flavorsAgg || []).map((f: any) => f._id).filter(Boolean);
+    const flavorDocs = await Flavor.find({ _id: { $in: flavorIds }, active: true })
+      .select('name slug color')
+      .lean();
+    const flavorMap = new Map(flavorDocs.map((f: any) => [f._id.toString(), f]));
+    const flavors = (result.flavorsAgg || [])
+      .map((f: any) => {
+        const doc = flavorMap.get(f._id?.toString());
+        if (!doc) return null;
+        return { _id: doc._id.toString(), name: doc.name, slug: doc.slug, color: doc.color, count: f.count };
+      })
+      .filter(Boolean);
+
+    // Collections
+    const allIdSet = new Set(allIds.map((id) => id.toString()));
+    const allCollections = await Collection.find({ active: true, showOnHome: true })
       .select('name slug emoji products')
       .lean();
-
     const collections = allCollections
       .map((c: any) => {
         const count = (c.products || []).reduce(
-          (acc: number, pid: any) =>
-            allParentIdSet.has(pid.toString()) ? acc + 1 : acc,
+          (acc: number, pid: any) => (allIdSet.has(pid.toString()) ? acc + 1 : acc),
           0
         );
-        return {
-          _id: c._id.toString(),
-          name: c.name,
-          slug: c.slug,
-          count,
-        };
+        return { _id: c._id.toString(), name: c.name, slug: c.slug, count };
       })
       .filter((c: any) => c.count > 0)
       .sort((a: any, b: any) => b.count - a.count);
 
-    // ---------------------------------------------------------------
-    // 7. Respuesta
-    // ---------------------------------------------------------------
+    // === Atributos dinámicos ===
+    // Resolver labels desde la categoría filtrada (o sus raíces) usando
+    // getEffectiveFacetableAttributes. Si no hay categoría filtrada, agregamos
+    // todas las raíces para abarcar el catálogo entero.
+    let effectiveAttrIds: mongoose.Types.ObjectId[];
+    if (categoryId) {
+      effectiveAttrIds = [categoryId];
+    } else {
+      const roots = await Category.find({ parent: null, active: true })
+        .select('_id')
+        .lean();
+      effectiveAttrIds = roots.map((r: any) => r._id);
+    }
+    const effectiveAttrs: Array<{
+      key: string;
+      label: string;
+      multiSelect: boolean;
+      order: number;
+      options: Array<{ value: string; label: string }>;
+    }> = await (Category as any).getEffectiveFacetableAttributes(effectiveAttrIds);
+
+    const attrCountMap = new Map<string, Map<string, number>>();
+    for (const row of (result.attributesAgg || []) as Array<any>) {
+      const k = row._id?.key as string;
+      const v = row._id?.value as string;
+      if (!k || v == null) continue;
+      if (!attrCountMap.has(k)) attrCountMap.set(k, new Map());
+      attrCountMap.get(k)!.set(v, row.count);
+    }
+
+    const attributes = effectiveAttrs
+      .map((a) => {
+        const counts = attrCountMap.get(a.key) || new Map();
+        const options = (a.options || [])
+          .map((opt) => ({
+            value: opt.value,
+            label: opt.label,
+            count: counts.get(opt.value) || 0,
+          }))
+          .filter((opt) => opt.count > 0);
+        if (options.length === 0) return null;
+        return {
+          key: a.key,
+          label: a.label,
+          multiSelect: a.multiSelect,
+          options,
+        };
+      })
+      .filter(Boolean);
+
     res.status(200).json({
       success: true,
       data: {
         total,
         subcategories,
         brands,
+        formats,
+        flavors,
         collections,
-        promos: {
-          onSale: onSaleCount,
-          featured: featuredCount,
-        },
+        attributes,
+        promos: { onSale: onSaleCount, featured: featuredCount },
       },
     });
   }

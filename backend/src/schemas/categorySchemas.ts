@@ -12,6 +12,25 @@ const objectIdSchema = z
     message: 'ID inválido',
   });
 
+const slugLikeSchema = z
+  .string()
+  .min(1)
+  .max(60)
+  .regex(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/, 'Debe ser slug (a-z, 0-9, guiones)');
+
+const facetableOptionSchema = z.object({
+  value: slugLikeSchema,
+  label: z.string().min(1).max(80).trim(),
+});
+
+const facetableAttributeSchema = z.object({
+  key: slugLikeSchema,
+  label: z.string().min(1).max(80).trim(),
+  options: z.array(facetableOptionSchema).default([]),
+  multiSelect: z.boolean().default(false),
+  order: z.number().int().min(0).default(0),
+});
+
 // Schema para crear categoría
 export const createCategorySchema = z.object({
   body: z.object({
@@ -48,6 +67,8 @@ export const createCategorySchema = z.object({
       .int('El orden debe ser un número entero')
       .min(0, 'El orden no puede ser negativo')
       .optional(),
+
+    facetableAttributes: z.array(facetableAttributeSchema).optional(),
   }),
 });
 
@@ -89,6 +110,8 @@ export const updateCategorySchema = z.object({
       .int('El orden debe ser un número entero')
       .min(0, 'El orden no puede ser negativo')
       .optional(),
+
+    facetableAttributes: z.array(facetableAttributeSchema).optional(),
   }),
 });
 

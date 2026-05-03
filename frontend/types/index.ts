@@ -52,53 +52,72 @@ export interface TieredDiscountVariant {
   active: boolean;
 }
 
-export interface ProductParent {
+// ============================================================================
+// PRODUCT (Quelita modelo plano)
+// ============================================================================
+
+export type SaleUnitType = 'unidad' | 'cantidadMinima' | 'display' | 'embalaje';
+
+export interface SaleUnit {
+  type: SaleUnitType;
+  quantity: number;
+}
+
+export interface ProductTier {
+  minQuantity: number;
+  pricePerUnit: number;
+  label?: string;
+}
+
+export interface Format {
+  _id: string;
+  label: string;
+  value: number;
+  unit: 'g' | 'kg' | 'ml' | 'l' | 'cc' | 'oz';
+  slug: string;
+  active: boolean;
+  productCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Flavor {
+  _id: string;
+  name: string;
+  slug: string;
+  color?: string;
+  active: boolean;
+  productCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Product {
   _id: string;
   name: string;
   slug: string;
   description: string;
-  categories: string[] | Category[]; // Can be populated or not
   brand?: string | Brand;
-  images?: string[];
-  tags: string[];
-  seoTitle?: string;
-  seoDescription?: string;
-  variantAttributes: VariantAttribute[];
+  categories: string[] | Category[];
+  format?: string | Format;
+  flavor?: string | Flavor;
+  barcode?: string;
+  provider?: string;
+
+  unitPrice: number;
+  saleUnit: SaleUnit;
+  tiers: ProductTier[];
+  fixedDiscount?: FixedDiscount;
+
+  images: string[];
   featured: boolean;
   active: boolean;
   views: number;
+  attributes?: Record<string, string[]>;
   createdAt: string;
   updatedAt: string;
-  // Virtuals
-  hasVariants?: boolean;
-}
 
-export interface ProductVariant {
-  _id: string;
-  parent: string | ProductParent;
-  sku: string;
-  name?: string;
-  price: number;
-  compareAtPrice?: number;
-  weight?: number;
-  dimensions?: {
-    length: number;
-    width: number;
-    height: number;
-    unit: 'cm' | 'in';
-  };
-  attributes: {
-    [key: string]: string;
-  };
-  images?: string[];
-  description?: string;
-  fixedDiscount?: FixedDiscount;
-  tieredDiscount?: TieredDiscountVariant;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
   // Virtuals
-  displayName?: string;
   hasActiveDiscount?: boolean;
   hasActiveTieredDiscount?: boolean;
 }
@@ -106,6 +125,19 @@ export interface ProductVariant {
 // ============================================================================
 // CATEGORY & BRAND TYPES
 // ============================================================================
+
+export interface FacetableAttributeOption {
+  value: string;
+  label: string;
+}
+
+export interface FacetableAttribute {
+  key: string;
+  label: string;
+  options: FacetableAttributeOption[];
+  multiSelect: boolean;
+  order: number;
+}
 
 export interface Category {
   _id: string;
@@ -118,6 +150,7 @@ export interface Category {
   parent?: string | Category;
   order: number;
   active: boolean;
+  facetableAttributes?: FacetableAttribute[];
   createdAt: string;
   updatedAt: string;
 }
@@ -176,12 +209,13 @@ export interface OrderCustomer {
 }
 
 export interface OrderItem {
-  variant: string;
-  variantSnapshot: {
-    sku: string;
+  product: string;
+  productSnapshot: {
     name: string;
-    price: number;
-    attributes: { [key: string]: string };
+    slug: string;
+    barcode?: string;
+    unitPrice: number;
+    saleUnit: { type: string; quantity: number };
     image: string;
   };
   quantity: number;
@@ -246,12 +280,10 @@ export interface User {
 // ============================================================================
 
 export interface CartItem {
-  variantId: string;
-  productParent: ProductParent;
-  variant: ProductVariant;
+  productId: string;
+  product: Product;
   quantity: number;
-  // Calculated fields
-  unitPrice: number;
+  pricePerUnit: number;
   discount: number;
   subtotal: number;
 }
@@ -328,7 +360,7 @@ export interface Collection {
   emoji?: string;
   gradient?: string;
   /** ObjectIds o productos populados según endpoint */
-  products: string[] | ProductParent[];
+  products: string[] | Product[];
   productCount?: number; // calculado por el backend en GET /api/collections
   active: boolean;
   showOnHome: boolean;
@@ -421,8 +453,8 @@ export interface CheckoutFormData {
 // ============================================================================
 
 export interface ProductCardProps {
-  product: ProductParent;
-  variant?: ProductVariant;
+  product: Product;
+  variant?: Product;
   compact?: boolean;
   showQuickAdd?: boolean;
 }

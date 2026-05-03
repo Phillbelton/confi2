@@ -16,6 +16,7 @@ router.get('/main', categoryController.getMainCategories);
 router.get('/:id', validate(categorySchemas.getCategoryByIdSchema), categoryController.getCategoryById);
 router.get('/slug/:slug', validate(categorySchemas.getCategoryBySlugSchema), categoryController.getCategoryBySlug);
 router.get('/:id/subcategories', validate(categorySchemas.getSubcategoriesSchema), categoryController.getSubcategories);
+router.get('/:id/facetable-attributes', validate(categorySchemas.getCategoryByIdSchema), categoryController.getFacetableAttributes);
 
 // Protected routes (admin, funcionario)
 router.post('/', authenticate, authorize('admin', 'funcionario'), validate(categorySchemas.createCategorySchema), auditLog('category', 'create'), categoryController.createCategory);
