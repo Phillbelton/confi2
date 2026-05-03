@@ -1,20 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { productService } from '@/services/products';
-import type { ProductQueryParams } from '@/types';
+import { productService, type ProductQueryParams } from '@/services/products';
 
 export function useProducts(params?: ProductQueryParams) {
   return useQuery({
     queryKey: ['products', params],
     queryFn: () => productService.getProducts(params),
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30_000,
   });
 }
 
-export function useFeaturedProducts() {
+export function useFeaturedProducts(limit = 8) {
   return useQuery({
-    queryKey: ['products', 'featured'],
-    queryFn: () => productService.getFeaturedProducts(),
-    staleTime: 60 * 1000, // 1 minute
+    queryKey: ['products', 'featured', limit],
+    queryFn: () => productService.getFeaturedProducts(limit),
+    staleTime: 60_000,
   });
 }
 
@@ -34,10 +33,10 @@ export function useProductBySlug(slug: string) {
   });
 }
 
-export function useProductVariants(parentId: string) {
+export function useFacets(params?: any) {
   return useQuery({
-    queryKey: ['products', parentId, 'variants'],
-    queryFn: () => productService.getProductVariants(parentId),
-    enabled: !!parentId,
+    queryKey: ['facets', params],
+    queryFn: () => productService.getFacets(params),
+    staleTime: 30_000,
   });
 }

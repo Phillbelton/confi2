@@ -5,7 +5,24 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Plus, X, ImagePlus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, X, ImagePlus, Trash2, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -25,7 +42,7 @@ import { api } from '@/lib/axios';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
 import { ProductPicker } from './ProductPicker';
-import type { Collection, ProductParent } from '@/types';
+import type { Collection, Product } from '@/types';
 
 const GRADIENT_PRESETS = [
   { label: 'Turquesa Quelita', value: 'from-primary to-secondary' },
@@ -79,7 +96,7 @@ export function CollectionForm({
     if (!collection?.products) return [];
     return Array.isArray(collection.products)
       ? collection.products.map((p) =>
-          typeof p === 'string' ? p : (p as ProductParent)._id
+          typeof p === 'string' ? p : (p as Product)._id
         )
       : [];
   }, [collection]);
@@ -141,17 +158,17 @@ export function CollectionForm({
   const { data: pickedProducts } = useQuery({
     queryKey: ['admin-collection-picked-products', productIds],
     queryFn: async () => {
-      if (productIds.length === 0) return [] as ProductParent[];
+      if (productIds.length === 0) return [] as Product[];
       // Trae todos los productos de un saque y reordena en cliente
       const { data } = await api.get(
-        `/products/parents?limit=${productIds.length}&active=all`
+        `/products?limit=${productIds.length}&active=all`
       );
-      const all = (data.data?.data || []) as ProductParent[];
+      const all = (data.data?.data || []) as Product[];
       // Filtrar y reordenar en orden curado
       const map = new Map(all.map((p) => [p._id, p]));
       return productIds
         .map((id) => map.get(id))
-        .filter(Boolean) as ProductParent[];
+        .filter(Boolean) as Product[];
     },
     enabled: productIds.length > 0,
   });
@@ -175,12 +192,19 @@ export function CollectionForm({
     setProductIds((prev) => prev.filter((x) => x !== id));
   };
 
-  const movePicked = (fromIdx: number, toIdx: number) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
     setProductIds((prev) => {
-      const next = [...prev];
-      const [item] = next.splice(fromIdx, 1);
-      next.splice(toIdx, 0, item);
-      return next;
+      const oldIndex = prev.indexOf(String(active.id));
+      const newIndex = prev.indexOf(String(over.id));
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
     });
   };
 
@@ -458,75 +482,31 @@ export function CollectionForm({
 
             {productIds.length > 0 && (
               <ScrollArea className="max-h-64 -mx-2 px-2">
-                <ul className="space-y-1.5 py-2">
-                  {productIds.map((id, idx) => {
-                    const p = pickedProducts?.find((x) => x._id === id);
-                    return (
-                      <li
-                        key={id}
-                        className="flex items-center gap-2 rounded-lg border bg-card p-2"
-                      >
-                        <div className="flex flex-col">
-                          <button
-                            type="button"
-                            onClick={() => idx > 0 && movePicked(idx, idx - 1)}
-                            disabled={idx === 0}
-                            className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                            aria-label="Subir"
-                          >
-                            ▲
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              idx < productIds.length - 1 &&
-                              movePicked(idx, idx + 1)
-                            }
-                            disabled={idx === productIds.length - 1}
-                            className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                            aria-label="Bajar"
-                          >
-                            ▼
-                          </button>
-                        </div>
-                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold tabular-nums">
-                          {idx + 1}
-                        </span>
-                        {p?.images?.[0] && (
-                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
-                            <Image
-                              src={getSafeImageUrl(p.images[0], {
-                                width: 80,
-                                height: 80,
-                              })}
-                              alt={p.name}
-                              fill
-                              sizes="40px"
-                              className="object-cover"
-                            />
-                          </div>
-                        )}
-                        <p className="line-clamp-1 flex-1 text-sm">
-                          {p?.name || (
-                            <span className="text-muted-foreground italic">
-                              cargando...
-                            </span>
-                          )}
-                        </p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removePicked(id)}
-                          className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
-                          aria-label="Quitar"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={productIds}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <ul className="space-y-1.5 py-2">
+                      {productIds.map((id, idx) => {
+                        const p = pickedProducts?.find((x) => x._id === id);
+                        return (
+                          <SortableProductRow
+                            key={id}
+                            id={id}
+                            index={idx}
+                            product={p}
+                            onRemove={() => removePicked(id)}
+                          />
+                        );
+                      })}
+                    </ul>
+                  </SortableContext>
+                </DndContext>
               </ScrollArea>
             )}
           </div>
@@ -610,5 +590,82 @@ export function CollectionForm({
         onToggle={togglePicked}
       />
     </div>
+  );
+}
+
+interface SortableProductRowProps {
+  id: string;
+  index: number;
+  product: Product | undefined;
+  onRemove: () => void;
+}
+
+function SortableProductRow({
+  id,
+  index,
+  product,
+  onRemove,
+}: SortableProductRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto',
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 rounded-lg border bg-card p-2"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="grid h-8 w-6 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
+        aria-label="Arrastrar para reordenar"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold tabular-nums">
+        {index + 1}
+      </span>
+      {product?.images?.[0] && (
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+          <Image
+            src={getSafeImageUrl(product.images[0], { width: 80, height: 80 })}
+            alt={product.name}
+            fill
+            sizes="40px"
+            className="object-cover"
+          />
+        </div>
+      )}
+      <p className="line-clamp-1 flex-1 text-sm">
+        {product?.name || (
+          <span className="text-muted-foreground italic">cargando...</span>
+        )}
+      </p>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        onClick={onRemove}
+        className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+        aria-label="Quitar"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </li>
   );
 }

@@ -1,107 +1,70 @@
 import { Router } from 'express';
-import * as productParentController from '../controllers/productParentController';
-import * as productVariantController from '../controllers/productVariantController';
+import * as productController from '../controllers/productController';
 import * as productFacetsController from '../controllers/productFacetsController';
-import * as uploadController from '../controllers/uploadController';
+import * as productImportController from '../controllers/productImportController';
 import { authenticate, authorize } from '../middleware/auth';
-import { uploadMultiple, uploadSingle, handleMulterError } from '../middleware/upload';
+import { uploadMultiple, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
 import { parseProductFormData } from '../middleware/parseFormData';
 import { auditLog, captureBeforeState } from '../middleware/auditMiddleware';
-import ProductParent from '../models/ProductParent';
-import ProductVariant from '../models/ProductVariant';
+import Product from '../models/Product';
 import {
-  createProductParentSchema,
-  updateProductParentSchema,
-  createProductVariantSchema,
-  updateProductVariantSchema,
+  createProductSchema,
+  updateProductSchema,
   getProductByIdSchema,
   getProductsQuerySchema,
   getProductBySlugSchema,
   deleteProductSchema,
-  getProductVariantsSchema,
   getFeaturedProductsSchema,
-  getVariantBySkuSchema,
-  getDiscountPreviewSchema,
 } from '../schemas/productSchemas';
 
 const router = Router();
 
-/**
- * ProductParent Routes
- */
+// Public
+router.get('/', validate(getProductsQuerySchema), productController.listProducts);
+router.get('/featured', validate(getFeaturedProductsSchema), productController.listFeaturedProducts);
+router.get('/facets', productFacetsController.getProductFacets);
+router.get('/slug/:slug', validate(getProductBySlugSchema), productController.getProductBySlug);
+router.get('/:id', validate(getProductByIdSchema), productController.getProductById);
 
-// Public routes
-router.get('/parents', validate(getProductsQuerySchema), productParentController.getProductParents);
-router.get('/parents/featured', validate(getFeaturedProductsSchema), productParentController.getFeaturedProducts);
-// IMPORTANTE: /parents/facets debe ir ANTES de /parents/:id para no ser interceptada
-router.get('/parents/facets', productFacetsController.getProductFacets);
-router.get('/parents/:id', validate(getProductByIdSchema), productParentController.getProductParentById);
-router.get('/parents/slug/:slug', validate(getProductBySlugSchema), productParentController.getProductParentBySlug);
-router.get('/parents/:id/variants', validate(getProductVariantsSchema), productParentController.getProductParentVariants);
-
-// Protected routes (admin, funcionario)
+// Bulk import desde Excel — solo admin
 router.post(
-  '/parents',
+  '/import-excel',
   authenticate,
-  uploadMultiple, // Soporte opcional para archivos
+  authorize('admin'),
+  productImportController.uploadExcelMiddleware,
+  productImportController.importProductsFromExcel
+);
+
+// Admin CRUD
+router.post(
+  '/',
+  authenticate,
+  uploadMultiple,
   handleMulterError,
-  parseProductFormData, // Parsear FormData a tipos correctos
-  authorize('admin', 'funcionario'),  // Authorize AFTER parsing but BEFORE validation
-  validate(createProductParentSchema),
+  parseProductFormData,
+  authorize('admin', 'funcionario'),
+  validate(createProductSchema),
   auditLog('product', 'create'),
-  productParentController.createProductParent
+  productController.createProduct
 );
-router.put('/parents/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductParent), validate(updateProductParentSchema), auditLog('product', 'update'), productParentController.updateProductParent);
-router.delete('/parents/:id', authenticate, authorize('admin'), captureBeforeState(ProductParent), validate(deleteProductSchema), auditLog('product', 'delete'), productParentController.deleteProductParent);
-
-// Image upload routes for ProductParent
-router.post(
-  '/parents/:id/images',
+router.put(
+  '/:id',
   authenticate,
   authorize('admin', 'funcionario'),
-  uploadMultiple,
-  handleMulterError,
-  uploadController.uploadProductParentImages
+  captureBeforeState(Product),
+  validate(updateProductSchema),
+  auditLog('product', 'update'),
+  productController.updateProduct
 );
 router.delete(
-  '/parents/:id/images/:filename',
+  '/:id',
   authenticate,
-  authorize('admin', 'funcionario'),
-  uploadController.deleteProductParentImage
-);
-
-/**
- * ProductVariant Routes
- */
-
-// Public routes
-router.get('/variants', productVariantController.getProductVariants); // IMPORTANTE: Esta ruta debe ir ANTES de /variants/:id
-router.get('/variants/:id', validate(getProductByIdSchema), productVariantController.getProductVariantById);
-router.get('/variants/sku/:sku', validate(getVariantBySkuSchema), productVariantController.getProductVariantBySku);
-router.get('/variants/:id/discount-preview', validate(getDiscountPreviewSchema), productVariantController.getVariantDiscountPreview);
-
-// Protected routes (admin, funcionario)
-router.post('/variants', authenticate, authorize('admin', 'funcionario'), validate(createProductVariantSchema), auditLog('variant', 'create'), productVariantController.createProductVariant);
-router.post('/parents/:id/variants/batch', authenticate, authorize('admin', 'funcionario'), auditLog('variant', 'create'), productVariantController.createVariantsBatch);
-router.post('/parents/:id/variants', authenticate, authorize('admin', 'funcionario'), auditLog('variant', 'create'), productVariantController.addVariantToParent);
-router.put('/variants/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(ProductVariant), validate(updateProductVariantSchema), auditLog('variant', 'update'), productVariantController.updateProductVariant);
-router.delete('/variants/:id', authenticate, authorize('admin'), captureBeforeState(ProductVariant), validate(deleteProductSchema), auditLog('variant', 'delete'), productVariantController.deleteProductVariant);
-
-// Image upload routes for ProductVariant
-router.post(
-  '/variants/:id/images',
-  authenticate,
-  authorize('admin', 'funcionario'),
-  uploadMultiple,
-  handleMulterError,
-  uploadController.uploadProductVariantImages
-);
-router.delete(
-  '/variants/:id/images/:filename',
-  authenticate,
-  authorize('admin', 'funcionario'),
-  uploadController.deleteProductVariantImage
+  authorize('admin'),
+  captureBeforeState(Product),
+  validate(deleteProductSchema),
+  auditLog('product', 'delete'),
+  productController.deleteProduct
 );
 
 export default router;

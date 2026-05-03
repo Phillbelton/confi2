@@ -10,6 +10,8 @@ import addressRoutes from './addressRoutes';
 import auditRoutes from './auditRoutes';
 import dashboardRoutes from './dashboardRoutes';
 import collectionRoutes from './collectionRoutes';
+import formatRoutes from './formatRoutes';
+import flavorRoutes from './flavorRoutes';
 
 const router = Router();
 
@@ -34,6 +36,8 @@ router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/tags', tagRoutes);
 router.use('/brands', brandRoutes);
+router.use('/formats', formatRoutes);
+router.use('/flavors', flavorRoutes);
 router.use('/collections', collectionRoutes);
 router.use('/orders', orderRoutes);
 // IMPORTANT: More specific routes must come BEFORE general routes

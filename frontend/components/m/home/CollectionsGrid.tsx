@@ -33,31 +33,52 @@ export function CollectionsGrid({
       />
 
       {variant === 'double' ? (
-        // Carrusel de 2 filas — grid-flow-col arma columnas que fluyen horizontalmente
-        <div
-          className={cn(
-            'snap-x-mandatory overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none',
-            className
-          )}
-        >
-          <div className="grid grid-flow-col grid-rows-2 auto-cols-[10rem] gap-3">
+        <>
+          {/* Mobile: carrusel de 2 filas */}
+          <div
+            className={cn(
+              'snap-x-mandatory overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:hidden',
+              className
+            )}
+          >
+            <div className="grid grid-flow-col grid-rows-2 auto-cols-[13rem] gap-3">
+              {isLoading
+                ? Array.from({ length: 8 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[5/3] animate-pulse rounded-2xl bg-muted"
+                    />
+                  ))
+                : collections.map((c) => (
+                    <CollectionCard
+                      key={c._id}
+                      collection={c}
+                      variant="landscape"
+                      className="snap-start"
+                    />
+                  ))}
+            </div>
+          </div>
+
+          {/* Desktop: grid amplio 4 cols, xl 5 cols */}
+          <div
+            className={cn(
+              'hidden gap-4 px-8 pb-8 lg:grid lg:grid-cols-4 xl:grid-cols-5',
+              className
+            )}
+          >
             {isLoading
-              ? Array.from({ length: 8 }).map((_, i) => (
+              ? Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-[5/3] animate-pulse rounded-2xl bg-muted"
+                    className="aspect-square animate-pulse rounded-2xl bg-muted"
                   />
                 ))
               : collections.map((c) => (
-                  <CollectionCard
-                    key={c._id}
-                    collection={c}
-                    variant="landscape"
-                    className="snap-start"
-                  />
+                  <CollectionCard key={c._id} collection={c} variant="square" />
                 ))}
           </div>
-        </div>
+        </>
       ) : variant === 'carousel' ? (
         <div
           className={cn(
@@ -69,7 +90,7 @@ export function CollectionsGrid({
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-square w-44 shrink-0 animate-pulse rounded-3xl bg-muted"
+                  className="aspect-square w-[14.3rem] shrink-0 animate-pulse rounded-3xl bg-muted"
                 />
               ))
             : collections.map((c) => (
@@ -77,7 +98,7 @@ export function CollectionsGrid({
                   key={c._id}
                   collection={c}
                   variant="square"
-                  className="w-44 shrink-0 snap-start"
+                  className="w-[14.3rem] shrink-0 snap-start"
                 />
               ))}
         </div>

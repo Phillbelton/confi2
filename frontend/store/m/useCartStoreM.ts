@@ -1,54 +1,54 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartItem, Cart, ProductParent, ProductVariant } from '@/types';
-import { calculateCartDiscounts } from '@/lib/discountCalculator';
+import type { Product } from '@/types';
+import { effectiveUnitPrice } from '@/lib/discountCalculator';
 
-interface CartStoreM extends Cart {
-  addItem: (
-    productParent: ProductParent,
-    variant: ProductVariant,
-    quantity?: number
-  ) => void;
-  removeItem: (variantId: string) => void;
-  updateQuantity: (variantId: string, quantity: number) => void;
-  clearCart: () => void;
-  getItem: (variantId: string) => CartItem | undefined;
-  getItemCount: () => number;
+export interface CartItem {
+  productId: string;
+  product: Product;
+  quantity: number;
+  // Calculados
+  pricePerUnit: number; // precio efectivo según tier
+  subtotal: number;
+  discount: number; // (unitPrice - pricePerUnit) * quantity
 }
 
-function recalculateTotals(items: CartItem[]) {
-  const calculationItems = items.map((item) => ({
-    variant: item.variant,
-    quantity: item.quantity,
-    productParent: item.productParent as ProductParent,
-  }));
+interface CartState {
+  items: CartItem[];
+  subtotal: number;
+  totalDiscount: number;
+  total: number;
+  itemCount: number;
+}
 
-  const result = calculateCartDiscounts(calculationItems);
+interface CartStoreM extends CartState {
+  addItem: (product: Product, quantity?: number) => void;
+  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  getItem: (productId: string) => CartItem | undefined;
+}
 
-  const updatedItems = items.map((item) => {
-    const ci = result.items.find((c) => c.variantId === item.variantId);
-    if (!ci) {
-      return {
-        ...item,
-        unitPrice: item.variant.price,
-        discount: 0,
-        subtotal: item.variant.price * item.quantity,
-      };
-    }
-    return {
-      ...item,
-      unitPrice: ci.originalPrice,
-      discount: ci.discountPerUnit,
-      subtotal: ci.subtotal,
-    };
+function recalcItems(items: CartItem[]): {
+  items: CartItem[];
+  subtotal: number;
+  totalDiscount: number;
+  total: number;
+  itemCount: number;
+} {
+  let subtotal = 0;
+  let totalDiscount = 0;
+  let itemCount = 0;
+  const updated = items.map((it) => {
+    const ppu = effectiveUnitPrice(it.product, it.quantity);
+    const lineSubtotal = ppu * it.quantity;
+    const lineDiscount = Math.max(0, (it.product.unitPrice - ppu) * it.quantity);
+    subtotal += it.product.unitPrice * it.quantity;
+    totalDiscount += lineDiscount;
+    itemCount += it.quantity;
+    return { ...it, pricePerUnit: ppu, subtotal: lineSubtotal, discount: lineDiscount };
   });
-
-  return {
-    updatedItems,
-    subtotal: result.subtotal,
-    totalDiscount: result.totalDiscount,
-    total: result.total,
-  };
+  return { items: updated, subtotal, totalDiscount, total: subtotal - totalDiscount, itemCount };
 }
 
 export const useCartStoreM = create<CartStoreM>()(
@@ -60,104 +60,56 @@ export const useCartStoreM = create<CartStoreM>()(
       total: 0,
       itemCount: 0,
 
-      addItem: (productParent, variant, quantity = 1) => {
+      addItem: (product, quantity = 1) => {
         const items = get().items;
-        const idx = items.findIndex((i) => i.variantId === variant._id);
-
-        let newItems: CartItem[];
+        const idx = items.findIndex((i) => i.productId === product._id);
+        let next: CartItem[];
         if (idx >= 0) {
-          newItems = items.map((i, n) =>
-            n === idx ? { ...i, quantity: i.quantity + quantity } : i
-          );
+          next = items.map((i, n) => (n === idx ? { ...i, quantity: i.quantity + quantity } : i));
         } else {
-          newItems = [
+          next = [
             ...items,
             {
-              variantId: variant._id,
-              productParent,
-              variant,
+              productId: product._id,
+              product,
               quantity,
-              unitPrice: variant.price,
-              discount: 0,
+              pricePerUnit: product.unitPrice,
               subtotal: 0,
+              discount: 0,
             },
           ];
         }
-
-        const { updatedItems, subtotal, totalDiscount, total } =
-          recalculateTotals(newItems);
-
-        set({
-          items: updatedItems,
-          subtotal,
-          totalDiscount,
-          total,
-          itemCount: updatedItems.reduce((s, i) => s + i.quantity, 0),
-        });
+        set(recalcItems(next));
       },
 
-      removeItem: (variantId) => {
-        const newItems = get().items.filter((i) => i.variantId !== variantId);
-
-        if (newItems.length === 0) {
-          set({ items: [], subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 });
-          return;
-        }
-
-        const { updatedItems, subtotal, totalDiscount, total } =
-          recalculateTotals(newItems);
-
-        set({
-          items: updatedItems,
-          subtotal,
-          totalDiscount,
-          total,
-          itemCount: updatedItems.reduce((s, i) => s + i.quantity, 0),
-        });
+      removeItem: (productId) => {
+        const next = get().items.filter((i) => i.productId !== productId);
+        set(next.length === 0
+          ? { items: [], subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 }
+          : recalcItems(next));
       },
 
-      updateQuantity: (variantId, quantity) => {
-        if (quantity <= 0) {
-          get().removeItem(variantId);
-          return;
-        }
-
-        const newItems = get().items.map((i) =>
-          i.variantId === variantId ? { ...i, quantity } : i
-        );
-
-        const { updatedItems, subtotal, totalDiscount, total } =
-          recalculateTotals(newItems);
-
-        set({
-          items: updatedItems,
-          subtotal,
-          totalDiscount,
-          total,
-          itemCount: updatedItems.reduce((s, i) => s + i.quantity, 0),
-        });
+      updateQuantity: (productId, quantity) => {
+        if (quantity <= 0) return get().removeItem(productId);
+        const next = get().items.map((i) => (i.productId === productId ? { ...i, quantity } : i));
+        set(recalcItems(next));
       },
 
-      clearCart: () => {
-        set({ items: [], subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 });
-      },
+      clearCart: () => set({ items: [], subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 }),
 
-      getItem: (variantId) => get().items.find((i) => i.variantId === variantId),
-      getItemCount: () => get().items.reduce((s, i) => s + i.quantity, 0),
+      getItem: (productId) => get().items.find((i) => i.productId === productId),
     }),
     {
       name: 'quelita-cart-m',
       partialize: (state) => ({ items: state.items }),
       onRehydrateStorage: () => (state) => {
-        if (state && state.items.length > 0) {
-          const { updatedItems, subtotal, totalDiscount, total } =
-            recalculateTotals(state.items);
-          state.items = updatedItems;
-          state.subtotal = subtotal;
-          state.totalDiscount = totalDiscount;
-          state.total = total;
-          state.itemCount = updatedItems.reduce((s, i) => s + i.quantity, 0);
-        }
+        if (!state) return;
+        // Filtrar items malformados de versiones anteriores (sin product/productId)
+        state.items = (state.items || []).filter(
+          (it: any) => it && it.productId && it.product && typeof it.product.unitPrice === 'number'
+        );
+        if (state.items.length > 0) Object.assign(state, recalcItems(state.items));
+        else Object.assign(state, { subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 });
       },
     }
   )

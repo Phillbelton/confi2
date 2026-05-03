@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { Brand, IBrand } from '../models/Brand';
-import ProductParent from '../models/ProductParent';
+import Product from "../models/Product";
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 
@@ -38,7 +38,7 @@ export const getBrandById = asyncHandler(
     }
 
     // Contar productos
-    const productCount = await ProductParent.countDocuments({
+    const productCount = await Product.countDocuments({
       brand: brand._id,
       active: true,
     });
@@ -66,7 +66,7 @@ export const getBrandBySlug = asyncHandler(
       throw new AppError(404, 'Marca no encontrada');
     }
 
-    const productCount = await ProductParent.countDocuments({
+    const productCount = await Product.countDocuments({
       brand: brand._id,
       active: true,
     });

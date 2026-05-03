@@ -1,219 +1,62 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
-import { Check, ChevronLeft } from 'lucide-react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { ChevronLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useProductBySlug, useProductVariants, useProducts } from '@/hooks/useProducts';
-import { useCategories } from '@/hooks/useCategories';
-import { useCollection } from '@/hooks/useCollections';
+import { useProductBySlug } from '@/hooks/useProducts';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
-import { ProductGalleryM } from '@/components/m/detail/ProductGalleryM';
-import { StickyAddToCart } from '@/components/m/detail/StickyAddToCart';
-import { Breadcrumbs, type BreadcrumbItem } from '@/components/m/detail/Breadcrumbs';
-import { ProductCarousel } from '@/components/m/home/ProductCarousel';
-import { SectionHeader } from '@/components/m/home/SectionHeader';
-import { showCartToast } from '@/components/m/shell/cart-toast-m';
-import { getSafeImageUrl } from '@/lib/image-utils';
-import { categoryVisualMap } from '@/lib/categoryVisualConfig';
+import { SaleUnitBadge } from '@/components/m/catalog/SaleUnitBadge';
+import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
+import { useProductBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
 import {
-  calculateItemDiscount,
-  getDiscountTiers,
-  hasActiveDiscount,
+  effectiveUnitPrice,
+  getDisplayTiers,
+  minQuantity,
+  quantityStep,
+  hasAnyDiscount,
+  getBestDiscountPercent,
 } from '@/lib/discountCalculator';
+import { getSafeImageUrl } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
-import type { Brand, Category, ProductParent, ProductVariant } from '@/types';
+import type { Brand, Category, Format, Flavor } from '@/types';
 
-export default function MProductDetail() {
+export default function ProductDetailPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
+  const sp = useSearchParams();
   const slug = params.slug as string;
+  const { data, isLoading, error } = useProductBySlug(slug);
+  const product = data?.product;
 
-  const { data: productData, isLoading, error } = useProductBySlug(slug);
-  const product = productData?.data;
+  // Contexto de navegación: ?from=querystring del catálogo origen
+  const fromCtx = useMemo(() => {
+    const raw = sp.get('from');
+    if (!raw) return undefined;
+    try {
+      const params = new URLSearchParams(raw);
+      return {
+        categorySlug: params.get('categoria') || undefined,
+        subcategorySlug: params.get('subcategoria') || undefined,
+        collectionSlug: params.get('coleccion') || undefined,
+      };
+    } catch {
+      return undefined;
+    }
+  }, [sp]);
 
-  const { data: variantsData } = useProductVariants(product?._id || '');
-  const variants: ProductVariant[] = variantsData?.data || [];
-
-  const [selectedVariantIdState, setSelectedVariantId] = useState('');
-  const [quantity, setQuantity] = useState(1);
-  const [isAdding, setIsAdding] = useState(false);
+  const breadcrumbs = useProductBreadcrumbs(product, fromCtx);
 
   const addItem = useCartStoreM((s) => s.addItem);
+  const items = useCartStoreM((s) => s.items);
 
-  const selectedVariantId = selectedVariantIdState || variants[0]?._id || '';
-  const variant = variants.find((v) => v._id === selectedVariantId) || variants[0];
-
-  const categoryIds = product?.categories
-    ? typeof product.categories[0] === 'string'
-      ? (product.categories as string[])
-      : (product.categories as { _id: string }[]).map((c) => c._id)
-    : [];
-
-  const { data: relatedData } = useProducts({
-    categories: categoryIds,
-    limit: 6,
-  });
-  const related: ProductParent[] = (relatedData?.data || []).filter(
-    (p: ProductParent) => p._id !== product?._id
-  );
-
-  // ========================================================================
-  // BREADCRUMBS — estrategia híbrida (referrer + taxonomía)
-  // ========================================================================
-  // El "from" trae el querystring serializado del catálogo origen.
-  // Si existe → mostrar el camino real (categoría/colección + subcategoría).
-  // Si no → cae a taxonomía: categoría primaria del producto.
-  const fromParams = useMemo(() => {
-    const raw = searchParams.get('from');
-    if (!raw) return null;
-    try {
-      return new URLSearchParams(raw);
-    } catch {
-      return null;
-    }
-  }, [searchParams]);
-
-  const fromCategorySlug = fromParams?.get('categoria') || undefined;
-  const fromSubcategorySlug = fromParams?.get('subcategoria') || undefined;
-  const fromCollectionSlug = fromParams?.get('coleccion') || undefined;
-
-  const { data: allCategoriesData } = useCategories();
-  const allCategories: Category[] = (allCategoriesData as Category[]) || [];
-
-  // Resolver datos de la colección si vino desde una
-  const { data: fromCollection } = useCollection(fromCollectionSlug || '', 'slug');
-
-  // Categoría primaria del producto (fallback de taxonomía)
-  const primaryCategory: Category | undefined = useMemo(() => {
-    if (!product?.categories || product.categories.length === 0) return undefined;
-    const first = product.categories[0];
-    if (typeof first === 'string') {
-      return allCategories.find((c) => c._id === first);
-    }
-    return first as Category;
-  }, [product, allCategories]);
-
-  // Si la categoría primaria es subcategoría, encontrar también su padre
-  const primaryParentCategory: Category | undefined = useMemo(() => {
-    if (!primaryCategory?.parent) return undefined;
-    const parentId =
-      typeof primaryCategory.parent === 'string'
-        ? primaryCategory.parent
-        : (primaryCategory.parent as Category)._id;
-    return allCategories.find((c) => c._id === parentId);
-  }, [primaryCategory, allCategories]);
-
-  // Helper: armar querystring del eslabón de vuelta preservando filtros
-  const buildHref = (overrides: Record<string, string | undefined>): string => {
-    const params = new URLSearchParams(fromParams?.toString() || '');
-    for (const [key, value] of Object.entries(overrides)) {
-      if (value === undefined) params.delete(key);
-      else params.set(key, value);
-    }
-    const qs = params.toString();
-    return qs ? `/m/productos?${qs}` : '/m/productos';
-  };
-
-  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
-    if (!product) return [];
-    const items: BreadcrumbItem[] = [];
-
-    // RAMA REFERRER: viene de una colección
-    if (fromCollectionSlug && fromCollection) {
-      items.push({
-        label: fromCollection.name,
-        emoji: fromCollection.emoji,
-        href: buildHref({ subcategoria: undefined }),
-      });
-      // Si además filtró por subcategoría dentro de la colección
-      if (fromSubcategorySlug) {
-        const sub = allCategories.find((c) => c.slug === fromSubcategorySlug);
-        if (sub) {
-          items.push({
-            label: sub.name.replace(/^Subcat-\w+-/, ''),
-            href: buildHref({}),
-          });
-        }
-      }
-    }
-    // RAMA REFERRER: viene de una categoría
-    else if (fromCategorySlug) {
-      const cat = allCategories.find((c) => c.slug === fromCategorySlug);
-      if (cat) {
-        const visual = categoryVisualMap[cat.name];
-        items.push({
-          label: cat.name.replace(/^Categoria-\d+-/, ''),
-          emoji: visual?.emoji,
-          href: buildHref({ subcategoria: undefined }),
-        });
-      }
-      if (fromSubcategorySlug) {
-        const sub = allCategories.find((c) => c.slug === fromSubcategorySlug);
-        if (sub) {
-          items.push({
-            label: sub.name.replace(/^Subcat-\w+-/, ''),
-            href: buildHref({}),
-          });
-        }
-      }
-    }
-    // RAMA TAXONOMÍA: link directo, derivar de categorías del producto
-    else if (primaryCategory) {
-      if (primaryParentCategory) {
-        const visual = categoryVisualMap[primaryParentCategory.name];
-        items.push({
-          label: primaryParentCategory.name.replace(/^Categoria-\d+-/, ''),
-          emoji: visual?.emoji,
-          href: `/m/productos?categoria=${primaryParentCategory.slug}`,
-        });
-        items.push({
-          label: primaryCategory.name.replace(/^Subcat-\w+-/, ''),
-          href: `/m/productos?categoria=${primaryParentCategory.slug}&subcategoria=${primaryCategory.slug}`,
-        });
-      } else {
-        const visual = categoryVisualMap[primaryCategory.name];
-        items.push({
-          label: primaryCategory.name.replace(/^Categoria-\d+-/, ''),
-          emoji: visual?.emoji,
-          href: `/m/productos?categoria=${primaryCategory.slug}`,
-        });
-      }
-    }
-
-    // Último eslabón: producto (no clickeable)
-    items.push({
-      label: product.name,
-      current: true,
-    });
-
-    return items;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    product,
-    fromCollectionSlug,
-    fromCollection,
-    fromCategorySlug,
-    fromSubcategorySlug,
-    primaryCategory,
-    primaryParentCategory,
-    allCategories,
-  ]);
+  const [quantity, setQuantity] = useState<number>(1);
 
   if (error) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
         <h1 className="font-display text-xl font-bold">Producto no encontrado</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          El producto que buscás no existe o fue eliminado.
-        </p>
         <Button asChild className="mt-4 rounded-full">
           <Link href="/m/productos">
             <ChevronLeft className="mr-1 h-4 w-4" />
@@ -224,173 +67,173 @@ export default function MProductDetail() {
     );
   }
 
-  if (isLoading || !product || !variant) {
+  if (isLoading || !product) {
     return (
       <div className="space-y-4 px-4 pt-4">
         <div className="aspect-square w-full animate-pulse rounded-2xl bg-muted" />
         <div className="h-6 w-2/3 animate-pulse rounded bg-muted" />
         <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
-        <div className="h-20 w-full animate-pulse rounded-xl bg-muted" />
       </div>
     );
   }
 
-  const allImages = (
-    variant.images && variant.images.length > 0
-      ? variant.images
-      : product.images || []
-  ).filter(Boolean);
+  const minQ = minQuantity(product);
+  const step = quantityStep(product);
+  const realQty = Math.max(quantity, minQ);
+  const ppu = effectiveUnitPrice(product, realQty);
+  const total = ppu * realQty;
+  const tiers = getDisplayTiers(product);
+  const discount = getBestDiscountPercent(product);
 
-  const hasDisc = hasActiveDiscount(variant, product);
-  const priceInfo = calculateItemDiscount(variant, quantity, product);
-  const tiers = getDiscountTiers(variant, product);
+  // Initialize quantity to minQ
+  if (quantity < minQ) setQuantity(minQ);
 
-  const finalUnitPrice = priceInfo?.finalPrice ?? variant.price;
-  const originalUnitPrice = priceInfo?.originalPrice ?? variant.price;
-
-  const brandName =
-    product.brand && typeof product.brand === 'object'
-      ? (product.brand as Brand).name
-      : null;
-
-  const handleAdd = () => {
-    setIsAdding(true);
-    addItem(product, variant, quantity);
-    showCartToast({
-      productName: product.name,
-      variantName: variant.displayName,
-      image: getSafeImageUrl(allImages[0], { width: 128, height: 128 }),
-      quantity,
-    });
-    setTimeout(() => setIsAdding(false), 400);
-  };
+  const brandName = typeof product.brand === 'object' ? (product.brand as Brand)?.name : '';
+  const formatLabel = typeof product.format === 'object' ? (product.format as Format)?.label : '';
+  const flavorName = typeof product.flavor === 'object' ? (product.flavor as Flavor)?.name : '';
+  const primaryCat = (product.categories as Category[] | undefined)?.[0];
 
   return (
     <>
-      <Breadcrumbs
-        items={breadcrumbItems}
-        className="border-b border-border/40 bg-muted/40"
-      />
+      {breadcrumbs.length > 0 && (
+        <Breadcrumbs items={breadcrumbs} className="border-b border-border/60 bg-muted/30 lg:px-4" />
+      )}
 
-      <ProductGalleryM images={allImages} alt={product.name} />
-
-      <div className="px-4 pb-32 pt-4">
-        {brandName && (
-          <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
-            {brandName}
-          </p>
-        )}
-        <h1 className="mt-1 font-display text-xl font-bold leading-tight">
-          {product.name}
-        </h1>
-
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-bold tabular-nums">
-            ${Math.round(finalUnitPrice).toLocaleString('es-CL')}
-          </span>
-          {hasDisc && originalUnitPrice > finalUnitPrice && (
-            <span className="text-sm text-muted-foreground line-through tabular-nums">
-              ${Math.round(originalUnitPrice).toLocaleString('es-CL')}
-            </span>
-          )}
+      <div className="lg:grid lg:grid-cols-[55%_1fr] lg:gap-8 lg:px-8 lg:pt-6">
+        {/* Galería */}
+        <div className="lg:sticky lg:top-32 lg:self-start">
+          <div className="relative aspect-square overflow-hidden bg-muted lg:rounded-2xl">
+            {product.images?.[0] ? (
+              <Image
+                src={getSafeImageUrl(product.images[0], { width: 800, height: 800 })}
+                alt={product.name}
+                fill
+                sizes="(max-width: 1024px) 100vw, 55vw"
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <div className="grid h-full place-items-center text-6xl">🍭</div>
+            )}
+            {hasAnyDiscount(product) && discount > 0 && (
+              <span className="absolute left-3 top-3 rounded-md bg-orange-500 px-2.5 py-1 text-sm font-bold uppercase text-white shadow">
+                {discount}% dcto
+              </span>
+            )}
+            <SaleUnitBadge saleUnit={product.saleUnit} className="bottom-3" />
+          </div>
         </div>
 
-        {variants.length > 1 && (
-          <div className="mt-5">
-            <p className="mb-2 text-sm font-semibold">Presentación</p>
-            <div className="flex flex-wrap gap-2">
-              {variants.map((v) => {
-                const isActive = v._id === selectedVariantId;
-                return (
-                  <button
-                    key={v._id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedVariantId(v._id);
-                      setQuantity(1);
-                    }}
-                    className={cn(
-                      'tappable inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                      isActive
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border hover:border-primary/40'
-                    )}
-                  >
-                    {isActive && <Check className="h-3.5 w-3.5" />}
-                    {v.displayName ||
-                      Object.values(v.attributes || {}).join(' · ') ||
-                      v.sku}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {tiers && tiers.length > 0 && (
-          <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-primary">
-              Descuento por mayor 🎉
+        {/* Info */}
+        <div className="px-4 pb-32 pt-4 lg:px-0 lg:pb-12 lg:pt-0">
+          {brandName && (
+            <p className="text-[11px] font-bold uppercase tracking-widest text-primary lg:text-sm">
+              {brandName}
             </p>
-            <ul className="mt-2 space-y-1 text-xs text-foreground">
-              {tiers.map((t, i) => (
-                <li key={i} className="flex justify-between gap-2">
-                  <span>{t.range}</span>
-                  <span className="font-bold text-primary">
-                    −{t.discount} <span className="opacity-60">· {t.price}</span>
+          )}
+          <h1 className="mt-1 font-display text-xl font-bold leading-tight lg:text-3xl">
+            {product.name}
+          </h1>
+
+          {(formatLabel || flavorName || primaryCat?.name) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {[primaryCat?.name, formatLabel, flavorName].filter(Boolean).join(' · ')}
+            </p>
+          )}
+
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tabular-nums lg:text-4xl">
+              ${Math.round(ppu).toLocaleString('es-CL')}
+            </span>
+            <span className="text-xs text-muted-foreground">por unidad</span>
+            {ppu < product.unitPrice && (
+              <span className="text-sm text-muted-foreground line-through tabular-nums">
+                ${Math.round(product.unitPrice).toLocaleString('es-CL')}
+              </span>
+            )}
+          </div>
+
+          {/* Tabla de tramos */}
+          {tiers.length > 0 && (
+            <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                Mejor precio por mayor 🎉
+              </p>
+              <ul className="mt-2 space-y-1 text-xs">
+                <li className="flex justify-between">
+                  <span>1 a {tiers[0].minQuantity - 1} unidades</span>
+                  <span className="font-bold tabular-nums">
+                    ${Math.round(product.unitPrice).toLocaleString('es-CL')}/u
                   </span>
                 </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <Accordion type="single" collapsible className="mt-5">
-          <AccordionItem value="desc" className="border-b">
-            <AccordionTrigger className="text-sm font-semibold">
-              Descripción
-            </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-              {product.description || 'Sin descripción disponible.'}
-            </AccordionContent>
-          </AccordionItem>
-          {product.tags && product.tags.length > 0 && (
-            <AccordionItem value="tags" className="border-b">
-              <AccordionTrigger className="text-sm font-semibold">
-                Etiquetas
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="flex flex-wrap gap-1.5">
-                  {product.tags.map((t, i) => (
-                    <span
-                      key={i}
-                      className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
-                    >
-                      {t}
+                {tiers.map((t, i) => (
+                  <li key={i} className="flex justify-between">
+                    <span>
+                      Desde {t.minQuantity} u{t.label ? ` (${t.label})` : ''}
                     </span>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+                    <span className="font-bold text-primary tabular-nums">
+                      ${Math.round(t.pricePerUnit).toLocaleString('es-CL')}/u
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-        </Accordion>
 
-        {related.length > 0 && (
-          <>
-            <SectionHeader title="Te puede gustar" emoji="💡" />
-            <ProductCarousel products={related.slice(0, 6)} />
-          </>
-        )}
+          {/* Selector de cantidad */}
+          <div className="mt-5">
+            <p className="text-sm font-semibold mb-2">
+              Cantidad{' '}
+              <span className="text-xs text-muted-foreground">
+                (mín. {minQ}{step > 1 ? `, de ${step} en ${step}` : ''})
+              </span>
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center rounded-full bg-muted p-1">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(minQ, q - step))}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-background text-foreground shadow-sm hover:bg-muted disabled:opacity-40"
+                  disabled={quantity <= minQ}
+                  aria-label="Quitar"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="px-4 text-base font-bold tabular-nums">{realQty}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => q + step)}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                  aria-label="Agregar"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-xl font-bold tabular-nums">
+                  ${Math.round(total).toLocaleString('es-CL')}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="mt-4 w-full rounded-full"
+              onClick={() => addItem(product, realQty)}
+            >
+              Agregar al carrito
+            </Button>
+          </div>
+
+          {/* Descripción */}
+          <div className="mt-6 prose-sm">
+            <h2 className="text-sm font-semibold mb-1">Descripción</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {product.description}
+            </p>
+          </div>
+        </div>
       </div>
-
-      <StickyAddToCart
-        quantity={quantity}
-        unitPrice={finalUnitPrice}
-        onIncrement={() => setQuantity((q) => q + 1)}
-        onDecrement={() => setQuantity((q) => Math.max(1, q - 1))}
-        onAdd={handleAdd}
-        isAdding={isAdding}
-      />
     </>
   );
 }

@@ -243,10 +243,10 @@ function OrderCard({ order }: { order: Order }) {
                 key={index}
                 className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted flex-shrink-0"
               >
-                {item.variantSnapshot?.image ? (
+                {item.productSnapshot?.image ? (
                   <Image
-                    src={item.variantSnapshot.image}
-                    alt={item.variantSnapshot.name}
+                    src={item.productSnapshot.image}
+                    alt={item.productSnapshot.name}
                     fill
                     className="object-cover"
                   />

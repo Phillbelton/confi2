@@ -12,12 +12,13 @@ export type DeliveryMethod = 'pickup' | 'delivery';
 export type PaymentMethod = 'cash' | 'transfer';
 
 export interface OrderItem {
-  variant: string;
-  variantSnapshot: {
-    sku: string;
+  product: string;
+  productSnapshot: {
     name: string;
-    price: number;
-    attributes: { [key: string]: string };
+    slug: string;
+    barcode?: string;
+    unitPrice: number;
+    saleUnit: { type: string; quantity: number };
     image: string;
   };
   quantity: number;
@@ -115,7 +116,7 @@ export interface UpdateAdminNotesData {
 
 export interface EditOrderItemsData {
   items: Array<{
-    variantId: string;
+    productId: string;
     quantity: number;
   }>;
   adminNotes?: string;

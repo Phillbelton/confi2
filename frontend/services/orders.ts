@@ -16,7 +16,7 @@ export interface CreateOrderPayload {
     };
   };
   items: {
-    variantId: string;
+    productId: string;
     quantity: number;
   }[];
   deliveryMethod: 'pickup' | 'delivery';
@@ -30,7 +30,7 @@ export interface WhatsAppMessagePayload {
 
 export interface ValidateCartPayload {
   items: {
-    variantId: string;
+    productId: string;
     quantity: number;
     finalPrice: number;
     subtotal: number;
@@ -40,12 +40,12 @@ export interface ValidateCartPayload {
 export interface ValidateCartResponse {
   valid: boolean;
   discrepancies?: Array<{
-    variantId: string;
+    productId: string;
     frontend: { finalPrice: number; subtotal: number };
     server: { finalPrice: number; subtotal: number };
   }>;
   serverPrices?: Array<{
-    variantId: string;
+    productId: string;
     quantity: number;
     originalPrice: number;
     finalPricePerUnit: number;
@@ -53,7 +53,7 @@ export interface ValidateCartResponse {
     subtotal: number;
   }>;
   items?: Array<{
-    variantId: string;
+    productId: string;
     quantity: number;
     originalPrice: number;
     finalPricePerUnit: number;
@@ -90,18 +90,20 @@ export const orderService = {
 
   // Get order by order number (authenticated - admin/funcionario or owner client)
   getByOrderNumber: async (orderNumber: string) => {
-    const { data } = await clientApi.get<ApiResponse<Order>>(
+    const { data } = await clientApi.get<ApiResponse<{ order: Order }>>(
       `/orders/number/${orderNumber}`
     );
-    // Backend returns { success: true, data: {...order...} }
-    return data.data;
+    // Backend returns { success: true, data: { order: {...} } }
+    return data.data?.order;
   },
 
   // Get my orders (authenticated customer - uses clientApi)
   getMyOrders: async () => {
-    const { data } = await clientApi.get<ApiResponse<{ data: Order[]; pagination: any }>>('/orders/my-orders');
-    // Backend returns { success: true, data: { data: [...], pagination: {...} } }
-    return data.data as any;
+    const { data } = await clientApi.get<ApiResponse<{ orders: Order[] }>>('/orders/my-orders');
+    // Backend returns { success: true, data: { orders: [...] } }
+    // Frontend espera { data: [...] } por compat con código existente
+    const orders = data.data?.orders || [];
+    return { data: orders, pagination: { total: orders.length, page: 1, totalPages: 1 } };
   },
 };
 

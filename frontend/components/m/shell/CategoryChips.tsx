@@ -11,9 +11,20 @@ interface CategoryChipsProps {
   className?: string;
   /** Cuando es true se renderiza sticky bajo el header */
   sticky?: boolean;
+  /**
+   * Si es true (default), el componente se oculta en lg+ porque las
+   * categorías van en el header desktop. Si se renderiza desde el
+   * header, pasar `mobileOnly={false}`.
+   */
+  mobileOnly?: boolean;
 }
 
-export function CategoryChips({ activeSlug, className, sticky = false }: CategoryChipsProps) {
+export function CategoryChips({
+  activeSlug,
+  className,
+  sticky = false,
+  mobileOnly = true,
+}: CategoryChipsProps) {
   const { data: categories, isLoading } = useCategories();
 
   const mainCategories: Category[] = (categories || []).filter(
@@ -40,6 +51,7 @@ export function CategoryChips({ activeSlug, className, sticky = false }: Categor
     <div
       className={cn(
         'border-b border-border/60 bg-background',
+        mobileOnly && 'lg:hidden',
         sticky && 'sticky top-[var(--m-header-h,9.5rem)] z-20',
         className
       )}

@@ -87,12 +87,12 @@ export function generateOrderMessage(order: IOrder): string {
 
     order.items.forEach((item, index) => {
       lines.push('');
-      lines.push(`*${index + 1}. ${item.variantSnapshot.name}*`);
-      lines.push(`   SKU: ${item.variantSnapshot.sku}`);
+      lines.push(`*${index + 1}. ${item.productSnapshot.name}*`);
+      lines.push(`   SKU: ${item.productSnapshot.barcode}`);
 
       // Mostrar atributos de la variante (ej: tamaño, sabor, etc.)
       // Convert Mongoose Map to plain object
-      const attributesMap = item.variantSnapshot.attributes;
+      const attributesMap = item.productSnapshot.saleUnit;
       const attributesObj = attributesMap instanceof Map
         ? Object.fromEntries(attributesMap.entries())
         : (typeof attributesMap === 'object' && attributesMap !== null
@@ -190,11 +190,11 @@ export function generateOrderMessage(order: IOrder): string {
 export function formatProductList(order: IOrder): string {
   try {
     const items = order.items.map((item, index) => {
-      let line = `${index + 1}. ${item.variantSnapshot.name}`;
+      let line = `${index + 1}. ${item.productSnapshot.name}`;
 
       // Agregar atributos si existen
       // Convert Mongoose Map to plain object
-      const attributesMap = item.variantSnapshot.attributes;
+      const attributesMap = item.productSnapshot.saleUnit;
       const attributesObj = attributesMap instanceof Map
         ? Object.fromEntries(attributesMap.entries())
         : (typeof attributesMap === 'object' && attributesMap !== null
@@ -283,7 +283,7 @@ export function generateOrderReceivedMessage(order: IOrder): string {
     lines.push('🛒 *Productos:*');
     order.items.forEach((item) => {
       const precioFormateado = item.subtotal.toLocaleString('es-CL');
-      lines.push(`• ${item.quantity}x ${item.variantSnapshot.name} - $${precioFormateado}`);
+      lines.push(`• ${item.quantity}x ${item.productSnapshot.name} - $${precioFormateado}`);
     });
     lines.push('');
 
@@ -328,7 +328,7 @@ export function generateConfirmationMessage(order: IOrder): string {
     // Productos resumidos
     lines.push('📦 *Productos:*');
     order.items.forEach((item) => {
-      lines.push(`• ${item.quantity}x ${item.variantSnapshot.name}`);
+      lines.push(`• ${item.quantity}x ${item.productSnapshot.name}`);
     });
     lines.push('');
 
@@ -438,7 +438,7 @@ export function generateOrderEditedMessage(order: IOrder): string {
     lines.push('🛒 *Productos actuales:*');
     order.items.forEach((item) => {
       const precioFormateado = item.subtotal.toLocaleString('es-CL');
-      lines.push(`• ${item.quantity}x ${item.variantSnapshot.name} - $${precioFormateado}`);
+      lines.push(`• ${item.quantity}x ${item.productSnapshot.name} - $${precioFormateado}`);
     });
     lines.push('');
 

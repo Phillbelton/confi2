@@ -1,191 +1,67 @@
 import { adminApi } from '@/lib/adminApi';
-import type {
-  ProductParent,
-  ProductVariant,
-  ApiResponse,
-  ProductQueryParams,
-} from '@/types';
+import type { Product, ApiResponse, SaleUnit, ProductTier } from '@/types';
+import type { ProductQueryParams } from '@/services/products';
 
-// ============================================================================
-// PRODUCT PARENT (Admin CRUD)
-// ============================================================================
-
-export interface CreateProductParentInput {
+export interface CreateProductInput {
   name: string;
   description: string;
   categories: string[];
   brand?: string;
+  format?: string;
+  flavor?: string;
+  barcode?: string;
+  provider?: string;
+  unitPrice: number;
+  saleUnit: SaleUnit;
+  tiers?: ProductTier[];
   images?: string[];
-  tags?: string[];
-  seoTitle?: string;
-  seoDescription?: string;
-  variantAttributes?: {
-    name: string;
-    displayName: string;
-    order: number;
-    values: {
-      value: string;
-      displayValue: string;
-      order: number;
-    }[];
-  }[];
   featured?: boolean;
   active?: boolean;
 }
 
-export interface UpdateProductParentInput extends Partial<CreateProductParentInput> {
-  tieredDiscounts?: {
-    attribute: string;
-    attributeValue: string;
-    tiers: {
-      minQuantity: number;
-      maxQuantity: number | null;
-      type: 'percentage' | 'amount';
-      value: number;
-    }[];
-    startDate?: string;
-    endDate?: string;
-    badge?: string;
-    active: boolean;
-  }[];
-}
-
-export interface CreateProductVariantInput {
-  parentProduct: string;
-  sku?: string;
-  attributes: { [key: string]: string };
-  price: number;
-  images?: string[];
-  description?: string;
-  fixedDiscount?: {
-    enabled: boolean;
-    type: 'percentage' | 'amount';
-    value: number;
-    startDate?: string;
-    endDate?: string;
-    badge?: string;
-  };
-  active?: boolean;
-  order?: number;
-}
-
-export interface UpdateProductVariantInput extends Partial<CreateProductVariantInput> {}
-
+export type UpdateProductInput = Partial<CreateProductInput>;
 
 export const adminProductService = {
-  // ============================================================================
-  // PRODUCT PARENT CRUD
-  // ============================================================================
-
-  createProductParent: async (data: CreateProductParentInput): Promise<ProductParent> => {
-    const response = await adminApi.post<ApiResponse<ProductParent>>('/products/parents', data);
-    return response.data.data;
-  },
-
-  updateProductParent: async (id: string, data: UpdateProductParentInput): Promise<ProductParent> => {
-    const response = await adminApi.put<ApiResponse<ProductParent>>(`/products/parents/${id}`, data);
-    return response.data.data;
-  },
-
-  deleteProductParent: async (id: string): Promise<void> => {
-    await adminApi.delete(`/products/parents/${id}`);
-  },
-
-  uploadProductParentImages: async (id: string, files: File[]): Promise<string[]> => {
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('images', file);
-    });
-
-    const response = await adminApi.post<ApiResponse<{ imageUrls: string[] }>>(
-      `/products/parents/${id}/images`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+  list: async (params?: ProductQueryParams) => {
+    const { data } = await adminApi.get<ApiResponse<{ data: Product[]; pagination: any }>>(
+      '/products',
+      { params: { ...params, active: 'all' } }
     );
-    return response.data.data.imageUrls;
+    return data.data;
   },
-
-  deleteProductParentImage: async (id: string, filename: string): Promise<void> => {
-    await adminApi.delete(`/products/parents/${id}/images/${filename}`);
+  getById: async (id: string) => {
+    const { data } = await adminApi.get<ApiResponse<{ product: Product }>>(`/products/${id}`);
+    return data.data;
   },
-
-  // ============================================================================
-  // PRODUCT VARIANT CRUD
-  // ============================================================================
-
-  createProductVariant: async (data: CreateProductVariantInput): Promise<ProductVariant> => {
-    const response = await adminApi.post<ApiResponse<ProductVariant>>('/products/variants', data);
-    return response.data.data;
-  },
-
-  addVariantToParent: async (
-    parentProductId: string,
-    data: {
-      attributes: Record<string, string>;
-      price: number;
-      sku?: string;
-      description?: string;
-    }
-  ): Promise<{
-    variant: ProductVariant;
-    parentUpdated: boolean;
-    newValuesAdded: Array<{ attribute: string; value: string }>;
-  }> => {
-    const response = await adminApi.post<
-      ApiResponse<{
-        variant: ProductVariant;
-        parentUpdated: boolean;
-        newValuesAdded: Array<{ attribute: string; value: string }>;
-      }>
-    >(`/products/parents/${parentProductId}/variants`, data);
-    return response.data.data;
-  },
-
-  updateProductVariant: async (id: string, data: UpdateProductVariantInput): Promise<ProductVariant> => {
-    const response = await adminApi.put<ApiResponse<ProductVariant>>(`/products/variants/${id}`, data);
-    return response.data.data;
-  },
-
-  deleteProductVariant: async (id: string): Promise<void> => {
-    await adminApi.delete(`/products/variants/${id}`);
-  },
-
-  uploadProductVariantImages: async (id: string, files: File[]): Promise<string[]> => {
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('images', file);
-    });
-
-    const response = await adminApi.post<ApiResponse<{ imageUrls: string[] }>>(
-      `/products/variants/${id}/images`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+  create: async (input: CreateProductInput | FormData) => {
+    const isFormData = input instanceof FormData;
+    const { data } = await adminApi.post<ApiResponse<{ product: Product }>>(
+      '/products',
+      input,
+      isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined
     );
-    return response.data.data.imageUrls;
+    return data.data;
   },
-
-  deleteProductVariantImage: async (id: string, filename: string): Promise<void> => {
-    await adminApi.delete(`/products/variants/${id}/images/${filename}`);
-  },
-
-  // ============================================================================
-  // BULK OPERATIONS
-  // ============================================================================
-
-  bulkToggleActive: async (productIds: string[], active: boolean): Promise<void> => {
-    await Promise.all(
-      productIds.map((id) =>
-        adminApi.put(`/products/parents/${id}`, { active })
-      )
+  update: async (id: string, input: UpdateProductInput) => {
+    const { data } = await adminApi.put<ApiResponse<{ product: Product }>>(
+      `/products/${id}`,
+      input
     );
+    return data.data;
+  },
+  remove: async (id: string) => {
+    const { data } = await adminApi.delete<ApiResponse<null>>(`/products/${id}`);
+    return data;
+  },
+  uploadImages: async (id: string, files: File[]) => {
+    const fd = new FormData();
+    files.forEach((f) => fd.append('images', f));
+    const { data } = await adminApi.post<ApiResponse<{ images: string[] }>>(
+      `/products/${id}/images`,
+      fd,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return data.data;
   },
 };
 

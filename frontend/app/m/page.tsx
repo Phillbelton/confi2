@@ -7,29 +7,29 @@ import { ProductCarousel } from '@/components/m/home/ProductCarousel';
 import { CollectionsGrid } from '@/components/m/home/CollectionsGrid';
 import { ProductCardM } from '@/components/m/catalog/ProductCardM';
 import { useFeaturedProducts, useProducts } from '@/hooks/useProducts';
-import type { ProductParent } from '@/types';
+import type { Product } from '@/types';
 
 export default function MHomePage() {
   const { data: featuredData, isLoading: featuredLoading } = useFeaturedProducts();
-  const featured: ProductParent[] = (featuredData?.data as ProductParent[] | undefined) || [];
+  const featured: Product[] = (featuredData?.data as Product[] | undefined) || [];
 
   const { data: onSaleData, isLoading: onSaleLoading } = useProducts({
     onSale: true,
     limit: 8,
   });
-  const onSale: ProductParent[] = onSaleData?.data || [];
+  const onSale: Product[] = onSaleData?.data || [];
 
   const { data: newestData, isLoading: newestLoading } = useProducts({
     sort: 'newest',
     limit: 8,
   });
-  const newest: ProductParent[] = newestData?.data || [];
+  const newest: Product[] = newestData?.data || [];
 
   const { data: bestSellersData, isLoading: bestLoading } = useProducts({
     sort: 'popular',
-    limit: 6,
+    limit: 10,
   });
-  const bestSellers: ProductParent[] = bestSellersData?.data || [];
+  const bestSellers: Product[] = bestSellersData?.data || [];
 
   return (
     <>
@@ -54,15 +54,15 @@ export default function MHomePage() {
       />
       <ProductCarousel products={onSale} isLoading={onSaleLoading} />
 
-      <section className="px-4 py-3">
-        <div className="rounded-3xl bg-gradient-to-r from-accent/15 via-accent/10 to-primary/10 p-4 text-center">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-accent">
+      <section className="px-4 py-3 lg:px-8 lg:py-6">
+        <div className="rounded-3xl bg-gradient-to-r from-accent/15 via-accent/10 to-primary/10 p-4 text-center lg:p-8">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-accent lg:text-sm">
             Comprá por mayor
           </p>
-          <p className="mt-1 font-display text-base font-bold leading-snug">
+          <p className="mt-1 font-display text-base font-bold leading-snug lg:text-2xl">
             Más cantidad, mejor precio 🎉
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground lg:text-sm">
             Descuentos automáticos según el volumen.
           </p>
         </div>
@@ -81,15 +81,15 @@ export default function MHomePage() {
         emoji="🏆"
         href="/m/productos?sort=popular"
       />
-      <div className="grid grid-cols-2 gap-3 px-4 pb-6">
+      <div className="grid grid-cols-2 gap-3 px-4 pb-6 lg:grid-cols-4 lg:gap-4 lg:px-8 lg:pb-12 xl:grid-cols-5">
         {bestLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[260px] animate-pulse rounded-2xl bg-muted" />
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-[260px] animate-pulse rounded-2xl bg-muted lg:h-auto lg:aspect-[3/4]" />
             ))
           : bestSellers
-              .slice(0, 4)
+              .slice(0, 5)
               .map((p) => (
-                <ProductCardM key={p._id} product={p} autoFetchVariants />
+                <ProductCardM key={p._id} product={p} />
               ))}
       </div>
     </>

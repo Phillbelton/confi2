@@ -1,180 +1,79 @@
 import { Response } from 'express';
-import { Order, IOrder, User } from '../models';
-import ProductVariant from '../models/ProductVariant';
-import ProductParent from '../models/ProductParent';
-import { AuthRequest, ApiResponse, PaginatedResponse, OrderStatus } from '../types';
+import mongoose from 'mongoose';
+import { Order } from '../models/Order';
+import Product from '../models/Product';
+import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { applyDiscountToCart } from '../services/discountService';
-import {
-  generateWhatsAppURL,
-  generateOrderMessage,
-  generateConfirmationMessage,
-  generateReadyForDeliveryMessage,
-  generateCancellationMessage,
-  generateCompletedMessage,
-  generateOrderEditedMessage,
-} from '../services/whatsappService';
-import { emailService } from '../services/emailService';
 
-/**
- * Controller para Order - Integra stock + whatsapp + discounts + addresses
- */
+interface CartItemInput {
+  productId: string;
+  quantity: number;
+}
 
-// @desc    Crear orden (con descuentos automáticos + deducción de stock + direcciones)
-// @route   POST /api/orders
-// @access  Public (visita) / Private (cliente, funcionario, admin)
+function effectiveUnitPrice(product: any, quantity: number): number {
+  const tiers = (product.tiers || []) as Array<{ minQuantity: number; pricePerUnit: number }>;
+  const sorted = [...tiers].sort((a, b) => b.minQuantity - a.minQuantity);
+  for (const t of sorted) if (quantity >= t.minQuantity) return t.pricePerUnit;
+  return product.unitPrice;
+}
+
+async function buildOrderItems(items: CartItemInput[]) {
+  const orderItems: any[] = [];
+  let subtotal = 0;
+  let totalDiscount = 0;
+  for (const it of items) {
+    if (!mongoose.Types.ObjectId.isValid(it.productId)) {
+      throw new AppError(400, `productId inválido: ${it.productId}`);
+    }
+    const product = await Product.findById(it.productId).lean();
+    if (!product || !product.active) {
+      throw new AppError(404, `Producto ${it.productId} no disponible`);
+    }
+    const ppu = effectiveUnitPrice(product, it.quantity);
+    const lineSubtotal = ppu * it.quantity;
+    const discount = Math.max(0, (product.unitPrice - ppu) * it.quantity);
+    orderItems.push({
+      product: product._id,
+      productSnapshot: {
+        name: product.name,
+        slug: product.slug,
+        barcode: product.barcode,
+        unitPrice: product.unitPrice,
+        saleUnit: product.saleUnit,
+        image: product.images?.[0] || '',
+      },
+      quantity: it.quantity,
+      pricePerUnit: ppu,
+      discount,
+      subtotal: lineSubtotal,
+    });
+    subtotal += product.unitPrice * it.quantity;
+    totalDiscount += discount;
+  }
+  return { orderItems, subtotal, totalDiscount };
+}
+
+export const validateCart = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const { items } = req.body as { items: CartItemInput[] };
+    if (!items?.length) throw new AppError(400, 'Items requeridos');
+    const { orderItems, subtotal, totalDiscount } = await buildOrderItems(items);
+    res.status(200).json({
+      success: true,
+      data: { items: orderItems, subtotal, totalDiscount, total: subtotal - totalDiscount },
+    });
+  }
+);
+
 export const createOrder = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const {
-      items,
-      deliveryMethod,
-      paymentMethod,
-      useAddressId,
-      deliveryNotes,
-      customerNotes,
-    } = req.body;
-
-    // Obtener información del usuario (si está autenticado)
-    let customerData: any = {};
-    let addressData: any = undefined;
-
-    if (req.user) {
-      // Usuario autenticado
-      const user = await User.findById(req.user.id).select('name email phone addresses');
-
-      if (!user) {
-        throw new AppError(404, 'Usuario no encontrado');
-      }
-
-      // Aceptar overrides del body para contacto de este pedido específico
-      // (el usuario puede querer recibir el email en otra dirección, o
-      // actualizar nombre/teléfono solo para este pedido sin modificar su perfil).
-      const bodyCustomer = req.body.customer || {};
-
-      customerData = {
-        user: user._id,
-        name: bodyCustomer.name?.trim() || user.name,
-        email: bodyCustomer.email?.trim() || user.email,
-        phone: bodyCustomer.phone?.trim() || user.phone,
-      };
-
-      // Si proporcionó un useAddressId, usar esa dirección
-      if (useAddressId) {
-        const selectedAddress = user.addresses.find(
-          (addr) => addr._id.toString() === useAddressId
-        );
-
-        if (!selectedAddress) {
-          throw new AppError(404, 'Dirección no encontrada');
-        }
-
-        addressData = {
-          street: selectedAddress.street,
-          number: selectedAddress.number,
-          city: selectedAddress.city,
-          neighborhood: selectedAddress.neighborhood,
-          reference: selectedAddress.reference,
-        };
-      } else {
-        // No proporcionó dirección - usar la predeterminada si existe
-        const defaultAddress = user.addresses.find((addr) => addr.isDefault);
-
-        if (defaultAddress) {
-          addressData = {
-            street: defaultAddress.street,
-            number: defaultAddress.number,
-            city: defaultAddress.city,
-            neighborhood: defaultAddress.neighborhood,
-            reference: defaultAddress.reference,
-          };
-        }
-        // Si no hay dirección predeterminada, addressData queda undefined
-        // El funcionario preguntará por WhatsApp
-      }
-    } else {
-      // Usuario no autenticado (visita) - debe proporcionar datos en el body
-      const { customer } = req.body;
-
-      // email es opcional para invitados (coherente con Zod schema)
-      if (!customer || !customer.name || !customer.phone) {
-        throw new AppError(
-          400,
-          'Usuario no autenticado debe proporcionar: customer.name, customer.phone'
-        );
-      }
-
-      customerData = {
-        name: customer.name,
-        email: customer.email, // puede ser undefined
-        phone: customer.phone,
-      };
-
-      // Dirección opcional para visitas
-      if (customer.address) {
-        addressData = customer.address;
-      }
-    }
-
-    // Validar método de entrega
-    if (deliveryMethod === 'delivery' && !addressData && !deliveryNotes) {
-      // Advertencia: no hay dirección pero es delivery
-      // No fallar, el funcionario puede manejar esto por WhatsApp
-      console.warn(
-        `Orden con delivery pero sin dirección. OrderNumber se generará después. Cliente: ${customerData.email || customerData.phone}`
-      );
-    }
-
-    // Preparar items con descuentos aplicados
-    const cartItems = items.map((item: any) => ({
-      variantId: item.variantId,
-      quantity: item.quantity,
-    }));
-
-    // Aplicar descuentos automáticamente
-    const itemsWithDiscounts = await applyDiscountToCart(cartItems);
-
-    // Construir items de la orden con snapshots
-    const orderItems = await Promise.all(
-      itemsWithDiscounts.map(async (item) => {
-        const variant = await ProductVariant.findById(item.variantId).populate(
-          'parentProduct',
-          'name'
-        );
-
-        if (!variant) {
-          throw new AppError(404, `Variante ${item.variantId} no encontrada`);
-        }
-
-        // Crear snapshot de la variante
-        return {
-          variant: variant._id,
-          variantSnapshot: {
-            sku: variant.sku,
-            name: variant.name,
-            price: item.originalPrice,
-            attributes: variant.attributes as any,
-            image: variant.images[0] || '',
-          },
-          quantity: item.quantity,
-          pricePerUnit: item.finalPricePerUnit,
-          discount: item.totalDiscount,
-          subtotal: item.subtotal,
-        };
-      })
-    );
-
-    // Calcular totales (shippingCost se agregará después en confirmOrder)
-    const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-    const totalDiscount = orderItems.reduce((sum, item) => sum + item.discount, 0);
-    const shippingCost = 0; // Se calcula manualmente por el funcionario
-    const total = subtotal + shippingCost;
-
-    // Crear la orden
+    const { items, customer, deliveryMethod, paymentMethod, shippingCost = 0, customerNotes, deliveryNotes } = req.body;
+    if (!items?.length) throw new AppError(400, 'Items requeridos');
+    if (!customer?.name || !customer?.phone) throw new AppError(400, 'Datos del cliente incompletos');
+    const { orderItems, subtotal, totalDiscount } = await buildOrderItems(items);
+    const total = subtotal - totalDiscount + shippingCost;
     const order = await Order.create({
-      customer: {
-        ...customerData,
-        address: addressData, // Puede ser undefined
-      },
+      customer: { ...customer, user: req.user?.id },
       items: orderItems,
       subtotal,
       totalDiscount,
@@ -182,703 +81,137 @@ export const createOrder = asyncHandler(
       total,
       deliveryMethod,
       paymentMethod,
-      deliveryNotes,
-      customerNotes,
       status: 'pending_whatsapp',
       whatsappSent: false,
+      customerNotes,
+      deliveryNotes,
+      createdBy: req.user?.id,
     });
-
-    // Al crear orden: enviar email de "pedido recibido" si el cliente proporcionó email.
-    // No bloquea la respuesta — los errores se loggean pero no fallan el checkout.
-    // El email de "pedido confirmado" (con costo de envío final) se enviará después
-    // cuando el funcionario llame a confirmOrder.
-    if (order.customer.email) {
-      emailService
-        .sendOrderReceivedEmail(order, order.customer.email, order.customer.name)
-        .catch((err) => console.error('Error enviando email de pedido recibido:', err));
-    }
-
-    // Generar URL de WhatsApp hacia el negocio con el detalle completo del pedido.
-    // El cliente abre el link → WhatsApp pre-rellena el mensaje → cliente envía al negocio.
-    const businessPhone = process.env.WHATSAPP_BUSINESS_PHONE;
-    if (!businessPhone) {
-      console.warn(
-        '[orderController] WHATSAPP_BUSINESS_PHONE no está configurado; el cliente caerá al fallback /pedido/:orderNumber.'
-      );
-    }
-    const whatsappURL = businessPhone
-      ? generateWhatsAppURL(order, businessPhone)
-      : null;
-
-    res.status(201).json({
-      success: true,
-      message: 'Orden creada exitosamente',
-      data: {
-        order,
-        whatsappURL,
-        whatsappMessage: generateOrderMessage(order),
-      },
-    });
+    res.status(201).json({ success: true, message: 'Orden creada', data: { order } });
   }
 );
 
-// @desc    Confirmar orden y establecer costo de envío (funcionario)
-// @route   PUT /api/orders/:id/confirm
-// @access  Private (admin, funcionario)
-export const confirmOrder = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { shippingCost, adminNotes } = req.body;
-    const { id } = req.params;
-
-    const order = await Order.findById(id);
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
-    if (order.status !== 'pending_whatsapp') {
-      throw new AppError(400, 'Solo se pueden confirmar órdenes en estado pending_whatsapp');
-    }
-
-    // Actualizar orden con costo de envío
-    order.shippingCost = shippingCost;
-    order.total = order.subtotal + shippingCost;
-    order.status = 'confirmed';
-    order.confirmedAt = new Date();
-
-    if (adminNotes) {
-      order.adminNotes = adminNotes;
-    }
-
-    await order.save();
-
-    // Al confirmar: Email + WhatsApp
-    // Enviar email de confirmación (no bloqueante, solo si hay email)
-    if (order.customer.email) {
-      emailService
-        .sendOrderConfirmationEmail(order, order.customer.email, order.customer.name)
-        .catch((err) => console.error('Error enviando email de confirmación:', err));
-    }
-
-    // Generar mensaje y URL de WhatsApp para el cliente
-    const message = generateConfirmationMessage(order);
-    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
-    const whatsappURL = customerPhone
-      ? `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`
-      : null;
-
-    res.status(200).json({
-      success: true,
-      message: 'Orden confirmada exitosamente',
-      data: {
-        order,
-        whatsappMessage: message,
-        whatsappURL,
-      },
-    });
-  }
-);
-
-// @desc    Obtener todas las órdenes con filtros y paginación
-// @route   GET /api/orders
-// @access  Private (admin, funcionario)
 export const getOrders = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<PaginatedResponse<IOrder>>>) => {
-    const {
-      status,
-      page = '1',
-      limit = '20',
-      email,
-      orderNumber,
-      startDate,
-      endDate,
-    } = req.query as any;
-
-    const query: any = {};
-
-    if (status) {
-      query.status = status;
-    }
-
-    if (email) {
-      query['customer.email'] = { $regex: email, $options: 'i' };
-    }
-
-    if (orderNumber) {
-      query.orderNumber = { $regex: orderNumber, $options: 'i' };
-    }
-
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
-      if (endDate) query.createdAt.$lte = new Date(endDate);
-    }
-
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const { page = '1', limit = '20', status } = req.query as Record<string, string>;
+    const filter: any = {};
+    if (status) filter.status = status;
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-
-    const orders = await Order.find(query)
-      .populate('customer.user', 'name email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum);
-
-    const total = await Order.countDocuments(query);
-
+    const [data, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip((pageNum - 1) * limitNum).limit(limitNum).lean(),
+      Order.countDocuments(filter),
+    ]);
     res.status(200).json({
       success: true,
-      data: {
-        data: orders,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum),
-          hasNext: pageNum < Math.ceil(total / limitNum),
-          hasPrev: pageNum > 1,
-        },
-      },
+      data: { data, pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) || 1 } },
     });
   }
 );
 
-// @desc    Obtener orden por ID
-// @route   GET /api/orders/:id
-// @access  Private (admin, funcionario) o Public (owner)
 export const getOrderById = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { id } = req.params;
-
-    const order = await Order.findById(id).populate('customer.user', 'name email');
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
-    // Si no es admin/funcionario, verificar que sea el dueño
-    if (req.user) {
-      const userId = order.customer.user?._id?.toString() || order.customer.user?.toString();
-      const isOwner = userId === req.user.id;
-      const isAdminOrFuncionario = ['admin', 'funcionario'].includes(req.user.role);
-
-      if (!isOwner && !isAdminOrFuncionario) {
-        throw new AppError(403, 'No tienes permisos para ver esta orden');
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      data: order,
-    });
+    const order = await Order.findById(req.params.id).lean();
+    if (!order) throw new AppError(404, 'Orden no encontrada');
+    res.status(200).json({ success: true, data: { order } });
   }
 );
 
-// @desc    Obtener orden por número de orden
-// @route   GET /api/orders/number/:orderNumber
-// @access  Private (admin, funcionario, o cliente dueño)
 export const getOrderByNumber = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { orderNumber } = req.params;
-
-    const order = await Order.findOne({ orderNumber }).populate(
-      'customer.user',
-      'name email'
-    );
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
-    // Ownership check — admin/funcionario pasan; cliente sólo si es dueño.
-    if (req.user) {
-      const userId = order.customer.user?._id?.toString() || order.customer.user?.toString();
-      const isOwner = userId === req.user.id;
-      const isAdminOrFuncionario = ['admin', 'funcionario'].includes(req.user.role);
-
-      if (!isOwner && !isAdminOrFuncionario) {
-        throw new AppError(403, 'No tienes permisos para ver esta orden');
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      data: order,
-    });
+    const order = await Order.findOne({ orderNumber: req.params.orderNumber }).lean();
+    if (!order) throw new AppError(404, 'Orden no encontrada');
+    res.status(200).json({ success: true, data: { order } });
   }
 );
 
-// @desc    Obtener mis órdenes (cliente autenticado)
-// @route   GET /api/orders/my-orders
-// @access  Private (cliente)
 export const getMyOrders = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const userId = req.user?.id;
-
-    if (!userId) {
-      throw new AppError(401, 'Usuario no autenticado');
-    }
-
-    const { page = '1', limit = '10' } = req.query as any;
-
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-
-    const orders = await Order.find({ 'customer.user': userId })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum);
-
-    const total = await Order.countDocuments({ 'customer.user': userId });
-
-    res.status(200).json({
-      success: true,
-      data: {
-        data: orders,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum),
-          hasNext: pageNum < Math.ceil(total / limitNum),
-          hasPrev: pageNum > 1,
-        },
-      },
-    });
+    if (!req.user?.id) throw new AppError(401, 'No autenticado');
+    const orders = await Order.find({ 'customer.user': req.user.id }).sort({ createdAt: -1 }).lean();
+    res.status(200).json({ success: true, data: { orders } });
   }
 );
 
-// @desc    Actualizar estado de orden
-// @route   PUT /api/orders/:id/status
-// @access  Private (admin, funcionario)
 export const updateOrderStatus = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { status, adminNotes } = req.body;
-    const { id } = req.params;
-
-    const order = await Order.findById(id);
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
-    // Prevenir cambiar de cancelled a otro estado
-    if (order.status === 'cancelled' && status !== 'cancelled') {
-      throw new AppError(400, 'No se puede cambiar el estado de una orden cancelada');
-    }
-
-    const oldStatus = order.status;
+    const { status } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new AppError(404, 'Orden no encontrada');
     order.status = status;
-    if (adminNotes) order.adminNotes = adminNotes;
-
+    if (req.user?.id) order.updatedBy = new mongoose.Types.ObjectId(req.user.id);
     await order.save();
-
-    // Notificaciones según el nuevo estado:
-    // - confirmed: Email + WhatsApp (pero esto se maneja en confirmOrder)
-    // - preparing/shipped: Solo WhatsApp
-    // - completed: Email + WhatsApp
-    // - cancelled: Se maneja en cancelOrder
-
-    let message = '';
-    let whatsappURL: string | null = null;
-    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
-
-    if (status === 'confirmed') {
-      // Email + WhatsApp (email solo si el cliente lo proporcionó)
-      if (order.customer.email) {
-        emailService
-          .sendOrderConfirmationEmail(order, order.customer.email, order.customer.name)
-          .catch((err) => console.error('Error enviando email de confirmación:', err));
-      }
-      message = generateConfirmationMessage(order);
-    } else if (status === 'preparing' || status === 'shipped') {
-      // Solo WhatsApp, NO email
-      message = generateReadyForDeliveryMessage(order);
-    } else if (status === 'completed') {
-      // Email + WhatsApp (email solo si el cliente lo proporcionó)
-      if (order.customer.email) {
-        emailService
-          .sendOrderStatusUpdateEmail(order, order.customer.email, order.customer.name, status)
-          .catch((err) => console.error('Error enviando email de completado:', err));
-      }
-      message = generateCompletedMessage(order);
-    }
-
-    // Generar URL de WhatsApp si hay mensaje y teléfono
-    if (message && customerPhone) {
-      whatsappURL = `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Estado de orden actualizado exitosamente',
-      data: {
-        order,
-        whatsappMessage: message,
-        whatsappURL,
-      },
-    });
+    res.status(200).json({ success: true, data: { order } });
   }
 );
 
-// @desc    Cancelar orden (restaura stock automáticamente)
-// @route   PUT /api/orders/:id/cancel
-// @access  Private (admin, funcionario, owner)
+export const confirmOrder = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new AppError(404, 'Orden no encontrada');
+    order.status = 'confirmed';
+    await order.save();
+    res.status(200).json({ success: true, data: { order } });
+  }
+);
+
 export const cancelOrder = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { cancellationReason } = req.body;
-    const { id } = req.params;
-
-    const order = await Order.findById(id);
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
-    // Verificar permisos
-    if (req.user) {
-      const isOwner = order.customer.user?.toString() === req.user.id;
-      const isAdminOrFuncionario = ['admin', 'funcionario'].includes(req.user.role);
-
-      if (!isOwner && !isAdminOrFuncionario) {
-        throw new AppError(403, 'No tienes permisos para cancelar esta orden');
-      }
-    } else {
-      throw new AppError(401, 'Usuario no autenticado');
-    }
-
-    // No permitir cancelar orden ya completada
-    if (order.status === 'completed') {
-      throw new AppError(400, 'No se puede cancelar una orden completada');
-    }
-
-    // No permitir cancelar orden ya cancelada
-    if (order.status === 'cancelled') {
-      throw new AppError(400, 'La orden ya está cancelada');
-    }
-
+    const { reason } = req.body || {};
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new AppError(404, 'Orden no encontrada');
     order.status = 'cancelled';
-    order.cancelledBy = req.user?.id as any;
-    order.cancellationReason = cancellationReason;
-
-    // El pre-save hook restaurará el stock automáticamente
+    order.cancellationReason = reason;
+    if (req.user?.id) order.cancelledBy = new mongoose.Types.ObjectId(req.user.id);
     await order.save();
-
-    // Al cancelar: Email + WhatsApp
-    // Enviar email de cancelación (no bloqueante, solo si hay email)
-    if (order.customer.email) {
-      emailService
-        .sendOrderCancellationEmail(order, order.customer.email, order.customer.name)
-        .catch((err) => console.error('Error enviando email de cancelación:', err));
-    }
-
-    // Generar mensaje y URL de WhatsApp
-    const message = generateCancellationMessage(order);
-    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
-    const whatsappURL = customerPhone
-      ? `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`
-      : null;
-
-    res.status(200).json({
-      success: true,
-      message: 'Orden cancelada exitosamente',
-      data: {
-        order,
-        whatsappMessage: message,
-        whatsappURL,
-      },
-    });
+    res.status(200).json({ success: true, data: { order } });
   }
 );
 
-// @desc    Marcar WhatsApp como enviado
-// @route   PUT /api/orders/:id/whatsapp-sent
-// @access  Private (admin, funcionario)
 export const markWhatsAppSent = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { id } = req.params;
-    const { messageId } = req.body;
-
-    const order = await Order.findById(id);
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new AppError(404, 'Orden no encontrada');
     order.whatsappSent = true;
     order.whatsappSentAt = new Date();
-
-    if (messageId) {
-      order.whatsappMessageId = messageId;
-    }
-
     await order.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'WhatsApp marcado como enviado',
-      data: { order },
-    });
+    res.status(200).json({ success: true, data: { order } });
   }
 );
 
-// @desc    Obtener estadísticas de órdenes
-// @route   GET /api/orders/stats
-// @access  Private (admin, funcionario)
 export const getOrderStats = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { startDate, endDate } = req.query as any;
-
-    const start = startDate ? new Date(startDate) : undefined;
-    const end = endDate ? new Date(endDate) : undefined;
-
-    const stats = await Order.getStats(start, end);
-
-    res.status(200).json({
-      success: true,
-      data: { stats },
-    });
+  async (_req: AuthRequest, res: Response<ApiResponse>) => {
+    const stats = await Order.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 }, total: { $sum: '$total' } } },
+    ]);
+    res.status(200).json({ success: true, data: { stats } });
   }
 );
 
-// @desc    Validar carrito con precios del servidor (anti-fraude)
-// @route   POST /api/orders/validate-cart
-// @access  Public
-export const validateCart = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { items } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      throw new AppError(400, 'El carrito está vacío');
-    }
-
-    // Preparar items para el servicio de descuentos
-    const cartItems = items.map((item: any) => ({
-      variantId: item.variantId,
-      quantity: item.quantity,
-    }));
-
-    // Calcular precios con descuentos usando el servicio del backend
-    const calculatedItems = await applyDiscountToCart(cartItems);
-
-    // Comparar con los precios que envió el frontend
-    const discrepancies = [];
-    let hasDiscrepancy = false;
-
-    for (let i = 0; i < items.length; i++) {
-      const frontendItem = items[i];
-      const serverItem = calculatedItems[i];
-
-      // Comparar precio unitario final
-      if (Math.round(frontendItem.finalPrice) !== Math.round(serverItem.finalPricePerUnit)) {
-        hasDiscrepancy = true;
-        discrepancies.push({
-          variantId: frontendItem.variantId,
-          frontend: {
-            finalPrice: frontendItem.finalPrice,
-            subtotal: frontendItem.subtotal,
-          },
-          server: {
-            finalPrice: serverItem.finalPricePerUnit,
-            subtotal: serverItem.subtotal,
-          },
-        });
-      }
-    }
-
-    // Si hay discrepancias, retornar error con los precios correctos
-    if (hasDiscrepancy) {
-      return res.status(400).json({
-        success: false,
-        message: 'Los precios del carrito no coinciden con los del servidor',
-        data: {
-          valid: false,
-          discrepancies,
-          serverPrices: calculatedItems.map((item) => ({
-            variantId: item.variantId,
-            quantity: item.quantity,
-            originalPrice: item.originalPrice,
-            finalPricePerUnit: item.finalPricePerUnit,
-            totalDiscount: item.totalDiscount,
-            subtotal: item.subtotal,
-          })),
-        },
-      });
-    }
-
-    // Todo correcto
-    return res.status(200).json({
-      success: true,
-      message: 'Carrito validado correctamente',
-      data: {
-        valid: true,
-        items: calculatedItems.map((item) => ({
-          variantId: item.variantId,
-          quantity: item.quantity,
-          originalPrice: item.originalPrice,
-          finalPricePerUnit: item.finalPricePerUnit,
-          totalDiscount: item.totalDiscount,
-          subtotal: item.subtotal,
-        })),
-      },
-    });
-  }
-);
-
-// @desc    Editar items de orden (agregar, quitar, cambiar cantidades)
-// @route   PUT /api/orders/:id/items
-// @access  Private (admin, funcionario)
 export const editOrderItems = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { items, adminNotes } = req.body;
-    const { id } = req.params;
-
-    // Buscar orden
-    const order = await Order.findById(id);
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
-    // Validar que la orden esté en un estado editable
-    const editableStates = ['pending_whatsapp', 'confirmed', 'preparing'];
-    if (!editableStates.includes(order.status)) {
-      throw new AppError(
-        400,
-        `No se puede editar una orden en estado "${order.status}". Solo se pueden editar órdenes en estados: pending_whatsapp, confirmed, preparing`
-      );
-    }
-
-    // Preparar items con descuentos aplicados
-    const cartItems = items.map((item: any) => ({
-      variantId: item.variantId,
-      quantity: item.quantity,
-    }));
-
-    // Aplicar descuentos automáticamente a los nuevos items
-    const itemsWithDiscounts = await applyDiscountToCart(cartItems);
-
-    // Construir nuevos items de la orden con snapshots
-    const newOrderItems = await Promise.all(
-      itemsWithDiscounts.map(async (item) => {
-        const variant = await ProductVariant.findById(item.variantId).populate(
-          'parentProduct',
-          'name'
-        );
-
-        if (!variant) {
-          throw new AppError(404, `Variante ${item.variantId} no encontrada`);
-        }
-
-        // Crear snapshot de la variante
-        return {
-          variant: variant._id,
-          variantSnapshot: {
-            sku: variant.sku,
-            name: variant.name,
-            price: item.originalPrice,
-            attributes: variant.attributes as any,
-            image: variant.images[0] || '',
-          },
-          quantity: item.quantity,
-          pricePerUnit: item.finalPricePerUnit,
-          discount: item.totalDiscount,
-          subtotal: item.subtotal,
-        };
-      })
-    );
-
-    // Actualizar items de la orden directamente (sin stock tracking)
-    // Actualizar items de la orden
-    order.items = newOrderItems as any;
-
-    // Recalcular totales
-    const subtotal = newOrderItems.reduce((sum, item) => sum + item.subtotal, 0);
-    const totalDiscount = newOrderItems.reduce((sum, item) => sum + item.discount, 0);
-
+    const { items } = req.body as { items: CartItemInput[] };
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new AppError(404, 'Orden no encontrada');
+    const { orderItems, subtotal, totalDiscount } = await buildOrderItems(items);
+    order.items = orderItems;
     order.subtotal = subtotal;
     order.totalDiscount = totalDiscount;
-    order.total = subtotal + order.shippingCost;
-
-    // Agregar notas del admin si se proporcionaron
-    if (adminNotes) {
-      order.adminNotes = adminNotes;
-    }
-
-    // Registrar quién actualizó la orden
-    if (req.user) {
-      order.updatedBy = req.user.id as any;
-    }
-
-    // Guardar orden
+    order.total = subtotal - totalDiscount + (order.shippingCost || 0);
+    if (req.user?.id) order.updatedBy = new mongoose.Types.ObjectId(req.user.id);
     await order.save();
-
-    // Al editar items: Email + WhatsApp
-    // Enviar email con productos actualizados (no bloqueante, solo si hay email)
-    if (order.customer.email) {
-      emailService
-        .sendOrderEditedEmail(order, order.customer.email, order.customer.name)
-        .catch((err) => console.error('Error enviando email de edición:', err));
-    }
-
-    // Generar mensaje y URL de WhatsApp
-    const message = generateOrderEditedMessage(order);
-    const customerPhone = order.customer.phone?.replace(/\D/g, '') || '';
-    const whatsappURL = customerPhone
-      ? `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`
-      : null;
-
-    res.status(200).json({
-      success: true,
-      message: 'Orden actualizada exitosamente',
-      data: {
-        order,
-        whatsappMessage: message,
-        whatsappURL,
-      },
-    });
+    res.status(200).json({ success: true, data: { order } });
   }
 );
 
-// @desc    Actualizar costo de envío de una orden
-// @route   PUT /api/orders/:id/shipping
-// @access  Private (admin, funcionario)
 export const updateShippingCost = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { id } = req.params;
     const { shippingCost } = req.body;
-
-    if (!req.user) {
-      throw new AppError(401, 'Usuario no autenticado');
-    }
-
-    // Validar que shippingCost sea un número válido
-    if (typeof shippingCost !== 'number' || shippingCost < 0) {
-      throw new AppError(400, 'Costo de envío inválido');
-    }
-
-    const order = await Order.findById(id);
-
-    if (!order) {
-      throw new AppError(404, 'Orden no encontrada');
-    }
-
-    // No se puede modificar órdenes completadas o canceladas
-    if (order.status === 'completed' || order.status === 'cancelled') {
-      throw new AppError(400, 'No se puede modificar el costo de envío de una orden completada o cancelada');
-    }
-
-    // Actualizar costo de envío
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new AppError(404, 'Orden no encontrada');
     order.shippingCost = shippingCost;
-    order.total = order.subtotal + shippingCost;
-
+    order.total = order.subtotal - order.totalDiscount + shippingCost;
     await order.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Costo de envío actualizado exitosamente',
-      data: order,
-    });
+    res.status(200).json({ success: true, data: { order } });
   }
 );

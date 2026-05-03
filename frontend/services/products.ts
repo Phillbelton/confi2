@@ -1,91 +1,53 @@
 import { api } from '@/lib/axios';
-import type {
-  ProductParent,
-  ProductVariant,
-  ProductQueryParams,
-  ApiPaginatedResponse,
-  ApiResponse,
-  TieredDiscountPreview,
-} from '@/types';
+import type { Product, ApiResponse } from '@/types';
 
-// ============================================================================
-// PRODUCT PARENT ENDPOINTS
-// ============================================================================
+export interface ProductQueryParams {
+  page?: number;
+  limit?: number;
+  category?: string;
+  categories?: string;
+  subcategory?: string;
+  brand?: string;
+  brands?: string;
+  format?: string;
+  flavor?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  active?: 'true' | 'false' | 'all';
+  featured?: boolean;
+  onSale?: boolean;
+  search?: string;
+  collection?: string;
+  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'newest' | 'oldest' | 'popular';
+}
 
 export const productService = {
-  // Get all products with filters and pagination
   getProducts: async (params?: ProductQueryParams) => {
-    const { data } = await api.get<ApiResponse<{ data: ProductParent[], pagination: any }>>(
-      '/products/parents',
+    const { data } = await api.get<ApiResponse<{ data: Product[]; pagination: any }>>(
+      '/products',
       { params }
     );
-    // Backend returns { success: true, data: { data: [...], pagination: {...} } }
-    // We need to unwrap to return just { data: [...], pagination: {...} }
-    return data.data as any;
+    return data.data as { data: Product[]; pagination: any };
   },
-
-  // Get featured products
-  getFeaturedProducts: async () => {
-    const { data } = await api.get<ApiResponse<ProductParent[]>>(
-      '/products/parents/featured'
+  getFeaturedProducts: async (limit = 8) => {
+    const { data } = await api.get<ApiResponse<{ data: Product[] }>>(
+      '/products/featured',
+      { params: { limit } }
     );
-    return data;
+    return data.data;
   },
-
-  // Get single product by ID
   getProductById: async (id: string) => {
-    const { data } = await api.get<ApiResponse<ProductParent>>(
-      `/products/parents/${id}`
-    );
-    return data;
+    const { data } = await api.get<ApiResponse<{ product: Product }>>(`/products/${id}`);
+    return data.data;
   },
-
-  // Get single product by slug
   getProductBySlug: async (slug: string) => {
-    const { data } = await api.get<ApiResponse<ProductParent>>(
-      `/products/parents/slug/${slug}`
-    );
-    return data;
+    const { data } = await api.get<ApiResponse<{ product: Product }>>(`/products/slug/${slug}`);
+    return data.data;
   },
-
-  // Get product variants
-  getProductVariants: async (parentId: string, includeInactive = false) => {
-    const params = includeInactive ? '?active=all' : '';
-    const { data } = await api.get<ApiResponse<ProductVariant[]>>(
-      `/products/parents/${parentId}/variants${params}`
-    );
-    return data;
+  getFacets: async (params?: any) => {
+    const { data } = await api.get<ApiResponse<any>>('/products/facets', { params });
+    return data.data;
   },
-
-  // ============================================================================
-  // VARIANT ENDPOINTS
-  // ============================================================================
-
-  // Get variant by ID
-  getVariantById: async (variantId: string) => {
-    const { data } = await api.get<ApiResponse<ProductVariant>>(
-      `/products/variants/${variantId}`
-    );
-    return data;
-  },
-
-  // Get variant by SKU
-  getVariantBySku: async (sku: string) => {
-    const { data } = await api.get<ApiResponse<ProductVariant>>(
-      `/products/variants/sku/${sku}`
-    );
-    return data;
-  },
-
-  // Get discount preview for variant
-  getDiscountPreview: async (variantId: string, quantity: number) => {
-    const { data } = await api.get<ApiResponse<TieredDiscountPreview>>(
-      `/products/variants/${variantId}/discount-preview`,
-      { params: { quantity } }
-    );
-    return data;
-  },
-
 };
 
 export default productService;

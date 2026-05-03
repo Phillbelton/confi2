@@ -1,11 +1,11 @@
 'use client';
 
 import { ProductCardM } from './ProductCardM';
-import type { ProductParent } from '@/types';
+import type { Product } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface ProductGridMProps {
-  products: ProductParent[];
+  products: Product[];
   isLoading?: boolean;
   className?: string;
 }
@@ -15,7 +15,7 @@ export function ProductGridM({ products, isLoading, className }: ProductGridMPro
     return (
       <div
         className={cn(
-          'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5',
+          'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 lg:px-8 xl:grid-cols-6',
           className
         )}
       >
@@ -41,12 +41,12 @@ export function ProductGridM({ products, isLoading, className }: ProductGridMPro
   return (
     <div
       className={cn(
-        'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5',
+        'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 lg:px-8 xl:grid-cols-6',
         className
       )}
     >
       {products.map((p) => (
-        <ProductCardM key={p._id} product={p} autoFetchVariants />
+        <ProductCardM key={p._id} product={p} />
       ))}
     </div>
   );

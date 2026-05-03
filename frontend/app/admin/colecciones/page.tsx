@@ -29,9 +29,11 @@ export default function ColeccionesPage() {
     update,
     deleteCollection,
     uploadImage,
+    reorder,
     isCreating,
     isUpdating,
     isDeleting,
+    isReordering,
     isUploadingImage,
   } = useCollectionOperations();
 
@@ -115,7 +117,9 @@ export default function ColeccionesPage() {
           collections={collections}
           onEdit={handleOpenDialog}
           onDelete={(id) => deleteCollection(id)}
+          onReorder={(items) => reorder(items)}
           isDeleting={isDeleting}
+          isReordering={isReordering}
         />
       )}
 
