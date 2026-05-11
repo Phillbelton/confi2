@@ -14,6 +14,7 @@ import {
   Activity,
   ChevronLeft,
   Sparkles,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -69,6 +70,12 @@ const menuItems = [
     href: '/admin/reportes',
     icon: FileText,
     roles: ['admin'] as UserRole[], // Solo admin
+  },
+  {
+    title: 'Importar catálogo',
+    href: '/admin/importar',
+    icon: Upload,
+    roles: ['admin'] as UserRole[],
   },
   {
     title: 'Auditoría',
