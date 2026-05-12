@@ -94,20 +94,55 @@ async function getOrCreateCategory(
   return cat._id as mongoose.Types.ObjectId;
 }
 
+/**
+ * Resuelve la cadena de categorías para un producto.
+ *
+ * Acepta DOS formatos:
+ *
+ *   A) Path en una sola columna:
+ *      category = "Confites > Caramelos > Masticables"
+ *      (separador ">", con o sin espacios alrededor)
+ *
+ *   B) Columnas separadas (legacy):
+ *      category = "Confites"
+ *      subcategory = "Caramelos"
+ *      subsubcategory = "Masticables"
+ *
+ * Si category contiene ">" se usa formato A y se ignoran sub/subsub.
+ * Devuelve el ObjectId de la HOJA (nivel más profundo presente).
+ * Auto-crea cada nivel si no existe (lookup por name+parent, robusto a
+ * slug-collisions globales).
+ */
 async function resolveCategoryChain(
   cat: string,
   sub: string,
   subsub: string,
   reportCounters: { categoriesCreated: number }
 ): Promise<mongoose.Types.ObjectId> {
-  // Cadena: cat → sub → subsub. Devuelve el ID de la HOJA (el nivel más profundo presente).
   if (!cat) throw new Error('category vacío');
-  const l1 = await getOrCreateCategory(cat, null, reportCounters);
-  if (!sub) return l1;
-  const l2 = await getOrCreateCategory(sub, l1, reportCounters);
-  if (!subsub) return l2;
-  const l3 = await getOrCreateCategory(subsub, l2, reportCounters);
-  return l3;
+
+  let segments: string[];
+  if (cat.includes('>')) {
+    // Formato A: path en una columna
+    segments = cat.split('>').map((s) => s.trim()).filter(Boolean);
+    if (segments.length === 0) throw new Error('category path inválido');
+    if (segments.length > 3) {
+      throw new Error(
+        `Máximo 3 niveles permitidos; recibió ${segments.length}: "${cat}"`
+      );
+    }
+  } else {
+    // Formato B: columnas separadas
+    segments = [cat, sub, subsub].filter(Boolean);
+  }
+
+  let parentId: mongoose.Types.ObjectId | null = null;
+  let leafId: mongoose.Types.ObjectId = null as any;
+  for (const segment of segments) {
+    leafId = await getOrCreateCategory(segment, parentId, reportCounters);
+    parentId = leafId;
+  }
+  return leafId;
 }
 
 async function getOrCreateBrand(

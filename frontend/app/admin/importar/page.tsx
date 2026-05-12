@@ -21,7 +21,8 @@ import { Label } from '@/components/ui/label';
  * Endpoint: POST /api/products/import-quelita-excel
  *
  * Espera un Excel con encabezados nombrados:
- *   barcode, name, description, category, subcategory, subsubcategory,
+ *   barcode, name, description,
+ *   category (con notación path: "Confites > Caramelos > Masticables"),
  *   brand, provider, flavor, format_value, format_unit,
  *   unitPrice, saleUnit_type, saleUnit_quantity,
  *   tier1_*, tier2_*, tags, featured, active, image_url
@@ -101,7 +102,7 @@ export default function ImportPage() {
         fd,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
-          timeout: 180000,
+          timeout: 600000, // 10 min — Atlas latency × N round-trips por producto
         }
       );
       setReport(res.data.data);
@@ -231,7 +232,8 @@ export default function ImportPage() {
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
           <p className="mt-3 text-sm">Importando…</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Esto puede tardar 30-60 segundos dependiendo del tamaño del Excel.
+            Esto puede tardar 5-10 minutos para Excel grandes (MongoDB Atlas
+            tiene latencia por cada producto). No cierres esta pestaña.
           </p>
         </div>
       )}
