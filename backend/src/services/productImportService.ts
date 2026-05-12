@@ -218,66 +218,123 @@ export async function runProductImport(
 
       const totalEmbalaje = cajas > 0 && uni > 0 ? cajas * uni : 0;
 
-      // Determinar unitPrice y saleUnit
+      // Determinar unitPrice y saleUnit.
+      //
+      // Heurística confitería (J = UNI por display, I = CAJAS por embalaje):
+      //   J > 1   → producto se vende como DISPLAY (bolsa/paquete de J unidades)
+      //   J = 1   → producto se vende como UNIDAD (botella, bandeja individual)
+      //
+      // unitPrice = precio de UNA cosa vendible (display o unidad).
+      // Cae con cascada V → T → R/I → X según disponibilidad de precios.
       let unitPrice = 0;
       let saleUnit: { type: 'unidad' | 'display' | 'embalaje'; quantity: number } = {
         type: 'unidad',
         quantity: 1,
       };
 
-      if (pUnit > 0) {
-        unitPrice = Math.round(pUnit);
-        saleUnit = { type: 'unidad', quantity: 1 };
-      } else if (pDisplayDet > 0 && uni > 0) {
-        unitPrice = Math.round(pDisplayDet / uni);
-        saleUnit = { type: 'display', quantity: Math.round(uni) };
-      } else if (pEmbalaje > 0 && totalEmbalaje > 0) {
-        unitPrice = Math.round(pEmbalaje / totalEmbalaje);
-        saleUnit = { type: 'embalaje', quantity: Math.round(totalEmbalaje) };
+      const uniInt = Math.max(1, Math.round(uni));
+      const cajasInt = Math.max(1, Math.round(cajas));
+      const isDisplay = uniInt > 1;
+
+      // Precio de 1 display, derivado en orden de preferencia
+      const displayPrice =
+        pDisplayDet > 0
+          ? pDisplayDet
+          : pDisplayMay > 0
+          ? pDisplayMay
+          : pEmbalaje > 0 && cajasInt > 0
+          ? Math.round(pEmbalaje / cajasInt)
+          : 0;
+
+      if (isDisplay) {
+        if (displayPrice > 0) {
+          unitPrice = Math.round(displayPrice);
+          saleUnit = { type: 'display', quantity: uniInt };
+        } else if (pEmbalaje > 0 && totalEmbalaje > 0) {
+          unitPrice = Math.round(pEmbalaje / totalEmbalaje);
+          saleUnit = { type: 'embalaje', quantity: Math.round(totalEmbalaje) };
+        } else {
+          report.errors.push({
+            row,
+            barcode,
+            message: 'Producto display sin precios cargados (V/T/R todos en 0)',
+          });
+          continue;
+        }
       } else {
-        report.errors.push({
-          row,
-          barcode,
-          message: 'Sin precios definidos (unitario/display/embalaje todos en 0)',
-        });
-        continue;
+        // J = 1 → unidad. Preferir X (col unitario) si existe, sino V (= precio
+        // del "display" que en este caso es la unidad misma, ej. botella 2L).
+        if (pUnit > 0) {
+          unitPrice = Math.round(pUnit);
+        } else if (displayPrice > 0) {
+          unitPrice = Math.round(displayPrice);
+        } else if (pEmbalaje > 0 && totalEmbalaje > 0) {
+          unitPrice = Math.round(pEmbalaje / totalEmbalaje);
+        } else {
+          report.errors.push({
+            row,
+            barcode,
+            message: 'Producto unidad sin precios cargados (X/V/T/R todos en 0)',
+          });
+          continue;
+        }
+        saleUnit = { type: 'unidad', quantity: 1 };
       }
 
-      // Construir tiers desde los niveles que NO eligió el saleUnit
+      // Construir tiers: descuentos por volumen expresados como N × saleUnit.
+      // Si saleUnit es display, el tier "comprando 2+ displays" usa precio mayorista.
+      // Si saleUnit es unidad, los tiers usan los precios escalonados sobre unidades base.
       const tiers: Array<{ minQuantity: number; pricePerUnit: number; label?: string }> = [];
 
-      // Display detalle (si hay precio unitario también, sino ya es saleUnit)
-      if (saleUnit.type === 'unidad' && pDisplayDet > 0 && uni > 0) {
-        const ppu = Math.round(pDisplayDet / uni);
-        if (ppu < unitPrice) {
+      if (saleUnit.type === 'display') {
+        // Tier 1: precio mayorista del display (T < V) — comprando 2+ displays
+        if (pDisplayMay > 0 && pDisplayMay < unitPrice) {
           tiers.push({
-            minQuantity: Math.round(uni),
-            pricePerUnit: ppu,
-            label: `Display × ${Math.round(uni)}`,
+            minQuantity: 2,
+            pricePerUnit: Math.round(pDisplayMay),
+            label: 'Mayorista (2+ displays)',
           });
         }
-      }
-      // Display mayor (≥2 displays)
-      if (pDisplayMay > 0 && uni > 0 && pDisplayMay !== pDisplayDet) {
-        const ppu = Math.round(pDisplayMay / uni);
-        const minQ = Math.round(uni) * 2;
-        if (ppu < unitPrice && tiers.every((t) => t.minQuantity !== minQ)) {
+        // Tier 2: caja completa (R/I = precio del display dentro de la caja)
+        if (pEmbalaje > 0 && cajasInt > 0) {
+          const ppuCaja = Math.round(pEmbalaje / cajasInt);
+          if (ppuCaja < unitPrice && tiers.every((t) => t.minQuantity !== cajasInt)) {
+            tiers.push({
+              minQuantity: cajasInt,
+              pricePerUnit: ppuCaja,
+              label: `Caja completa (${cajasInt} displays)`,
+            });
+          }
+        }
+      } else {
+        // saleUnit unidad: aplicar descuentos cuando se compran "displays" enteros
+        // como múltiplos de unidades base (ej. botellas a precio mayorista o caja).
+        if (pDisplayDet > 0 && pDisplayDet < unitPrice) {
           tiers.push({
-            minQuantity: minQ,
-            pricePerUnit: ppu,
-            label: 'Display × mayor',
+            minQuantity: cajasInt > 1 ? cajasInt : 6,
+            pricePerUnit: Math.round(pDisplayDet),
+            label: 'Pack',
           });
         }
-      }
-      // Embalaje
-      if (saleUnit.type !== 'embalaje' && pEmbalaje > 0 && totalEmbalaje > 0) {
-        const ppu = Math.round(pEmbalaje / totalEmbalaje);
-        if (ppu < unitPrice && tiers.every((t) => t.minQuantity !== totalEmbalaje)) {
-          tiers.push({
-            minQuantity: Math.round(totalEmbalaje),
-            pricePerUnit: ppu,
-            label: `Embalaje × ${Math.round(totalEmbalaje)}`,
-          });
+        if (pDisplayMay > 0 && pDisplayMay < unitPrice && pDisplayMay !== pDisplayDet) {
+          const minQ = Math.max(2, cajasInt > 1 ? cajasInt * 2 : 12);
+          if (tiers.every((t) => t.minQuantity !== minQ)) {
+            tiers.push({
+              minQuantity: minQ,
+              pricePerUnit: Math.round(pDisplayMay),
+              label: 'Mayorista',
+            });
+          }
+        }
+        if (pEmbalaje > 0 && totalEmbalaje > 0) {
+          const ppu = Math.round(pEmbalaje / totalEmbalaje);
+          if (ppu < unitPrice && tiers.every((t) => t.minQuantity !== totalEmbalaje)) {
+            tiers.push({
+              minQuantity: Math.round(totalEmbalaje),
+              pricePerUnit: ppu,
+              label: `Caja × ${Math.round(totalEmbalaje)}`,
+            });
+          }
         }
       }
 
