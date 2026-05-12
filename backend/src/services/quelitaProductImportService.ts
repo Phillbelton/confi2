@@ -78,9 +78,11 @@ async function getOrCreateCategory(
   parentId: mongoose.Types.ObjectId | null,
   reportCounters: { categoriesCreated: number }
 ): Promise<mongoose.Types.ObjectId> {
-  const slug = slugifyName(name);
-  // Buscar por slug + parent (un mismo slug puede existir en otro padre)
-  let cat = await Category.findOne({ slug, parent: parentId || null });
+  // Lookup por (name, parent): más robusto que slug porque el pre-save hook
+  // de Category añade timestamp-suffix al slug cuando hay colisión global.
+  // Si buscáramos por slug puro nunca encontraríamos las categorías ya creadas
+  // con suffix, y crearíamos duplicados infinitos.
+  let cat = await Category.findOne({ name, parent: parentId || null });
   if (!cat) {
     cat = await Category.create({
       name,
@@ -113,8 +115,8 @@ async function getOrCreateBrand(
   reportCounters: { brandsCreated: number }
 ): Promise<mongoose.Types.ObjectId | undefined> {
   if (!name || name.length < 2) return undefined;
-  const slug = slugifyName(name);
-  let brand = await Brand.findOne({ slug });
+  // Brand.name tiene unique:true en el schema; lookup case-insensitive por name
+  let brand = await Brand.findOne({ name });
   if (!brand) {
     brand = await Brand.create({ name, active: true });
     reportCounters.brandsCreated += 1;
@@ -127,8 +129,7 @@ async function getOrCreateFlavor(
   reportCounters: { flavorsCreated: number }
 ): Promise<mongoose.Types.ObjectId | undefined> {
   if (!name || name.length < 2) return undefined;
-  const slug = slugifyName(name);
-  let flavor = await Flavor.findOne({ slug });
+  let flavor = await Flavor.findOne({ name });
   if (!flavor) {
     flavor = await Flavor.create({ name, active: true });
     reportCounters.flavorsCreated += 1;
