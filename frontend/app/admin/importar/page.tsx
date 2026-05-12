@@ -16,16 +16,20 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
 /**
- * Página de import del Excel Bicom.
+ * Página de import — formato Quelita-nativo.
  *
- * Llama directamente al endpoint que ya existe en backend:
- *   POST /api/products/import-excel
+ * Endpoint: POST /api/products/import-quelita-excel
+ *
+ * Espera un Excel con encabezados nombrados:
+ *   barcode, name, description, category, subcategory, subsubcategory,
+ *   brand, provider, flavor, format_value, format_unit,
+ *   unitPrice, saleUnit_type, saleUnit_quantity,
+ *   tier1_*, tier2_*, tags, featured, active, image_url
  *
  * Body multipart:
  *   - file: el .xlsx
- *   - limit: cantidad máxima de productos (0 = todos)
- *   - wipeTaxonomy: si 'true' borra TODO antes de importar (Product, Brand,
- *     Category, Format, Flavor, Tag, Collection). PELIGROSO.
+ *   - limit: cantidad máxima de productos (0 = todos los del archivo)
+ *   - wipeTaxonomy: si 'true' borra todo antes de importar. PELIGROSO.
  */
 
 interface ImportError {
@@ -37,6 +41,8 @@ interface ImportError {
 interface ImportReport {
   categoriesCreated: number;
   brandsCreated: number;
+  flavorsCreated: number;
+  formatsCreated: number;
   productsCreated: number;
   productsUpdated: number;
   errors: ImportError[];
@@ -91,7 +97,7 @@ export default function ImportPage() {
 
     try {
       const res = await adminApi.post<{ data: ImportReport }>(
-        '/products/import-excel',
+        '/products/import-quelita-excel',
         fd,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -123,8 +129,8 @@ export default function ImportPage() {
       <header>
         <h1 className="text-2xl font-semibold">Importar catálogo</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Sube el Excel mensual de Bicom (<code>BASE DATOS_YYYY_MM_MES.xlsx</code>).
-          Crea o actualiza productos, categorías, marcas y precios.
+          Sube un Excel con el formato Quelita-nativo. Crea o actualiza
+          productos, categorías (hasta 3 niveles), marcas, sabores y formatos.
         </p>
       </header>
 
@@ -250,12 +256,14 @@ export default function ImportPage() {
             <h2 className="text-xl font-semibold">Importación completada</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             {[
               { label: 'Productos creados', value: report.productsCreated },
               { label: 'Productos actualizados', value: report.productsUpdated },
-              { label: 'Categorías creadas', value: report.categoriesCreated },
-              { label: 'Marcas creadas', value: report.brandsCreated },
+              { label: 'Categorías', value: report.categoriesCreated },
+              { label: 'Marcas', value: report.brandsCreated },
+              { label: 'Sabores', value: report.flavorsCreated },
+              { label: 'Formatos', value: report.formatsCreated },
               { label: 'Errores', value: report.errors.length },
             ].map((c) => (
               <div key={c.label} className="border rounded-lg p-3 bg-card">

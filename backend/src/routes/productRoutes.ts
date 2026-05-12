@@ -28,12 +28,23 @@ router.get('/slug/:slug', validate(getProductBySlugSchema), productController.ge
 router.get('/:id', validate(getProductByIdSchema), productController.getProductById);
 
 // Bulk import desde Excel — solo admin
+// (Legacy) Formato Bicom — lee columnas por índice fijo
 router.post(
   '/import-excel',
   authenticate,
   authorize('admin'),
   productImportController.uploadExcelMiddleware,
   productImportController.importProductsFromExcel
+);
+
+// Formato Quelita-nativo — lee por nombre de columna, categorías 3 niveles,
+// auto-crea Flavor + Format + Brand + Category
+router.post(
+  '/import-quelita-excel',
+  authenticate,
+  authorize('admin'),
+  productImportController.uploadExcelMiddleware,
+  productImportController.importProductsFromQuelitaExcel
 );
 
 // Admin CRUD

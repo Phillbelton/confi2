@@ -3,6 +3,10 @@ import multer from 'multer';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { runProductImport, ImportReport } from '../services/productImportService';
+import {
+  runQuelitaProductImport,
+  QuelitaImportReport,
+} from '../services/quelitaProductImportService';
 import logger from '../config/logger';
 
 /**
@@ -77,6 +81,57 @@ export const importProductsFromExcel = asyncHandler(
     res.status(200).json({
       success: true,
       message: 'Importación completada',
+      data: report,
+    });
+  }
+);
+
+/**
+ * POST /api/products/import-quelita-excel
+ * Body multipart: { file: .xlsx, wipeTaxonomy?: 'true'|'false', limit?: '0' }
+ *
+ * Formato Quelita-nativo (NO Bicom). Lee columnas por NOMBRE:
+ *   barcode, name, description, category, subcategory, subsubcategory,
+ *   brand, provider, flavor, format_value, format_unit,
+ *   unitPrice, saleUnit_type, saleUnit_quantity,
+ *   tier1_minQty, tier1_price, tier1_label,
+ *   tier2_minQty, tier2_price, tier2_label,
+ *   tags, featured, active, image_url.
+ *
+ * Auto-crea: Category (hasta 3 niveles anidados), Brand, Flavor, Format.
+ * Solo admin.
+ */
+export const importProductsFromQuelitaExcel = asyncHandler(
+  async (
+    req: AuthRequest,
+    res: Response<ApiResponse<QuelitaImportReport>>
+  ) => {
+    const file = req.file;
+    if (!file) {
+      throw new AppError(400, 'Archivo .xlsx requerido en el campo "file"');
+    }
+
+    const wipeTaxonomy = String(req.body.wipeTaxonomy) === 'true';
+    const limitRaw = req.body.limit ? parseInt(String(req.body.limit), 10) : 0;
+    const limit = Number.isFinite(limitRaw) && limitRaw >= 0 ? limitRaw : 0;
+
+    logger.info('[import-quelita] Procesando upload', {
+      file: file.originalname,
+      size: file.size,
+      wipeTaxonomy,
+      limit,
+      userId: req.user?.id,
+    });
+
+    const report = await runQuelitaProductImport(file.buffer, {
+      wipeTaxonomy,
+      limit,
+      userId: req.user?.id,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Importación Quelita completada',
       data: report,
     });
   }
