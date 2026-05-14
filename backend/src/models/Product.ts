@@ -38,6 +38,8 @@ export interface IFixedDiscount {
 
 export interface IProduct extends Document {
   _id: mongoose.Types.ObjectId;
+  /** SKU interno de Quelita, identidad primaria. Formato QU-XXXXXX. Auto-generado. */
+  sku: string;
   name: string;
   slug: string;
   description: string;
@@ -45,6 +47,8 @@ export interface IProduct extends Document {
   categories: mongoose.Types.ObjectId[];
   format?: mongoose.Types.ObjectId;
   flavor?: mongoose.Types.ObjectId;
+  /** Código de barras del fabricante (EAN-13) o código POS. Puede repetirse,
+   *  puede estar vacío. NO se usa como identidad primaria. */
   barcode?: string;
   provider?: string;
 
@@ -99,6 +103,17 @@ const tierSubSchema = new Schema<ITier>(
 
 const productSchema = new Schema<IProduct>(
   {
+    sku: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      // unique + sparse: garantiza unicidad pero permite docs sin sku temporalmente
+      // (el pre-save hook lo asigna en isNew si falta). Sparse evita conflicto cuando
+      // hay docs legacy sin sku.
+      unique: true,
+      sparse: true,
+      index: true,
+    },
     name: {
       type: String,
       required: [true, 'El nombre del producto es requerido'],
@@ -210,6 +225,32 @@ productSchema.virtual('hasActiveDiscount').get(function () {
 // Virtual: hasActiveTieredDiscount
 productSchema.virtual('hasActiveTieredDiscount').get(function () {
   return Array.isArray(this.tiers) && this.tiers.length > 0;
+});
+
+// Pre-save: auto-generar SKU si falta (formato QU-XXXXXX).
+// Identidad primaria estable; no cambia aunque el admin edite el nombre.
+productSchema.pre('save', async function (next) {
+  if (this.isNew && !this.sku) {
+    try {
+      // Buscar el último QU-N para el siguiente número.
+      // Race condition aceptable para uso single-admin (importer es secuencial).
+      const last = (await mongoose.models.Product.findOne({
+        sku: { $regex: /^QU-\d+$/ },
+      })
+        .sort({ sku: -1 })
+        .select('sku')
+        .lean()) as { sku?: string } | null;
+      let nextNum = 1;
+      if (last?.sku) {
+        const parsed = parseInt(last.sku.replace('QU-', ''), 10);
+        if (Number.isFinite(parsed)) nextNum = parsed + 1;
+      }
+      this.sku = `QU-${String(nextNum).padStart(6, '0')}`;
+    } catch (err) {
+      return next(err as Error);
+    }
+  }
+  next();
 });
 
 // Pre-save: generar slug

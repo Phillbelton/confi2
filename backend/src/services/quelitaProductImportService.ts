@@ -15,10 +15,11 @@ import logger from '../config/logger';
  * agregar campos sin romper el parser.
  *
  * Columnas reconocidas:
- *   barcode, name, description,
- *   category, subcategory, subsubcategory,
- *   brand, provider,
- *   flavor, format_value, format_unit,
+ *   sku (identidad primaria, formato QU-XXXXXX, auto-gen si falta),
+ *   barcode (informativo, puede duplicarse, no es llave),
+ *   name, description,
+ *   category (path con '>'), [subcategory, subsubcategory legacy],
+ *   brand, provider, flavor, format_value, format_unit,
  *   unitPrice, saleUnit_type, saleUnit_quantity,
  *   tier1_minQty, tier1_price, tier1_label,
  *   tier2_minQty, tier2_price, tier2_label,
@@ -316,16 +317,21 @@ export async function runQuelitaProductImport(
       const finalDescription =
         description.length >= 10 ? description : `${name}. ${cat}.`.padEnd(10, ' ');
 
-      // Upsert por barcode si existe, sino por (name + brand)
+      // Upsert por sku (identidad primaria). Si no viene sku, fallback a name+brand.
+      // barcode YA NO se usa para upsert (puede estar duplicado/vacío en el Excel).
+      const sku = norm(r.sku).toUpperCase();
       let product;
-      if (barcode) {
-        product = await Product.findOne({ barcode });
+      if (sku) {
+        product = await Product.findOne({ sku });
       }
       if (!product && brandId) {
         product = await Product.findOne({ name, brand: brandId });
       }
 
       const productData: any = {
+        // sku se incluye solo si vino en el Excel; sino el pre-save hook
+        // del modelo lo auto-genera al crear.
+        ...(sku ? { sku } : {}),
         name,
         description: finalDescription,
         categories: [categoryId],
