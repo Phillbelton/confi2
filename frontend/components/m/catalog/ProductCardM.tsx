@@ -10,8 +10,12 @@ import { getSafeImageUrl } from '@/lib/image-utils';
 import {
   effectiveUnitPrice,
   getBestDiscountPercent,
+  getDisplayTiers,
   hasAnyDiscount,
+  isPackagedSale,
   minQuantity,
+  presentationPrice,
+  presentationPriceSuffix,
   quantityStep,
 } from '@/lib/discountCalculator';
 import { SaleUnitBadge } from './SaleUnitBadge';
@@ -38,8 +42,40 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
 
   // Precio mostrado: a la cantidad mínima del producto
   const ppu = effectiveUnitPrice(product, Math.max(minQ, 1));
+  // Para display/embalaje mostramos el precio TOTAL del paquete; para el resto, ppu.
+  const shownPrice = presentationPrice(product, ppu);
+  const compareAtPrice = presentationPrice(product, product.unitPrice);
+  const isPackaged = isPackagedSale(product);
   const showFromHint = (product.tiers?.length || 0) > 0;
   const discountPercent = getBestDiscountPercent(product);
+
+  // Primer tier ordenado por minQuantity (el "salto" de ahorro más cercano)
+  const firstTier = getDisplayTiers(product)[0];
+  // Para producto display/embalaje, mostramos el precio del PAQUETE en el hint
+  // (no por unidad), congruente con el precio principal mostrado arriba.
+  const tierShownPrice = firstTier
+    ? presentationPrice(product, firstTier.pricePerUnit)
+    : 0;
+  // Cantidad mínima del tier en "presentaciones" (no en unidades base)
+  const tierShownQty = firstTier
+    ? Math.max(
+        1,
+        isPackaged
+          ? Math.ceil(firstTier.minQuantity / Math.max(product.saleUnit.quantity, 1))
+          : firstTier.minQuantity
+      )
+    : 0;
+  const tierUnitLabel = (() => {
+    if (!firstTier) return '';
+    switch (product.saleUnit.type) {
+      case 'display':
+        return tierShownQty === 1 ? 'display' : 'displays';
+      case 'embalaje':
+        return tierShownQty === 1 ? 'caja' : 'cajas';
+      default:
+        return tierShownQty === 1 ? 'unidad' : 'unidades';
+    }
+  })();
 
   // Pasar el contexto del catálogo origen al detalle como ?from=
   // (preserva categoría / subcategoría / colección para los breadcrumbs).
@@ -104,18 +140,24 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
               </span>
             )}
             <span className="text-base font-bold tabular-nums text-foreground">
-              ${Math.round(ppu).toLocaleString('es-CL')}
+              ${Math.round(shownPrice).toLocaleString('es-CL')}
             </span>
-            {ppu < product.unitPrice && (
+            {shownPrice < compareAtPrice && (
               <span className="text-[11px] text-muted-foreground line-through tabular-nums">
-                ${Math.round(product.unitPrice).toLocaleString('es-CL')}
+                ${Math.round(compareAtPrice).toLocaleString('es-CL')}
               </span>
             )}
           </div>
 
-          {showFromHint && (
+          {isPackaged && (
+            <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
+              {presentationPriceSuffix(product)} · ${Math.round(ppu).toLocaleString('es-CL')}/u
+            </p>
+          )}
+
+          {showFromHint && firstTier && (
             <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold text-primary">
-              🎉 Hasta {discountPercent}% por mayor
+              🎉 {tierShownQty}+ {tierUnitLabel} a ${Math.round(tierShownPrice).toLocaleString('es-CL')} c/u
             </p>
           )}
 

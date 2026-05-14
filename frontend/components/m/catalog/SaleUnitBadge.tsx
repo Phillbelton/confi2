@@ -29,6 +29,12 @@ export function badgeText(type: SaleUnitType, qty: number): string {
  * Forma trapezoidal con número grande y texto pequeño debajo.
  */
 export function SaleUnitBadge({ saleUnit, className }: Props) {
+  // Para venta por unidad simple (qty=1) el badge no aporta info al cliente.
+  // Solo aparece cuando el producto se vende en otra presentación.
+  if (saleUnit.type === 'unidad' && saleUnit.quantity <= 1) {
+    return null;
+  }
+
   const text = badgeText(saleUnit.type, saleUnit.quantity);
   // Splitear: número | resto
   const match = text.match(/(\d+)\s*(.+)/);
