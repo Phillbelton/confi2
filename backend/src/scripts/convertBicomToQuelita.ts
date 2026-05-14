@@ -34,14 +34,17 @@ const COL = {
   PRECIO_DISPLAY_DETALLE: 21, PRECIO_UNITARIO: 23,
 };
 
+// Sabores reales (no marcas/tipos de producto). Conservador: ante la duda, vacío.
+// EXCLUIDOS deliberadamente: bilz, pap, cola, soda, citrus, blanco, marrón
+// (son tipos de producto o colores, no sabores).
 const FLAVORS = [
   'frutilla','limon','limón','naranja','frambuesa','mora','manzana','piña','pera',
   'durazno','uva','sandia','sandía','menta','mentol','chocolate','vainilla','caramelo',
   'mango','tutti-frutti','tutti frutti','cereza','cherry','coco','almendra','avellana',
-  'mani','maní','platano','plátano','melon','melón','tropical','frutal','acido','ácido',
+  'mani','maní','platano','plátano','melon','melón','tropical','frutal','ácido','acido',
   'queso','sal','crema y cebolla','picante','barbacoa','ranch','jamon','jamón',
-  'leche condensada','manjar','dulce de leche','bitter','blanco','marrón',
-  'granada','citrus','bilz','pap','cola','soda',
+  'leche condensada','manjar','dulce de leche','bitter','granada',
+  'chocolate blanco','chocolate bitter','chocolate amargo',
 ];
 
 const GROUP_TEMPLATES: Record<string, string> = {
@@ -58,6 +61,137 @@ const GROUP_TEMPLATES: Record<string, string> = {
   GROW: 'Producto grow', CHICHE: 'Chiche',
   CONFITERIA: 'Confites', OTRO: 'Producto', OTROS: 'Producto',
 };
+
+/**
+ * Mapea el GRUPO del Bicom al nombre de categoría raíz (nivel 1) del storefront.
+ */
+const ROOT_CATEGORY: Record<string, string> = {
+  CONFITE: 'Confitería',
+  'CONFITE PASCUA': 'Pascua',
+  'CONFITE HALLOWEEN': 'Halloween',
+  CHOCOLATE: 'Chocolates',
+  GALLETA: 'Galletas',
+  LIQUIDO: 'Bebidas',
+  HELADO: 'Heladería',
+  HELADOS: 'Heladería',
+  SNACK: 'Snacks',
+  PASCUA: 'Pascua',
+  'HALLOWEEN 2025': 'Halloween',
+  REPOSTERIA: 'Repostería',
+  ARTESANAL: 'Artesanía',
+  'CUMPLEAÑOS': 'Cumpleaños',
+  GROW: 'Grow',
+  CHICHE: 'Cumpleaños', // re-clasificar a Cumpleaños (chiches son típicos de fiestas)
+  CONFITERIA: 'Confitería',
+  OTRO: 'Otros', OTROS: 'Otros',
+};
+
+/**
+ * Heurística de clasificación: dado el GRUPO del Bicom y el nombre del producto,
+ * devuelve el path de categoría con notación "A > B > C" (1 a 3 niveles).
+ * Los subniveles se asignan por keywords en el nombre.
+ */
+function classifyCategory(grupo: string, name: string): string {
+  const lower = name.toLowerCase();
+  const g = grupo.toUpperCase().trim();
+  const root = ROOT_CATEGORY[g] || 'Otros';
+
+  // Helados
+  if (g === 'HELADO' || g === 'HELADOS') {
+    if (/cassata|torta\s*helado/.test(lower)) {
+      if (/crema\s*chocolate|chocolate/.test(lower)) return `${root} > Cassatas > Crema chocolate`;
+      if (/aguacrema|agua\s*crema/.test(lower)) return `${root} > Cassatas > Aguacrema`;
+      if (/\bagua\b/.test(lower)) return `${root} > Cassatas > Agua`;
+      if (/\bcrema\b/.test(lower)) return `${root} > Cassatas > Crema`;
+      return `${root} > Cassatas`;
+    }
+    if (/sandwich|sandw/.test(lower)) return `${root} > Sándwiches`;
+    if (/palito|trito|chinito|chamy|crazy|bilz|magnum/.test(lower)) return `${root} > Palitos`;
+    if (/litro|\b1l\b|\b2l\b|\bgranel\b/.test(lower)) return `${root} > Por litro`;
+    if (/cono|cucurucho/.test(lower)) return `${root} > Conos`;
+    if (/vasito|copa/.test(lower)) return `${root} > Vasitos`;
+    return root;
+  }
+
+  // Confites
+  if (g === 'CONFITE' || g === 'CONFITERIA') {
+    if (/alfajor/.test(lower)) return 'Galletas > Alfajores';
+    if (/bombon/.test(lower)) return `${root} > Bombones`;
+    if (/chicle|topline|bazooka/.test(lower)) return `${root} > Chicles`;
+    if (/chupon|chupete|lollipop|chupa/.test(lower)) return `${root} > Chupetes`;
+    if (/gomita|jelly|gummi|aros|ositos|len[gü]ueta/.test(lower)) return `${root} > Gomitas`;
+    if (/caramelo|toffee|butter|mogul|sapito/.test(lower)) return `${root} > Caramelos`;
+    if (/pastilla|halls/.test(lower)) return `${root} > Pastillas`;
+    if (/marshmallow|malvavisco/.test(lower)) return `${root} > Marshmallows`;
+    return root;
+  }
+
+  // Chocolates
+  if (g === 'CHOCOLATE') {
+    if (/bombon|ferrero/.test(lower)) return `${root} > Bombones`;
+    if (/bolsa|x\d+\s*g/.test(lower)) return `${root} > Bolsas`;
+    if (/barra/.test(lower)) return `${root} > Barras`;
+    return `${root} > Barras`;
+  }
+
+  // Galletas
+  if (g === 'GALLETA') {
+    if (/alfajor/.test(lower)) return `${root} > Alfajores`;
+    if (/soda|agua|cracker|salada/.test(lower)) return `${root} > Saladas`;
+    if (/oblea|wafer/.test(lower)) return `${root} > Obleas`;
+    if (/champa[gn]a/.test(lower)) return `${root} > Champaña`;
+    if (/triton|vienesa|doblon|negrita|frac/.test(lower)) return `${root} > Dulces > Con relleno`;
+    return `${root} > Dulces`;
+  }
+
+  // Bebidas
+  if (g === 'LIQUIDO') {
+    if (/\bagua\b/.test(lower) && !/sabor|mas\b|fresc/.test(lower)) return `${root} > Aguas`;
+    if (/agua.*sabor|agua\s*mas|cachantun\s*mas/.test(lower)) return `${root} > Aguas saborizadas`;
+    if (/jugo|del valle|andina|nestea/.test(lower)) return `${root} > Jugos`;
+    if (/cerveza|escudo|cristal|austral|kunstmann/.test(lower)) return `${root} > Cervezas`;
+    if (/energ[ée]tica|red bull|monster|score/.test(lower)) return `${root} > Energéticas`;
+    if (/yogur|yogh/.test(lower)) return `${root} > Yogures`;
+    if (/leche/.test(lower)) return `${root} > Lácteos`;
+    if (/coca.?cola|sprite|fanta|bilz|pap|kem|lim[oó]n\s*soda|gaseosa/.test(lower)) {
+      return `${root} > Gaseosas`;
+    }
+    return root;
+  }
+
+  // Snacks
+  if (g === 'SNACK') {
+    if (/papas|lay|doritos|chips/.test(lower)) return `${root} > Papas fritas`;
+    if (/mani|maní/.test(lower)) return `${root} > Maní`;
+    if (/palomita|cabrita|popcorn/.test(lower)) return `${root} > Cabritas`;
+    if (/ramita|cheeto|chizito/.test(lower)) return `${root} > Salados`;
+    if (/galletas?\s*sal|cracker/.test(lower)) return `${root} > Crackers`;
+    if (/frutos\s*secos|nuez|nueces|almendra/.test(lower)) return `${root} > Frutos secos`;
+    return root;
+  }
+
+  // Pascua / Halloween / Cumpleaños — categorías de temporada, suelen quedar en nivel 1
+  if (root === 'Pascua' || root === 'Halloween' || root === 'Cumpleaños') {
+    if (/bandeja/.test(lower)) return `${root} > Bandejas`;
+    if (/huevo/.test(lower)) return `${root} > Huevitos`;
+    if (/conejo/.test(lower)) return `${root} > Figuras de conejo`;
+    if (/vela/.test(lower)) return `${root} > Velas`;
+    if (/globo/.test(lower)) return `${root} > Globos`;
+    if (/pi[ñn]ata/.test(lower)) return `${root} > Piñatas`;
+    return root;
+  }
+
+  // Repostería
+  if (g === 'REPOSTERIA') {
+    if (/manjar/.test(lower)) return `${root} > Manjar`;
+    if (/galleta/.test(lower)) return `${root} > Galletas`;
+    if (/mostacilla|chispa|granillo|decora/.test(lower)) return `${root} > Decoración`;
+    if (/molde|capacillo/.test(lower)) return `${root} > Moldes`;
+    return root;
+  }
+
+  return root;
+}
 
 function norm(v: unknown): string {
   if (v === null || v === undefined) return '';
@@ -116,26 +250,39 @@ interface SaleUnit { type: 'unidad' | 'display' | 'embalaje'; quantity: number; 
 
 function generateDescription(params: {
   grupo: string; brand: string; flavor: string; format: Format | null; saleUnit: SaleUnit;
+  name: string;
 }): string {
-  const { grupo, brand, flavor, format, saleUnit } = params;
+  const { grupo, brand, flavor, format, saleUnit, name } = params;
   const groupKey = grupo.toUpperCase().trim();
   const productType = GROUP_TEMPLATES[groupKey] || 'Producto';
   const brandTitle = brand ? toTitleCase(brand) : '';
   const skipBrand = !!(brandTitle && productType.toLowerCase().includes(brandTitle.toLowerCase()));
-  const brandTxt = (brandTitle && !skipBrand) ? brandTitle : '';
+  const brandTxt = (brandTitle && !skipBrand) ? ` ${brandTitle}` : '';
   const flavorTxt = flavor ? ` sabor ${flavor}` : '';
   const fmtTxt = format ? ` de ${formatLabel(format)}` : '';
 
+  // Frase principal: tono comercial sutil
+  const lead = `${productType}${brandTxt}${flavorTxt}.`;
+
+  // Presentación según tipo de packaging
   let presentacion = '';
+  const lowerName = name.toLowerCase();
   if (saleUnit.type === 'display' && saleUnit.quantity > 1) {
-    presentacion = ` Pack con ${saleUnit.quantity} unidades${fmtTxt}.`;
+    const container =
+      /bolsa/.test(lowerName) ? 'Bolsa' :
+      /bandeja/.test(lowerName) ? 'Bandeja' :
+      /caja/.test(lowerName) ? 'Caja' :
+      /pack/.test(lowerName) ? 'Pack' :
+      /display/.test(lowerName) ? 'Display' :
+      'Pack';
+    presentacion = ` ${container} con ${saleUnit.quantity} unidades${fmtTxt}.`;
   } else if (saleUnit.type === 'embalaje' && saleUnit.quantity > 1) {
     presentacion = ` Caja con ${saleUnit.quantity} unidades${fmtTxt}.`;
   } else if (saleUnit.type === 'unidad' && format) {
-    presentacion = ` Unidad${fmtTxt}.`;
+    presentacion = ` Presentación${fmtTxt}.`;
   }
 
-  const base = `${productType}${brandTxt ? ' ' + brandTxt : ''}${flavorTxt}.${presentacion}`;
+  const base = `${lead}${presentacion}`.replace(/\s+/g, ' ').trim();
   return base.length >= 10 ? base : base.padEnd(10, ' ');
 }
 
@@ -220,10 +367,12 @@ function main(): void {
     }
 
     const description = generateDescription({
-      grupo, brand: marca, flavor, format,
+      grupo, brand: marca, flavor, format, name,
       saleUnit: { type: saleUnitType, quantity: saleUnitQty },
     });
-    const category = toTitleCase(grupo.replace(/\s+/g, ' ').trim()) || 'Sin categoría';
+    // Categoría con path 3 niveles inferida por keywords del nombre.
+    // El admin la afina después en el Excel donde el classifier no acertó.
+    const category = classifyCategory(grupo, name);
 
     outRows.push([
       makeSku(), barcode, name, description, category,
