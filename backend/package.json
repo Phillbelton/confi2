@@ -10,6 +10,7 @@
     "migrate": "ts-node -r tsconfig-paths/register src/scripts/migrateProducts.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seedAdmin.ts",
     "convert:bicom": "ts-node -r tsconfig-paths/register src/scripts/convertBicomToQuelita.ts",
+    "gen:template": "ts-node -r tsconfig-paths/register src/scripts/generateQuelitaTemplate.ts",
     "seed:users": "ts-node -r tsconfig-paths/register src/scripts/seedUsers.ts",
     "seed:categories": "ts-node -r tsconfig-paths/register src/scripts/seedCategories.ts",
     "seed:brands": "ts-node -r tsconfig-paths/register src/scripts/seedBrands.ts",

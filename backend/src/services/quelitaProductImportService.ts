@@ -6,6 +6,7 @@ import { Brand } from '../models/Brand';
 import Product from '../models/Product';
 import { Format, FormatUnit } from '../models/Format';
 import { Flavor } from '../models/Flavor';
+import Collection from '../models/Collection';
 import logger from '../config/logger';
 
 /**
@@ -14,22 +15,30 @@ import logger from '../config/logger';
  * Lee por NOMBRE de columna (no por índice fijo), permitiendo reordenar o
  * agregar campos sin romper el parser.
  *
- * Columnas reconocidas:
- *   sku (identidad primaria, formato QU-XXXXXX, auto-gen si falta),
- *   barcode (informativo, puede duplicarse, no es llave),
- *   name, description,
- *   category (path con '>'), [subcategory, subsubcategory legacy],
- *   brand, provider, flavor, format_value, format_unit,
- *   unitPrice, saleUnit_type, saleUnit_quantity,
- *   tier1_minQty, tier1_price, tier1_label,
- *   tier2_minQty, tier2_price, tier2_label,
- *   tags, featured, active, image_url
+ * Columnas reconocidas (TODAS en español):
+ *   sku                      (identidad primaria QU-XXXXXX, auto-gen si falta)
+ *   codigo_barras            (informativo, puede duplicarse)
+ *   nombre                   (obligatorio)
+ *   marca                    (obligatorio, auto-crea Brand)
+ *   categoria                (path con '>', ej. "Galletas > Dulces > Con relleno")
+ *   tamaño                   (peso/volumen de UNA unidad física)
+ *   medida                   (g / kg / ml / l / cc / oz, auto-crea Format)
+ *   sabor                    (opcional, auto-crea Flavor)
+ *   modo_venta               (unidad | cantidad_minima | display | embalaje)
+ *   unidades_por_paquete     (1 si unidad, N si display, etc.)
+ *   precio                   (CLP, precio de UNA presentación de venta)
+ *   mayorista_min            (cantidad mínima para precio mayorista)
+ *   mayorista_precio         (CLP por presentación)
+ *   caja_min                 (cantidad mínima para precio caja)
+ *   caja_precio              (CLP por presentación)
+ *   descripcion              (texto comercial)
+ *   imagen_url               (1 URL Cloudinary)
+ *   etiquetas                (comma-separated, ej. "promo,verano")
+ *   colecciones              (comma-separated, auto-crea Collections y asigna)
+ *   destacado                (TRUE/FALSE)
+ *   activo                   (TRUE/FALSE, default TRUE)
  *
- * Categorías de 3 niveles: si subcategory existe se crea bajo category;
- * si subsubcategory existe se crea bajo subcategory. El producto se asigna
- * a la hoja (el nivel más profundo que esté presente).
- *
- * Format y Flavor: se auto-crean si no existen, dedupeados por slug.
+ * Backward-compat: si vienen columnas en inglés (legacy), también las acepta.
  */
 
 export interface QuelitaImportOptions {
@@ -43,10 +52,23 @@ export interface QuelitaImportReport {
   brandsCreated: number;
   flavorsCreated: number;
   formatsCreated: number;
+  collectionsCreated: number;
   productsCreated: number;
   productsUpdated: number;
   errors: Array<{ row: number; barcode?: string; message: string }>;
   durationMs: number;
+}
+
+/**
+ * Helper: lee un valor del row tolerando alias (español primario, inglés legacy).
+ */
+function readCol(row: Record<string, any>, ...aliases: string[]): any {
+  for (const a of aliases) {
+    if (a in row && row[a] !== '' && row[a] !== null && row[a] !== undefined) {
+      return row[a];
+    }
+  }
+  return '';
 }
 
 type SaleUnitType = 'unidad' | 'cantidadMinima' | 'display' | 'embalaje';
@@ -207,6 +229,7 @@ export async function runQuelitaProductImport(
     brandsCreated: 0,
     flavorsCreated: 0,
     formatsCreated: 0,
+    collectionsCreated: 0,
     productsCreated: 0,
     productsUpdated: 0,
     errors: [],
@@ -215,13 +238,14 @@ export async function runQuelitaProductImport(
 
   // 1) Wipe opcional
   if (wipeTaxonomy) {
-    logger.info('[import-quelita] Wipe: Product, Brand, Category, Format, Flavor');
+    logger.info('[import-quelita] Wipe: Product, Brand, Category, Format, Flavor, Collection');
     await Product.deleteMany({});
     await Promise.all([
       Brand.deleteMany({}),
       Category.deleteMany({}),
       Format.deleteMany({}),
       Flavor.deleteMany({}),
+      Collection.deleteMany({}),
     ]);
   }
 
@@ -235,10 +259,14 @@ export async function runQuelitaProductImport(
     throw new Error('El Excel está vacío o no tiene encabezados reconocibles');
   }
 
-  // Validar header — verificar que existan las columnas mínimas
-  const required = ['name', 'category', 'brand', 'unitPrice'];
+  // Validar header — verificar que existan las columnas mínimas (acepta ES o EN)
   const sample = rows[0];
-  const missing = required.filter((k) => !(k in sample));
+  const hasAny = (...names: string[]) => names.some((n) => n in sample);
+  const missing: string[] = [];
+  if (!hasAny('nombre', 'name')) missing.push('nombre');
+  if (!hasAny('categoria', 'category')) missing.push('categoria');
+  if (!hasAny('marca', 'brand')) missing.push('marca');
+  if (!hasAny('precio', 'unitPrice')) missing.push('precio');
   if (missing.length > 0) {
     throw new Error(`Columnas faltantes en el header: ${missing.join(', ')}`);
   }
@@ -249,77 +277,84 @@ export async function runQuelitaProductImport(
   for (let i = 0; i < toImport.length; i++) {
     const r = toImport[i];
     const rowNumber = i + 2; // header es fila 1
-    const barcode = norm(r.barcode);
+    const barcode = norm(readCol(r, 'codigo_barras', 'barcode'));
 
     try {
-      const name = norm(r.name);
+      const name = norm(readCol(r, 'nombre', 'name'));
       if (!name || name.length < 3) {
-        report.errors.push({ row: rowNumber, barcode, message: 'name faltante o muy corto' });
+        report.errors.push({ row: rowNumber, barcode, message: 'nombre faltante o muy corto' });
         continue;
       }
 
-      const description = norm(r.description) || `${name}.`;
-      if (description.length < 10) {
-        // Padding mínimo para cumplir validación del modelo
-        // (description tiene min 10 chars en el schema)
-      }
+      const description = norm(readCol(r, 'descripcion', 'description')) || `${name}.`;
 
-      // Categoría 3 niveles
-      const cat = norm(r.category);
-      const sub = norm(r.subcategory);
-      const subsub = norm(r.subsubcategory);
+      // Categoría: path con '>' (formato A) o columnas separadas (legacy)
+      const cat = norm(readCol(r, 'categoria', 'category'));
+      const sub = norm(readCol(r, 'subcategory'));
+      const subsub = norm(readCol(r, 'subsubcategory'));
       if (!cat) {
-        report.errors.push({ row: rowNumber, barcode, message: 'category vacía' });
+        report.errors.push({ row: rowNumber, barcode, message: 'categoria vacía' });
         continue;
       }
       const categoryId = await resolveCategoryChain(cat, sub, subsub, report);
 
-      const brandId = await getOrCreateBrand(norm(r.brand), report);
-      const provider = norm(r.provider) || undefined;
-      const flavorId = await getOrCreateFlavor(norm(r.flavor), report);
+      const brandId = await getOrCreateBrand(norm(readCol(r, 'marca', 'brand')), report);
+      const flavorId = await getOrCreateFlavor(norm(readCol(r, 'sabor', 'flavor')), report);
 
-      const formatValue = num(r.format_value);
-      const formatUnit = norm(r.format_unit);
+      const formatValue = num(readCol(r, 'tamaño', 'tamano', 'format_value'));
+      const formatUnit = norm(readCol(r, 'medida', 'format_unit'));
       const formatId =
         formatValue > 0 && formatUnit
           ? await getOrCreateFormat(formatValue, formatUnit, report)
           : undefined;
 
-      const unitPrice = Math.round(num(r.unitPrice));
+      const unitPrice = Math.round(num(readCol(r, 'precio', 'unitPrice')));
       if (unitPrice <= 0) {
-        report.errors.push({ row: rowNumber, barcode, message: 'unitPrice debe ser > 0' });
+        report.errors.push({ row: rowNumber, barcode, message: 'precio debe ser > 0' });
         continue;
       }
 
-      const saleUnitTypeRaw = norm(r.saleUnit_type).toLowerCase() as SaleUnitType;
+      // Modo de venta: español 'modo_venta', legacy 'saleUnit_type'
+      const saleUnitTypeRaw = norm(readCol(r, 'modo_venta', 'saleUnit_type')).toLowerCase() as SaleUnitType;
       const saleUnitType: SaleUnitType = VALID_SALE_UNITS.includes(saleUnitTypeRaw)
         ? saleUnitTypeRaw
         : 'unidad';
-      const saleUnitQuantity = Math.max(1, Math.round(num(r.saleUnit_quantity) || 1));
+      const saleUnitQuantity = Math.max(
+        1,
+        Math.round(num(readCol(r, 'unidades_por_paquete', 'saleUnit_quantity')) || 1)
+      );
 
-      // Tiers (hasta 2 niveles desde el Excel, ordenados por minQuantity)
+      // Tiers: español 'mayorista_*' + 'caja_*'; legacy 'tier1_*' + 'tier2_*'
       const tiers: Array<{ minQuantity: number; pricePerUnit: number; label?: string }> = [];
-      for (const idx of [1, 2]) {
-        const minQty = Math.round(num(r[`tier${idx}_minQty`]));
-        const price = Math.round(num(r[`tier${idx}_price`]));
-        const label = norm(r[`tier${idx}_label`]) || undefined;
-        if (minQty >= 1 && price > 0 && price < unitPrice) {
-          tiers.push({ minQuantity: minQty, pricePerUnit: price, label });
-        }
+      const mayMin = Math.round(num(readCol(r, 'mayorista_min', 'tier1_minQty')));
+      const mayPrecio = Math.round(num(readCol(r, 'mayorista_precio', 'tier1_price')));
+      if (mayMin >= 1 && mayPrecio > 0 && mayPrecio < unitPrice) {
+        tiers.push({ minQuantity: mayMin, pricePerUnit: mayPrecio, label: 'Mayorista' });
+      }
+      const cajaMin = Math.round(num(readCol(r, 'caja_min', 'tier2_minQty')));
+      const cajaPrecio = Math.round(num(readCol(r, 'caja_precio', 'tier2_price')));
+      if (cajaMin >= 1 && cajaPrecio > 0 && cajaPrecio < unitPrice) {
+        tiers.push({ minQuantity: cajaMin, pricePerUnit: cajaPrecio, label: 'Caja completa' });
       }
 
-      const featured = boolFlag(r.featured);
-      const active = r.active === '' ? true : boolFlag(r.active);
-      const imageUrl = norm(r.image_url);
+      const featured = boolFlag(readCol(r, 'destacado', 'featured'));
+      const activeRaw = readCol(r, 'activo', 'active');
+      const active = activeRaw === '' ? true : boolFlag(activeRaw);
+      const imageUrl = norm(readCol(r, 'imagen_url', 'image_url'));
       const images = imageUrl ? [imageUrl] : [];
+
+      // Colecciones (comma-separated, auto-crea por nombre)
+      const collectionNames = norm(readCol(r, 'colecciones'))
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
 
       // Description debe tener min 10 chars; rellenar si quedó corta
       const finalDescription =
         description.length >= 10 ? description : `${name}. ${cat}.`.padEnd(10, ' ');
 
       // Upsert por sku (identidad primaria). Si no viene sku, fallback a name+brand.
-      // barcode YA NO se usa para upsert (puede estar duplicado/vacío en el Excel).
-      const sku = norm(r.sku).toUpperCase();
+      const sku = norm(readCol(r, 'sku')).toUpperCase();
       let product;
       if (sku) {
         product = await Product.findOne({ sku });
@@ -329,14 +364,11 @@ export async function runQuelitaProductImport(
       }
 
       const productData: any = {
-        // sku se incluye solo si vino en el Excel; sino el pre-save hook
-        // del modelo lo auto-genera al crear.
         ...(sku ? { sku } : {}),
         name,
         description: finalDescription,
         categories: [categoryId],
         brand: brandId,
-        provider,
         flavor: flavorId,
         format: formatId,
         barcode: barcode || undefined,
@@ -348,17 +380,50 @@ export async function runQuelitaProductImport(
         active,
       };
 
+      let savedProduct;
       if (product) {
         Object.assign(product, productData);
         if (userId) product.updatedBy = new mongoose.Types.ObjectId(userId);
-        await product.save();
+        savedProduct = await product.save();
         report.productsUpdated += 1;
       } else {
         productData.createdBy = userId
           ? new mongoose.Types.ObjectId(userId)
           : undefined;
-        await Product.create(productData);
+        savedProduct = await Product.create(productData);
         report.productsCreated += 1;
+      }
+
+      // Procesar colecciones: lookup o crear por nombre, asignar producto
+      // Importante: agregamos el producto al array de Collection.products[]
+      for (const colName of collectionNames) {
+        if (!colName || colName.length < 2) continue;
+        try {
+          let col = await Collection.findOne({ name: colName });
+          if (!col) {
+            col = await Collection.create({
+              name: colName,
+              active: true,
+              showOnHome: false,
+              products: [savedProduct._id],
+            });
+            report.collectionsCreated += 1;
+          } else {
+            // Agregar producto si no está ya
+            const exists = col.products.some(
+              (p: mongoose.Types.ObjectId) => p.toString() === savedProduct._id.toString()
+            );
+            if (!exists) {
+              col.products.push(savedProduct._id);
+              await col.save();
+            }
+          }
+        } catch (err) {
+          // Falla en una collection no aborta el producto entero
+          logger.warn(
+            `[import-quelita] No se pudo asignar producto ${savedProduct._id} a colección "${colName}": ${(err as Error).message}`
+          );
+        }
       }
     } catch (err: any) {
       report.errors.push({ row: rowNumber, barcode, message: err?.message || 'error desconocido' });

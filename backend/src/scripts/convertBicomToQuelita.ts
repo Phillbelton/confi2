@@ -302,12 +302,13 @@ function main(): void {
   const dataRows = rows.slice(2);
 
   const HEADER = [
-    'sku','barcode','name','description','category','brand','flavor',
-    'format_value','format_unit',
-    'unitPrice','saleUnit_type','saleUnit_quantity',
-    'tier1_minQty','tier1_price','tier1_label',
-    'tier2_minQty','tier2_price','tier2_label',
-    'tags','featured','active','image_url',
+    'sku','codigo_barras','nombre','marca','categoria',
+    'tamaño','medida','sabor',
+    'modo_venta','unidades_por_paquete','precio',
+    'mayorista_min','mayorista_precio',
+    'caja_min','caja_precio',
+    'descripcion','imagen_url','etiquetas','colecciones',
+    'destacado','activo',
   ];
 
   let skuSeed = 1;
@@ -374,32 +375,61 @@ function main(): void {
     // El admin la afina después en el Excel donde el classifier no acertó.
     const category = classifyCategory(grupo, name);
 
+    // Tiers ya están en formato [minQty, price, label]. Solo necesitamos los 2 primeros campos.
     outRows.push([
-      makeSku(), barcode, name, description, category,
-      marca ? toTitleCase(marca) : '',
-      flavor || '',
-      format ? format.value : '',
-      format ? format.unit : '',
-      unitPrice, saleUnitType, saleUnitQty,
-      ...tier1, ...tier2,
-      '', 'FALSE', 'TRUE', '',
+      makeSku(),                            // sku
+      barcode,                              // codigo_barras
+      name,                                 // nombre
+      marca ? toTitleCase(marca) : '',      // marca
+      category,                             // categoria
+      format ? format.value : '',           // tamaño
+      format ? format.unit : '',            // medida
+      flavor || '',                         // sabor
+      saleUnitType,                         // modo_venta
+      saleUnitQty,                          // unidades_por_paquete
+      unitPrice,                            // precio
+      tier1[0],                             // mayorista_min
+      tier1[1],                             // mayorista_precio
+      tier2[0],                             // caja_min
+      tier2[1],                             // caja_precio
+      description,                          // descripcion
+      '',                                   // imagen_url
+      '',                                   // etiquetas
+      '',                                   // colecciones (admin las llena luego)
+      'FALSE',                              // destacado
+      'TRUE',                               // activo
     ]);
     processed++;
   }
 
-  // Sort por barcode (col 1) para facilitar paste de precios desde Bicom siguiente mes
+  // Sort por codigo_barras (col 1) para facilitar paste de precios desde Bicom siguiente mes
   const header = outRows[0];
   const body = outRows.slice(1).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
   const finalRows = [header, ...body];
 
   const outWs = XLSX.utils.aoa_to_sheet(finalRows);
   outWs['!cols'] = [
-    { wch: 12 }, { wch: 16 }, { wch: 40 }, { wch: 60 }, { wch: 24 },
-    { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 12 },
-    { wch: 12 }, { wch: 14 }, { wch: 14 },
-    { wch: 14 }, { wch: 12 }, { wch: 22 },
-    { wch: 14 }, { wch: 12 }, { wch: 22 },
-    { wch: 16 }, { wch: 10 }, { wch: 10 }, { wch: 30 },
+    { wch: 12 },  // sku
+    { wch: 16 },  // codigo_barras
+    { wch: 42 },  // nombre
+    { wch: 18 },  // marca
+    { wch: 36 },  // categoria
+    { wch: 10 },  // tamaño
+    { wch: 10 },  // medida
+    { wch: 16 },  // sabor
+    { wch: 14 },  // modo_venta
+    { wch: 14 },  // unidades_por_paquete
+    { wch: 12 },  // precio
+    { wch: 14 },  // mayorista_min
+    { wch: 16 },  // mayorista_precio
+    { wch: 12 },  // caja_min
+    { wch: 14 },  // caja_precio
+    { wch: 60 },  // descripcion
+    { wch: 30 },  // imagen_url
+    { wch: 22 },  // etiquetas
+    { wch: 28 },  // colecciones
+    { wch: 10 },  // destacado
+    { wch: 10 },  // activo
   ];
   const outWb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(outWb, outWs, 'Productos');
