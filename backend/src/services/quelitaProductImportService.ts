@@ -101,18 +101,28 @@ async function getOrCreateCategory(
   parentId: mongoose.Types.ObjectId | null,
   reportCounters: { categoriesCreated: number }
 ): Promise<mongoose.Types.ObjectId> {
-  // Lookup por (name, parent): más robusto que slug porque el pre-save hook
-  // de Category añade timestamp-suffix al slug cuando hay colisión global.
-  // Si buscáramos por slug puro nunca encontraríamos las categorías ya creadas
-  // con suffix, y crearíamos duplicados infinitos.
+  // Lookup por (name, parent): es la identidad conceptual real.
+  // El pre-save de Category añade timestamp-suffix al slug cuando hay
+  // colisión global (Category.slug es unique globalmente), por eso no
+  // podemos lookup por slug puro.
   let cat = await Category.findOne({ name, parent: parentId || null });
   if (!cat) {
-    cat = await Category.create({
-      name,
-      parent: parentId || undefined,
-      active: true,
-    });
-    reportCounters.categoriesCreated += 1;
+    try {
+      cat = await Category.create({
+        name,
+        parent: parentId || undefined,
+        active: true,
+      });
+      reportCounters.categoriesCreated += 1;
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        // Race condition: re-buscar
+        cat = await Category.findOne({ name, parent: parentId || null });
+        if (!cat) throw err;
+      } else {
+        throw err;
+      }
+    }
   }
   return cat._id as mongoose.Types.ObjectId;
 }
@@ -173,11 +183,23 @@ async function getOrCreateBrand(
   reportCounters: { brandsCreated: number }
 ): Promise<mongoose.Types.ObjectId | undefined> {
   if (!name || name.length < 2) return undefined;
-  // Brand.name tiene unique:true en el schema; lookup case-insensitive por name
-  let brand = await Brand.findOne({ name });
+  // Doble lookup: por nombre exacto Y por slug. Cubre el caso donde dos
+  // variantes del nombre ("Sra. Judith" y "Sra Judith") slugifican igual.
+  const slug = slugify(name, { lower: true, strict: true, locale: 'es' });
+  let brand = await Brand.findOne({ $or: [{ name }, { slug }] });
   if (!brand) {
-    brand = await Brand.create({ name, active: true });
-    reportCounters.brandsCreated += 1;
+    try {
+      brand = await Brand.create({ name, active: true });
+      reportCounters.brandsCreated += 1;
+    } catch (err: any) {
+      // Fallback de race condition: si otro hilo creó antes con mismo slug
+      if (err?.code === 11000) {
+        brand = await Brand.findOne({ slug });
+        if (!brand) throw err;
+      } else {
+        throw err;
+      }
+    }
   }
   return brand._id as mongoose.Types.ObjectId;
 }
@@ -187,10 +209,20 @@ async function getOrCreateFlavor(
   reportCounters: { flavorsCreated: number }
 ): Promise<mongoose.Types.ObjectId | undefined> {
   if (!name || name.length < 2) return undefined;
-  let flavor = await Flavor.findOne({ name });
+  const slug = slugify(name, { lower: true, strict: true, locale: 'es' });
+  let flavor = await Flavor.findOne({ $or: [{ name }, { slug }] });
   if (!flavor) {
-    flavor = await Flavor.create({ name, active: true });
-    reportCounters.flavorsCreated += 1;
+    try {
+      flavor = await Flavor.create({ name, active: true });
+      reportCounters.flavorsCreated += 1;
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        flavor = await Flavor.findOne({ slug });
+        if (!flavor) throw err;
+      } else {
+        throw err;
+      }
+    }
   }
   return flavor._id as mongoose.Types.ObjectId;
 }
@@ -205,14 +237,38 @@ async function getOrCreateFormat(
   if (!VALID_FORMAT_UNITS.includes(normalizedUnit)) {
     throw new Error(`format_unit inválida: "${unit}"`);
   }
-  let fmt = await Format.findOne({ value, unit: normalizedUnit });
+  // El slug se auto-genera del label (ej. "35g"). Por si quedó un Format
+  // huérfano con mismo slug pero distinto valor/unidad (raro pero posible
+  // si hubo wipe parcial), buscamos también por slug derivado.
+  const unitLabel: Record<FormatUnit, string> = {
+    g: 'g', kg: 'kg', ml: 'ml', l: 'L', cc: 'cc', oz: 'oz',
+  };
+  const expectedSlug = slugify(`${value}${unitLabel[normalizedUnit]}`, {
+    lower: true,
+    strict: true,
+  });
+  let fmt = await Format.findOne({
+    $or: [
+      { value, unit: normalizedUnit },
+      { slug: expectedSlug },
+    ],
+  });
   if (!fmt) {
-    fmt = await Format.create({
-      value,
-      unit: normalizedUnit,
-      active: true,
-    });
-    reportCounters.formatsCreated += 1;
+    try {
+      fmt = await Format.create({
+        value,
+        unit: normalizedUnit,
+        active: true,
+      });
+      reportCounters.formatsCreated += 1;
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        fmt = await Format.findOne({ slug: expectedSlug });
+        if (!fmt) throw err;
+      } else {
+        throw err;
+      }
+    }
   }
   return fmt._id as mongoose.Types.ObjectId;
 }
