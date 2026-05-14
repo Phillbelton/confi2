@@ -14,7 +14,10 @@ import { useProductBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
 import {
   effectiveUnitPrice,
   getDisplayTiers,
+  isPackagedSale,
   minQuantity,
+  presentationPrice,
+  presentationPriceSuffix,
   quantityStep,
   hasAnyDiscount,
   getBestDiscountPercent,
@@ -80,10 +83,19 @@ export default function ProductDetailPage() {
   const minQ = minQuantity(product);
   const step = quantityStep(product);
   const realQty = Math.max(quantity, minQ);
+  // ppu = precio efectivo por PRESENTACIÓN (ya no por unidad atómica).
   const ppu = effectiveUnitPrice(product, realQty);
   const total = ppu * realQty;
   const tiers = getDisplayTiers(product);
   const discount = getBestDiscountPercent(product);
+  const isPackaged = isPackagedSale(product);
+  // Precio principal: ya está en precio de presentación, no se multiplica.
+  const headlinePrice = ppu;
+  const headlineCompareAt = product.unitPrice;
+  // Precio por unidad atómica (informativo, solo display/embalaje).
+  const ppuAtomic = isPackaged && product.saleUnit.quantity > 0
+    ? ppu / product.saleUnit.quantity
+    : ppu;
 
   // Initialize quantity to minQ
   if (quantity < minQ) setQuantity(minQ);
@@ -141,17 +153,24 @@ export default function ProductDetailPage() {
             </p>
           )}
 
-          <div className="mt-3 flex items-baseline gap-2">
+          <div className="mt-3 flex items-baseline gap-2 flex-wrap">
             <span className="text-2xl font-bold tabular-nums lg:text-4xl">
-              ${Math.round(ppu).toLocaleString('es-CL')}
+              ${Math.round(headlinePrice).toLocaleString('es-CL')}
             </span>
-            <span className="text-xs text-muted-foreground">por unidad</span>
-            {ppu < product.unitPrice && (
+            <span className="text-xs text-muted-foreground">
+              {presentationPriceSuffix(product)}
+            </span>
+            {headlinePrice < headlineCompareAt && (
               <span className="text-sm text-muted-foreground line-through tabular-nums">
-                ${Math.round(product.unitPrice).toLocaleString('es-CL')}
+                ${Math.round(headlineCompareAt).toLocaleString('es-CL')}
               </span>
             )}
           </div>
+          {isPackaged && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Equivale a ${Math.round(ppuAtomic).toLocaleString('es-CL')} por unidad
+            </p>
+          )}
 
           {/* Tabla de tramos */}
           {tiers.length > 0 && (

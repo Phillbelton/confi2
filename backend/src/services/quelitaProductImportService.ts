@@ -308,62 +308,45 @@ export async function runQuelitaProductImport(
           ? await getOrCreateFormat(formatValue, formatUnit, report)
           : undefined;
 
-      // Leer el precio en bruto desde el Excel (lo que escribió el admin).
-      // Para display/embalaje el admin escribe el precio del PAQUETE COMPLETO,
-      // pero el modelo de Quelita guarda unitPrice en PER UNIDAD BASE (porque
-      // el frontend multiplica por saleUnit.quantity para mostrar el precio
-      // de la presentación). Por eso dividimos al guardar.
-      const rawPrice = Math.round(num(readCol(r, 'precio', 'unitPrice')));
-      if (rawPrice <= 0) {
+      // Semántica de precios (post-refactor 2026-05-14):
+      // El admin escribe el precio de UNA presentación de venta:
+      //   - modo_venta=unidad: precio de una unidad atómica
+      //   - modo_venta=display: precio del display completo
+      //   - modo_venta=embalaje: precio de la caja completa
+      //   - modo_venta=cantidad_minima: precio de una unidad individual
+      // El backend almacena tal cual (no convierte), el frontend muestra directo.
+      const unitPrice = Math.round(num(readCol(r, 'precio', 'unitPrice')));
+      if (unitPrice <= 0) {
         report.errors.push({ row: rowNumber, barcode, message: 'precio debe ser > 0' });
         continue;
       }
 
-      // Modo de venta: español 'modo_venta', legacy 'saleUnit_type'
-      const saleUnitTypeRaw = norm(readCol(r, 'modo_venta', 'saleUnit_type')).toLowerCase() as SaleUnitType;
-      const saleUnitType: SaleUnitType = VALID_SALE_UNITS.includes(saleUnitTypeRaw)
-        ? saleUnitTypeRaw
+      // Modo de venta: aceptar tanto 'cantidad_minima' (Excel-friendly) como
+      // 'cantidadMinima' (modelo). Normalizar al valor del modelo.
+      const saleUnitTypeRaw = norm(readCol(r, 'modo_venta', 'saleUnit_type')).toLowerCase();
+      const saleUnitTypeNormalized = saleUnitTypeRaw === 'cantidad_minima'
+        ? 'cantidadMinima'
+        : (saleUnitTypeRaw as SaleUnitType);
+      const saleUnitType: SaleUnitType = VALID_SALE_UNITS.includes(saleUnitTypeNormalized as SaleUnitType)
+        ? (saleUnitTypeNormalized as SaleUnitType)
         : 'unidad';
       const saleUnitQuantity = Math.max(
         1,
         Math.round(num(readCol(r, 'unidades_por_paquete', 'saleUnit_quantity')) || 1)
       );
 
-      // ¿Convertimos precio del paquete a precio por unidad base?
-      // Sí para display/embalaje (el admin escribe precio total del paquete).
-      // No para unidad/cantidad_minima (el admin escribe precio por unidad).
-      const isPackaged = saleUnitType === 'display' || saleUnitType === 'embalaje';
-      const conversionFactor = isPackaged ? saleUnitQuantity : 1;
-
-      // unitPrice float (sin redondear) para evitar pérdida acumulada cuando
-      // el frontend multiplica por saleUnit.quantity. El display de la card
-      // ya hace Math.round al renderizar.
-      const unitPrice = rawPrice / conversionFactor;
-
-      // Tiers: para display/embalaje, el admin escribe:
-      //   - mayorista_min: cantidad de PAQUETES (ej. 2 displays)
-      //   - mayorista_precio: precio del PAQUETE al alcanzar ese mínimo
-      // Al guardar:
-      //   - tier.minQuantity = mayorista_min × paqueteQty (en unidades base)
-      //   - tier.pricePerUnit = mayorista_precio / paqueteQty (per unidad base, float)
+      // Tiers: minQuantity en PRESENTACIONES, pricePerUnit por PRESENTACIÓN.
+      // (Ej. para un display: minQuantity=2 significa "2+ displays".)
       const tiers: Array<{ minQuantity: number; pricePerUnit: number; label?: string }> = [];
-      const mayMinRaw = Math.round(num(readCol(r, 'mayorista_min', 'tier1_minQty')));
-      const mayPrecioRaw = num(readCol(r, 'mayorista_precio', 'tier1_price'));
-      if (mayMinRaw >= 1 && mayPrecioRaw > 0 && mayPrecioRaw < rawPrice) {
-        tiers.push({
-          minQuantity: mayMinRaw * conversionFactor,
-          pricePerUnit: mayPrecioRaw / conversionFactor,
-          label: 'Mayorista',
-        });
+      const mayMin = Math.round(num(readCol(r, 'mayorista_min', 'tier1_minQty')));
+      const mayPrecio = Math.round(num(readCol(r, 'mayorista_precio', 'tier1_price')));
+      if (mayMin >= 1 && mayPrecio > 0 && mayPrecio < unitPrice) {
+        tiers.push({ minQuantity: mayMin, pricePerUnit: mayPrecio, label: 'Mayorista' });
       }
-      const cajaMinRaw = Math.round(num(readCol(r, 'caja_min', 'tier2_minQty')));
-      const cajaPrecioRaw = num(readCol(r, 'caja_precio', 'tier2_price'));
-      if (cajaMinRaw >= 1 && cajaPrecioRaw > 0 && cajaPrecioRaw < rawPrice) {
-        tiers.push({
-          minQuantity: cajaMinRaw * conversionFactor,
-          pricePerUnit: cajaPrecioRaw / conversionFactor,
-          label: 'Caja completa',
-        });
+      const cajaMin = Math.round(num(readCol(r, 'caja_min', 'tier2_minQty')));
+      const cajaPrecio = Math.round(num(readCol(r, 'caja_precio', 'tier2_price')));
+      if (cajaMin >= 1 && cajaPrecio > 0 && cajaPrecio < unitPrice) {
+        tiers.push({ minQuantity: cajaMin, pricePerUnit: cajaPrecio, label: 'Caja completa' });
       }
 
       const featured = boolFlag(readCol(r, 'destacado', 'featured'));

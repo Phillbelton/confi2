@@ -14,7 +14,7 @@ import {
   hasAnyDiscount,
   isPackagedSale,
   minQuantity,
-  presentationPrice,
+  pricePerAtomicUnit,
   presentationPriceSuffix,
   quantityStep,
 } from '@/lib/discountCalculator';
@@ -40,31 +40,23 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const minQ = minQuantity(product);
   const step = quantityStep(product);
 
-  // Precio mostrado: a la cantidad mínima del producto
+  // Precio mostrado: a la cantidad mínima del producto.
+  // ppu = precio efectivo por PRESENTACIÓN (ya no por unidad atómica).
   const ppu = effectiveUnitPrice(product, Math.max(minQ, 1));
-  // Para display/embalaje mostramos el precio TOTAL del paquete; para el resto, ppu.
-  const shownPrice = presentationPrice(product, ppu);
-  const compareAtPrice = presentationPrice(product, product.unitPrice);
+  const shownPrice = ppu;
+  const compareAtPrice = product.unitPrice;
   const isPackaged = isPackagedSale(product);
   const showFromHint = (product.tiers?.length || 0) > 0;
   const discountPercent = getBestDiscountPercent(product);
 
-  // Primer tier ordenado por minQuantity (el "salto" de ahorro más cercano)
+  // "$X/u" informativo: precio por unidad atómica, derivado del ppu de la
+  // presentación dividiendo por saleUnit.quantity. Solo cuando es paquete.
+  const ppuAtomic = pricePerAtomicUnit(product, ppu);
+
+  // Primer tier ordenado por minQuantity. minQuantity ya está en PRESENTACIONES.
   const firstTier = getDisplayTiers(product)[0];
-  // Para producto display/embalaje, mostramos el precio del PAQUETE en el hint
-  // (no por unidad), congruente con el precio principal mostrado arriba.
-  const tierShownPrice = firstTier
-    ? presentationPrice(product, firstTier.pricePerUnit)
-    : 0;
-  // Cantidad mínima del tier en "presentaciones" (no en unidades base)
-  const tierShownQty = firstTier
-    ? Math.max(
-        1,
-        isPackaged
-          ? Math.ceil(firstTier.minQuantity / Math.max(product.saleUnit.quantity, 1))
-          : firstTier.minQuantity
-      )
-    : 0;
+  const tierShownPrice = firstTier?.pricePerUnit ?? 0;
+  const tierShownQty = firstTier?.minQuantity ?? 0;
   const tierUnitLabel = (() => {
     if (!firstTier) return '';
     switch (product.saleUnit.type) {
@@ -151,7 +143,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
 
           {isPackaged && (
             <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
-              {presentationPriceSuffix(product)} · ${Math.round(ppu).toLocaleString('es-CL')}/u
+              {presentationPriceSuffix(product)} · ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
             </p>
           )}
 

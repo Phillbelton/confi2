@@ -1,7 +1,26 @@
 import type { Product, ProductTier } from '@/types';
 
 /**
- * Calcula el precio efectivo por unidad para una cantidad dada según tiers.
+ * SEMÁNTICA DE PRECIOS (refactor 2026-05-14):
+ *
+ * - `unitPrice` = precio de UNA presentación de venta (lo que el cliente
+ *   añade al carrito con 1 click). Para display=24 es el precio de la bolsa
+ *   completa, NO el precio por galleta individual.
+ *
+ * - `tier.minQuantity` = cantidad de PRESENTACIONES para activar el tier
+ *   (ej. 2 = "2+ displays"). NO en unidades atómicas.
+ *
+ * - `tier.pricePerUnit` = precio de UNA presentación al alcanzar el tier.
+ *
+ * - `quantity` en cart/orden = cantidad de PRESENTACIONES (3 displays).
+ *
+ * - `saleUnit.quantity` sigue significando "unidades atómicas contenidas"
+ *   solo para display/embalaje (informativo). Para cantidad_minima es
+ *   "mínimo de presentaciones a comprar" (típicamente 5+).
+ */
+
+/**
+ * Precio efectivo por presentación dada una cantidad de presentaciones.
  * El tier con mayor minQuantity ≤ quantity gana.
  */
 export function effectiveUnitPrice(product: Product, quantity: number): number {
@@ -14,6 +33,7 @@ export function effectiveUnitPrice(product: Product, quantity: number): number {
 
 /**
  * Información de precio para una cantidad: precio efectivo, original, descuento.
+ * Todos los valores son por presentación (no por unidad atómica).
  */
 export function calculatePriceInfo(product: Product, quantity: number) {
   const ppu = effectiveUnitPrice(product, quantity);
@@ -26,23 +46,14 @@ export function calculatePriceInfo(product: Product, quantity: number) {
   return { pricePerUnit: ppu, finalPrice, originalPrice, discount, discountPercent };
 }
 
-/**
- * ¿Tiene algún tipo de descuento (tiers o fixed)?
- */
 export function hasAnyDiscount(product: Product): boolean {
   return (product.tiers && product.tiers.length > 0) || !!product.fixedDiscount?.enabled;
 }
 
-/**
- * Devuelve los tiers ordenados por minQuantity asc para mostrar como tabla.
- */
 export function getDisplayTiers(product: Product): ProductTier[] {
   return [...(product.tiers || [])].sort((a, b) => a.minQuantity - b.minQuantity);
 }
 
-/**
- * Mejor descuento (mayor %) para mostrar en card como badge.
- */
 export function getBestDiscountPercent(product: Product): number {
   const tiers = product.tiers || [];
   if (tiers.length === 0) return 0;
@@ -52,21 +63,60 @@ export function getBestDiscountPercent(product: Product): number {
 }
 
 /**
- * Step de cantidad para el input del carrito según saleUnit.
- * - unidad / cantidadMinima: step = 1
- * - display / embalaje: step = quantity (compra solo en múltiplos)
+ * Step de cantidad: siempre 1 presentación.
+ * (Ej. cliente añade 1 display por click, sin importar que tenga 13 galletas.)
  */
-export function quantityStep(product: Product): number {
-  return product.saleUnit.type === 'display' || product.saleUnit.type === 'embalaje'
+export function quantityStep(_product: Product): number {
+  return 1;
+}
+
+/**
+ * Mínimo de presentaciones que el cliente debe agregar al carrito:
+ * - cantidadMinima: saleUnit.quantity (ej. mín 5 unidades)
+ * - resto: 1
+ */
+export function minQuantity(product: Product): number {
+  return product.saleUnit.type === 'cantidadMinima'
     ? product.saleUnit.quantity
     : 1;
 }
 
 /**
- * Mínimo del input para cantidad.
- * - unidad: 1
- * - cantidadMinima/display/embalaje: saleUnit.quantity
+ * ¿Es una presentación tipo paquete? Útil para mostrar badge "Bolsa × N",
+ * la nota "$X/u atómica" y para textos descriptivos en el UI.
+ * El precio ya viene per-presentación (no requiere multiplicación adicional).
  */
-export function minQuantity(product: Product): number {
-  return product.saleUnit.type === 'unidad' ? 1 : product.saleUnit.quantity;
+export function isPackagedSale(product: Product): boolean {
+  const t = product.saleUnit?.type;
+  return t === 'display' || t === 'embalaje';
+}
+
+/**
+ * Identidad — el precio mostrado en la card YA es per presentación.
+ * Se mantiene esta función para no romper callsites, pero ya no multiplica.
+ */
+export function presentationPrice(_product: Product, ppu: number): number {
+  return ppu;
+}
+
+/**
+ * Precio por UNIDAD ATÓMICA (galleta individual, etc.) derivado del ppu de la
+ * presentación. Útil solo para mostrar "$X/u" como info comparativa al cliente.
+ * Solo aplica a display/embalaje con quantity > 1.
+ */
+export function pricePerAtomicUnit(product: Product, ppu: number): number {
+  if (!isPackagedSale(product)) return ppu;
+  const qty = product.saleUnit?.quantity || 1;
+  return qty > 0 ? ppu / qty : ppu;
+}
+
+/**
+ * Sufijo a mostrar junto al precio. Distingue venta unitaria de paquete.
+ */
+export function presentationPriceSuffix(product: Product): string {
+  const t = product.saleUnit?.type;
+  const qty = product.saleUnit?.quantity || 1;
+  if (t === 'display') return `display ${qty} u.`;
+  if (t === 'embalaje') return `embalaje ${qty} u.`;
+  return 'por unidad';
 }
