@@ -4,6 +4,7 @@ import slugify from 'slugify';
 import { Category } from '../models/Category';
 import { Brand } from '../models/Brand';
 import Product from '../models/Product';
+import ProductImage from '../models/ProductImage';
 import { Format, FormatUnit } from '../models/Format';
 import { Flavor } from '../models/Flavor';
 import Collection from '../models/Collection';
@@ -409,7 +410,9 @@ export async function runQuelitaProductImport(
       const activeRaw = readCol(r, 'activo', 'active');
       const active = activeRaw === '' ? true : boolFlag(activeRaw);
       const imageUrl = norm(readCol(r, 'imagen_url', 'image_url'));
-      const images = imageUrl ? [imageUrl] : [];
+      // images se hidrata desde ProductImage por SKU más abajo (persistencia ante wipes).
+      // Si el Excel trae imagen_url explícita, se usa como adicional.
+      const excelImages = imageUrl ? [imageUrl] : [];
 
       // Colecciones (comma-separated, auto-crea por nombre)
       const collectionNames = norm(readCol(r, 'colecciones'))
@@ -431,6 +434,25 @@ export async function runQuelitaProductImport(
         product = await Product.findOne({ name, brand: brandId });
       }
 
+      // HIDRATACIÓN DE IMÁGENES PERSISTENTES por SKU.
+      // ProductImage sobrevive a wipes — si existen registros para este SKU
+      // (típicamente porque el admin subió imágenes en una sesión previa),
+      // se vuelven a vincular automáticamente al Product recién creado/actualizado.
+      let hydratedImages: string[] = [];
+      if (sku) {
+        const persistedImages = await ProductImage.find({ sku })
+          .sort({ order: 1 })
+          .lean();
+        hydratedImages = persistedImages.map((pi) => pi.url);
+      }
+      // Si Excel trae imagen_url y no está ya en la lista persistida, agrégarla
+      const finalImages =
+        excelImages.length > 0 && !hydratedImages.some((u) => excelImages.includes(u))
+          ? [...hydratedImages, ...excelImages]
+          : hydratedImages.length > 0
+          ? hydratedImages
+          : excelImages;
+
       const productData: any = {
         ...(sku ? { sku } : {}),
         name,
@@ -443,7 +465,7 @@ export async function runQuelitaProductImport(
         unitPrice,
         saleUnit: { type: saleUnitType, quantity: saleUnitQuantity },
         tiers,
-        images,
+        images: finalImages,
         featured,
         active,
       };
@@ -455,10 +477,9 @@ export async function runQuelitaProductImport(
         // Excel trae un valor explícito (imagen_url, descripcion no auto-gen)
         // entonces sí pisa.
         const updateData = { ...productData };
-        // Imágenes: si Excel no trae URL, conservar las que subió el admin
-        if (!imageUrl && product.images && product.images.length > 0) {
-          delete updateData.images;
-        }
+        // Imágenes: `finalImages` ya vino hidratado desde ProductImage por SKU,
+        // y posiblemente con la imagen_url del Excel adicional. Es la fuente
+        // de verdad — aplicar sin condiciones.
         // Featured: el Excel puede no traer la columna; solo updatear si el
         // admin explicitó en Excel "destacado=TRUE/FALSE"
         if (readCol(r, 'destacado', 'featured') === '') {

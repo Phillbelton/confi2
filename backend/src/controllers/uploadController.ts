@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import fs from 'fs';
 import Product from '../models/Product';
+import ProductImage from '../models/ProductImage';
 import { Category } from '../models/Category';
 import { Brand } from '../models/Brand';
 import Collection from '../models/Collection';
@@ -60,13 +61,38 @@ export const uploadProductImages = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const product = await Product.findById(req.params.id);
     if (!product) throw new AppError(404, 'Producto no encontrado');
+    if (!product.sku) throw new AppError(400, 'El producto no tiene SKU — requerido para persistir imágenes');
+
     const files = req.files as Express.Multer.File[] | undefined;
     if (!files?.length) throw new AppError(400, 'Sin imágenes');
+
     const slots = Math.max(0, 5 - (product.images?.length || 0));
     if (slots === 0) throw new AppError(400, 'Máximo 5 imágenes');
+
     const urls = await uploadFiles(files.slice(0, slots), 'products');
+    if (urls.length === 0) throw new AppError(500, 'Error al subir imagen(es)');
+
+    // 1) Persistir en ProductImage (verdad) — sobrevive wipes de Product
+    const startOrder = product.images?.length || 0;
+    const userId = (req.user as any)?.id;
+    const created = await ProductImage.insertMany(
+      urls.map((url, i) => ({
+        sku: product.sku,
+        url,
+        order: startOrder + i,
+        uploadedBy: userId || undefined,
+      })),
+      { ordered: false }
+    ).catch((e: any) => {
+      // Duplicate key (sku+url) — log y seguir
+      logger.warn('[ProductImage] insertMany partial: ' + e.message);
+      return [];
+    });
+
+    // 2) Cache denormalizado en Product.images para queries rápidas
     product.images = [...(product.images || []), ...urls];
     await product.save();
+
     res.status(200).json({
       success: true,
       message: `${urls.length} imagen(es) subida(s)`,
@@ -82,11 +108,21 @@ export const deleteProductImage = asyncHandler(
     if (!product) throw new AppError(404, 'Producto no encontrado');
     const target = (product.images || []).find((u) => u.includes(filename));
     if (!target) throw new AppError(404, 'Imagen no encontrada');
+
+    // Borrar archivo en disco
     try {
       await imageService.deleteImage(target);
     } catch {}
+
+    // Borrar registro persistente en ProductImage
+    if (product.sku) {
+      await ProductImage.deleteOne({ sku: product.sku, url: target }).catch(() => {});
+    }
+
+    // Actualizar cache denormalizado
     product.images = (product.images || []).filter((u) => u !== target);
     await product.save();
+
     res.status(200).json({ success: true, message: 'Imagen eliminada' });
   }
 );
