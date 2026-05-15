@@ -1,16 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -19,7 +13,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BannersTable } from '@/components/admin/banners/BannersTable';
-import { BannerForm } from '@/components/admin/banners/BannerForm';
 import {
   useAdminBanners,
   useBannerOperations,
@@ -36,54 +29,14 @@ const PLACEMENT_OPTIONS: { value: BannerPlacement | 'all'; label: string }[] = [
 ];
 
 export default function BannersAdminPage() {
+  const router = useRouter();
   const [placementFilter, setPlacementFilter] = useState<BannerPlacement | 'all'>('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selected, setSelected] = useState<Banner | undefined>(undefined);
 
   const { data: banners = [], isLoading, error } = useAdminBanners(
     placementFilter === 'all' ? undefined : placementFilter
   );
 
-  const {
-    create,
-    createAsync,
-    update,
-    remove,
-    uploadImage,
-    isCreating,
-    isUpdating,
-    isRemoving,
-    isUploadingImage,
-  } = useBannerOperations();
-
-  const handleOpenDialog = (banner?: Banner) => {
-    setSelected(banner);
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelected(undefined);
-  };
-
-  const handleSubmit = async (payload: any) => {
-    if (selected) {
-      update(
-        { id: selected._id, payload },
-        { onSuccess: handleCloseDialog }
-      );
-    } else {
-      // Para create, necesitamos un image placeholder (el endpoint require image)
-      // Solución: crear con image: '/placeholder-product.svg', después admin sube real
-      const withPlaceholder = { ...payload, image: '/placeholder-product.svg' };
-      try {
-        await createAsync(withPlaceholder);
-        // No cerrar el dialog — permitir subir imagen ahora
-        // El cliente debe re-abrir el dialog del banner recién creado
-        handleCloseDialog();
-      } catch {}
-    }
-  };
+  const { remove, isRemoving } = useBannerOperations();
 
   return (
     <div className="space-y-6">
@@ -97,7 +50,7 @@ export default function BannersAdminPage() {
             Heroes, banners y secciones promocionales del storefront
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
+        <Button onClick={() => router.push('/admin/banners/new')}>
           <Plus className="mr-2 h-4 w-4" />
           Nuevo banner
         </Button>
@@ -143,36 +96,11 @@ export default function BannersAdminPage() {
       {!isLoading && !error && (
         <BannersTable
           banners={banners}
-          onEdit={handleOpenDialog}
+          onEdit={(b: Banner) => router.push(`/admin/banners/${b._id}`)}
           onDelete={(id) => remove(id)}
           isDeleting={isRemoving}
         />
       )}
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selected ? 'Editar banner' : 'Nuevo banner'}
-            </DialogTitle>
-            <DialogDescription>
-              {selected
-                ? 'Modificá los datos. Los cambios se reflejan en el storefront automáticamente.'
-                : 'Creá el banner con sus datos. Después de guardar, podés subir la imagen.'}
-            </DialogDescription>
-          </DialogHeader>
-          <BannerForm
-            banner={selected}
-            onSubmit={handleSubmit}
-            onCancel={handleCloseDialog}
-            isSubmitting={isCreating || isUpdating}
-            onUploadImage={(id, file, variant) =>
-              uploadImage({ id, file, variant })
-            }
-            isUploadingImage={isUploadingImage}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
