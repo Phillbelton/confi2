@@ -47,7 +47,7 @@ export function calculatePriceInfo(product: Product, quantity: number) {
 }
 
 export function hasAnyDiscount(product: Product): boolean {
-  return (product.tiers && product.tiers.length > 0) || !!product.fixedDiscount?.enabled;
+  return (product.tiers && product.tiers.length > 0) || hasActiveFixedDiscount(product);
 }
 
 export function getDisplayTiers(product: Product): ProductTier[] {
@@ -60,6 +60,47 @@ export function getBestDiscountPercent(product: Product): number {
   const cheapest = Math.min(...tiers.map((t) => t.pricePerUnit));
   if (product.unitPrice <= 0) return 0;
   return Math.round((1 - cheapest / product.unitPrice) * 100);
+}
+
+/**
+ * ¿Tiene oferta fija activa (descuento puntual sobre el producto)?
+ * NO incluye tiers de descuento por volumen — esos son precios mayoristas,
+ * no "ofertas". Valida rango de fechas si está definido.
+ */
+export function hasActiveFixedDiscount(product: Product): boolean {
+  const fd = product.fixedDiscount;
+  if (!fd?.enabled) return false;
+  const now = Date.now();
+  const start = fd.startDate ? new Date(fd.startDate).getTime() : null;
+  const end = fd.endDate ? new Date(fd.endDate).getTime() : null;
+  if (start !== null && now < start) return false;
+  if (end !== null && now > end) return false;
+  return true;
+}
+
+/**
+ * Porcentaje del descuento fijo (no por volumen). Si type='amount',
+ * calcula el % equivalente sobre unitPrice.
+ */
+export function getFixedDiscountPercent(product: Product): number {
+  if (!hasActiveFixedDiscount(product)) return 0;
+  const fd = product.fixedDiscount!;
+  if (fd.type === 'percentage') return Math.round(fd.value);
+  // amount → % equivalente
+  if (product.unitPrice <= 0) return 0;
+  return Math.round((fd.value / product.unitPrice) * 100);
+}
+
+/**
+ * Texto del badge de oferta. Si el admin definió un texto custom, lo usa.
+ * Si no, devuelve `{X}% OFF` para percentage o `-${V}` para amount.
+ */
+export function getFixedDiscountBadge(product: Product): string {
+  if (!hasActiveFixedDiscount(product)) return '';
+  const fd = product.fixedDiscount!;
+  if (fd.badge) return fd.badge;
+  if (fd.type === 'percentage') return `${Math.round(fd.value)}% OFF`;
+  return `-$${Math.round(fd.value).toLocaleString('es-CL')}`;
 }
 
 /**

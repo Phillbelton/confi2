@@ -9,9 +9,9 @@ import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import {
   effectiveUnitPrice,
-  getBestDiscountPercent,
   getDisplayTiers,
-  hasAnyDiscount,
+  getFixedDiscountBadge,
+  hasActiveFixedDiscount,
   isPackagedSale,
   minQuantity,
   pricePerAtomicUnit,
@@ -47,7 +47,8 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const compareAtPrice = product.unitPrice;
   const isPackaged = isPackagedSale(product);
   const showFromHint = (product.tiers?.length || 0) > 0;
-  const discountPercent = getBestDiscountPercent(product);
+  const showFixedBadge = hasActiveFixedDiscount(product);
+  const fixedBadgeText = showFixedBadge ? getFixedDiscountBadge(product) : '';
 
   // "$X/u" informativo: precio por unidad atómica, derivado del ppu de la
   // presentación dividiendo por saleUnit.quantity. Solo cuando es paquete.
@@ -107,9 +108,9 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
 
-        {hasAnyDiscount(product) && discountPercent > 0 && (
+        {showFixedBadge && (
           <span className="absolute left-2 top-2 rounded-md bg-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white shadow">
-            {discountPercent}% dcto
+            {fixedBadgeText}
           </span>
         )}
 

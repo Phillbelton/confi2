@@ -19,8 +19,8 @@ import {
   presentationPrice,
   presentationPriceSuffix,
   quantityStep,
-  hasAnyDiscount,
-  getBestDiscountPercent,
+  getFixedDiscountBadge,
+  hasActiveFixedDiscount,
 } from '@/lib/discountCalculator';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
@@ -87,7 +87,8 @@ export default function ProductDetailPage() {
   const ppu = effectiveUnitPrice(product, realQty);
   const total = ppu * realQty;
   const tiers = getDisplayTiers(product);
-  const discount = getBestDiscountPercent(product);
+  const showFixedBadge = hasActiveFixedDiscount(product);
+  const fixedBadgeText = showFixedBadge ? getFixedDiscountBadge(product) : '';
   const isPackaged = isPackagedSale(product);
   // Precio principal: ya está en precio de presentación, no se multiplica.
   const headlinePrice = ppu;
@@ -127,9 +128,9 @@ export default function ProductDetailPage() {
             ) : (
               <div className="grid h-full place-items-center text-6xl">🍭</div>
             )}
-            {hasAnyDiscount(product) && discount > 0 && (
+            {showFixedBadge && (
               <span className="absolute left-3 top-3 rounded-md bg-orange-500 px-2.5 py-1 text-sm font-bold uppercase text-white shadow">
-                {discount}% dcto
+                {fixedBadgeText}
               </span>
             )}
             <SaleUnitBadge saleUnit={product.saleUnit} className="bottom-3" />
