@@ -1,7 +1,6 @@
 'use client';
 
 import { CategoryChips } from '@/components/m/shell/CategoryChips';
-import { HeroCompact } from '@/components/m/home/HeroCompact';
 import { SectionHeader } from '@/components/m/home/SectionHeader';
 import { ProductCarousel } from '@/components/m/home/ProductCarousel';
 import { CollectionsGrid } from '@/components/m/home/CollectionsGrid';
@@ -34,7 +33,8 @@ export default function MHomePage() {
 
   return (
     <>
-      <HeroCompact />
+      {/* Banner hero principal — gestionable desde /admin/banners (placement=home_hero) */}
+      <PromoGrid placement="home_hero" className="pt-3 lg:pt-4" />
       <CategoryChips />
 
       <SectionHeader
