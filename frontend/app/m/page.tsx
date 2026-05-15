@@ -38,7 +38,6 @@ export default function MHomePage() {
 
       <SectionHeader
         title="Destacados"
-        subtitle="Lo más recomendado por Quelita"
         emoji="⭐"
         href="/m/productos?featured=true"
       />
@@ -48,7 +47,6 @@ export default function MHomePage() {
 
       <SectionHeader
         title="Ofertas"
-        subtitle="Descuentos especiales por tiempo limitado"
         emoji="🔥"
         href="/m/productos?onSale=true"
       />

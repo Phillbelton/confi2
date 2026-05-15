@@ -26,11 +26,7 @@ export function CollectionsGrid({
 
   return (
     <>
-      <SectionHeader
-        title="Colecciones"
-        subtitle="Listas curadas para cada ocasión"
-        emoji="🎀"
-      />
+      <SectionHeader title="Colecciones" emoji="🎀" />
 
       {variant === 'double' ? (
         <>
@@ -60,22 +56,22 @@ export function CollectionsGrid({
             </div>
           </div>
 
-          {/* Desktop: grid amplio 4 cols, xl 5 cols */}
+          {/* Desktop: grid landscape 5:3 — 2 cols lg, 3 cols xl */}
           <div
             className={cn(
-              'hidden gap-4 px-8 pb-8 lg:grid lg:grid-cols-4 xl:grid-cols-5',
+              'hidden gap-4 px-8 pb-8 lg:grid lg:grid-cols-2 xl:grid-cols-3',
               className
             )}
           >
             {isLoading
-              ? Array.from({ length: 5 }).map((_, i) => (
+              ? Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-square animate-pulse rounded-2xl bg-muted"
+                    className="aspect-[5/3] animate-pulse rounded-2xl bg-muted"
                   />
                 ))
               : collections.map((c) => (
-                  <CollectionCard key={c._id} collection={c} variant="square" />
+                  <CollectionCard key={c._id} collection={c} variant="landscape" />
                 ))}
           </div>
         </>

@@ -36,7 +36,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { getSafeImageUrl } from '@/lib/image-utils';
@@ -166,9 +165,9 @@ export function CollectionForm({
     queryKey: ['admin-collection-picked-products', productIds],
     queryFn: async () => {
       if (productIds.length === 0) return [] as Product[];
-      // Trae todos los productos de un saque y reordena en cliente
+      // Trae los productos por IDs exactos y reordena en cliente según el array curado
       const { data } = await api.get(
-        `/products?limit=${productIds.length}&active=all`
+        `/products?ids=${productIds.join(',')}&limit=${productIds.length}&active=all`
       );
       const all = (data.data?.data || []) as Product[];
       // Filtrar y reordenar en orden curado
@@ -489,7 +488,7 @@ export function CollectionForm({
             </div>
 
             {productIds.length > 0 && (
-              <ScrollArea className="max-h-64 -mx-2 px-2">
+              <div className="max-h-72 overflow-y-auto overflow-x-hidden -mx-2 px-2 rounded-md border bg-muted/20">
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -515,7 +514,7 @@ export function CollectionForm({
                     </ul>
                   </SortableContext>
                 </DndContext>
-              </ScrollArea>
+              </div>
             )}
           </div>
 

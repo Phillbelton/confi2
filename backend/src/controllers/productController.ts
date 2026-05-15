@@ -35,6 +35,7 @@ export const listProducts = asyncHandler(
     const {
       page = '1',
       limit = '20',
+      ids,
       category,
       categories,
       subcategory,
@@ -55,6 +56,16 @@ export const listProducts = asyncHandler(
     const filter: any = {};
     if (active === 'true') filter.active = true;
     else if (active === 'false') filter.active = false;
+
+    // Filtro por IDs (útil para admin: traer set exacto de productos por _id)
+    if (ids) {
+      const idList = ids
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => mongoose.Types.ObjectId.isValid(s))
+        .map((s) => new mongoose.Types.ObjectId(s));
+      if (idList.length > 0) filter._id = { $in: idList };
+    }
 
     // Categoría — acepta slug o ID, y string o array
     const catRaw = subcategory || categories || category;
