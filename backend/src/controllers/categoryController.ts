@@ -17,15 +17,20 @@ export const getCategories = asyncHandler(
       .sort({ order: 1, name: 1 })
       .lean();
 
-    // Organizar en estructura jerárquica
-    const mainCategories = categories.filter(cat => !cat.parent);
-    const subcategories = categories.filter(cat => cat.parent);
+    // Devolver lista plana con `subcategories` (hijos directos) embebido en cada nodo.
+    // Plana permite al cliente reconstruir el árbol N-tier; el campo embebido preserva
+    // compatibilidad con consumidores que leen `root.subcategories`.
+    const childrenByParent = new Map<string, typeof categories>();
+    for (const cat of categories) {
+      const pid = cat.parent?.toString();
+      if (!pid) continue;
+      if (!childrenByParent.has(pid)) childrenByParent.set(pid, []);
+      childrenByParent.get(pid)!.push(cat);
+    }
 
-    const categoriesWithSubs = mainCategories.map(mainCat => ({
-      ...mainCat,
-      subcategories: subcategories.filter(
-        sub => sub.parent?.toString() === mainCat._id.toString()
-      ),
+    const categoriesWithSubs = categories.map(cat => ({
+      ...cat,
+      subcategories: childrenByParent.get(cat._id.toString()) || [],
     }));
 
     res.status(200).json({
@@ -188,11 +193,14 @@ export const createCategory = asyncHandler(
       facetableAttributes,
     } = req.body;
 
-    // Validar jerarquía de 2 niveles máximo
+    // Validar jerarquía de 3 niveles máximo (raíz → sub → sub-sub)
     if (parent) {
-      const parentCategory = await Category.findById(parent);
-      if (parentCategory && parentCategory.parent) {
-        throw new AppError(400, 'No se permiten más de 2 niveles de categorías (categoría → subcategoría)');
+      const parentCategory = await Category.findById(parent).populate('parent', '_id parent');
+      if (parentCategory) {
+        const grandparent: any = parentCategory.parent;
+        if (grandparent && grandparent.parent) {
+          throw new AppError(400, 'No se permiten más de 3 niveles de categorías');
+        }
       }
     }
 
@@ -237,11 +245,14 @@ export const updateCategory = asyncHandler(
       facetableAttributes,
     } = req.body;
 
-    // Validar jerarquía de 2 niveles máximo si se está cambiando el parent
+    // Validar jerarquía de 3 niveles máximo si se está cambiando el parent
     if (parent !== undefined && parent !== null) {
-      const parentCategory = await Category.findById(parent);
-      if (parentCategory && parentCategory.parent) {
-        throw new AppError(400, 'No se permiten más de 2 niveles de categorías (categoría → subcategoría)');
+      const parentCategory = await Category.findById(parent).populate('parent', '_id parent');
+      if (parentCategory) {
+        const grandparent: any = parentCategory.parent;
+        if (grandparent && grandparent.parent) {
+          throw new AppError(400, 'No se permiten más de 3 niveles de categorías');
+        }
       }
     }
 

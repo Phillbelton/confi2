@@ -174,44 +174,47 @@ export function CategoriesDropdown({
                       Esta categoría no tiene subcategorías. <Link href={`${basePath}?categoria=${catParam(activeRoot)}`} className="text-primary hover:underline" onClick={() => setOpen(false)}>Ver productos</Link>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
-                      {activeRoot.l2.map((sub) => (
-                        <div key={sub._id} className="min-w-0">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                      {activeRoot.l2.map((sub) => {
+                        const subConfig = getCategoryVisualConfig(sub.name);
+                        return (
                           <Link
+                            key={sub._id}
                             href={`${basePath}?categoria=${catParam(sub)}`}
                             onClick={() => setOpen(false)}
-                            className="block text-sm font-bold text-gray-900 hover:text-primary mb-1.5"
+                            className={cn(
+                              'group/sub flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-all',
+                              'border border-transparent',
+                              'hover:bg-gray-50 hover:border-gray-200 hover:shadow-sm'
+                            )}
                           >
-                            {sub.name}
-                          </Link>
-                          {sub.children.length > 0 && (
-                            <ul className="space-y-1">
-                              {sub.children.map((leaf) => (
-                                <li key={leaf._id}>
-                                  <Link
-                                    href={`${basePath}?categoria=${catParam(leaf)}`}
-                                    onClick={() => setOpen(false)}
-                                    className="text-xs text-gray-600 hover:text-primary block truncate"
-                                  >
-                                    {leaf.name}
-                                  </Link>
-                                </li>
-                              ))}
-                              {sub.children.length >= 6 && (
-                                <li>
-                                  <Link
-                                    href={`${basePath}?categoria=${catParam(sub)}`}
-                                    onClick={() => setOpen(false)}
-                                    className="text-xs text-primary hover:underline font-semibold inline-flex items-center gap-1"
-                                  >
-                                    Mostrar todo <ChevronRight className="h-3 w-3" />
-                                  </Link>
-                                </li>
+                            <div
+                              className={cn(
+                                'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl',
+                                'bg-gradient-to-br shadow-sm',
+                                subConfig.gradient
                               )}
-                            </ul>
-                          )}
-                        </div>
-                      ))}
+                            >
+                              {subConfig.emoji}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-gray-900 group-hover/sub:text-primary truncate leading-tight">
+                                {sub.name}
+                              </p>
+                              {sub.children.length > 0 ? (
+                                <p className="text-[11px] text-gray-500 truncate leading-tight mt-0.5">
+                                  {sub.children.slice(0, 3).map((c) => c.name).join(' · ')}
+                                  {sub.children.length > 3 && ` +${sub.children.length - 3}`}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-gray-500 truncate leading-tight mt-0.5">
+                                  {subConfig.description}
+                                </p>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </motion.div>
