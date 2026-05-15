@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { ProductCardM } from '@/components/m/catalog/ProductCardM';
+import { cn } from '@/lib/utils';
 import type { Product } from '@/types';
 
 interface ProductCarouselProps {
@@ -11,23 +11,61 @@ interface ProductCarouselProps {
 }
 
 /**
- * Vitrina de productos en scroll horizontal (igual mobile + desktop).
- * Desktop: agrega flechas de navegación a ambos lados.
+ * Vitrina horizontal de productos. Scroll nativo en touch, drag-to-scroll
+ * con mouse en desktop. Sin flechas — UX consistente con mobile.
  */
 export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({
+    active: false,
+    startX: 0,
+    scrollStart: 0,
+    moved: false,
+  });
+  const [isDragging, setIsDragging] = useState(false);
 
-  const scrollBy = (dir: 'left' | 'right') => {
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Solo mouse — touch usa scroll nativo
+    if (e.pointerType !== 'mouse') return;
     const el = scrollerRef.current;
     if (!el) return;
-    // Scroll por ~80% del ancho visible
-    const delta = el.clientWidth * 0.8 * (dir === 'right' ? 1 : -1);
-    el.scrollBy({ left: delta, behavior: 'smooth' });
+    dragRef.current.active = true;
+    dragRef.current.startX = e.pageX;
+    dragRef.current.scrollStart = el.scrollLeft;
+    dragRef.current.moved = false;
+    setIsDragging(true);
+    el.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.active) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    const dx = e.pageX - dragRef.current.startX;
+    if (Math.abs(dx) > 5) dragRef.current.moved = true;
+    el.scrollLeft = dragRef.current.scrollStart - dx;
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.active) return;
+    dragRef.current.active = false;
+    setIsDragging(false);
+    const el = scrollerRef.current;
+    if (el) el.releasePointerCapture(e.pointerId);
+  };
+
+  // Cancela el click si se hizo drag (evita navegar al producto al soltar)
+  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (dragRef.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragRef.current.moved = false;
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:px-8 lg:gap-4">
+      <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-none lg:px-8 lg:gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
@@ -47,38 +85,28 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
   }
 
   return (
-    <div className="relative group/carousel">
-      <div
-        ref={scrollerRef}
-        className="snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:px-8 lg:gap-4 lg:pb-6"
-      >
-        {products.map((p) => (
-          <ProductCardM
-            key={p._id}
-            product={p}
-            horizontal
-            className="lg:w-56 lg:shrink-0"
-          />
-        ))}
-      </div>
-
-      {/* Flechas — solo desktop, aparecen al hover */}
-      <button
-        type="button"
-        onClick={() => scrollBy('left')}
-        aria-label="Anterior"
-        className="absolute left-2 top-1/2 z-10 hidden -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-white shadow-lg ring-1 ring-border opacity-0 transition-opacity hover:scale-105 group-hover/carousel:opacity-100 lg:flex"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => scrollBy('right')}
-        aria-label="Siguiente"
-        className="absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-white shadow-lg ring-1 ring-border opacity-0 transition-opacity hover:scale-105 group-hover/carousel:opacity-100 lg:flex"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
+    <div
+      ref={scrollerRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onClickCapture={onClickCapture}
+      className={cn(
+        'snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:px-8 lg:gap-4 lg:pb-6',
+        // cursor grab solo en desktop con mouse
+        'lg:cursor-grab lg:select-none',
+        isDragging && 'lg:cursor-grabbing'
+      )}
+    >
+      {products.map((p) => (
+        <ProductCardM
+          key={p._id}
+          product={p}
+          horizontal
+          className="lg:w-56 lg:shrink-0"
+        />
+      ))}
     </div>
   );
 }
