@@ -60,6 +60,47 @@ export async function processImage(
 }
 
 /**
+ * Genera múltiples versiones por ancho (responsive `<img srcset>`).
+ * Cada variante preserva aspect ratio (`fit:inside`) y NO agranda fuentes pequeñas.
+ *
+ * Naming: `<basename>-w<width>.webp` (ej. `abc-w400.webp`, `abc-w800.webp`, `abc-w1200.webp`).
+ * El "default src" para `<img src>` es el ancho intermedio del array.
+ *
+ * @param inputPath  Ruta del archivo fuente (multer temp/...)
+ * @param outputDir  Directorio donde escribir las variantes
+ * @param baseName   Nombre base sin extensión ni suffix (ej. 'abc')
+ * @param widths     Array de anchos en px. Default: [400, 800, 1200]
+ * @returns          baseFilename (la variante intermedia, ej. 'abc-w800.webp') y todas las rutas
+ */
+export async function processImageMultiSize(
+  inputPath: string,
+  outputDir: string,
+  baseName: string,
+  widths: number[] = [400, 800, 1200],
+  quality: number = 85
+): Promise<{ baseFilename: string; paths: string[] }> {
+  if (widths.length === 0) throw new Error('processImageMultiSize: widths vacío');
+  const ext = '.webp';
+  const paths: string[] = [];
+
+  for (const w of widths) {
+    const outPath = path.join(outputDir, `${baseName}-w${w}${ext}`);
+    await sharp(inputPath)
+      .resize(w, undefined, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality })
+      .toFile(outPath);
+    paths.push(outPath);
+  }
+
+  // El src "default" es la variante intermedia (el browser hará selección real vía srcset)
+  const defaultW = widths[Math.floor(widths.length / 2)];
+  const baseFilename = `${baseName}-w${defaultW}${ext}`;
+
+  console.log(`✅ Multi-size generado: ${baseName} (${widths.join('w, ')}w)`);
+  return { baseFilename, paths };
+}
+
+/**
  * Genera múltiples versiones de una imagen (thumbnail, medium, large)
  *
  * @param inputPath - Ruta del archivo original

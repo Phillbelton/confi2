@@ -1,11 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Plus, Minus, Trash2 } from 'lucide-react';
 import { useCartStoreM, type CartItem } from '@/store/m/useCartStoreM';
 import { quantityStep, minQuantity } from '@/lib/discountCalculator';
-import { getSafeImageUrl } from '@/lib/image-utils';
+import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 
 interface Props {
   item: CartItem;
@@ -24,13 +23,21 @@ export function CartItemM({ item }: Props) {
         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted"
       >
         {item.product.images?.[0] ? (
-          <Image
-            src={getSafeImageUrl(item.product.images[0], { width: 160, height: 160 })}
-            alt={item.product.name}
-            fill
-            sizes="80px"
-            className="object-cover"
-          />
+          (() => {
+            const attrs = buildSrcSet(item.product.images[0], SIZESET.thumb);
+            return (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={attrs.src}
+                srcSet={attrs.srcSet}
+                alt={item.product.name}
+                sizes="80px"
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            );
+          })()
         ) : (
           <div className="grid h-full place-items-center text-2xl">🍭</div>
         )}

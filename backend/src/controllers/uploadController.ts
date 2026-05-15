@@ -13,11 +13,37 @@ import logger from '../config/logger';
  * Upload Controller — manejo de imágenes para Product, Category, Brand, Collection.
  */
 
+/**
+ * Multi-size widths por carpeta. Sharp genera 3 variantes WebP (fit:inside, no
+ * upscale) que el frontend usa vía `<img srcset>` — browser elige la óptima
+ * por device y viewport, ahorrando bandwidth en mobile.
+ *
+ * Anchos elegidos:
+ *  - card  [400, 800, 1200]: cards de catálogo (productos, colecciones, categorías)
+ *  - thumb [200, 400]:        logos marcas, cart items
+ *  - hero  [640, 1280, 1920]: banners home, backgrounds full-width
+ *
+ * Naming output: `<base>-w400.webp`, `<base>-w800.webp`, `<base>-w1200.webp`.
+ * El DB guarda la URL de la variante intermedia (default src para no-srcset clients).
+ */
+const FOLDER_WIDTHS: Record<string, number[]> = {
+  products:    [400, 800, 1200],
+  brands:      [200, 400, 600],
+  categories:  [400, 800],
+  collections: [400, 800, 1200],
+  banners:     [640, 1280, 1920],
+  backgrounds: [640, 1280, 1920],
+};
+
 async function uploadFiles(files: Express.Multer.File[], folder: string): Promise<string[]> {
+  const responsiveWidths = FOLDER_WIDTHS[folder] || [400, 800, 1200];
   const urls: string[] = [];
   for (const f of files) {
     try {
-      const result = await imageService.uploadImage(f.path, { folder });
+      const result = await imageService.uploadImage(f.path, {
+        folder,
+        responsiveWidths,
+      });
       urls.push(result.url);
     } catch (err: any) {
       logger.warn(`[upload] failed ${f.originalname}: ${err.message}`);

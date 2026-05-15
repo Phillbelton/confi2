@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import Image from 'next/image';
 import { useForm } from 'react-hook-form';
+import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Plus, X, ImagePlus, Trash2, GripVertical } from 'lucide-react';
@@ -87,8 +87,15 @@ export function CollectionForm({
   isUploadingImage = false,
 }: CollectionFormProps) {
   const isEditing = !!collection;
+  // Resolver URL del backend: data: (FileReader) queda como está, /uploads/...
+  // se convierte en URL absoluta vía getSafeImageUrl.
+  const resolvePreview = (raw: string | null | undefined): string | null => {
+    if (!raw) return null;
+    if (raw.startsWith('data:')) return raw;
+    return getSafeImageUrl(raw);
+  };
   const [imagePreview, setImagePreview] = useState<string | null>(
-    collection?.image || null
+    resolvePreview(collection?.image)
   );
 
   // IDs en orden curado — fuente de verdad de los productos seleccionados
@@ -131,7 +138,7 @@ export function CollectionForm({
         order: collection.order ?? 0,
       });
       setProductIds(initialProductIds);
-      setImagePreview(collection.image || null);
+      setImagePreview(resolvePreview(collection.image));
     }
   }, [collection, initialProductIds, form]);
 
@@ -174,12 +181,13 @@ export function CollectionForm({
   });
 
   const handleSubmit = (values: FormValues) => {
-    // Convertir el sentinel __REMOVE__ a string vacío explícito (clear image)
-    const cleaned = {
-      ...values,
-      image: values.image === '__REMOVE__' ? '' : values.image,
-    };
-    onSubmit({ ...cleaned, products: productIds });
+    // La imagen se gestiona aparte vía POST /collections/:id/image (upload) y
+    // el sentinel __REMOVE__ (clear). NO reenviar el valor original en cada
+    // submit — eso pisaba la imagen recién subida con la URL vieja.
+    const { image, ...rest } = values;
+    const payload: any = { ...rest, products: productIds };
+    if (image === '__REMOVE__') payload.image = '';
+    onSubmit(payload);
   };
 
   const togglePicked = (id: string) => {
@@ -390,12 +398,12 @@ export function CollectionForm({
                   )}
                 >
                   {imagePreview ? (
-                    <Image
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
                       src={imagePreview}
                       alt="Preview"
-                      fill
-                      sizes="160px"
-                      className="object-cover"
+                      decoding="async"
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
                     <div className="absolute inset-0 grid place-items-center">
@@ -640,17 +648,23 @@ function SortableProductRow({
       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold tabular-nums">
         {index + 1}
       </span>
-      {product?.images?.[0] && (
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
-          <Image
-            src={getSafeImageUrl(product.images[0], { width: 80, height: 80 })}
-            alt={product.name}
-            fill
-            sizes="40px"
-            className="object-cover"
-          />
-        </div>
-      )}
+      {product?.images?.[0] && (() => {
+        const attrs = buildSrcSet(product.images[0], SIZESET.thumb);
+        return (
+          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={attrs.src}
+              srcSet={attrs.srcSet}
+              alt={product.name}
+              sizes="40px"
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+        );
+      })()}
       <p className="line-clamp-1 flex-1 text-sm">
         {product?.name || (
           <span className="text-muted-foreground italic">cargando...</span>

@@ -450,7 +450,27 @@ export async function runQuelitaProductImport(
 
       let savedProduct;
       if (product) {
-        Object.assign(product, productData);
+        // UPDATE: preservar contenido curado por admin (images, description
+        // editada, featured) — el Excel solo manda price/structure. Si el
+        // Excel trae un valor explícito (imagen_url, descripcion no auto-gen)
+        // entonces sí pisa.
+        const updateData = { ...productData };
+        // Imágenes: si Excel no trae URL, conservar las que subió el admin
+        if (!imageUrl && product.images && product.images.length > 0) {
+          delete updateData.images;
+        }
+        // Featured: el Excel puede no traer la columna; solo updatear si el
+        // admin explicitó en Excel "destacado=TRUE/FALSE"
+        if (readCol(r, 'destacado', 'featured') === '') {
+          delete updateData.featured;
+        }
+        // Description: solo pisar si Excel trae descripción no auto-generada
+        // (la auto-gen termina en ". categoría." — heurística simple)
+        const excelDescRaw = norm(readCol(r, 'descripcion', 'description'));
+        if (!excelDescRaw || excelDescRaw.length < 10) {
+          delete updateData.description;
+        }
+        Object.assign(product, updateData);
         if (userId) product.updatedBy = new mongoose.Types.ObjectId(userId);
         savedProduct = await product.save();
         report.productsUpdated += 1;

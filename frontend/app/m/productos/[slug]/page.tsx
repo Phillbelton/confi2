@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
+import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import Link from 'next/link';
 import { ChevronLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,6 @@ import {
   getFixedDiscountBadge,
   hasActiveFixedDiscount,
 } from '@/lib/discountCalculator';
-import { getSafeImageUrl } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
 import type { Brand, Category, Format, Flavor } from '@/types';
 
@@ -116,16 +115,21 @@ export default function ProductDetailPage() {
         {/* Galería */}
         <div className="lg:sticky lg:top-32 lg:self-start">
           <div className="relative aspect-square overflow-hidden bg-muted lg:rounded-2xl">
-            {product.images?.[0] ? (
-              <Image
-                src={getSafeImageUrl(product.images[0], { width: 800, height: 800 })}
-                alt={product.name}
-                fill
-                sizes="(max-width: 1024px) 100vw, 55vw"
-                className="object-cover"
-                priority
-              />
-            ) : (
+            {product.images?.[0] ? (() => {
+              const attrs = buildSrcSet(product.images[0], SIZESET.card);
+              return (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={attrs.src}
+                  srcSet={attrs.srcSet}
+                  alt={product.name}
+                  sizes="(max-width: 1024px) 100vw, 55vw"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              );
+            })() : (
               <div className="grid h-full place-items-center text-6xl">🍭</div>
             )}
             {showFixedBadge && (

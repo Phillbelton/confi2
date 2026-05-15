@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Plus, Minus } from 'lucide-react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
-import { getSafeImageUrl } from '@/lib/image-utils';
+import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import {
   effectiveUnitPrice,
   getDisplayTiers,
@@ -36,7 +35,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const items = useCartStoreM((s) => s.items);
 
   const inCart = items.find((i) => i.productId === product._id)?.quantity || 0;
-  const image = getSafeImageUrl(product.images?.[0], { width: 320, height: 320, quality: 'auto' });
+  const imgAttrs = buildSrcSet(product.images?.[0], SIZESET.card);
   const minQ = minQuantity(product);
   const step = quantityStep(product);
 
@@ -100,12 +99,15 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
       )}
     >
       <Link href={productHref} className="relative block aspect-square overflow-hidden bg-muted">
-        <Image
-          src={image}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imgAttrs.src}
+          srcSet={imgAttrs.srcSet}
           alt={product.name}
-          fill
           sizes={horizontal ? '176px' : '(max-width: 640px) 50vw, 25vw'}
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
 
         {showFixedBadge && (
