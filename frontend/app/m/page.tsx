@@ -5,6 +5,7 @@ import { HeroCompact } from '@/components/m/home/HeroCompact';
 import { SectionHeader } from '@/components/m/home/SectionHeader';
 import { ProductCarousel } from '@/components/m/home/ProductCarousel';
 import { CollectionsGrid } from '@/components/m/home/CollectionsGrid';
+import { PromoGrid } from '@/components/m/home/PromoGrid';
 import { ProductCardM } from '@/components/m/catalog/ProductCardM';
 import { useFeaturedProducts, useProducts } from '@/hooks/useProducts';
 import type { Product } from '@/types';
@@ -90,6 +91,9 @@ export default function MHomePage() {
                 <ProductCardM key={p._id} product={p} />
               ))}
       </div>
+
+      <SectionHeader title="Promociones" emoji="🎁" />
+      <PromoGrid placement="home_promo" />
     </>
   );
 }

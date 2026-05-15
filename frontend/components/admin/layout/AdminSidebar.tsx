@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   Sparkles,
   Upload,
+  ImagePlay,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,6 +58,12 @@ const menuItems = [
     title: 'Colecciones',
     href: '/admin/colecciones',
     icon: Sparkles,
+    roles: ['admin', 'funcionario'] as UserRole[],
+  },
+  {
+    title: 'Banners y promos',
+    href: '/admin/banners',
+    icon: ImagePlay,
     roles: ['admin', 'funcionario'] as UserRole[],
   },
   {

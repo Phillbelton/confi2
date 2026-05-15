@@ -370,6 +370,49 @@ export interface Collection {
 }
 
 // ============================================================================
+// BANNERS — heroes, promos, secciones con link gestionados por admin
+// ============================================================================
+
+export type BannerPlacement =
+  | 'home_hero'
+  | 'home_promo'
+  | 'home_secondary'
+  | 'category_top'
+  | 'collection_top';
+
+export type BannerSize = 'normal' | 'wide' | 'tall' | 'hero';
+
+export type BannerLinkType =
+  | 'collection'
+  | 'product'
+  | 'category'
+  | 'external'
+  | 'none';
+
+export interface BannerLink {
+  type: BannerLinkType;
+  target?: string;
+}
+
+export interface Banner {
+  _id: string;
+  placement: BannerPlacement;
+  order: number;
+  size: BannerSize;
+  image: string;
+  imageMobile?: string;
+  title?: string;
+  subtitle?: string;
+  ctaText?: string;
+  link: BannerLink;
+  active: boolean;
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
 // FACETS (búsqueda facetada con counts dinámicos)
 // ============================================================================
 

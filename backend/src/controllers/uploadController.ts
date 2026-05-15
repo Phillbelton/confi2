@@ -5,6 +5,7 @@ import ProductImage from '../models/ProductImage';
 import { Category } from '../models/Category';
 import { Brand } from '../models/Brand';
 import Collection from '../models/Collection';
+import Banner from '../models/Banner';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { imageService } from '../services/imageService';
@@ -181,5 +182,29 @@ export const uploadCollectionImage = asyncHandler(
     coll.image = url;
     await coll.save();
     res.status(200).json({ success: true, message: 'Imagen actualizada', data: { image: url } });
+  }
+);
+
+// ============================ Banner ============================
+
+export const uploadBannerImage = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const banner = await Banner.findById(req.params.id);
+    if (!banner) throw new AppError(404, 'Banner no encontrado');
+    const file = req.file;
+    if (!file) throw new AppError(400, 'Sin imagen');
+
+    // Variant: 'mobile' actualiza imageMobile, default actualiza image
+    const variant = (req.query.variant as string) || 'main';
+    const fieldKey = variant === 'mobile' ? 'imageMobile' : 'image';
+    const oldUrl = (banner as any)[fieldKey] as string | undefined;
+    if (oldUrl) {
+      try { await imageService.deleteImage(oldUrl); } catch {}
+    }
+    const [url] = await uploadFiles([file], 'banners');
+    if (!url) throw new AppError(500, 'Error al subir imagen');
+    (banner as any)[fieldKey] = url;
+    await banner.save();
+    res.status(200).json({ success: true, message: 'Imagen actualizada', data: { [fieldKey]: url } });
   }
 );
