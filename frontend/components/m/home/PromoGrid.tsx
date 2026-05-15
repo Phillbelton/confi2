@@ -144,8 +144,13 @@ function BannerTile({ banner, className, priority, sizes }: BannerTileProps) {
     </div>
   );
 
+  // `block h-full w-full` siempre: si className no setea display/dimensiones
+  // (caso carrusel donde no se pasa className), el wrapper igual fills su slot
+  // (Link/anchor default es inline → colapsaría a altura 0).
+  const wrapperClass = cn('block h-full w-full', className);
+
   if (!href) {
-    return <div className={className}>{content}</div>;
+    return <div className={wrapperClass}>{content}</div>;
   }
 
   return isExternal ? (
@@ -153,7 +158,7 @@ function BannerTile({ banner, className, priority, sizes }: BannerTileProps) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={className}
+      className={wrapperClass}
       aria-label={banner.title || 'Promoción'}
     >
       {content}
@@ -161,7 +166,7 @@ function BannerTile({ banner, className, priority, sizes }: BannerTileProps) {
   ) : (
     <Link
       href={href}
-      className={className}
+      className={wrapperClass}
       aria-label={banner.title || 'Promoción'}
     >
       {content}
