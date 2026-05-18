@@ -2,7 +2,7 @@
 
 import { type ReactNode } from 'react';
 import { StickyHeader } from './StickyHeader';
-import { BottomTabBar, SideRail } from './BottomTabBar';
+import { BottomTabBar } from './BottomTabBar';
 import { CartFab } from './CartFab';
 import { MobileFooter } from './MobileFooter';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,12 @@ interface MobileShellProps {
   hideFooter?: boolean;
 }
 
+/**
+ * Shell del frontend público.
+ *
+ * Mobile (<lg): max-w-screen-md (~448px), columna única, BottomTabBar fijo.
+ * Desktop (>=lg): max-w-[1440px], top-nav en StickyHeader, sin BottomTabBar.
+ */
 export function MobileShell({
   children,
   hideHeader,
@@ -21,10 +27,8 @@ export function MobileShell({
   hideFooter,
 }: MobileShellProps) {
   return (
-    <div className="theme-catalog min-h-dvh overflow-x-clip bg-background lg:pl-20">
-      <SideRail />
-
-      <div className="mx-auto flex min-h-dvh w-full max-w-screen-md flex-col">
+    <div className="theme-catalog min-h-dvh overflow-x-clip bg-background">
+      <div className="mx-auto flex min-h-dvh w-full max-w-screen-md flex-col lg:max-w-[1440px]">
         {!hideHeader && <StickyHeader />}
 
         <main

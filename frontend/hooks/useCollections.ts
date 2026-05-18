@@ -1,40 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
-import { collectionService, type CollectionListParams } from '@/services/collections';
+import { api } from '@/lib/axios';
+import type { Collection, ApiResponse } from '@/types';
 
-export function useCollections(params?: CollectionListParams) {
-  return useQuery({
-    queryKey: ['collections', params],
-    queryFn: () => collectionService.getAll(params),
-    staleTime: 60 * 1000, // 1 min
-  });
-}
-
-/** Solo las colecciones activas y visibles en home */
 export function useHomeCollections() {
   return useQuery({
     queryKey: ['collections', 'home'],
-    queryFn: () => collectionService.getAll({ showOnHome: true, active: 'true' }),
-    staleTime: 60 * 1000,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<{ collections: Collection[] }>>(
+        '/collections',
+        { params: { showOnHome: 'true', active: 'true' } }
+      );
+      return data.data?.collections || [];
+    },
+    staleTime: 60_000,
   });
 }
 
-export function useCollection(idOrSlug: string, mode: 'id' | 'slug' = 'slug') {
+export function useCollection(slugOrId: string, by: 'slug' | 'id' = 'slug') {
   return useQuery({
-    queryKey: ['collections', mode, idOrSlug],
-    queryFn: () =>
-      mode === 'id'
-        ? collectionService.getById(idOrSlug)
-        : collectionService.getBySlug(idOrSlug),
-    enabled: !!idOrSlug,
-    staleTime: 60 * 1000,
-  });
-}
-
-export function useCollectionProducts(slug: string, page = 1, limit = 20) {
-  return useQuery({
-    queryKey: ['collections', 'products', slug, page, limit],
-    queryFn: () => collectionService.getProducts(slug, page, limit),
-    enabled: !!slug,
-    staleTime: 30 * 1000,
+    queryKey: ['collections', by, slugOrId],
+    queryFn: async () => {
+      const path = by === 'slug' ? `/collections/slug/${slugOrId}` : `/collections/${slugOrId}`;
+      const { data } = await api.get<ApiResponse<{ collection: Collection }>>(path);
+      return data.data?.collection;
+    },
+    enabled: !!slugOrId,
+    staleTime: 60_000,
   });
 }

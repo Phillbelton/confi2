@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Collection from '../models/Collection';
-import ProductParent from '../models/ProductParent';
+import Product from "../models/Product";
 
 dotenv.config();
 
@@ -137,7 +137,7 @@ async function seedCollections() {
     }
 
     // Cargar productos disponibles para asignar
-    const allProducts = await ProductParent.find({ active: true }).select('_id name featured').lean();
+    const allProducts = await Product.find({ active: true }).select('_id name featured').lean();
     const featuredProducts = allProducts.filter((p) => p.featured);
 
     if (allProducts.length === 0) {

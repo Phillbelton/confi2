@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Header } from '@/components/layout/Header';
+
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useCartStore } from '@/store/useCartStore';
+import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { useClientStore } from '@/store/useClientStore';
 import { orderService } from '@/services/orders';
 import { getSafeImageUrl } from '@/lib/image-utils';
@@ -22,7 +22,7 @@ import type { DeliveryMethod, PaymentMethod } from '@/types';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, total, subtotal, totalDiscount, clearCart } = useCartStore();
+  const { items, total, subtotal, totalDiscount, clearCart } = useCartStoreM();
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,7 +137,7 @@ export default function CheckoutPage() {
 
       // Prepare items
       const orderItems = items.map((item) => ({
-        variantId: item.variantId,
+        productId: item.productId,
         quantity: item.quantity,
       }));
 
@@ -202,7 +202,7 @@ export default function CheckoutPage() {
   if (showAuthGate) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
+        
         <main className="flex-1 theme-catalog bg-background">
           <div className="container px-4 py-8 md:px-6">
             <div className="max-w-md mx-auto">
@@ -295,7 +295,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      
 
       <main className="flex-1 theme-catalog bg-background">
         <div className="container px-4 py-6 md:py-8 pb-28 lg:pb-8">
@@ -612,19 +612,15 @@ export default function CheckoutPage() {
                       {/* Items */}
                       <div className="space-y-3">
                         {items.map((item) => {
-                          const product = item.productParent;
-                          const variant = item.variant;
-                          const rawImage =
-                            variant.images?.[0] ||
-                            (typeof product !== 'string' ? product.images?.[0] : null);
-                          const image = getSafeImageUrl(rawImage, { width: 80, height: 80, quality: 'auto' });
+                          const product = item.product;
+                          const image = getSafeImageUrl(product.images?.[0], { width: 80, height: 80, quality: 'auto' });
 
                           return (
-                            <div key={item.variantId} className="flex gap-3">
+                            <div key={item.productId} className="flex gap-3">
                               <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-border bg-white">
                                 <Image
                                   src={image}
-                                  alt={typeof product !== 'string' ? product.name : 'Producto'}
+                                  alt={product.name}
                                   fill
                                   className="object-contain p-1"
                                   sizes="64px"
@@ -632,19 +628,14 @@ export default function CheckoutPage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-foreground line-clamp-1">
-                                  {typeof product !== 'string' ? product.name : 'Producto'}
+                                  {product.name}
                                 </p>
-                                {typeof product !== 'string' && product.hasVariants && (
-                                  <p className="text-xs text-muted-foreground line-clamp-1">
-                                    {variant.displayName}
-                                  </p>
-                                )}
                                 <div className="flex items-center justify-between mt-1">
                                   <span className="text-xs text-muted-foreground">
                                     Cant: {item.quantity}
                                   </span>
                                   <span className="font-sans text-sm font-semibold text-foreground" suppressHydrationWarning>
-                                    ${(item.unitPrice - item.discount).toLocaleString('es-CL')}
+                                    ${item.subtotal.toLocaleString('es-CL')}
                                   </span>
                                 </div>
                               </div>

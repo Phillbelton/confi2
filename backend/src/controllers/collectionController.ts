@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import Collection, { ICollection } from '../models/Collection';
-import ProductParent from '../models/ProductParent';
-import ProductVariant from '../models/ProductVariant';
+import Product from '../models/Product';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { imageService } from '../services/imageService';
@@ -47,7 +46,7 @@ export const getCollections = asyncHandler(
     // Para cada colección, contar productos activos (info útil sin populate completo)
     const withCounts = await Promise.all(
       collections.map(async (c) => {
-        const productCount = await ProductParent.countDocuments({
+        const productCount = await Product.countDocuments({
           _id: { $in: c.products || [] },
           active: true,
         });
@@ -121,13 +120,13 @@ export const getCollectionProducts = asyncHandler(
     const skip = (pageNum - 1) * limitNum;
 
     const productIds = collection.products || [];
-    const total = await ProductParent.countDocuments({
+    const total = await Product.countDocuments({
       _id: { $in: productIds },
       active: true,
     });
 
     // Cargar productos respetando el orden curado
-    const products = await ProductParent.find({
+    const products = await Product.find({
       _id: { $in: productIds },
       active: true,
     })
@@ -148,34 +147,13 @@ export const getCollectionProducts = asyncHandler(
     // Paginar manualmente (después del orden curado)
     const paginated = products.slice(skip, skip + limitNum);
 
-    // Eager-load variants
-    const ids = paginated.map((p: any) => p._id);
-    const variants = await ProductVariant.find({
-      parentProduct: { $in: ids },
-      active: true,
-    })
-      .sort({ order: 1 })
-      .lean();
-
-    const byParent = variants.reduce((acc, v) => {
-      const k = v.parentProduct.toString();
-      if (!acc[k]) acc[k] = [];
-      acc[k].push(v);
-      return acc;
-    }, {} as Record<string, any[]>);
-
-    const productsWithVariants = paginated.map((p: any) => ({
-      ...p,
-      variants: byParent[p._id.toString()] || [],
-    }));
-
     const totalPages = Math.ceil(total / limitNum);
 
     res.status(200).json({
       success: true,
       data: {
         collection,
-        data: productsWithVariants,
+        data: paginated,
         pagination: {
           page: pageNum,
           limit: limitNum,

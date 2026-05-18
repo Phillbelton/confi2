@@ -1,260 +1,83 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { productService } from '@/services/products';
-import { adminProductService } from '@/services/admin/products';
-import type {
-  ProductQueryParams,
-  ProductParent,
-  ProductVariant,
-} from '@/types';
-import type {
-  CreateProductParentInput,
-  UpdateProductParentInput,
-  CreateProductVariantInput,
-  UpdateProductVariantInput,
+import {
+  adminProductService,
+  type CreateProductInput,
+  type UpdateProductInput,
 } from '@/services/admin/products';
+import type { ProductQueryParams } from '@/services/products';
 
 export function useAdminProducts(params?: ProductQueryParams) {
-  const queryClient = useQueryClient();
-
-  // Get products query
-  const productsQuery = useQuery({
+  return useQuery({
     queryKey: ['admin-products', params],
-    queryFn: () => productService.getProducts(params),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    queryFn: () => adminProductService.list(params),
+    staleTime: 30_000,
   });
-
-  // Create product mutation
-  const createMutation = useMutation({
-    mutationFn: (data: CreateProductParentInput) =>
-      adminProductService.createProductParent(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
-      toast.success('Producto creado exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al crear el producto');
-    },
-  });
-
-  // Update product mutation
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateProductParentInput }) =>
-      adminProductService.updateProductParent(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-product'] });
-      toast.success('Producto actualizado exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar el producto');
-    },
-  });
-
-  // Delete product mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => adminProductService.deleteProductParent(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
-      toast.success('Producto eliminado exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al eliminar el producto');
-    },
-  });
-
-  // Upload images mutation
-  const uploadImagesMutation = useMutation({
-    mutationFn: ({ id, files }: { id: string; files: File[] }) =>
-      adminProductService.uploadProductParentImages(id, files),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-product'] });
-      toast.success('Imágenes cargadas exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al cargar imágenes');
-    },
-  });
-
-  // Delete image mutation
-  const deleteImageMutation = useMutation({
-    mutationFn: ({ id, filename }: { id: string; filename: string }) =>
-      adminProductService.deleteProductParentImage(id, filename),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-product'] });
-      toast.success('Imagen eliminada exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al eliminar imagen');
-    },
-  });
-
-  return {
-    products: productsQuery.data?.data || [],
-    pagination: productsQuery.data?.pagination,
-    isLoading: productsQuery.isLoading,
-    error: productsQuery.error,
-    createProduct: createMutation.mutate,
-    isCreating: createMutation.isPending,
-    updateProduct: updateMutation.mutate,
-    isUpdating: updateMutation.isPending,
-    deleteProduct: deleteMutation.mutate,
-    isDeleting: deleteMutation.isPending,
-    uploadImages: uploadImagesMutation.mutate,
-    isUploadingImages: uploadImagesMutation.isPending,
-    deleteImage: deleteImageMutation.mutate,
-    isDeletingImage: deleteImageMutation.isPending,
-    refetch: productsQuery.refetch,
-  };
 }
 
 export function useAdminProduct(id: string) {
-  const queryClient = useQueryClient();
-
-  const productQuery = useQuery({
+  return useQuery({
     queryKey: ['admin-product', id],
-    queryFn: () => productService.getProductById(id),
+    queryFn: () => adminProductService.getById(id),
     enabled: !!id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 60_000,
   });
-
-  return {
-    product: productQuery.data?.data,
-    isLoading: productQuery.isLoading,
-    error: productQuery.error,
-    refetch: productQuery.refetch,
-  };
 }
 
-export function useAdminProductVariants(parentId: string) {
-  const queryClient = useQueryClient();
+export function useProductOperations() {
+  const qc = useQueryClient();
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['admin-products'] });
+    qc.invalidateQueries({ queryKey: ['admin-product'] });
+    qc.invalidateQueries({ queryKey: ['products'] });
+    qc.invalidateQueries({ queryKey: ['facets'] });
+  };
 
-  const variantsQuery = useQuery({
-    queryKey: ['admin-product-variants', parentId],
-    queryFn: () => productService.getProductVariants(parentId, true),
-    enabled: !!parentId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-  });
-
-  // Create variant mutation
-  const createVariantMutation = useMutation({
-    mutationFn: (data: CreateProductVariantInput) =>
-      adminProductService.createProductVariant(data),
+  const createMut = useMutation({
+    mutationFn: (input: CreateProductInput | FormData) => adminProductService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
-      toast.success('Variante creada exitosamente');
+      toast.success('Producto creado');
+      invalidate();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al crear la variante');
-    },
+    onError: (e: any) => toast.error(e?.message || 'Error al crear producto'),
   });
 
-  // Add variant to parent mutation (with auto-sync of variantAttributes)
-  const addVariantToParentMutation = useMutation({
-    mutationFn: (data: {
-      attributes: Record<string, string>;
-      price: number;
-      sku?: string;
-      description?: string;
-    }) => adminProductService.addVariantToParent(parentId, data),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-product', parentId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
-
-      if (result.parentUpdated && result.newValuesAdded.length > 0) {
-        toast.success(
-          `Variante creada exitosamente. Se agregaron ${result.newValuesAdded.length} nuevo(s) valor(es) a los atributos del producto.`,
-          { duration: 5000 }
-        );
-      } else {
-        toast.success('Variante creada exitosamente');
-      }
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al agregar la variante');
-    },
-  });
-
-  // Update variant mutation
-  const updateVariantMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateProductVariantInput }) =>
-      adminProductService.updateProductVariant(id, data),
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateProductInput }) =>
+      adminProductService.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('Variante actualizada exitosamente');
+      toast.success('Producto actualizado');
+      invalidate();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar la variante');
-    },
+    onError: (e: any) => toast.error(e?.message || 'Error al actualizar'),
   });
 
-  // Delete variant mutation
-  const deleteVariantMutation = useMutation({
-    mutationFn: (id: string) => adminProductService.deleteProductVariant(id),
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => adminProductService.remove(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
-      toast.success('Variante eliminada exitosamente');
+      toast.success('Producto eliminado');
+      invalidate();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al eliminar la variante');
-    },
+    onError: (e: any) => toast.error(e?.message || 'Error al eliminar'),
   });
 
-  // Upload variant images mutation
-  const uploadVariantImagesMutation = useMutation({
+  const uploadImagesMut = useMutation({
     mutationFn: ({ id, files }: { id: string; files: File[] }) =>
-      adminProductService.uploadProductVariantImages(id, files),
+      adminProductService.uploadImages(id, files),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('Imágenes cargadas exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al cargar imágenes');
-    },
-  });
-
-  // Delete variant image mutation
-  const deleteVariantImageMutation = useMutation({
-    mutationFn: ({ id, filename }: { id: string; filename: string }) =>
-      adminProductService.deleteProductVariantImage(id, filename),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-variants'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('Imagen eliminada exitosamente');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al eliminar imagen');
+      toast.success('Imágenes subidas');
+      invalidate();
     },
   });
 
   return {
-    variants: variantsQuery.data?.data || [],
-    isLoading: variantsQuery.isLoading,
-    error: variantsQuery.error,
-    createVariant: createVariantMutation.mutate,
-    isCreatingVariant: createVariantMutation.isPending,
-    addVariantToParent: addVariantToParentMutation.mutate,
-    isAddingVariant: addVariantToParentMutation.isPending,
-    updateVariant: updateVariantMutation.mutate,
-    isUpdatingVariant: updateVariantMutation.isPending,
-    deleteVariant: deleteVariantMutation.mutate,
-    isDeletingVariant: deleteVariantMutation.isPending,
-    uploadVariantImages: uploadVariantImagesMutation.mutate,
-    isUploadingVariantImages: uploadVariantImagesMutation.isPending,
-    deleteVariantImage: deleteVariantImageMutation.mutate,
-    isDeletingVariantImage: deleteVariantImageMutation.isPending,
-    refetch: variantsQuery.refetch,
+    create: createMut.mutate,
+    isCreating: createMut.isPending,
+    update: updateMut.mutate,
+    isUpdating: updateMut.isPending,
+    remove: deleteMut.mutate,
+    isDeleting: deleteMut.isPending,
+    uploadImages: uploadImagesMut.mutate,
+    isUploading: uploadImagesMut.isPending,
   };
 }

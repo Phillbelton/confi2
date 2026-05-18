@@ -2,11 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/Header';
-import { ClientSidebar } from '@/components/client/ClientSidebar';
-import { ClientBottomNav } from '@/components/client/ClientBottomNav';
 import { useClientAuth } from '@/hooks/client/useClientAuth';
 import { useOrderNotifications } from '@/hooks/client/useOrderNotifications';
+import { MobileShell } from '@/components/m/shell/MobileShell';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientLayout({
@@ -16,65 +14,31 @@ export default function ClientLayout({
 }) {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useClientAuth();
-
-  // Monitor order status changes for notifications
   useOrderNotifications();
 
-  // Redirigir si no está autenticado
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
-    }
+    if (!isLoading && !isAuthenticated) router.push('/login');
   }, [isLoading, isAuthenticated, router]);
 
-  // Mostrar loading mientras se verifica autenticación
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        {/* Header skeleton */}
-        <div className="sticky top-0 z-50 h-14 bg-background border-b">
-          <div className="container h-full flex items-center justify-between px-4">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </div>
+      <MobileShell>
+        <div className="px-4 py-6 space-y-4 lg:px-8">
+          <Skeleton className="h-32 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
         </div>
-
-        {/* Content skeleton */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-          <div className="space-y-4">
-            <Skeleton className="h-32 w-full rounded-lg" />
-            <Skeleton className="h-24 w-full rounded-lg" />
-            <Skeleton className="h-24 w-full rounded-lg" />
-          </div>
-        </div>
-      </div>
+      </MobileShell>
     );
   }
 
-  // Si no está autenticado, no renderizar nada (se redirigirá)
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <div className="lg:grid lg:grid-cols-[280px_1fr]">
-        {/* Sidebar - Solo desktop */}
-        <ClientSidebar />
-
-        {/* Contenido principal */}
-        <main className="min-h-[calc(100vh-56px)] pb-20 lg:min-h-[calc(100vh-var(--header-height-desktop))] lg:pb-0">
-          <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-            {children}
-          </div>
-        </main>
+    <MobileShell>
+      <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {children}
       </div>
-
-      {/* Bottom Nav - Solo mobile */}
-      <ClientBottomNav />
-    </div>
+    </MobileShell>
   );
 }

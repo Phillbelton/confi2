@@ -6,13 +6,13 @@ import { z } from 'zod';
 
 // Schema de item de orden
 export const orderItemSchema = z.object({
-  variantId: z.string()
+  productId: z.string()
     .length(24, 'ID de MongoDB debe tener 24 caracteres'),
 
   quantity: z.number()
     .int('La cantidad debe ser un número entero')
     .positive('La cantidad debe ser mayor a 0')
-    .max(100, 'Cantidad máxima: 100 unidades')
+    .max(10000, 'Cantidad máxima: 10000 unidades')
 });
 
 // Schema para crear orden

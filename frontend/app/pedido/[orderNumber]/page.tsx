@@ -113,15 +113,15 @@ export default function PedidoConfirmacionPage({
                   <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
                     {order.items.map((item, i) => (
                       <li key={i} className="flex items-center gap-3 p-3 bg-card">
-                        {item.variantSnapshot.image && (
+                        {item.productSnapshot.image && (
                           <div className="relative w-12 h-12 flex-shrink-0 rounded-md overflow-hidden bg-muted">
                             <Image
-                              src={getSafeImageUrl(item.variantSnapshot.image, {
+                              src={getSafeImageUrl(item.productSnapshot.image, {
                                 width: 96,
                                 height: 96,
                                 quality: 'auto',
                               })}
-                              alt={item.variantSnapshot.name}
+                              alt={item.productSnapshot.name}
                               fill
                               className="object-contain"
                               sizes="48px"
@@ -130,7 +130,7 @@ export default function PedidoConfirmacionPage({
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-card-foreground truncate">
-                            {item.variantSnapshot.name}
+                            {item.productSnapshot.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {item.quantity} × ${item.pricePerUnit.toLocaleString('es-CL')}

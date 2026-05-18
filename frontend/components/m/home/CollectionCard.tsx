@@ -1,9 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { getSafeImageUrl } from '@/lib/image-utils';
+import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { cn } from '@/lib/utils';
 import type { Collection } from '@/types';
 
@@ -22,9 +21,7 @@ export function CollectionCard({
   const href = `/m/productos?coleccion=${collection.slug}`;
   const gradient = collection.gradient || 'from-primary to-secondary';
   const hasImage = !!collection.image;
-  const safeImage = hasImage
-    ? getSafeImageUrl(collection.image, { width: 480, height: 360, quality: 'auto' })
-    : null;
+  const imgAttrs = hasImage ? buildSrcSet(collection.image, SIZESET.card) : null;
 
   const aspect =
     variant === 'square'
@@ -58,13 +55,16 @@ export function CollectionCard({
       aria-label={`Ver colección ${collection.name}`}
     >
       {/* Imagen o gradient fallback */}
-      {hasImage ? (
-        <Image
-          src={safeImage!}
+      {hasImage && imgAttrs ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imgAttrs.src}
+          srcSet={imgAttrs.srcSet}
           alt={collection.name}
-          fill
           sizes="(max-width: 640px) 70vw, 320px"
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
       ) : (
         <div

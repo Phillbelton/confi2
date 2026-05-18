@@ -175,13 +175,14 @@ export const getFilePath = (filename: string, subdir: string = 'temp'): string =
 };
 
 /**
- * Función helper para obtener la URL pública del archivo
- * Por defecto retorna URL absoluta para evitar problemas con Next.js Image y CORS
+ * Función helper para obtener la URL pública del archivo.
+ * Por default retorna URL RELATIVA (`/uploads/...`) para que sea portable
+ * entre entornos (dev/staging/prod) sin migrar URLs en DB. El frontend
+ * resuelve la URL absoluta usando NEXT_PUBLIC_API_URL.
  */
-export const getFileUrl = (filename: string, subdir: string = 'temp', absolute: boolean = true): string => {
+export const getFileUrl = (filename: string, subdir: string = 'temp', absolute: boolean = false): string => {
   const relativePath = `/uploads/${subdir}/${filename}`;
 
-  // Si se solicita URL absoluta, incluir el dominio del backend
   if (absolute) {
     return `${ENV.BACKEND_URL}${relativePath}`;
   }

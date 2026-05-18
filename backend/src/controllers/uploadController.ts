@@ -1,457 +1,210 @@
 import { Response } from 'express';
-import { AuthRequest, ApiResponse } from '../types';
-import ProductParent from '../models/ProductParent';
-import ProductVariant from '../models/ProductVariant';
+import fs from 'fs';
+import Product from '../models/Product';
+import ProductImage from '../models/ProductImage';
 import { Category } from '../models/Category';
 import { Brand } from '../models/Brand';
 import Collection from '../models/Collection';
+import Banner from '../models/Banner';
+import { AuthRequest, ApiResponse } from '../types';
+import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { imageService } from '../services/imageService';
-import { deleteFile } from '../middleware/upload';
-import { asyncHandler } from '../middleware/asyncHandler';
-import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
-import path from 'path';
 
 /**
- * Upload Controller
- * Manejo de subida de imágenes para productos, categorías y marcas
+ * Upload Controller — manejo de imágenes para Product, Category, Brand, Collection.
  */
 
 /**
- * Subir imágenes a ProductParent
- * POST /api/products/parents/:id/images
- * Role: admin, funcionario
+ * Multi-size widths por carpeta. Sharp genera 3 variantes WebP (fit:inside, no
+ * upscale) que el frontend usa vía `<img srcset>` — browser elige la óptima
+ * por device y viewport, ahorrando bandwidth en mobile.
+ *
+ * Anchos elegidos:
+ *  - card  [400, 800, 1200]: cards de catálogo (productos, colecciones, categorías)
+ *  - thumb [200, 400]:        logos marcas, cart items
+ *  - hero  [640, 1280, 1920]: banners home, backgrounds full-width
+ *
+ * Naming output: `<base>-w400.webp`, `<base>-w800.webp`, `<base>-w1200.webp`.
+ * El DB guarda la URL de la variante intermedia (default src para no-srcset clients).
  */
-export const uploadProductParentImages = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{ images: string[] }>>) => {
-    const { id } = req.params;
-    const files = req.files as Express.Multer.File[];
+const FOLDER_WIDTHS: Record<string, number[]> = {
+  products:    [400, 800, 1200],
+  brands:      [200, 400, 600],
+  categories:  [400, 800],
+  collections: [400, 800, 1200],
+  banners:     [640, 1280, 1920],
+  backgrounds: [640, 1280, 1920],
+};
 
-    if (!files || files.length === 0) {
-      throw new AppError(400, 'No se subieron archivos');
+async function uploadFiles(files: Express.Multer.File[], folder: string): Promise<string[]> {
+  const responsiveWidths = FOLDER_WIDTHS[folder] || [400, 800, 1200];
+  const urls: string[] = [];
+  for (const f of files) {
+    try {
+      const result = await imageService.uploadImage(f.path, {
+        folder,
+        responsiveWidths,
+      });
+      urls.push(result.url);
+    } catch (err: any) {
+      logger.warn(`[upload] failed ${f.originalname}: ${err.message}`);
+    } finally {
+      fs.unlink(f.path, () => {});
     }
+  }
+  return urls;
+}
 
-    // Verificar que el producto existe
-    const product = await ProductParent.findById(id);
-    if (!product) {
-      // Eliminar archivos subidos si el producto no existe
-      await Promise.all(files.map((file) => deleteFile(file.path)));
-      throw new AppError(404, 'Producto no encontrado');
-    }
+// ============================ Product ============================
 
-    // Validar que no exceda el máximo de imágenes (5)
-    const currentImages = product.images?.length || 0;
-    const newImages = files.length;
-    if (currentImages + newImages > 5) {
-      // Eliminar archivos subidos
-      await Promise.all(files.map((file) => deleteFile(file.path)));
-      throw new AppError(
-        400,
-        `El producto ya tiene ${currentImages} imágenes. Máximo 5 imágenes por producto.`
-      );
-    }
+export const uploadProductImages = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const product = await Product.findById(req.params.id);
+    if (!product) throw new AppError(404, 'Producto no encontrado');
+    if (!product.sku) throw new AppError(400, 'El producto no tiene SKU — requerido para persistir imágenes');
 
-    // Procesar cada imagen con el servicio de imágenes
-    const imageUrls: string[] = [];
-    for (const file of files) {
-      try {
-        // Usar imageService para procesar y subir la imagen
-        const result = await imageService.uploadImage(file.path, {
-          folder: 'products',
-          width: 800,
-          height: 800,
-          quality: 85,
-          format: 'webp',
-          validateDimensions: {
-            minWidth: 200,
-            minHeight: 200,
-            maxWidth: 2000,
-            maxHeight: 2000,
-          },
-        });
+    const files = req.files as Express.Multer.File[] | undefined;
+    if (!files?.length) throw new AppError(400, 'Sin imágenes');
 
-        imageUrls.push(result.url);
-      } catch (error: any) {
-        logger.error('Error procesando imagen individual', {
-          filename: file.filename,
-          error: error.message,
-        });
-        // El imageService ya maneja la limpieza de archivos
-      }
-    }
+    const slots = Math.max(0, 5 - (product.images?.length || 0));
+    if (slots === 0) throw new AppError(400, 'Máximo 5 imágenes');
 
-    if (imageUrls.length === 0) {
-      throw new AppError(400, 'No se pudo procesar ninguna imagen');
-    }
+    const urls = await uploadFiles(files.slice(0, slots), 'products');
+    if (urls.length === 0) throw new AppError(500, 'Error al subir imagen(es)');
 
-    // Actualizar producto con las nuevas imágenes
-    product.images = [...(product.images || []), ...imageUrls];
-    if (req.user?.id) {
-      product.updatedBy = req.user.id as any;
-    }
-    await product.save();
-
-    logger.info('Imágenes subidas a ProductParent', {
-      productId: id,
-      count: imageUrls.length,
-      userId: req.user?.id,
+    // 1) Persistir en ProductImage (verdad) — sobrevive wipes de Product
+    const startOrder = product.images?.length || 0;
+    const userId = (req.user as any)?.id;
+    const created = await ProductImage.insertMany(
+      urls.map((url, i) => ({
+        sku: product.sku,
+        url,
+        order: startOrder + i,
+        uploadedBy: userId || undefined,
+      })),
+      { ordered: false }
+    ).catch((e: any) => {
+      // Duplicate key (sku+url) — log y seguir
+      logger.warn('[ProductImage] insertMany partial: ' + e.message);
+      return [];
     });
+
+    // 2) Cache denormalizado en Product.images para queries rápidas
+    product.images = [...(product.images || []), ...urls];
+    await product.save();
 
     res.status(200).json({
       success: true,
-      message: `${imageUrls.length} imagen(es) subida(s) exitosamente`,
+      message: `${urls.length} imagen(es) subida(s)`,
       data: { images: product.images },
     });
   }
 );
 
-/**
- * Eliminar imagen de ProductParent
- * DELETE /api/products/parents/:id/images/:filename
- * Role: admin, funcionario
- */
-export const deleteProductParentImage = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{ images: string[] }>>) => {
+export const deleteProductImage = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
     const { id, filename } = req.params;
+    const product = await Product.findById(id);
+    if (!product) throw new AppError(404, 'Producto no encontrado');
+    const target = (product.images || []).find((u) => u.includes(filename));
+    if (!target) throw new AppError(404, 'Imagen no encontrada');
 
-    const product = await ProductParent.findById(id);
-    if (!product) {
-      throw new AppError(404, 'Producto no encontrado');
-    }
-
-    // Buscar la imagen en el array
-    const imageUrl = product.images?.find((img) => img.includes(filename));
-
-    if (!imageUrl) {
-      throw new AppError(404, 'Imagen no encontrada en el producto');
-    }
-
-    const imageIndex = product.images?.indexOf(imageUrl) ?? -1;
-
-    // Eliminar usando imageService (maneja tanto Cloudinary como local)
+    // Borrar archivo en disco
     try {
-      await imageService.deleteImage(imageUrl);
-    } catch (error: any) {
-      logger.warn('No se pudo eliminar archivo físico', { filename, error: error.message });
+      await imageService.deleteImage(target);
+    } catch {}
+
+    // Borrar registro persistente en ProductImage
+    if (product.sku) {
+      await ProductImage.deleteOne({ sku: product.sku, url: target }).catch(() => {});
     }
 
-    // Eliminar de la base de datos
-    product.images?.splice(imageIndex, 1);
-    if (req.user?.id) {
-      product.updatedBy = req.user.id as any;
-    }
+    // Actualizar cache denormalizado
+    product.images = (product.images || []).filter((u) => u !== target);
     await product.save();
 
-    logger.info('Imagen eliminada de ProductParent', {
-      productId: id,
-      filename,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Imagen eliminada exitosamente',
-      data: { images: product.images || [] },
-    });
+    res.status(200).json({ success: true, message: 'Imagen eliminada' });
   }
 );
 
-/**
- * Subir imágenes a ProductVariant
- * POST /api/products/variants/:id/images
- * Role: admin, funcionario
- */
-export const uploadProductVariantImages = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{ images: string[] }>>) => {
-    const { id } = req.params;
-    const files = req.files as Express.Multer.File[];
+// ============================ Category ============================
 
-    if (!files || files.length === 0) {
-      throw new AppError(400, 'No se subieron archivos');
-    }
-
-    const variant = await ProductVariant.findById(id);
-    if (!variant) {
-      await Promise.all(files.map((file) => deleteFile(file.path)));
-      throw new AppError(404, 'Variante no encontrada');
-    }
-
-    const currentImages = variant.images?.length || 0;
-    const newImages = files.length;
-    if (currentImages + newImages > 5) {
-      await Promise.all(files.map((file) => deleteFile(file.path)));
-      throw new AppError(
-        400,
-        `La variante ya tiene ${currentImages} imágenes. Máximo 5 imágenes.`
-      );
-    }
-
-    const imageUrls: string[] = [];
-    for (const file of files) {
-      try {
-        // Usar imageService para procesar y subir la imagen
-        const result = await imageService.uploadImage(file.path, {
-          folder: 'products',
-          width: 800,
-          height: 800,
-          quality: 85,
-          format: 'webp',
-          validateDimensions: {
-            minWidth: 200,
-            minHeight: 200,
-            maxWidth: 2000,
-            maxHeight: 2000,
-          },
-        });
-
-        imageUrls.push(result.url);
-      } catch (error: any) {
-        logger.error('Error procesando imagen individual', {
-          filename: file.filename,
-          error: error.message,
-        });
-        // El imageService ya maneja la limpieza de archivos
-      }
-    }
-
-    if (imageUrls.length === 0) {
-      throw new AppError(400, 'No se pudo procesar ninguna imagen');
-    }
-
-    variant.images = [...(variant.images || []), ...imageUrls];
-    await variant.save();
-
-    logger.info('Imágenes subidas a ProductVariant', {
-      variantId: id,
-      count: imageUrls.length,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: `${imageUrls.length} imagen(es) subida(s) exitosamente`,
-      data: { images: variant.images },
-    });
-  }
-);
-
-/**
- * Eliminar imagen de ProductVariant
- * DELETE /api/products/variants/:id/images/:filename
- * Role: admin, funcionario
- */
-export const deleteProductVariantImage = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{ images: string[] }>>) => {
-    const { id, filename } = req.params;
-
-    const variant = await ProductVariant.findById(id);
-    if (!variant) {
-      throw new AppError(404, 'Variante no encontrada');
-    }
-
-    const imageUrl = variant.images?.find((img) => img.includes(filename));
-
-    if (!imageUrl) {
-      throw new AppError(404, 'Imagen no encontrada en la variante');
-    }
-
-    const imageIndex = variant.images?.indexOf(imageUrl) ?? -1;
-
-    // Eliminar usando imageService (maneja tanto Cloudinary como local)
-    try {
-      await imageService.deleteImage(imageUrl);
-    } catch (error: any) {
-      logger.warn('No se pudo eliminar archivo físico', { filename, error: error.message });
-    }
-
-    variant.images?.splice(imageIndex, 1);
-    await variant.save();
-
-    logger.info('Imagen eliminada de ProductVariant', {
-      variantId: id,
-      filename,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Imagen eliminada exitosamente',
-      data: { images: variant.images || [] },
-    });
-  }
-);
-
-/**
- * Subir imagen a Categoría
- * POST /api/categories/:id/image
- * Role: admin, funcionario
- */
 export const uploadCategoryImage = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{ image: string }>>) => {
-    const { id } = req.params;
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const cat = await Category.findById(req.params.id);
+    if (!cat) throw new AppError(404, 'Categoría no encontrada');
     const file = req.file;
-
-    if (!file) {
-      throw new AppError(400, 'No se subió ningún archivo');
+    if (!file) throw new AppError(400, 'Sin imagen');
+    if (cat.image) {
+      try { await imageService.deleteImage(cat.image); } catch {}
     }
-
-    const category = await Category.findById(id);
-    if (!category) {
-      await deleteFile(file.path);
-      throw new AppError(404, 'Categoría no encontrada');
-    }
-
-    // Eliminar imagen anterior si existe
-    if (category.image) {
-      try {
-        await imageService.deleteImage(category.image);
-      } catch (error: any) {
-        logger.warn('No se pudo eliminar imagen anterior de categoría', {
-          error: error.message,
-        });
-      }
-    }
-
-    // Subir nueva imagen usando imageService
-    const result = await imageService.uploadImage(file.path, {
-      folder: 'categories',
-      width: 400,
-      height: 400,
-      quality: 85,
-      format: 'webp',
-    });
-
-    const imageUrl = result.url;
-
-    category.image = imageUrl;
-    await category.save();
-
-    logger.info('Imagen subida a categoría', {
-      categoryId: id,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Imagen subida exitosamente',
-      data: { image: imageUrl },
-    });
+    const [url] = await uploadFiles([file], 'categories');
+    if (!url) throw new AppError(500, 'Error al subir imagen');
+    cat.image = url;
+    await cat.save();
+    res.status(200).json({ success: true, message: 'Imagen actualizada', data: { image: url } });
   }
 );
 
-/**
- * Subir logo a Marca
- * POST /api/brands/:id/logo
- * Role: admin, funcionario
- */
+// ============================ Brand ============================
+
 export const uploadBrandLogo = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{ logo: string }>>) => {
-    const { id } = req.params;
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const brand = await Brand.findById(req.params.id);
+    if (!brand) throw new AppError(404, 'Marca no encontrada');
     const file = req.file;
-
-    if (!file) {
-      throw new AppError(400, 'No se subió ningún archivo');
-    }
-
-    const brand = await Brand.findById(id);
-    if (!brand) {
-      await deleteFile(file.path);
-      throw new AppError(404, 'Marca no encontrada');
-    }
-
-    // Eliminar logo anterior si existe
+    if (!file) throw new AppError(400, 'Sin imagen');
     if (brand.logo) {
-      try {
-        await imageService.deleteImage(brand.logo);
-      } catch (error: any) {
-        logger.warn('No se pudo eliminar logo anterior de marca', {
-          error: error.message,
-        });
-      }
+      try { await imageService.deleteImage(brand.logo); } catch {}
     }
-
-    // Subir nuevo logo usando imageService
-    const result = await imageService.uploadImage(file.path, {
-      folder: 'brands',
-      width: 300,
-      height: 300,
-      quality: 90,
-      format: 'webp',
-    });
-
-    const logoUrl = result.url;
-
-    brand.logo = logoUrl;
+    const [url] = await uploadFiles([file], 'brands');
+    if (!url) throw new AppError(500, 'Error al subir imagen');
+    brand.logo = url;
     await brand.save();
-
-    logger.info('Logo subido a marca', {
-      brandId: id,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Logo subido exitosamente',
-      data: { logo: logoUrl },
-    });
+    res.status(200).json({ success: true, message: 'Logo actualizado', data: { logo: url } });
   }
 );
 
-/**
- * Subir imagen a Colección
- * POST /api/collections/:id/image
- * Role: admin, funcionario
- */
+// ============================ Collection ============================
+
 export const uploadCollectionImage = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<{ image: string }>>) => {
-    const { id } = req.params;
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const coll = await Collection.findById(req.params.id);
+    if (!coll) throw new AppError(404, 'Colección no encontrada');
     const file = req.file;
-
-    if (!file) {
-      throw new AppError(400, 'No se subió ningún archivo');
+    if (!file) throw new AppError(400, 'Sin imagen');
+    if (coll.image) {
+      try { await imageService.deleteImage(coll.image); } catch {}
     }
+    const [url] = await uploadFiles([file], 'collections');
+    if (!url) throw new AppError(500, 'Error al subir imagen');
+    coll.image = url;
+    await coll.save();
+    res.status(200).json({ success: true, message: 'Imagen actualizada', data: { image: url } });
+  }
+);
 
-    const collection = await Collection.findById(id);
-    if (!collection) {
-      await deleteFile(file.path);
-      throw new AppError(404, 'Colección no encontrada');
+// ============================ Banner ============================
+
+export const uploadBannerImage = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse>) => {
+    const banner = await Banner.findById(req.params.id);
+    if (!banner) throw new AppError(404, 'Banner no encontrado');
+    const file = req.file;
+    if (!file) throw new AppError(400, 'Sin imagen');
+
+    // Variant: 'mobile' actualiza imageMobile, default actualiza image
+    const variant = (req.query.variant as string) || 'main';
+    const fieldKey = variant === 'mobile' ? 'imageMobile' : 'image';
+    const oldUrl = (banner as any)[fieldKey] as string | undefined;
+    if (oldUrl) {
+      try { await imageService.deleteImage(oldUrl); } catch {}
     }
-
-    // Eliminar imagen anterior si existe
-    if (collection.image) {
-      try {
-        await imageService.deleteImage(collection.image);
-      } catch (error: any) {
-        logger.warn('No se pudo eliminar imagen anterior de colección', {
-          error: error.message,
-        });
-      }
-    }
-
-    // Subir nueva imagen — landscape 5:3 para tarjetas del carrusel double-row
-    const result = await imageService.uploadImage(file.path, {
-      folder: 'collections',
-      width: 600,
-      height: 360,
-      quality: 90,
-      format: 'webp',
-    });
-
-    const imageUrl = result.url;
-
-    collection.image = imageUrl;
-    if (req.user?.id) collection.updatedBy = req.user.id as any;
-    await collection.save();
-
-    logger.info('Imagen subida a colección', {
-      collectionId: id,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Imagen subida exitosamente',
-      data: { image: imageUrl },
-    });
+    const [url] = await uploadFiles([file], 'banners');
+    if (!url) throw new AppError(500, 'Error al subir imagen');
+    (banner as any)[fieldKey] = url;
+    await banner.save();
+    res.status(200).json({ success: true, message: 'Imagen actualizada', data: { [fieldKey]: url } });
   }
 );

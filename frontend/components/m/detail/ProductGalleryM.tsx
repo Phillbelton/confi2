@@ -1,10 +1,9 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
-import { getSafeImageUrl } from '@/lib/image-utils';
+import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { cn } from '@/lib/utils';
 
 interface ProductGalleryMProps {
@@ -42,18 +41,24 @@ export function ProductGalleryM({ images, alt }: ProductGalleryMProps) {
         onScroll={onScroll}
         className="snap-x-mandatory flex aspect-square w-full overflow-x-auto scrollbar-none bg-muted"
       >
-        {safeImages.map((src, i) => (
-          <div key={`${src}-${i}`} className="relative aspect-square w-full shrink-0 snap-center">
-            <Image
-              src={getSafeImageUrl(src, { width: 800, height: 800, quality: 'auto' })}
-              alt={`${alt} ${i + 1}`}
-              fill
-              priority={i === 0}
-              sizes="(max-width: 768px) 100vw, 480px"
-              className="object-contain p-4"
-            />
-          </div>
-        ))}
+        {safeImages.map((src, i) => {
+          const attrs = buildSrcSet(src, SIZESET.card);
+          return (
+            <div key={`${src}-${i}`} className="relative aspect-square w-full shrink-0 snap-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={attrs.src}
+                srcSet={attrs.srcSet}
+                alt={`${alt} ${i + 1}`}
+                sizes="(max-width: 768px) 100vw, 480px"
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                fetchPriority={i === 0 ? 'high' : 'auto'}
+                className="absolute inset-0 h-full w-full object-contain p-4"
+              />
+            </div>
+          );
+        })}
       </div>
 
       {safeImages.length > 1 && (

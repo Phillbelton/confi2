@@ -1,266 +1,182 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useMemo, useState, useEffect } from 'react';
+import { ChevronRight, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCategoriesHierarchical } from '@/hooks/useCategories';
+import { useCategories } from '@/hooks/useCategories';
+import { cn } from '@/lib/utils';
 import type { Category } from '@/types';
-import type { CategoryWithSubcategories } from '@/lib/categoryUtils';
 
-interface CategoryWithSubcategorySelectorProps {
+interface Props {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   disabled?: boolean;
 }
 
+/**
+ * Selector de categorías con 3 niveles encadenados (L1 → L2 → L3).
+ * Permite asignar múltiples categorías al producto (chips removibles arriba).
+ */
 export function CategoryWithSubcategorySelector({
-  selectedIds,
-  onChange,
-  disabled = false,
-}: CategoryWithSubcategorySelectorProps) {
-  const { data: mainCategories, isLoading } = useCategoriesHierarchical();
-  const [selectedMainCategory, setSelectedMainCategory] = useState<string | null>(null);
-  const [subcategories, setSubcategories] = useState<Category[]>([]);
+  selectedIds, onChange, disabled,
+}: Props) {
+  const { data, isLoading } = useCategories();
+  const cats: Category[] = (data as Category[]) || [];
 
-  // Update subcategories when main category changes
-  useEffect(() => {
-    if (selectedMainCategory && mainCategories) {
-      const category = mainCategories.find((cat: CategoryWithSubcategories) => cat._id === selectedMainCategory);
-      setSubcategories(category?.subcategories || []);
-    } else {
-      setSubcategories([]);
-    }
-  }, [selectedMainCategory, mainCategories]);
+  const parentIdOf = (c: Category) =>
+    typeof c.parent === 'string' ? c.parent : c.parent?._id;
 
-  // Auto-select main category if a subcategory is already selected
-  useEffect(() => {
-    if (selectedIds.length > 0 && mainCategories) {
-      // Find if any selected ID is a subcategory
-      for (const mainCat of mainCategories) {
-        const hasSelectedSubcat = mainCat.subcategories?.some((subcat: Category) =>
-          selectedIds.includes(subcat._id)
-        );
-        if (hasSelectedSubcat) {
-          setSelectedMainCategory(mainCat._id);
-          break;
-        }
-        // Check if main category itself is selected
-        if (selectedIds.includes(mainCat._id)) {
-          setSelectedMainCategory(mainCat._id);
-          break;
-        }
-      }
-    }
-  }, [selectedIds, mainCategories]);
+  // Niveles
+  const l1 = useMemo(() => cats.filter((c) => !c.parent && c.active), [cats]);
 
-  const handleMainCategoryToggle = (categoryId: string) => {
-    if (selectedIds.includes(categoryId)) {
-      onChange(selectedIds.filter(id => id !== categoryId));
-    } else {
-      onChange([...selectedIds, categoryId]);
-    }
+  // Estados de los 3 selects
+  const [l1Id, setL1Id] = useState<string>('');
+  const [l2Id, setL2Id] = useState<string>('');
+  const [l3Id, setL3Id] = useState<string>('');
+
+  // L2 hijos del L1 elegido
+  const l2 = useMemo(
+    () => l1Id ? cats.filter((c) => c.active && parentIdOf(c) === l1Id) : [],
+    [cats, l1Id]
+  );
+  const l3 = useMemo(
+    () => l2Id ? cats.filter((c) => c.active && parentIdOf(c) === l2Id) : [],
+    [cats, l2Id]
+  );
+
+  // Reset cuando cambia padre
+  useEffect(() => { setL2Id(''); setL3Id(''); }, [l1Id]);
+  useEffect(() => { setL3Id(''); }, [l2Id]);
+
+  const handleAdd = () => {
+    // Tomar el más profundo seleccionado
+    const target = l3Id || l2Id || l1Id;
+    if (!target) return;
+    if (selectedIds.includes(target)) return;
+    onChange([...selectedIds, target]);
+    // Reset selects
+    setL1Id(''); setL2Id(''); setL3Id('');
   };
 
-  const handleSubcategoryToggle = (subcategoryId: string) => {
-    if (selectedIds.includes(subcategoryId)) {
-      onChange(selectedIds.filter(id => id !== subcategoryId));
-    } else {
-      onChange([...selectedIds, subcategoryId]);
+  const removeId = (id: string) => onChange(selectedIds.filter((x) => x !== id));
+
+  // Path completo de una categoría seleccionada para mostrar en el chip
+  const pathOf = (id: string): string => {
+    const c = cats.find((x) => x._id === id);
+    if (!c) return '';
+    const parts: string[] = [c.name];
+    let p = parentIdOf(c);
+    while (p) {
+      const parent = cats.find((x) => x._id === p);
+      if (!parent) break;
+      parts.unshift(parent.name);
+      p = parentIdOf(parent);
     }
+    return parts.join(' › ');
   };
 
-  const handleMainCategorySelect = (categoryId: string) => {
-    setSelectedMainCategory(categoryId);
-  };
+  if (isLoading) return <Skeleton className="h-10 w-full" />;
 
-  // Get all selected categories (both main and sub) for display
-  const getSelectedCategoryNames = (): string[] => {
-    if (!mainCategories) return [];
-
-    const names: string[] = [];
-    for (const mainCat of mainCategories) {
-      if (selectedIds.includes(mainCat._id)) {
-        names.push(mainCat.name);
-      }
-      if (mainCat.subcategories) {
-        for (const subcat of mainCat.subcategories) {
-          if (selectedIds.includes(subcat._id)) {
-            names.push(`${mainCat.name} > ${subcat.name}`);
-          }
-        }
-      }
-    }
-    return names;
-  };
-
-  const selectedNames = getSelectedCategoryNames();
-
-  if (isLoading) {
-    return <Skeleton className="h-10 w-full" />;
-  }
+  const canAdd = !!(l1Id || l2Id || l3Id);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Label>Categorías *</Label>
 
-      {/* Main Categories Selector */}
-      <div className="space-y-2">
-        <Label className="text-sm text-muted-foreground">1. Selecciona categoría principal</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              disabled={disabled}
-              className="w-full justify-between"
-            >
-              {selectedMainCategory ? (
-                <span className="truncate">
-                  {mainCategories?.find((cat: CategoryWithSubcategories) => cat._id === selectedMainCategory)?.name}
-                </span>
-              ) : (
-                "Selecciona categoría principal..."
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Buscar categoría..." />
-              <CommandEmpty>No se encontraron categorías.</CommandEmpty>
-              <CommandGroup className="max-h-64 overflow-auto">
-                {mainCategories?.map((category: CategoryWithSubcategories) => (
-                  <CommandItem
-                    key={category._id}
-                    value={category.name}
-                    onSelect={() => handleMainCategorySelect(category._id)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedIds.includes(category._id) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      <span>{category.name}</span>
-                      {category.subcategories && category.subcategories.length > 0 && (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMainCategoryToggle(category._id);
-                      }}
-                      className={cn(
-                        "ml-2 px-2 py-1 text-xs rounded",
-                        selectedIds.includes(category._id)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      )}
-                    >
-                      {selectedIds.includes(category._id) ? "Incluida" : "Incluir"}
-                    </button>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Subcategories Selector */}
-      {selectedMainCategory && subcategories.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm text-muted-foreground">2. Selecciona subcategorías (opcional)</Label>
-          <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
-            {subcategories.map((subcat) => (
-              <div
-                key={subcat._id}
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-md hover:bg-muted cursor-pointer transition-colors",
-                  selectedIds.includes(subcat._id) && "bg-muted"
-                )}
-                onClick={() => handleSubcategoryToggle(subcat._id)}
+      {/* Chips de seleccionadas */}
+      {selectedIds.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selectedIds.map((id) => (
+            <Badge key={id} variant="secondary" className="gap-1 pl-2 pr-1 py-1">
+              <span className="text-xs">{pathOf(id) || '(eliminada)'}</span>
+              <button
+                type="button"
+                onClick={() => removeId(id)}
+                className="rounded-full p-0.5 hover:bg-destructive/20"
+                aria-label="Quitar"
               >
-                <div className="flex items-center gap-2">
-                  <Check
-                    className={cn(
-                      "h-4 w-4",
-                      selectedIds.includes(subcat._id) ? "opacity-100 text-primary" : "opacity-0"
-                    )}
-                  />
-                  <span className="text-sm">{subcat.name}</span>
-                </div>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Select chain: L1 → L2 → L3 */}
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground">Agregar categoría</p>
+        <div className="flex flex-wrap items-end gap-2">
+          {/* L1 */}
+          <div className="flex-1 min-w-[140px]">
+            <Label className="text-[10px] uppercase">Categoría</Label>
+            <Select value={l1Id} onValueChange={setL1Id} disabled={disabled || l1.length === 0}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar…" /></SelectTrigger>
+              <SelectContent>
+                {l1.map((c) => (
+                  <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {l1Id && (
+            <>
+              <ChevronRight className="h-4 w-4 text-muted-foreground self-center mt-4" />
+              <div className="flex-1 min-w-[140px]">
+                <Label className="text-[10px] uppercase">Subcategoría</Label>
+                <Select value={l2Id} onValueChange={setL2Id} disabled={disabled || l2.length === 0}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={l2.length === 0 ? 'Sin subcategorías' : 'Opcional'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {l2.map((c) => (
+                      <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-          </div>
+            </>
+          )}
+
+          {l2Id && (
+            <>
+              <ChevronRight className="h-4 w-4 text-muted-foreground self-center mt-4" />
+              <div className="flex-1 min-w-[140px]">
+                <Label className="text-[10px] uppercase">Sub-sub</Label>
+                <Select value={l3Id} onValueChange={setL3Id} disabled={disabled || l3.length === 0}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={l3.length === 0 ? 'Sin niveles' : 'Opcional'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {l3.map((c) => (
+                      <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleAdd}
+            disabled={!canAdd || disabled}
+            className="self-end"
+          >
+            <Plus className="h-4 w-4 mr-1" />Agregar
+          </Button>
         </div>
-      )}
-
-      {/* Selected Categories Display */}
-      {selectedNames.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm text-muted-foreground">Categorías seleccionadas:</Label>
-          <div className="flex flex-wrap gap-2">
-            {selectedNames.map((name, index) => {
-              // Find the ID for this name
-              const isMainCategory = !name.includes(' > ');
-              let categoryId = '';
-
-              if (isMainCategory) {
-                categoryId = mainCategories?.find((cat: CategoryWithSubcategories) => cat.name === name)?._id || '';
-              } else {
-                const [mainName, subName] = name.split(' > ');
-                const mainCat = mainCategories?.find((cat: CategoryWithSubcategories) => cat.name === mainName);
-                categoryId = mainCat?.subcategories?.find((sub: Category) => sub.name === subName)?._id || '';
-              }
-
-              return (
-                <Badge key={index} variant="secondary">
-                  {name}
-                  <button
-                    onClick={() => {
-                      if (isMainCategory) {
-                        handleMainCategoryToggle(categoryId);
-                      } else {
-                        handleSubcategoryToggle(categoryId);
-                      }
-                    }}
-                    disabled={disabled}
-                    className="ml-1 hover:text-red-600"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        <p className="text-[11px] text-muted-foreground">
+          💡 Se agrega el nivel más profundo seleccionado. Podés agregar varias categorías al mismo producto.
+        </p>
+      </div>
     </div>
   );
 }

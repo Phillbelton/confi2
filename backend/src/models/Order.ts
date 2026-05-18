@@ -3,12 +3,13 @@ import { OrderStatus, DeliveryMethod, PaymentMethod } from '../types';
 
 // Interfaces
 export interface IOrderItem {
-  variant: mongoose.Types.ObjectId;
-  variantSnapshot: {
-    sku: string;
+  product: mongoose.Types.ObjectId;
+  productSnapshot: {
     name: string;
-    price: number;
-    attributes: { [key: string]: string };
+    slug: string;
+    barcode?: string;
+    unitPrice: number;
+    saleUnit: { type: string; quantity: number };
     image: string;
   };
   quantity: number;
@@ -89,34 +90,21 @@ export interface IOrderModel extends mongoose.Model<IOrder> {
 // Schema para items
 const orderItemSchema = new Schema<IOrderItem>(
   {
-    variant: {
+    product: {
       type: Schema.Types.ObjectId,
-      ref: 'ProductVariant',
+      ref: 'Product',
       required: true,
     },
-    variantSnapshot: {
-      sku: {
-        type: String,
-        required: true,
+    productSnapshot: {
+      name: { type: String, required: true },
+      slug: { type: String, required: true },
+      barcode: { type: String },
+      unitPrice: { type: Number, required: true, min: 0 },
+      saleUnit: {
+        type: { type: String, required: true },
+        quantity: { type: Number, required: true },
       },
-      name: {
-        type: String,
-        required: true,
-      },
-      price: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      attributes: {
-        type: Map,
-        of: String,
-        default: {},
-      },
-      image: {
-        type: String,
-        default: '',
-      },
+      image: { type: String, default: '' },
     },
     quantity: {
       type: Number,

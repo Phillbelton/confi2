@@ -48,7 +48,7 @@ export function ProductPicker({
     queryFn: async () => {
       const params = new URLSearchParams({ active: 'true', limit: '50' });
       if (search.trim()) params.set('search', search.trim());
-      const { data } = await api.get(`/products/parents?${params.toString()}`);
+      const { data } = await api.get(`/products?${params.toString()}`);
       return (data.data?.data || []) as ProductRow[];
     },
     enabled: open,

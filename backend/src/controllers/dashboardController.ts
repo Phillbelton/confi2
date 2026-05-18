@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Order } from '../models/Order';
-import ProductParent from '../models/ProductParent';
+import Product from "../models/Product";
 import { User } from '../models/User';
 import { asyncHandler } from '../middleware/asyncHandler';
 
@@ -99,7 +99,7 @@ export const getDashboardStats = asyncHandler(
       }),
 
       // Total active products
-      ProductParent.countDocuments({ active: true }),
+      Product.countDocuments({ active: true }),
 
       // Total customers (role: cliente)
       User.countDocuments({ role: 'cliente', active: true }),

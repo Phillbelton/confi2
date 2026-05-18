@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 // Types
 export type AuditAction = 'create' | 'update' | 'delete' | 'cancel' | 'block';
-export type AuditEntity = 'product' | 'variant' | 'order' | 'user' | 'category' | 'brand' | 'tag' | 'collection';
+export type AuditEntity = 'product' | 'variant' | 'order' | 'user' | 'category' | 'brand' | 'tag' | 'collection' | 'banner';
 
 // Interface
 export interface IAuditLog extends Document {
@@ -69,7 +69,7 @@ const auditLogSchema = new Schema<IAuditLog>(
     entity: {
       type: String,
       enum: {
-        values: ['product', 'variant', 'order', 'user', 'category', 'brand', 'tag'],
+        values: ['product', 'variant', 'order', 'user', 'category', 'brand', 'tag', 'collection', 'banner'],
         message: 'Entidad no válida',
       },
       required: [true, 'La entidad es requerida'],

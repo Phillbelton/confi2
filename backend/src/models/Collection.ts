@@ -58,7 +58,7 @@ const collectionSchema = new Schema<ICollection>(
     products: [
       {
         type: Schema.Types.ObjectId,
-        ref: 'ProductParent',
+        ref: 'Product',
       },
     ],
     active: {

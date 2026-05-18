@@ -1,406 +1,163 @@
+import type { Product, ProductTier } from '@/types';
+
 /**
- * ============================================================================
- * DISCOUNT CALCULATOR - Unified Discount Logic
- * ============================================================================
+ * SEMÁNTICA DE PRECIOS (refactor 2026-05-14):
  *
- * Single source of truth for discount calculations across the entire frontend.
- * Used by: ProductCard, CartStore, Checkout
+ * - `unitPrice` = precio de UNA presentación de venta (lo que el cliente
+ *   añade al carrito con 1 click). Para display=24 es el precio de la bolsa
+ *   completa, NO el precio por galleta individual.
  *
- * Priority Order:
- * 1. Variant Fixed Discount
- * 2. Variant Tiered Discount (applied on discounted price)
- * 3. Parent Tiered Discount (legacy, only if no other discounts)
+ * - `tier.minQuantity` = cantidad de PRESENTACIONES para activar el tier
+ *   (ej. 2 = "2+ displays"). NO en unidades atómicas.
+ *
+ * - `tier.pricePerUnit` = precio de UNA presentación al alcanzar el tier.
+ *
+ * - `quantity` en cart/orden = cantidad de PRESENTACIONES (3 displays).
+ *
+ * - `saleUnit.quantity` sigue significando "unidades atómicas contenidas"
+ *   solo para display/embalaje (informativo). Para cantidad_minima es
+ *   "mínimo de presentaciones a comprar" (típicamente 5+).
  */
 
-import type {
-  ProductParent,
-  ProductVariant,
-  TieredDiscountTier,
-  TieredDiscount,
-} from '@/types';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-export interface DiscountResult {
-  /** Original price per unit */
-  originalPrice: number;
-  /** Final price per unit after all discounts */
-  finalPrice: number;
-  /** Total discount amount per unit */
-  discountPerUnit: number;
-  /** Applied tier information (if any) */
-  appliedTier: {
-    minQuantity: number;
-    maxQuantity: number | null;
-    type: 'percentage' | 'amount';
-    value: number;
-    source: 'variant-tiered' | 'parent-tiered';
-  } | null;
-  /** Applied fixed discount (if any) */
-  appliedFixedDiscount: {
-    type: 'percentage' | 'amount';
-    value: number;
-  } | null;
+/**
+ * Precio efectivo por presentación dada una cantidad de presentaciones.
+ * El tier con mayor minQuantity ≤ quantity gana.
+ */
+export function effectiveUnitPrice(product: Product, quantity: number): number {
+  if (!product) return 0;
+  const tiers = product.tiers || [];
+  const sorted = [...tiers].sort((a, b) => b.minQuantity - a.minQuantity);
+  for (const t of sorted) if (quantity >= t.minQuantity) return t.pricePerUnit;
+  return product.unitPrice ?? 0;
 }
 
-export interface CartItemDiscount extends DiscountResult {
-  /** Quantity being purchased */
-  quantity: number;
-  /** Subtotal for this item (finalPrice * quantity) */
-  subtotal: number;
-  /** Total discount for this item (discountPerUnit * quantity) */
-  totalDiscount: number;
+/**
+ * Información de precio para una cantidad: precio efectivo, original, descuento.
+ * Todos los valores son por presentación (no por unidad atómica).
+ */
+export function calculatePriceInfo(product: Product, quantity: number) {
+  const ppu = effectiveUnitPrice(product, quantity);
+  const finalPrice = ppu * quantity;
+  const originalPrice = product.unitPrice * quantity;
+  const discount = Math.max(0, originalPrice - finalPrice);
+  const discountPercent = product.unitPrice > 0
+    ? Math.round((1 - ppu / product.unitPrice) * 100)
+    : 0;
+  return { pricePerUnit: ppu, finalPrice, originalPrice, discount, discountPercent };
 }
 
-// ============================================================================
-// DATE VALIDATION HELPERS
-// ============================================================================
+export function hasAnyDiscount(product: Product): boolean {
+  return (product.tiers && product.tiers.length > 0) || hasActiveFixedDiscount(product);
+}
 
-function isDateValid(startDate?: string, endDate?: string): boolean {
-  const now = new Date();
+export function getDisplayTiers(product: Product): ProductTier[] {
+  return [...(product.tiers || [])].sort((a, b) => a.minQuantity - b.minQuantity);
+}
 
-  if (startDate && new Date(startDate) > now) {
-    return false;
-  }
+export function getBestDiscountPercent(product: Product): number {
+  const tiers = product.tiers || [];
+  if (tiers.length === 0) return 0;
+  const cheapest = Math.min(...tiers.map((t) => t.pricePerUnit));
+  if (product.unitPrice <= 0) return 0;
+  return Math.round((1 - cheapest / product.unitPrice) * 100);
+}
 
-  if (endDate && new Date(endDate) < now) {
-    return false;
-  }
-
+/**
+ * ¿Tiene oferta fija activa (descuento puntual sobre el producto)?
+ * NO incluye tiers de descuento por volumen — esos son precios mayoristas,
+ * no "ofertas". Valida rango de fechas si está definido.
+ */
+export function hasActiveFixedDiscount(product: Product): boolean {
+  const fd = product.fixedDiscount;
+  if (!fd?.enabled) return false;
+  const now = Date.now();
+  const start = fd.startDate ? new Date(fd.startDate).getTime() : null;
+  const end = fd.endDate ? new Date(fd.endDate).getTime() : null;
+  if (start !== null && now < start) return false;
+  if (end !== null && now > end) return false;
   return true;
 }
 
-// ============================================================================
-// TIER CALCULATION
-// ============================================================================
-
 /**
- * Find the applicable tier for a given quantity
- * Returns the highest tier that matches the quantity
+ * Porcentaje del descuento fijo (no por volumen). Si type='amount',
+ * calcula el % equivalente sobre unitPrice.
  */
-function findApplicableTier(
-  quantity: number,
-  tiers: TieredDiscountTier[]
-): TieredDiscountTier | null {
-  // Sort tiers by minQuantity descending to find highest applicable tier
-  const sortedTiers = [...tiers].sort((a, b) => b.minQuantity - a.minQuantity);
-
-  for (const tier of sortedTiers) {
-    if (quantity >= tier.minQuantity) {
-      // Check if quantity doesn't exceed maxQuantity (if set)
-      if (tier.maxQuantity === null || quantity <= tier.maxQuantity) {
-        return tier;
-      }
-    }
-  }
-
-  return null;
+export function getFixedDiscountPercent(product: Product): number {
+  if (!hasActiveFixedDiscount(product)) return 0;
+  const fd = product.fixedDiscount!;
+  if (fd.type === 'percentage') return Math.round(fd.value);
+  // amount → % equivalente
+  if (product.unitPrice <= 0) return 0;
+  return Math.round((fd.value / product.unitPrice) * 100);
 }
 
 /**
- * Calculate discount amount from a tier
+ * Texto del badge de oferta. Si el admin definió un texto custom, lo usa.
+ * Si no, devuelve `{X}% OFF` para percentage o `-${V}` para amount.
  */
-function calculateTierDiscount(
-  basePrice: number,
-  tier: TieredDiscountTier
-): number {
-  if (tier.type === 'percentage') {
-    return (basePrice * tier.value) / 100;
-  } else {
-    return tier.value;
-  }
-}
-
-// ============================================================================
-// MAIN DISCOUNT CALCULATION
-// ============================================================================
-
-/**
- * Calculate discount for a single item
- * This is the unified function used across the entire frontend
- * Applies discounts in priority order:
- * 1. Variant Fixed Discount
- * 2. Variant Tiered Discount (acumulativo sobre precio con descuento fijo)
- *
- * @param variant - The product variant
- * @param quantity - Quantity being purchased
- * @param productParent - The parent product (optional, for future use)
- * @param allCartItems - All items in cart (optional, for future use)
- * @returns Complete discount calculation result
- */
-export function calculateItemDiscount(
-  variant: ProductVariant,
-  quantity: number,
-  productParent?: ProductParent,
-  allCartItems?: Array<{ variant: ProductVariant; quantity: number; productParent?: ProductParent }>
-): CartItemDiscount {
-  const originalPrice = variant.price;
-  let currentPrice = variant.price;
-  let totalDiscountPerUnit = 0;
-  let appliedFixedDiscount = null;
-  let appliedTier = null;
-
-  // =========================================================================
-  // PRIORITY 1: Variant Fixed Discount
-  // =========================================================================
-
-  if (variant.fixedDiscount?.enabled) {
-    const isValid = isDateValid(
-      variant.fixedDiscount.startDate,
-      variant.fixedDiscount.endDate
-    );
-
-    if (isValid) {
-      let fixedDiscount = 0;
-
-      if (variant.fixedDiscount.type === 'percentage') {
-        fixedDiscount = (currentPrice * variant.fixedDiscount.value) / 100;
-      } else {
-        fixedDiscount = variant.fixedDiscount.value;
-      }
-
-      totalDiscountPerUnit += fixedDiscount;
-      currentPrice -= fixedDiscount;
-
-      appliedFixedDiscount = {
-        type: variant.fixedDiscount.type,
-        value: variant.fixedDiscount.value,
-      };
-    }
-  }
-
-  // =========================================================================
-  // PRIORITY 2: Variant Tiered Discount (on discounted price)
-  // =========================================================================
-
-  if (variant.tieredDiscount?.active && variant.tieredDiscount.tiers.length > 0) {
-    const isValid = isDateValid(
-      variant.tieredDiscount.startDate,
-      variant.tieredDiscount.endDate
-    );
-
-    if (isValid) {
-      const tier = findApplicableTier(quantity, variant.tieredDiscount.tiers);
-
-      if (tier) {
-        const tierDiscount = calculateTierDiscount(currentPrice, tier);
-        totalDiscountPerUnit += tierDiscount;
-        currentPrice -= tierDiscount;
-
-        appliedTier = {
-          minQuantity: tier.minQuantity,
-          maxQuantity: tier.maxQuantity,
-          type: tier.type,
-          value: tier.value,
-          source: 'variant-tiered' as const,
-        };
-      }
-    }
-  }
-
-  // =========================================================================
-  // FINAL CALCULATIONS
-  // =========================================================================
-
-  const finalPrice = Math.max(0, currentPrice); // Ensure price is never negative
-  const subtotal = finalPrice * quantity;
-  const totalDiscount = totalDiscountPerUnit * quantity;
-
-  return {
-    originalPrice,
-    finalPrice: Math.round(finalPrice),
-    discountPerUnit: Math.round(totalDiscountPerUnit),
-    appliedTier,
-    appliedFixedDiscount,
-    quantity,
-    subtotal: Math.round(subtotal),
-    totalDiscount: Math.round(totalDiscount),
-  };
-}
-
-// ============================================================================
-// BATCH CALCULATIONS
-// ============================================================================
-
-/**
- * Calculate discounts for all items in a cart
- * Used by CartStore to recalculate totals
- */
-export function calculateCartDiscounts(
-  items: Array<{
-    variant: ProductVariant;
-    quantity: number;
-    productParent: ProductParent;
-  }>
-): {
-  items: Array<CartItemDiscount & { variantId: string }>;
-  subtotal: number;
-  totalDiscount: number;
-  total: number;
-} {
-  const calculatedItems = items.map((item) => {
-    const discount = calculateItemDiscount(
-      item.variant,
-      item.quantity,
-      item.productParent,
-      items
-    );
-
-    return {
-      variantId: item.variant._id,
-      ...discount,
-    };
-  });
-
-  const subtotal = calculatedItems.reduce(
-    (sum, item) => sum + item.originalPrice * item.quantity,
-    0
-  );
-
-  const totalDiscount = calculatedItems.reduce(
-    (sum, item) => sum + item.totalDiscount,
-    0
-  );
-
-  const total = calculatedItems.reduce((sum, item) => sum + item.subtotal, 0);
-
-  return {
-    items: calculatedItems,
-    subtotal: Math.round(subtotal),
-    totalDiscount: Math.round(totalDiscount),
-    total: Math.round(total),
-  };
-}
-
-// ============================================================================
-// DISPLAY HELPERS
-// ============================================================================
-
-/**
- * Get discount badge text for displaying in UI
- * Used by ProductCard to show discount badges
- */
-export function getDiscountBadge(
-  variant: ProductVariant,
-  productParent?: ProductParent
-): string | null {
-  const now = new Date();
-
-  // Check fixed discount
-  if (variant.fixedDiscount?.enabled) {
-    const isValid = isDateValid(
-      variant.fixedDiscount.startDate,
-      variant.fixedDiscount.endDate
-    );
-
-    if (isValid) {
-      if (variant.fixedDiscount.badge) {
-        return variant.fixedDiscount.badge;
-      }
-
-      const value = variant.fixedDiscount.value;
-      return variant.fixedDiscount.type === 'percentage'
-        ? `-${value}%`
-        : `-$${value.toLocaleString()}`;
-    }
-  }
-
-  // Check variant tiered discount
-  if (variant.tieredDiscount?.active && variant.tieredDiscount.tiers.length > 0) {
-    const isValid = isDateValid(
-      variant.tieredDiscount.startDate,
-      variant.tieredDiscount.endDate
-    );
-
-    if (isValid) {
-      if (variant.tieredDiscount.badge) {
-        return variant.tieredDiscount.badge;
-      }
-
-      const firstTier = variant.tieredDiscount.tiers[0];
-      const discount = calculateItemDiscount(variant, firstTier.minQuantity, productParent);
-
-      return `Desde ${firstTier.minQuantity} un $${discount.finalPrice.toLocaleString()} c/u`;
-    }
-  }
-
-  return null;
+export function getFixedDiscountBadge(product: Product): string {
+  if (!hasActiveFixedDiscount(product)) return '';
+  const fd = product.fixedDiscount!;
+  if (fd.badge) return fd.badge;
+  if (fd.type === 'percentage') return `${Math.round(fd.value)}% OFF`;
+  return `-$${Math.round(fd.value).toLocaleString('es-CL')}`;
 }
 
 /**
- * Check if variant has any active discount
+ * Step de cantidad: siempre 1 presentación.
+ * (Ej. cliente añade 1 display por click, sin importar que tenga 13 galletas.)
  */
-export function hasActiveDiscount(
-  variant: ProductVariant,
-  productParent?: ProductParent
-): boolean {
-  // Check fixed discount
-  if (variant.fixedDiscount?.enabled) {
-    if (isDateValid(variant.fixedDiscount.startDate, variant.fixedDiscount.endDate)) {
-      return true;
-    }
-  }
-
-  // Check variant tiered discount
-  if (variant.tieredDiscount?.active && variant.tieredDiscount.tiers.length > 0) {
-    if (isDateValid(variant.tieredDiscount.startDate, variant.tieredDiscount.endDate)) {
-      return true;
-    }
-  }
-
-  return false;
+export function quantityStep(_product: Product): number {
+  return 1;
 }
 
 /**
- * Get discount tiers for display (used in tooltips)
- * Returns formatted tier information for UI display
+ * Mínimo de presentaciones que el cliente debe agregar al carrito:
+ * - cantidadMinima: saleUnit.quantity (ej. mín 5 unidades)
+ * - resto: 1
  */
-export function getDiscountTiers(
-  variant: ProductVariant,
-  productParent?: ProductParent
-): Array<{ range: string; price: string; discount: string }> | null {
-  // Calculate base price after fixed discount (if any)
-  let basePrice = variant.price;
+export function minQuantity(product: Product): number {
+  return product.saleUnit.type === 'cantidadMinima'
+    ? product.saleUnit.quantity
+    : 1;
+}
 
-  if (variant.fixedDiscount?.enabled) {
-    const isValid = isDateValid(
-      variant.fixedDiscount.startDate,
-      variant.fixedDiscount.endDate
-    );
+/**
+ * ¿Es una presentación tipo paquete? Útil para mostrar badge "Bolsa × N",
+ * la nota "$X/u atómica" y para textos descriptivos en el UI.
+ * El precio ya viene per-presentación (no requiere multiplicación adicional).
+ */
+export function isPackagedSale(product: Product): boolean {
+  const t = product.saleUnit?.type;
+  return t === 'display' || t === 'embalaje';
+}
 
-    if (isValid) {
-      if (variant.fixedDiscount.type === 'percentage') {
-        basePrice -= (basePrice * variant.fixedDiscount.value) / 100;
-      } else {
-        basePrice -= variant.fixedDiscount.value;
-      }
-    }
-  }
+/**
+ * Identidad — el precio mostrado en la card YA es per presentación.
+ * Se mantiene esta función para no romper callsites, pero ya no multiplica.
+ */
+export function presentationPrice(_product: Product, ppu: number): number {
+  return ppu;
+}
 
-  // Show variant tiered discount tiers
-  if (variant.tieredDiscount?.active && variant.tieredDiscount.tiers.length > 0) {
-    const isValid = isDateValid(
-      variant.tieredDiscount.startDate,
-      variant.tieredDiscount.endDate
-    );
+/**
+ * Precio por UNIDAD ATÓMICA (galleta individual, etc.) derivado del ppu de la
+ * presentación. Útil solo para mostrar "$X/u" como info comparativa al cliente.
+ * Solo aplica a display/embalaje con quantity > 1.
+ */
+export function pricePerAtomicUnit(product: Product, ppu: number): number {
+  if (!isPackagedSale(product)) return ppu;
+  const qty = product.saleUnit?.quantity || 1;
+  return qty > 0 ? ppu / qty : ppu;
+}
 
-    if (isValid) {
-      return variant.tieredDiscount.tiers.map((tier) => {
-        const tierDiscount = calculateTierDiscount(basePrice, tier);
-        const finalPrice = basePrice - tierDiscount;
-
-        return {
-          range: tier.maxQuantity
-            ? `${tier.minQuantity}-${tier.maxQuantity} un`
-            : `${tier.minQuantity}+ un`,
-          price: `$${Math.round(finalPrice).toLocaleString()}`,
-          discount: tier.type === 'percentage' ? `${tier.value}%` : `$${tier.value}`,
-        };
-      });
-    }
-  }
-
-  return null;
+/**
+ * Sufijo a mostrar junto al precio. Distingue venta unitaria de paquete.
+ */
+export function presentationPriceSuffix(product: Product): string {
+  const t = product.saleUnit?.type;
+  const qty = product.saleUnit?.quantity || 1;
+  if (t === 'display') return `display ${qty} u.`;
+  if (t === 'embalaje') return `embalaje ${qty} u.`;
+  return 'por unidad';
 }

@@ -20,11 +20,11 @@ export function CartCheckoutBar({
   return (
     <div
       className={cn(
-        'fixed inset-x-0 z-30 border-t border-border bg-background/95 backdrop-blur',
-        'bottom-[calc(64px+env(safe-area-inset-bottom))] lg:bottom-0 lg:left-20'
+        'fixed inset-x-0 z-30 border-t border-border bg-background/95 backdrop-blur lg:hidden',
+        'bottom-[calc(64px+env(safe-area-inset-bottom))]'
       )}
     >
-      <div className="mx-auto flex w-full max-w-screen-md items-center gap-3 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:pb-3">
+      <div className="mx-auto flex w-full max-w-screen-md items-center gap-3 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:max-w-[1440px] lg:px-8 lg:pb-3">
         <div className="flex flex-col">
           <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
             Total

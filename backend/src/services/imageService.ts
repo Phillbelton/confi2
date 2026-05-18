@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { ENV } from '../config/env';
 import logger from '../config/logger';
-import { processImage, validateImageDimensions } from '../utils/imageProcessor';
+import { processImage, processImageMultiSize, validateImageDimensions } from '../utils/imageProcessor';
 import { getFileUrl, deleteFile } from '../middleware/upload';
 
 /**
@@ -21,6 +21,8 @@ export interface ImageUploadOptions {
   height?: number;
   quality?: number;
   format?: 'webp' | 'jpeg' | 'png';
+  /** Si está presente, LocalImageService genera múltiples variantes para `<img srcset>`. */
+  responsiveWidths?: number[];
   validateDimensions?: {
     minWidth: number;
     minHeight: number;
@@ -202,30 +204,48 @@ class LocalImageService implements IImageService {
         }
       }
 
-      // Process image (optimize and resize)
-      const processedPath = filePath.replace(
-        path.extname(filePath),
-        `-processed.${options.format || 'webp'}`
-      );
+      // Asegurar que la carpeta destino exista (collections/, banners/, etc.)
+      const targetDir = path.join(ENV.UPLOAD_DIR, options.folder);
+      await fs.mkdir(targetDir, { recursive: true });
 
-      await processImage(filePath, processedPath, {
-        width: options.width || 800,
-        height: options.height || 800,
-        quality: options.quality || 85,
-        format: options.format || 'webp',
-        fit: 'cover',
-      });
+      const rawBasename = path.basename(filePath, path.extname(filePath));
 
-      // Delete original, keep processed
+      let storedFilename: string;
+
+      if (options.responsiveWidths && options.responsiveWidths.length > 0) {
+        // Modo multi-size: genera 3+ variantes -w400, -w800, -w1200 para `<img srcset>`.
+        const result = await processImageMultiSize(
+          filePath,
+          targetDir,
+          rawBasename,
+          options.responsiveWidths,
+          options.quality || 85
+        );
+        storedFilename = result.baseFilename;
+      } else {
+        // Modo single-size (legacy / fallback)
+        const ext = options.format || 'webp';
+        storedFilename = `${rawBasename}-processed.${ext}`;
+        const processedPath = path.join(targetDir, storedFilename);
+        await processImage(filePath, processedPath, {
+          width: options.width || 1200,
+          height: options.height || 1200,
+          quality: options.quality || 85,
+          format: options.format || 'webp',
+          fit: 'inside',
+        });
+      }
+
+      // Borrar el archivo original (estaba en temp/)
       await deleteFile(filePath);
 
-      // Get relative URL
-      const filename = path.basename(processedPath);
-      const imageUrl = getFileUrl(filename, options.folder);
+      // URL relativa portable: /uploads/<folder>/<filename>
+      const imageUrl = getFileUrl(storedFilename, options.folder);
 
       logger.info('✅ Image processed locally', {
         url: imageUrl,
         folder: options.folder,
+        multiSize: !!options.responsiveWidths,
       });
 
       return {
@@ -246,11 +266,32 @@ class LocalImageService implements IImageService {
       // Extract filename from URL (/uploads/products/image.webp)
       const filename = path.basename(imageUrl);
       const folder = imageUrl.split('/')[2]; // Extract folder from /uploads/folder/file
-      const filePath = path.join(ENV.UPLOAD_DIR, folder, filename);
+      const folderDir = path.join(ENV.UPLOAD_DIR, folder);
 
-      await deleteFile(filePath);
-
-      logger.info('🗑️  Image deleted locally', { filePath });
+      // Si tiene suffix -w<N>, borrar TODAS las variantes hermanas
+      // (`abc-w400.webp`, `abc-w800.webp`, `abc-w1200.webp`)
+      const m = filename.match(/^(.+)-w\d+(\.[a-z]+)$/i);
+      if (m) {
+        const [, stem, ext] = m;
+        const entries = await fs.readdir(folderDir).catch(() => []);
+        const variantRegex = new RegExp(`^${stem}-w\\d+${ext.replace('.', '\\.')}$`, 'i');
+        const toDelete = entries.filter((f) => variantRegex.test(f));
+        for (const f of toDelete) {
+          try {
+            await deleteFile(path.join(folderDir, f));
+          } catch {}
+        }
+        logger.info('🗑️  Image (multi-size) deleted locally', {
+          folder,
+          stem,
+          deleted: toDelete.length,
+        });
+      } else {
+        // Single-size legacy
+        const filePath = path.join(folderDir, filename);
+        await deleteFile(filePath);
+        logger.info('🗑️  Image deleted locally', { filePath });
+      }
     } catch (error: any) {
       logger.warn('⚠️  Local image delete failed', {
         error: error.message,

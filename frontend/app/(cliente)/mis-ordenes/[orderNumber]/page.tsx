@@ -29,8 +29,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrderDetail, getOrderStatusConfig, canCancelOrder, useCancelOrder } from '@/hooks/client/useClientOrders';
-import { CancelOrderModal } from '@/components/client/CancelOrderModal';
-import { useCartStore } from '@/store/useCartStore';
+
+import { useCartStoreM } from '@/store/m/useCartStoreM';
 import type { Order, OrderStatus, OrderItem } from '@/types/order';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -74,7 +74,7 @@ export default function OrderDetailPage({
   const { orderNumber } = use(params);
   const router = useRouter();
   const { data: order, isLoading, error, refetch } = useOrderDetail(orderNumber);
-  const addItem = useCartStore((state) => state.addItem);
+  const addItem = useCartStoreM((state: any) => state.addItem);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [confettiShown, setConfettiShown] = useState(false);
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
@@ -309,10 +309,10 @@ const handleCancelOrder = (reason: string) => {    if (!order) return;        ca
               {order.items.map((item: OrderItem, index: number) => (
                 <div key={index} className="flex gap-3 p-4">
                   <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    {item.variantSnapshot?.image ? (
+                    {item.productSnapshot?.image ? (
                       <Image
-                        src={item.variantSnapshot.image}
-                        alt={item.variantSnapshot.name}
+                        src={item.productSnapshot.image}
+                        alt={item.productSnapshot.name}
                         fill
                         className="object-cover"
                       />
@@ -324,11 +324,13 @@ const handleCancelOrder = (reason: string) => {    if (!order) return;        ca
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm line-clamp-2">
-                      {item.variantSnapshot?.name || 'Producto'}
+                      {item.productSnapshot?.name || 'Producto'}
                     </p>
-                    {item.variantSnapshot?.attributes && (
+                    {item.productSnapshot?.saleUnit && (
                       <p className="text-xs text-muted-foreground">
-                        {Object.values(item.variantSnapshot.attributes).join(' • ')}
+                        {item.productSnapshot.saleUnit.type === 'unidad'
+                          ? '1 Unid.'
+                          : `${item.productSnapshot.saleUnit.type} ${item.productSnapshot.saleUnit.quantity} Unid.`}
                       </p>
                     )}
                     <p className="text-sm mt-1">
@@ -447,15 +449,7 @@ const handleCancelOrder = (reason: string) => {    if (!order) return;        ca
         )}
       </motion.div>
 
-        {canCancelOrder(order) && (
-          <CancelOrderModal
-            open={cancelModalOpen}
-            onOpenChange={setCancelModalOpen}
-            orderNumber={order.orderNumber}
-            onCancel={handleCancelOrder}
-            isCancelling={isCancelling}
-          />
-        )}
+        {/* CancelOrderModal removed — re-implementar cuando sea necesario */}
     </motion.div>
   );
 }

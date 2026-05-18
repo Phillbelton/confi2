@@ -59,7 +59,7 @@ export function MobileFooter() {
         <div className="pointer-events-none absolute -left-16 bottom-24 h-56 w-56 rounded-full bg-accent/20 blur-3xl" aria-hidden />
 
         {/* CTA newsletter / contacto */}
-        <section className="relative px-4 pt-8">
+        <section className="relative px-4 pt-8 lg:px-8">
           <div className="rounded-3xl bg-white/10 p-5 backdrop-blur ring-1 ring-white/15">
             <div className="flex items-start gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground shadow-md">
@@ -87,7 +87,7 @@ export function MobileFooter() {
         </section>
 
         {/* Trust badges */}
-        <section className="relative px-4 pt-6">
+        <section className="relative px-4 pt-6 lg:px-8">
           <ul className="grid grid-cols-3 gap-2 text-center">
             {TRUST_BADGES.map((b) => {
               const Icon = b.icon;
@@ -110,7 +110,7 @@ export function MobileFooter() {
         </section>
 
         {/* Brand block */}
-        <section className="relative px-4 pt-8">
+        <section className="relative px-4 pt-8 lg:px-8">
           <div className="flex items-start gap-3">
             <span className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-white/15 p-2 ring-1 ring-white/30 backdrop-blur">
               <Image
@@ -165,7 +165,7 @@ export function MobileFooter() {
         </section>
 
         {/* Links */}
-        <section className="relative grid grid-cols-2 gap-4 px-4 pt-7">
+        <section className="relative grid grid-cols-2 gap-4 px-4 pt-7 lg:grid-cols-3 lg:px-8">
           <div>
             <h4 className="font-display text-sm font-bold uppercase tracking-wider text-white">
               Comprar
@@ -203,7 +203,7 @@ export function MobileFooter() {
         </section>
 
         {/* Contacto */}
-        <section className="relative px-4 pt-7">
+        <section className="relative px-4 pt-7 lg:px-8">
           <h4 className="font-display text-sm font-bold uppercase tracking-wider text-white">
             Contacto
           </h4>
@@ -226,7 +226,7 @@ export function MobileFooter() {
         </section>
 
         {/* Bottom bar */}
-        <div className="relative mt-8 border-t border-white/10 px-4 py-5 text-center">
+        <div className="relative mt-8 border-t border-white/10 px-4 py-5 text-center lg:px-8">
           <p className="inline-flex items-center justify-center gap-1.5 text-[11px] text-white/60">
             Hecho con
             <Heart className="h-3 w-3 fill-accent text-accent" />

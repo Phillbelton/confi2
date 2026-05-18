@@ -215,7 +215,7 @@ class EmailService {
       .map(
         (item) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.variantSnapshot.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productSnapshot.name}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.pricePerUnit.toLocaleString('es-CL')}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.subtotal.toLocaleString('es-CL')}</td>
@@ -310,7 +310,7 @@ class EmailService {
       .map(
         (item) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.variantSnapshot.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productSnapshot.name}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.pricePerUnit.toLocaleString('es-CL')}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.subtotal.toLocaleString('es-CL')}</td>
@@ -792,7 +792,7 @@ class EmailService {
       .map(
         (item) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.variantSnapshot.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productSnapshot.name}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.pricePerUnit.toLocaleString('es-CL')}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.subtotal.toLocaleString('es-CL')}</td>
