@@ -28,13 +28,13 @@ const menuItems = [
     title: 'Dashboard',
     href: '/admin',
     icon: LayoutDashboard,
-    roles: ['admin', 'funcionario'] as UserRole[],
+    roles: ['admin'] as UserRole[],
   },
   {
     title: 'Productos',
     href: '/admin/productos',
     icon: Package,
-    roles: ['admin', 'funcionario'] as UserRole[],
+    roles: ['admin'] as UserRole[],
   },
   {
     title: 'Órdenes',
@@ -58,13 +58,13 @@ const menuItems = [
     title: 'Colecciones',
     href: '/admin/colecciones',
     icon: Sparkles,
-    roles: ['admin', 'funcionario'] as UserRole[],
+    roles: ['admin'] as UserRole[],
   },
   {
     title: 'Banners y promos',
     href: '/admin/banners',
     icon: ImagePlay,
-    roles: ['admin', 'funcionario'] as UserRole[],
+    roles: ['admin'] as UserRole[],
   },
   {
     title: 'Usuarios',

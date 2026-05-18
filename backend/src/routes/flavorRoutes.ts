@@ -12,14 +12,14 @@ router.get('/:id', flavorController.getFlavorById);
 router.post(
   '/',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(createFlavorSchema),
   flavorController.createFlavor
 );
 router.put(
   '/:id',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(updateFlavorSchema),
   flavorController.updateFlavor
 );

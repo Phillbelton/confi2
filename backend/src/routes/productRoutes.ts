@@ -54,7 +54,7 @@ router.post(
   uploadMultiple,
   handleMulterError,
   parseProductFormData,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(createProductSchema),
   auditLog('product', 'create'),
   productController.createProduct
@@ -62,7 +62,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   captureBeforeState(Product),
   validate(updateProductSchema),
   auditLog('product', 'update'),
