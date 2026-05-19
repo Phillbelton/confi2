@@ -107,7 +107,9 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
           sizes={horizontal ? '176px' : '(max-width: 640px) 50vw, 25vw'}
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 select-none"
         />
 
         {showFixedBadge && (
