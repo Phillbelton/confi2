@@ -14,6 +14,9 @@ interface ApiResponse<T> {
   data: T;
 }
 
+// Backend wraps single-order endpoints as { data: { order } }.
+type OrderEnvelope = { order: Order };
+
 interface GetOrdersParams extends AdminPaginationParams, OrderFilters {}
 
 interface ConfirmOrderData {
@@ -44,58 +47,58 @@ export const funcionarioOrdersService = {
    * Get order by ID
    */
   getOrderById: async (id: string): Promise<Order> => {
-    const { data } = await funcionarioApi.get<ApiResponse<Order>>(`/orders/${id}`);
-    return data.data;
+    const { data } = await funcionarioApi.get<ApiResponse<OrderEnvelope>>(`/orders/${id}`);
+    return data.data.order;
   },
 
   /**
    * Confirm order (set shipping cost and change to confirmed)
    */
   confirmOrder: async (id: string, confirmData: ConfirmOrderData): Promise<Order> => {
-    const { data } = await funcionarioApi.put<ApiResponse<Order>>(`/orders/${id}/confirm`, confirmData);
-    return data.data;
+    const { data } = await funcionarioApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/confirm`, confirmData);
+    return data.data.order;
   },
 
   /**
    * Update order status
    */
   updateOrderStatus: async (id: string, statusData: UpdateOrderStatusData): Promise<Order> => {
-    const { data } = await funcionarioApi.put<ApiResponse<Order>>(`/orders/${id}/status`, statusData);
-    return data.data;
+    const { data } = await funcionarioApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/status`, statusData);
+    return data.data.order;
   },
 
   /**
    * Mark WhatsApp as sent
    */
   markWhatsAppSent: async (id: string, messageId?: string): Promise<Order> => {
-    const { data } = await funcionarioApi.put<ApiResponse<Order>>(`/orders/${id}/whatsapp-sent`, {
+    const { data } = await funcionarioApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/whatsapp-sent`, {
       messageId,
     });
-    return data.data;
+    return data.data.order;
   },
 
   /**
    * Cancel order
    */
   cancelOrder: async (id: string, cancelData: CancelOrderData): Promise<Order> => {
-    const { data } = await funcionarioApi.put<ApiResponse<Order>>(`/orders/${id}/cancel`, cancelData);
-    return data.data;
+    const { data } = await funcionarioApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/cancel`, cancelData);
+    return data.data.order;
   },
 
   /**
    * Edit order items (add, remove, change quantities)
    */
   editOrderItems: async (id: string, itemsData: EditOrderItemsData): Promise<Order> => {
-    const { data } = await funcionarioApi.put<ApiResponse<Order>>(`/orders/${id}/items`, itemsData);
-    return data.data;
+    const { data } = await funcionarioApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/items`, itemsData);
+    return data.data.order;
   },
 
   /**
    * Update shipping cost
    */
   updateShippingCost: async (id: string, shippingCost: number): Promise<Order> => {
-    const { data } = await funcionarioApi.put<ApiResponse<Order>>(`/orders/${id}/shipping`, { shippingCost });
-    return data.data;
+    const { data } = await funcionarioApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/shipping`, { shippingCost });
+    return data.data.order;
   },
 
   /**
