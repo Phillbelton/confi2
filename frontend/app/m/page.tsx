@@ -75,6 +75,9 @@ export default function MHomePage() {
       />
       <ProductCarousel products={newest} isLoading={newestLoading} />
 
+      {/* Banners secundarios — gestionables desde /admin/banners (placement=home_secondary) */}
+      <PromoGrid placement="home_secondary" />
+
       <SectionHeader
         title="Más vendidos"
         emoji="🏆"
