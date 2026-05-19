@@ -57,9 +57,11 @@ interface BannerTileProps {
   priority?: boolean;
   /** sizes attribute para responsive — varía según contexto */
   sizes?: string;
+  /** Si false, no aplica esquinas redondeadas/shadow/ring (full-bleed). */
+  rounded?: boolean;
 }
 
-function BannerTile({ banner, className, priority, sizes }: BannerTileProps) {
+function BannerTile({ banner, className, priority, sizes, rounded = true }: BannerTileProps) {
   const href = resolveBannerHref(banner);
   const isExternal = banner.link.type === 'external';
   const attrs = buildSrcSet(banner.image, SIZESET.hero);
@@ -71,7 +73,8 @@ function BannerTile({ banner, className, priority, sizes }: BannerTileProps) {
   const content = (
     <div
       className={cn(
-        'group relative h-full w-full overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 transition-transform',
+        'group relative h-full w-full overflow-hidden transition-transform',
+        rounded && 'rounded-2xl shadow-md ring-1 ring-border/40',
         href && 'cursor-pointer hover:scale-[1.01] active:scale-[0.99]'
       )}
     >
@@ -197,7 +200,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
   if (total === 1) {
     return (
       <div className="aspect-[5/3] lg:aspect-[16/6]">
-        <BannerTile banner={banners[0]} priority sizes="100vw" />
+        <BannerTile banner={banners[0]} priority sizes="100vw" rounded={false} />
       </div>
     );
   }
@@ -210,7 +213,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setTimeout(() => setPaused(false), 3000)}
     >
-      <div className="relative aspect-[5/3] overflow-hidden rounded-2xl lg:aspect-[16/6]">
+      <div className="relative aspect-[5/3] overflow-hidden lg:aspect-[16/6]">
         {banners.map((b, i) => (
           <div
             key={b._id}
@@ -223,7 +226,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
             {/* priority en todas las slides del carrusel para precargar y
                 evitar que las "ocultas" queden vacías al rotar (algunos browsers
                 no cargan imágenes con opacity:0). */}
-            <BannerTile banner={b} priority sizes="100vw" />
+            <BannerTile banner={b} priority sizes="100vw" rounded={false} />
           </div>
         ))}
       </div>
@@ -272,12 +275,13 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
     return null;
   }
 
-  // Hero carrousel: placement=home_hero rota uno a la vez
+  // Hero carrousel: placement=home_hero rota uno a la vez, full-bleed (sin
+  // margen horizontal ni esquinas redondeadas — pegado al borde superior).
   if (placement === 'home_hero') {
     return (
-      <section className={cn('px-4 lg:px-8', className)}>
+      <section className={className}>
         {isLoading ? (
-          <div className="aspect-[5/3] animate-pulse rounded-2xl bg-muted lg:aspect-[16/6]" />
+          <div className="aspect-[5/3] animate-pulse bg-muted lg:aspect-[16/6]" />
         ) : (
           <HeroCarousel banners={banners || []} />
         )}
