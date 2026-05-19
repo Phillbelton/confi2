@@ -75,7 +75,7 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
         <div className="flex gap-3 lg:gap-4 touch-pan-y">
           {products.map((p) => (
             <div key={p._id} className="shrink-0 w-44 lg:w-56">
-              <ProductCardM product={p} horizontal />
+              <ProductCardM product={p} />
             </div>
           ))}
         </div>
