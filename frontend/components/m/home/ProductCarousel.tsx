@@ -42,7 +42,8 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
     const el = scrollerRef.current;
     if (!el) return;
     const dx = e.pageX - dragRef.current.startX;
-    if (Math.abs(dx) > 5) dragRef.current.moved = true;
+    // Umbral generoso para no confundir jitter de mouse/trackpad con un drag real.
+    if (Math.abs(dx) > 12) dragRef.current.moved = true;
     el.scrollLeft = dragRef.current.scrollStart - dx;
   };
 
