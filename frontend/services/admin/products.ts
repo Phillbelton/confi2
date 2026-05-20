@@ -63,6 +63,23 @@ export const adminProductService = {
     );
     return data.data;
   },
+  stats: async () => {
+    const { data } = await adminApi.get<ApiResponse<{ stats: AdminProductStats }>>(
+      '/products/admin-stats'
+    );
+    return data.data.stats;
+  },
 };
+
+export interface AdminProductStats {
+  total: number;
+  active: number;
+  inactive: number;
+  featured: number;
+  noImage: number;
+  noFormat: number;
+  noBrand: number;
+  noCategory: number;
+}
 
 export default adminProductService;

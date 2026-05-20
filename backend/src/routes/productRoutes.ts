@@ -24,6 +24,9 @@ const router = Router();
 router.get('/', validate(getProductsQuerySchema), productController.listProducts);
 router.get('/featured', validate(getFeaturedProductsSchema), productController.listFeaturedProducts);
 router.get('/facets', productFacetsController.getProductFacets);
+
+// Admin: stats overview (counters por estado y problemas comunes)
+router.get('/admin-stats', authenticate, authorize('admin'), productController.getAdminStats);
 router.get('/slug/:slug', validate(getProductBySlugSchema), productController.getProductBySlug);
 router.get('/:id', validate(getProductByIdSchema), productController.getProductById);
 
