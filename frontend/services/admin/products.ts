@@ -3,6 +3,8 @@ import type { Product, ApiResponse, SaleUnit, ProductTier } from '@/types';
 import type { ProductQueryParams } from '@/services/products';
 
 export interface CreateProductInput {
+  /** Opcional. Si se omite, el backend genera QU-XXXXXX. */
+  sku?: string;
   name: string;
   description: string;
   categories: string[];
@@ -10,7 +12,6 @@ export interface CreateProductInput {
   format?: string;
   flavor?: string;
   barcode?: string;
-  provider?: string;
   unitPrice: number;
   saleUnit: SaleUnit;
   tiers?: ProductTier[];

@@ -94,6 +94,8 @@ export interface Flavor {
 
 export interface Product {
   _id: string;
+  /** SKU interno Quelita (QU-XXXXXX). Identidad primaria, estable. */
+  sku?: string;
   name: string;
   slug: string;
   description: string;
@@ -102,7 +104,6 @@ export interface Product {
   format?: string | Format;
   flavor?: string | Flavor;
   barcode?: string;
-  provider?: string;
 
   unitPrice: number;
   saleUnit: SaleUnit;

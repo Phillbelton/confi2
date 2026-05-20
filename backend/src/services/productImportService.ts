@@ -188,7 +188,6 @@ export async function runProductImport(
     try {
       const grupo = norm(data[COL.GRUPO]);
       const marca = norm(data[COL.MARCA]);
-      const provider = norm(data[COL.PROVEEDOR]);
       const name = norm(data[COL.NAME]);
       const descEmb = norm(data[COL.DESC_EMBALAJE]);
 
@@ -345,7 +344,6 @@ export async function runProductImport(
         product.description = description;
         product.categories = [categoryId];
         if (brandId) product.brand = brandId;
-        product.provider = provider || undefined;
         product.unitPrice = unitPrice;
         product.saleUnit = saleUnit;
         product.tiers = tiers;
@@ -360,7 +358,6 @@ export async function runProductImport(
           categories: [categoryId],
           brand: brandId,
           barcode,
-          provider: provider || undefined,
           unitPrice,
           saleUnit,
           tiers,

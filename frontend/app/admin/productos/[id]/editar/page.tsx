@@ -36,6 +36,7 @@ export default function EditarProductoPage() {
     !v ? undefined : typeof v === 'string' ? v : v._id;
 
   const defaultValues: Partial<ProductFormValues> = {
+    sku: product.sku,
     name: product.name,
     description: product.description,
     categories: (product.categories as any[])
@@ -45,7 +46,6 @@ export default function EditarProductoPage() {
     format: idOf(product.format),
     flavor: idOf(product.flavor),
     barcode: product.barcode,
-    provider: product.provider,
     unitPrice: product.unitPrice,
     saleUnit: product.saleUnit,
     tiers: product.tiers || [],

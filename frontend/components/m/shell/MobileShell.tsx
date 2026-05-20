@@ -17,8 +17,10 @@ interface MobileShellProps {
 /**
  * Shell del frontend público.
  *
- * Mobile (<lg): max-w-screen-md (~448px), columna única, BottomTabBar fijo.
- * Desktop (>=lg): max-w-[1440px], top-nav en StickyHeader, sin BottomTabBar.
+ * Header y footer ocupan el ancho completo del viewport (full-bleed); el
+ * contenido se capea a max-w-screen-md (mobile/tablet) y max-w-[1440px] (desktop)
+ * con contenedores internos. Así las bandas de color cubren toda la pantalla
+ * aunque se aleje el zoom o en monitores ultra-anchos.
  */
 export function MobileShell({
   children,
@@ -27,19 +29,19 @@ export function MobileShell({
   hideFooter,
 }: MobileShellProps) {
   return (
-    <div className="theme-catalog min-h-dvh overflow-x-clip bg-background">
-      <div className="mx-auto flex min-h-dvh w-full max-w-screen-md flex-col lg:max-w-[1440px]">
-        {!hideHeader && <StickyHeader />}
+    <div className="theme-catalog flex min-h-dvh flex-col overflow-x-clip bg-background">
+      {!hideHeader && <StickyHeader />}
 
-        <main
-          className={cn(
-            'flex-1 pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12'
-          )}
-        >
+      <main
+        className={cn(
+          'flex-1 pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12'
+        )}
+      >
+        <div className="mx-auto w-full max-w-screen-md lg:max-w-[1440px]">
           {children}
-          {!hideFooter && <MobileFooter />}
-        </main>
-      </div>
+        </div>
+        {!hideFooter && <MobileFooter />}
+      </main>
 
       {!hideFab && <CartFab />}
       <BottomTabBar />

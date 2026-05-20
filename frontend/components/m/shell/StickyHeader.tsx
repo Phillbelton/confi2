@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Bell, Sparkles, ShoppingBag, User } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
@@ -18,7 +18,28 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
   const [focused, setFocused] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [bump, setBump] = useState(false);
   const itemCount = useCartStoreM((s) => s.itemCount);
+  const prevCount = useRef(itemCount);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (itemCount !== prevCount.current) {
+      prevCount.current = itemCount;
+      if (itemCount > 0) {
+        setBump(true);
+        const t = setTimeout(() => setBump(false), 360);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [itemCount]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -48,7 +69,12 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
       </div>
 
       {/* ============================ Bloque principal ============================ */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground shadow-lg">
+      <div
+        className={cn(
+          'relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground transition-shadow duration-300',
+          scrolled ? 'shadow-2xl' : 'shadow-md'
+        )}
+      >
         {/* Decoración blobs */}
         <div
           className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl"
@@ -60,7 +86,7 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
         />
 
         {/* ---------------------------- MOBILE: layout vertical original ---------------------------- */}
-        <div className="lg:hidden">
+        <div className="mx-auto w-full max-w-screen-md lg:hidden">
           <div className="relative z-10 flex items-center gap-3 px-4 pt-3">
             <Link href="/m" className="flex items-center gap-2" aria-label="Inicio Quelita">
               <motion.div
@@ -157,7 +183,12 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
                 <ShoppingBag className="h-4 w-4" />
                 <span>Carrito</span>
                 {itemCount > 0 && (
-                  <span className="ml-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-foreground">
+                  <span
+                    className={cn(
+                      'ml-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-foreground',
+                      bump && 'stepper-bump'
+                    )}
+                  >
                     {itemCount > 99 ? '99+' : itemCount}
                   </span>
                 )}

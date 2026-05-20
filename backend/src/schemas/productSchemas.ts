@@ -36,6 +36,8 @@ const fixedDiscountSchema = z.object({
 
 export const createProductSchema = z.object({
   body: z.object({
+    /** SKU opcional. Si se omite o viene vacío, el modelo genera QU-XXXXXX. */
+    sku: z.string().trim().max(40).optional(),
     name: z.string().min(3).max(200).trim(),
     description: z.string().min(10).max(5000).trim(),
     categories: z.array(objectIdSchema).min(1, 'Debe seleccionar al menos una categoría'),
@@ -43,7 +45,6 @@ export const createProductSchema = z.object({
     format: objectIdSchema.optional(),
     flavor: objectIdSchema.optional(),
     barcode: z.string().trim().max(32).optional(),
-    provider: z.string().trim().max(120).optional(),
 
     unitPrice: z.number().min(0),
     saleUnit: saleUnitSchema,
@@ -67,7 +68,6 @@ export const updateProductSchema = z.object({
     format: optionalObjectIdSchema,
     flavor: optionalObjectIdSchema,
     barcode: z.string().trim().max(32).optional(),
-    provider: z.string().trim().max(120).optional(),
 
     unitPrice: z.number().min(0).optional(),
     saleUnit: saleUnitSchema.optional(),

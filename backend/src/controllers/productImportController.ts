@@ -91,8 +91,8 @@ export const importProductsFromExcel = asyncHandler(
  * Body multipart: { file: .xlsx, wipeTaxonomy?: 'true'|'false', limit?: '0' }
  *
  * Formato Quelita-nativo (NO Bicom). Lee columnas por NOMBRE:
- *   barcode, name, description, category, subcategory, subsubcategory,
- *   brand, provider, flavor, format_value, format_unit,
+ *   sku, barcode, name, description, category, subcategory, subsubcategory,
+ *   brand, flavor, format_value, format_unit,
  *   unitPrice, saleUnit_type, saleUnit_quantity,
  *   tier1_minQty, tier1_price, tier1_label,
  *   tier2_minQty, tier2_price, tier2_label,

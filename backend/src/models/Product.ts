@@ -50,7 +50,6 @@ export interface IProduct extends Document {
   /** Código de barras del fabricante (EAN-13) o código POS. Puede repetirse,
    *  puede estar vacío. NO se usa como identidad primaria. */
   barcode?: string;
-  provider?: string;
 
   unitPrice: number;
   saleUnit: ISaleUnit;
@@ -146,7 +145,6 @@ const productSchema = new Schema<IProduct>(
     format: { type: Schema.Types.ObjectId, ref: 'Format' },
     flavor: { type: Schema.Types.ObjectId, ref: 'Flavor' },
     barcode: { type: String, trim: true, maxlength: 32 },
-    provider: { type: String, trim: true, maxlength: 120 },
 
     unitPrice: {
       type: Number,

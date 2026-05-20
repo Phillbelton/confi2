@@ -11,6 +11,7 @@ export default function NuevoProductoPage() {
   const handleSubmit = async (data: ProductFormValues, images: File[]) => {
     create(
       {
+        sku: data.sku?.trim() || undefined,
         name: data.name,
         description: data.description,
         categories: data.categories,
@@ -18,7 +19,6 @@ export default function NuevoProductoPage() {
         format: data.format,
         flavor: data.flavor,
         barcode: data.barcode,
-        provider: data.provider,
         unitPrice: data.unitPrice,
         saleUnit: data.saleUnit,
         tiers: data.tiers,

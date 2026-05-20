@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ArrowRight, Trash2 } from 'lucide-react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { CartItemM } from '@/components/m/cart/CartItemM';
 import { CartCheckoutBar } from '@/components/m/cart/CartCheckoutBar';
+import { EmptyState } from '@/components/m/EmptyState';
 import { cn } from '@/lib/utils';
 
 export default function MCartPage() {
@@ -18,20 +18,13 @@ export default function MCartPage() {
 
   if (itemCount === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-center lg:py-32">
-        <span className="grid h-20 w-20 place-items-center rounded-full bg-primary/10 text-primary lg:h-28 lg:w-28">
-          <ShoppingBag className="h-10 w-10 lg:h-14 lg:w-14" />
-        </span>
-        <h1 className="font-display text-xl font-bold lg:text-3xl">
-          Tu carrito está vacío
-        </h1>
-        <p className="max-w-xs text-sm text-muted-foreground lg:max-w-md lg:text-base">
-          Agregá productos desde el catálogo para empezar tu pedido.
-        </p>
-        <Button asChild className="mt-2 rounded-full px-6 lg:px-8 lg:text-base">
-          <Link href="/m/productos">Explorar productos</Link>
-        </Button>
-      </div>
+      <EmptyState
+        emoji="🛒"
+        title="Tu carrito está vacío"
+        description="Agregá productos desde el catálogo para empezar tu pedido y aprovechar los descuentos por mayor."
+        action={{ label: 'Explorar productos', href: '/m/productos' }}
+        secondaryAction={{ label: 'Ver ofertas', href: '/m/productos?onSale=true' }}
+      />
     );
   }
 

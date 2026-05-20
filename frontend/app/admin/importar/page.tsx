@@ -21,9 +21,9 @@ import { Label } from '@/components/ui/label';
  * Endpoint: POST /api/products/import-quelita-excel
  *
  * Espera un Excel con encabezados nombrados:
- *   barcode, name, description,
+ *   sku, barcode, name, description,
  *   category (con notación path: "Confites > Caramelos > Masticables"),
- *   brand, provider, flavor, format_value, format_unit,
+ *   brand, flavor, format_value, format_unit,
  *   unitPrice, saleUnit_type, saleUnit_quantity,
  *   tier1_*, tier2_*, tags, featured, active, image_url
  *
