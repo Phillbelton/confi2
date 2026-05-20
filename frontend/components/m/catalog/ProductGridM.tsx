@@ -1,6 +1,7 @@
 'use client';
 
 import { ProductCardM } from './ProductCardM';
+import { EmptyState } from '@/components/m/EmptyState';
 import type { Product } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -28,13 +29,12 @@ export function ProductGridM({ products, isLoading, className }: ProductGridMPro
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-        <span className="text-4xl" aria-hidden>🍭</span>
-        <p className="font-display text-base font-bold">No encontramos productos</p>
-        <p className="text-sm text-muted-foreground">
-          Probá quitando algún filtro o cambiando la búsqueda.
-        </p>
-      </div>
+      <EmptyState
+        emoji="🍭"
+        title="No encontramos productos"
+        description="Probá quitando algún filtro o cambiando lo que buscás. ¡Seguro tenemos algo dulce para vos!"
+        action={{ label: 'Ver todo el catálogo', href: '/m/productos' }}
+      />
     );
   }
 
