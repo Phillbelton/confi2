@@ -84,13 +84,18 @@ export default function ProductsPage() {
 
   const categories: Category[] = useMemo(() => {
     const raw = (categoriesData as any)?.data?.categories ?? categoriesData ?? [];
-    // Flatten tree if subcategories nested
-    const flat: Category[] = [];
-    (raw as any[]).forEach((c) => {
-      flat.push(c);
-      if (Array.isArray(c.subcategories)) flat.push(...c.subcategories);
-    });
-    return flat;
+    // El endpoint puede devolver:
+    //   (a) árbol — parents con `subcategories[]` y children NO al top
+    //   (b) flat — todas mezcladas, sin `subcategories`
+    //   (c) ambos — parents en top con `subcategories` y children TAMBIÉN al top
+    // Walk + dedup por _id cubre los tres casos sin asumir.
+    const byId = new Map<string, Category>();
+    const visit = (c: any) => {
+      if (c?._id && !byId.has(c._id)) byId.set(c._id, c);
+      if (Array.isArray(c?.subcategories)) c.subcategories.forEach(visit);
+    };
+    (raw as any[]).forEach(visit);
+    return Array.from(byId.values());
   }, [categoriesData]);
 
   const brands: Brand[] = useMemo(() => {
