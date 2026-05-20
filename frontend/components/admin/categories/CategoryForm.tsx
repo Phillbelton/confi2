@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Upload, X, Info, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  Loader2, Upload, X, Info, Plus, Trash2, ChevronDown, ChevronRight,
+  CornerDownRight, FolderTree,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,13 +20,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -105,14 +101,16 @@ export function CategoryForm({
 
   const isEditing = !!category;
 
-  // Filter out current category and its children from parent options
-  const availableParents = categories.filter((cat) => {
-    // Ensure category has a valid _id (not empty or undefined)
-    if (!cat._id || cat._id.trim() === '') return false;
-
-    if (!isEditing) return !cat.parent; // For new categories, show only main categories
-    return cat._id !== category._id && !cat.parent; // For editing, exclude self and show only main
-  });
+  // Resolver el padre (fijo, no editable). Al editar viene de la categoría;
+  // al crear una subcategoría viene de defaultParentId.
+  const parentId =
+    (typeof category?.parent === 'string'
+      ? category.parent
+      : category?.parent?._id) || defaultParentId || '';
+  const parentCategory = parentId
+    ? categories.find((c) => c._id === parentId)
+    : undefined;
+  const isSubcategory = !!parentId;
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
@@ -172,7 +170,9 @@ export function CategoryForm({
       }));
     const cleanedValues = {
       ...values,
-      parent: values.parent || undefined,
+      // `parent` se fija acá (no es editable). El backend lo ignora al
+      // actualizar; solo lo usa al crear una subcategoría.
+      parent: parentId || undefined,
       icon: values.icon || undefined,
       description: values.description || undefined,
       facetableAttributes: cleanedAttrs,
@@ -329,53 +329,25 @@ export function CategoryForm({
             )}
           />
 
-          {/* Parent Category */}
-          <FormField
-            control={form.control}
-            name="parent"
-            render={({ field }) => (
-              <FormItem>
-                <div className="flex items-center gap-2">
-                  <FormLabel>Categoría padre</FormLabel>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">
-                        Categorías padre aparecen en el menú principal. Subcategorías se muestran cuando haces click en la padre. Ejemplo: "Alimentos" (padre) → "Snacks", "Bebidas" (subcategorías).
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Select
-                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
-                  value={field.value || 'none'}
-                  disabled={isSubmitting}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sin categoría padre (categoría principal)" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      Sin categoría padre
-                    </SelectItem>
-                    {availableParents.map((cat) => (
-                      <SelectItem key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Selecciona una categoría padre para crear una subcategoría
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Parent context — solo lectura. El padre se fija al crear y no
+              se puede cambiar editando (evita ciclos y jerarquías profundas). */}
+          {isSubcategory ? (
+            <div className="rounded-lg border bg-muted/30 p-3 flex items-center gap-2 text-sm">
+              <CornerDownRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>
+                Subcategoría de{' '}
+                <strong>{parentCategory?.name || 'categoría raíz'}</strong>
+              </span>
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-muted/30 p-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <FolderTree className="h-4 w-4 shrink-0" />
+              <span>
+                Categoría raíz. Para agregarle subcategorías usá el botón
+                "+ Subcategoría" en la lista de categorías.
+              </span>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             {/* Icon */}
