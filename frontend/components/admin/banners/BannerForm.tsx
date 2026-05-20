@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { getSafeImageUrl } from '@/lib/image-utils';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategoriesFlat } from '@/hooks/useCategories';
 import { api } from '@/lib/axios';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -147,8 +147,8 @@ export function BannerForm({
   const watchedLinkType = form.watch('linkType') as BannerLinkType;
 
   // Loaders para los pickers
-  const { data: categoriesRaw } = useCategories();
-  const categories: Category[] = (categoriesRaw as Category[] | undefined) || [];
+  const { data: categoriesRaw } = useCategoriesFlat();
+  const categories: Category[] = categoriesRaw || [];
 
   const { data: collectionsData } = useQuery({
     queryKey: ['admin-collections-for-banner-picker'],

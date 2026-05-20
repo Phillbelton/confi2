@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategoriesFlat } from '@/hooks/useCategories';
 import { categoryVisualMap } from '@/lib/categoryVisualConfig';
 import { cn } from '@/lib/utils';
 import type { Category } from '@/types';
@@ -25,7 +25,7 @@ export function CategoryChips({
   sticky = false,
   mobileOnly = true,
 }: CategoryChipsProps) {
-  const { data: categories, isLoading } = useCategories();
+  const { data: categories, isLoading } = useCategoriesFlat();
 
   const mainCategories: Category[] = (categories || []).filter(
     (c: Category) => !c.parent

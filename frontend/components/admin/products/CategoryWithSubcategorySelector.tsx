@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategoriesFlat } from '@/hooks/useCategories';
 import { cn } from '@/lib/utils';
 import type { Category } from '@/types';
 
@@ -26,8 +26,8 @@ interface Props {
 export function CategoryWithSubcategorySelector({
   selectedIds, onChange, disabled,
 }: Props) {
-  const { data, isLoading } = useCategories();
-  const cats: Category[] = (data as Category[]) || [];
+  const { data, isLoading } = useCategoriesFlat();
+  const cats: Category[] = data || [];
 
   const parentIdOf = (c: Category) =>
     typeof c.parent === 'string' ? c.parent : c.parent?._id;

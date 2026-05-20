@@ -25,20 +25,23 @@ export default function CategoriasPage() {
   const { create, update, deleteCategory, uploadImage, isCreating, isUpdating, isDeleting, isUploadingImage } =
     useCategoryOperations();
 
-  // Backend already returns hierarchical structure
-  const categoriesTree = data?.data?.categories || [];
-
-  // Flatten the tree for CategoryForm (needs flat list for parent selection)
-  const categories = useMemo(() => {
-    const tree = data?.data?.categories || [];
-    const flat: Category[] = [];
-    tree.forEach((cat: any) => {
-      flat.push(cat);
-      if (cat.subcategories && cat.subcategories.length > 0) {
-        flat.push(...cat.subcategories);
-      }
-    });
-    return flat;
+  // El endpoint devuelve TODAS las categorías planas, cada una con sus hijos
+  // embebidos en `subcategories[]`. Normalizamos para evitar duplicados:
+  //  - `categories`  → lista plana deduplicada (para el select de padre)
+  //  - `categoriesTree` → solo raíces, cada una con `subcategories` (para el árbol)
+  const { categories, categoriesTree } = useMemo(() => {
+    const raw: any[] = data?.data?.categories || [];
+    const byId = new Map<string, Category>();
+    const visit = (c: any) => {
+      if (c?._id && !byId.has(c._id)) byId.set(c._id, c);
+      if (Array.isArray(c?.subcategories)) c.subcategories.forEach(visit);
+    };
+    raw.forEach(visit);
+    const flat = Array.from(byId.values());
+    return {
+      categories: flat,
+      categoriesTree: flat.filter((c) => !c.parent),
+    };
   }, [data]);
 
   const handleOpenDialog = (category?: Category) => {

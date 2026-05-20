@@ -1,11 +1,35 @@
 import { useQuery } from '@tanstack/react-query';
 import { categoryService } from '@/services/categories';
 
+/**
+ * @deprecated La respuesta cruda del backend duplica las subcategorías
+ * (aparecen flat y embebidas dentro del padre). Para nuevos consumos usar
+ * `useCategoriesFlat()` (lista limpia sin duplicados) o `useCategoriesTree()`
+ * (jerárquico). Se mantiene para compatibilidad de consumidores existentes.
+ */
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: () => categoryService.getAll(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/** Lista plana de categorías, deduplicada y sin `subcategories` embebido. */
+export function useCategoriesFlat() {
+  return useQuery({
+    queryKey: ['categories', 'flat'],
+    queryFn: () => categoryService.getAllFlat(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Árbol: solo raíces, cada una con `subcategories[]`. */
+export function useCategoriesTree() {
+  return useQuery({
+    queryKey: ['categories', 'tree'],
+    queryFn: () => categoryService.getAllTree(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

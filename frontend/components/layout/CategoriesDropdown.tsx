@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategoriesFlat } from '@/hooks/useCategories';
 import { getCategoryVisualConfig } from '@/lib/categoryVisualConfig';
 import { cn } from '@/lib/utils';
 import type { Category } from '@/types';
@@ -31,7 +31,7 @@ export function CategoriesDropdown({
   basePath = '/productos',
   useSlug = false,
 }: CategoriesDropdownProps = {}) {
-  const { data: allCategories, isLoading } = useCategories();
+  const { data: allCategories, isLoading } = useCategoriesFlat();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 

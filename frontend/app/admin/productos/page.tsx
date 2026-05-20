@@ -28,7 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   useAdminProducts, useProductOperations, useAdminProductStats,
 } from '@/hooks/admin/useAdminProducts';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategoriesFlat } from '@/hooks/useCategories';
 import { useAdminBrands } from '@/hooks/admin/useAdminBrands';
 import { badgeText } from '@/components/admin/products/ProductForm';
 import { useDebounce } from 'use-debounce';
@@ -78,25 +78,11 @@ export default function ProductsPage() {
 
   const { data, isLoading } = useAdminProducts(params);
   const { data: stats } = useAdminProductStats();
-  const { data: categoriesData } = useCategories();
+  const { data: categoriesData } = useCategoriesFlat();
   const { data: brandsData } = useAdminBrands();
   const { remove, isDeleting, update } = useProductOperations();
 
-  const categories: Category[] = useMemo(() => {
-    const raw = (categoriesData as any)?.data?.categories ?? categoriesData ?? [];
-    // El endpoint puede devolver:
-    //   (a) árbol — parents con `subcategories[]` y children NO al top
-    //   (b) flat — todas mezcladas, sin `subcategories`
-    //   (c) ambos — parents en top con `subcategories` y children TAMBIÉN al top
-    // Walk + dedup por _id cubre los tres casos sin asumir.
-    const byId = new Map<string, Category>();
-    const visit = (c: any) => {
-      if (c?._id && !byId.has(c._id)) byId.set(c._id, c);
-      if (Array.isArray(c?.subcategories)) c.subcategories.forEach(visit);
-    };
-    (raw as any[]).forEach(visit);
-    return Array.from(byId.values());
-  }, [categoriesData]);
+  const categories: Category[] = categoriesData ?? [];
 
   const brands: Brand[] = useMemo(() => {
     const raw: any = brandsData;
