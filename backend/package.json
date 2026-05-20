@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate": "ts-node -r tsconfig-paths/register src/scripts/migrateProducts.ts",
+    "cleanup:provider": "ts-node -r tsconfig-paths/register src/scripts/cleanupProviderField.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seedAdmin.ts",
     "convert:bicom": "ts-node -r tsconfig-paths/register src/scripts/convertBicomToQuelita.ts",
     "gen:template": "ts-node -r tsconfig-paths/register src/scripts/generateQuelitaTemplate.ts",
