@@ -323,7 +323,7 @@ export const updateProduct = asyncHandler(
     const body = req.body;
     const fields = [
       'name', 'description', 'categories', 'brand', 'format', 'flavor',
-      'barcode', 'provider', 'unitPrice', 'saleUnit', 'tiers',
+      'barcode', 'unitPrice', 'saleUnit', 'tiers',
       'fixedDiscount', 'images', 'featured', 'active',
     ];
     for (const field of fields) {
