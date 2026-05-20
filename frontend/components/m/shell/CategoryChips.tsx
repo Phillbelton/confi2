@@ -69,7 +69,7 @@ export function CategoryChips({
 
               return (
                 <Link
-                  key={cat._id || cat.slug || cat.name}
+                  key={cat.slug || cat.name}
                   href={href}
                   className={cn(
                     'snap-start tappable flex w-20 shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-2 text-[11px] font-medium transition-all',
