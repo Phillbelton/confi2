@@ -172,13 +172,23 @@ export function CategoriesTree({
 
             return (
               <Card key={cat._id} className="overflow-hidden">
-                {/* Parent header — clickable to expand */}
-                <button
-                  type="button"
+                {/* Parent header — clickable to expand (div, not button:
+                    contains action buttons → nested <button> is invalid HTML) */}
+                <div
+                  role={expandable ? 'button' : undefined}
+                  tabIndex={expandable ? 0 : undefined}
                   onClick={() => (expandable ? toggle(cat._id) : undefined)}
+                  onKeyDown={(e) => {
+                    if (expandable && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      toggle(cat._id);
+                    }
+                  }}
                   className={cn(
                     'w-full flex items-center gap-3 p-3 sm:p-4 text-left',
-                    expandable ? 'hover:bg-accent/40 transition-colors' : 'cursor-default'
+                    expandable
+                      ? 'hover:bg-accent/40 transition-colors cursor-pointer'
+                      : 'cursor-default'
                   )}
                   aria-expanded={expandable ? expandedNow : undefined}
                 >
@@ -261,7 +271,7 @@ export function CategoriesTree({
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                </button>
+                </div>
 
                 {/* Expanded subcategories area */}
                 {expandable && expandedNow && (
