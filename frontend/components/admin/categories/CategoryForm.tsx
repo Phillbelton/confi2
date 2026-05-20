@@ -79,6 +79,8 @@ type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 interface CategoryFormProps {
   category?: Category;
   categories: Category[];
+  /** Pre-selecciona un padre cuando se crea desde el botón "+ Subcategoría". */
+  defaultParentId?: string;
   onSubmit: (data: CategoryFormValues) => void;
   onUploadImage?: (categoryId: string, file: File) => void;
   onCancel?: () => void;
@@ -89,6 +91,7 @@ interface CategoryFormProps {
 export function CategoryForm({
   category,
   categories,
+  defaultParentId,
   onSubmit,
   onUploadImage,
   onCancel,
@@ -118,7 +121,7 @@ export function CategoryForm({
       description: category?.description || '',
       parent: typeof category?.parent === 'string'
         ? category.parent
-        : category?.parent?._id || '',
+        : category?.parent?._id || defaultParentId || '',
       icon: category?.icon || '',
       color: category?.color || '#F97316',
       order: category?.order || 0,
@@ -127,7 +130,7 @@ export function CategoryForm({
     },
   });
 
-  // Update form when category changes
+  // Update form when category or defaultParentId changes
   useEffect(() => {
     if (category) {
       form.reset({
@@ -143,8 +146,21 @@ export function CategoryForm({
         facetableAttributes: category.facetableAttributes || [],
       });
       setImagePreview(category.image || null);
+    } else {
+      // Creating new — apply defaults including pre-selected parent if any
+      form.reset({
+        name: '',
+        description: '',
+        parent: defaultParentId || '',
+        icon: '',
+        color: '#F97316',
+        order: 0,
+        active: true,
+        facetableAttributes: [],
+      });
+      setImagePreview(null);
     }
-  }, [category, form]);
+  }, [category, defaultParentId, form]);
 
   const handleSubmit = (values: CategoryFormValues) => {
     // Clean up empty strings y limpieza defensiva de atributos vacíos
