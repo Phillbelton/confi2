@@ -3,11 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, Sparkles, ShoppingBag, User } from 'lucide-react';
+import { Search, Sparkles, ShoppingBag, User } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { motion } from 'framer-motion';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
+import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
 
 interface StickyHeaderProps {
@@ -85,45 +85,64 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
           aria-hidden
         />
 
-        {/* ---------------------------- MOBILE: logo + búsqueda + notificaciones en una fila ---------------------------- */}
+        {/* ---------------------------- MOBILE: hamburguesa + logo + cuenta + carrito, búsqueda debajo ---------------------------- */}
         <div className="mx-auto w-full max-w-screen-md lg:hidden">
-          <div className="relative z-10 flex items-center gap-2.5 px-4 py-3">
-            <Link href="/m" className="flex shrink-0 items-center" aria-label="Inicio Quelita">
-              <motion.div
-                initial={{ scale: 0.9, rotate: -4 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-                className="relative grid h-12 w-16 place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30"
-              >
-                <Image
-                  src="/brand/logo.png"
-                  alt="Confitería Quelita"
-                  width={96}
-                  height={64}
-                  priority
-                  className="h-9 w-auto drop-shadow-md"
-                />
-              </motion.div>
+          <div className="relative z-10 flex items-center gap-2 px-4 pt-3">
+            <MobileMenuDrawer />
+
+            <Link
+              href="/m"
+              className="flex shrink-0 items-center"
+              aria-label="Inicio Quelita"
+            >
+              <Image
+                src="/brand/logo.png"
+                alt="Confitería Quelita"
+                width={120}
+                height={78}
+                priority
+                className="h-9 w-auto drop-shadow-md"
+              />
             </Link>
 
-            <form onSubmit={onSubmit} className="min-w-0 flex-1">
-              <SearchField
-                q={q}
-                setQ={setQ}
-                focused={focused}
-                setFocused={setFocused}
-              />
-            </form>
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              <Link
+                href="/login"
+                className="tappable inline-flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-white/15"
+                aria-label="Iniciar sesión"
+              >
+                <User className="h-5 w-5" />
+                <span>Iniciar sesión</span>
+              </Link>
 
-            <button
-              type="button"
-              className="tappable relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
-              aria-label="Notificaciones"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2.5 top-2.5 h-2 w-2 animate-pulse rounded-full bg-accent ring-2 ring-primary" />
-            </button>
+              <Link
+                href="/m/carrito"
+                className="tappable relative grid h-10 w-10 place-items-center rounded-full text-white transition-colors hover:bg-white/15"
+                aria-label="Carrito"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <span
+                    className={cn(
+                      'absolute right-0.5 top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-accent px-1 text-[9px] font-bold leading-none text-accent-foreground',
+                      bump && 'stepper-bump'
+                    )}
+                  >
+                    {itemCount > 99 ? '99+' : itemCount}
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
+
+          <form onSubmit={onSubmit} className="relative z-10 px-4 pb-5 pt-3">
+            <SearchField
+              q={q}
+              setQ={setQ}
+              focused={focused}
+              setFocused={setFocused}
+            />
+          </form>
         </div>
 
         {/* ---------------------------- DESKTOP: layout horizontal estilo Jumbo ---------------------------- */}
