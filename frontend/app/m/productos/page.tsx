@@ -3,7 +3,6 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X, SlidersHorizontal } from 'lucide-react';
-import { CategoryChips } from '@/components/m/shell/CategoryChips';
 import { ProductGridM } from '@/components/m/catalog/ProductGridM';
 import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
 import { useCatalogBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
@@ -148,6 +147,24 @@ function CatalogContent() {
     }
   }
 
+  const activeFilterCount =
+    activeChips.length + (onSale ? 1 : 0) + (featured ? 1 : 0);
+
+  const clearFilters = () => {
+    const updates: Record<string, string | undefined> = {
+      brands: undefined,
+      subcategoria: undefined,
+      formato: undefined,
+      sabor: undefined,
+      onSale: undefined,
+      featured: undefined,
+    };
+    for (const k of Object.keys(activeAttrs)) {
+      updates[`attr_${k}`] = undefined;
+    }
+    setParam(updates);
+  };
+
   const breadcrumbs = useCatalogBreadcrumbs({
     categorySlug: category,
     subcategorySlug: subcategory,
@@ -160,27 +177,34 @@ function CatalogContent() {
         <Breadcrumbs items={breadcrumbs} className="border-b border-border/60 bg-muted/30 lg:px-4" />
       )}
 
-      {activeChips.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto px-4 py-2 lg:px-8 border-b border-border/40 bg-background">
-          {activeChips.map((chip, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={chip.onRemove}
-              className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium hover:bg-primary/20 transition-colors"
-            >
-              {chip.label}
-              <X className="h-3 w-3" />
-            </button>
+      {/* Subcategorías de la categoría actual */}
+      {category && facets?.subcategories?.length > 0 && (
+        <div className="scrollbar-none flex gap-2 overflow-x-auto border-b border-border/60 bg-background px-4 py-2.5 lg:px-8">
+          <SubcategoryChip
+            label="Todo"
+            active={!subcategory}
+            onClick={() => setParam({ subcategoria: undefined })}
+          />
+          {facets.subcategories.map((s: any) => (
+            <SubcategoryChip
+              key={s._id}
+              label={s.name}
+              count={s.count}
+              active={subcategory === s.slug}
+              onClick={() =>
+                setParam({
+                  subcategoria: subcategory === s.slug ? undefined : s.slug,
+                })
+              }
+            />
           ))}
         </div>
       )}
 
-      <CategoryChips activeSlug={category} />
-
-      <div className="px-4 pt-3 pb-2 lg:px-8 flex items-center gap-2">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      {/* Buscador */}
+      <div className="px-4 pt-3 lg:px-8">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar productos…"
             value={searchInput}
@@ -188,143 +212,199 @@ function CatalogContent() {
               setSearchInput(e.target.value);
               setParam({ search: e.target.value || undefined });
             }}
-            className="pl-8"
+            className="h-11 rounded-full pl-9 pr-9"
           />
           {searchInput && (
             <button
               type="button"
               onClick={() => { setSearchInput(''); setParam({ search: undefined }); }}
-              className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Limpiar búsqueda"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
+      </div>
 
-        <Select value={sort} onValueChange={(v) => setParam({ sort: v === 'newest' ? undefined : v })}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Más nuevos</SelectItem>
-            <SelectItem value="price_asc">Precio: menor</SelectItem>
-            <SelectItem value="price_desc">Precio: mayor</SelectItem>
-            <SelectItem value="name_asc">Nombre A-Z</SelectItem>
-            <SelectItem value="popular">Populares</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Controles: resultados · orden · filtros */}
+      <div className="flex items-center gap-2 px-4 py-3 lg:px-8">
+        <p className="text-xs font-medium text-muted-foreground">
+          {isLoading ? 'Cargando…' : `${total} producto${total === 1 ? '' : 's'}`}
+        </p>
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="Filtros">
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full max-w-md overflow-y-auto p-0">
-            <SheetHeader className="px-4 pt-4">
-              <SheetTitle>Filtros</SheetTitle>
-            </SheetHeader>
-            <div className="px-4 py-4 space-y-5">
-              {/* Marcas */}
-              {facets?.brands?.length > 0 && (
-                <FilterSection
-                  title="Marcas"
-                  items={facets.brands}
-                  selected={brands ? brands.split(',') : []}
-                  onToggle={(slug) => {
-                    const cur = brands ? brands.split(',') : [];
-                    const next = cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug];
-                    setParam({ brands: next.length ? next.join(',') : undefined });
-                  }}
-                />
-              )}
+        <div className="ml-auto flex items-center gap-2">
+          <Select value={sort} onValueChange={(v) => setParam({ sort: v === 'newest' ? undefined : v })}>
+            <SelectTrigger className="h-9 w-[140px] rounded-full text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Más nuevos</SelectItem>
+              <SelectItem value="price_asc">Precio: menor</SelectItem>
+              <SelectItem value="price_desc">Precio: mayor</SelectItem>
+              <SelectItem value="name_asc">Nombre A-Z</SelectItem>
+              <SelectItem value="popular">Populares</SelectItem>
+            </SelectContent>
+          </Select>
 
-              {/* Subcategorías */}
-              {facets?.subcategories?.length > 0 && (
-                <FilterSection
-                  title="Subcategorías"
-                  items={facets.subcategories}
-                  selected={subcategory ? [subcategory] : []}
-                  onToggle={(slug) =>
-                    setParam({ subcategoria: subcategory === slug ? undefined : slug })
-                  }
-                />
-              )}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="h-9 gap-1.5 rounded-full px-3.5">
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="text-xs font-semibold">Filtros</span>
+                {activeFilterCount > 0 && (
+                  <span className="grid h-5 min-w-[20px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              showCloseButton={false}
+              className="flex w-full max-w-md flex-col gap-0 p-0"
+            >
+              <SheetHeader className="flex-row items-center gap-3 space-y-0 border-b px-4 py-3.5">
+                <SheetTitle className="text-base font-bold">Filtros</SheetTitle>
+                {activeFilterCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Limpiar todo
+                  </button>
+                )}
+                <SheetClose
+                  aria-label="Cerrar filtros"
+                  className="ml-auto grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                </SheetClose>
+              </SheetHeader>
 
-              {/* Formatos */}
-              {facets?.formats?.length > 0 && (
-                <FilterSection
-                  title="Formato"
-                  items={facets.formats.map((f: any) => ({ ...f, name: f.label }))}
-                  selected={format ? [format] : []}
-                  onToggle={(slug) =>
-                    setParam({ formato: format === slug ? undefined : slug })
-                  }
-                />
-              )}
+              <div className="flex-1 space-y-6 overflow-y-auto px-4 py-5">
+                {facets?.brands?.length > 0 && (
+                  <FilterSection
+                    title="Marcas"
+                    items={facets.brands}
+                    selected={brands ? brands.split(',') : []}
+                    onToggle={(slug) => {
+                      const cur = brands ? brands.split(',') : [];
+                      const next = cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug];
+                      setParam({ brands: next.length ? next.join(',') : undefined });
+                    }}
+                  />
+                )}
 
-              {/* Sabores */}
-              {facets?.flavors?.length > 0 && (
-                <FilterSection
-                  title="Sabor"
-                  items={facets.flavors}
-                  selected={flavor ? [flavor] : []}
-                  onToggle={(slug) =>
-                    setParam({ sabor: flavor === slug ? undefined : slug })
-                  }
-                />
-              )}
+                {facets?.subcategories?.length > 0 && (
+                  <FilterSection
+                    title="Subcategorías"
+                    items={facets.subcategories}
+                    selected={subcategory ? [subcategory] : []}
+                    onToggle={(slug) =>
+                      setParam({ subcategoria: subcategory === slug ? undefined : slug })
+                    }
+                  />
+                )}
 
-              {/* Atributos dinámicos por categoría */}
-              {dynamicAttributes.map((attr) => (
-                <div key={attr.key}>
-                  <h3 className="text-sm font-bold uppercase tracking-wide mb-2">
-                    {attr.label}
+                {facets?.formats?.length > 0 && (
+                  <FilterSection
+                    title="Formato"
+                    items={facets.formats.map((f: any) => ({ ...f, name: f.label }))}
+                    selected={format ? [format] : []}
+                    onToggle={(slug) =>
+                      setParam({ formato: format === slug ? undefined : slug })
+                    }
+                  />
+                )}
+
+                {facets?.flavors?.length > 0 && (
+                  <FilterSection
+                    title="Sabor"
+                    items={facets.flavors}
+                    selected={flavor ? [flavor] : []}
+                    onToggle={(slug) =>
+                      setParam({ sabor: flavor === slug ? undefined : slug })
+                    }
+                  />
+                )}
+
+                {dynamicAttributes.map((attr) => (
+                  <div key={attr.key}>
+                    <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      {attr.label}
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {attr.options.map((opt) => {
+                        const sel = (activeAttrs[attr.key] || []).includes(opt.value);
+                        return (
+                          <FilterChip
+                            key={opt.value}
+                            label={`${opt.label} · ${opt.count}`}
+                            selected={sel}
+                            onClick={() => toggleAttrValue(attr.key, opt.value, attr.multiSelect)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                <div>
+                  <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    Promociones
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {attr.options.map((opt) => {
-                      const sel = (activeAttrs[attr.key] || []).includes(opt.value);
-                      return (
-                        <FilterChip
-                          key={opt.value}
-                          label={`${opt.label} · ${opt.count}`}
-                          selected={sel}
-                          onClick={() => toggleAttrValue(attr.key, opt.value, attr.multiSelect)}
-                        />
-                      );
-                    })}
+                    <FilterChip
+                      label={`En oferta (${facets?.promos?.onSale || 0})`}
+                      selected={onSale}
+                      onClick={() => setParam({ onSale: onSale ? undefined : 'true' })}
+                    />
+                    <FilterChip
+                      label={`Destacados (${facets?.promos?.featured || 0})`}
+                      selected={featured}
+                      onClick={() => setParam({ featured: featured ? undefined : 'true' })}
+                    />
                   </div>
-                </div>
-              ))}
-
-              {/* Promos */}
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wide mb-2">Promociones</h3>
-                <div className="flex flex-wrap gap-2">
-                  <FilterChip
-                    label={`En oferta (${facets?.promos?.onSale || 0})`}
-                    selected={onSale}
-                    onClick={() => setParam({ onSale: onSale ? undefined : 'true' })}
-                  />
-                  <FilterChip
-                    label={`Destacados (${facets?.promos?.featured || 0})`}
-                    selected={featured}
-                    onClick={() => setParam({ featured: featured ? undefined : 'true' })}
-                  />
                 </div>
               </div>
 
-              <SheetClose asChild>
-                <Button className="w-full">Aplicar</Button>
-              </SheetClose>
-            </div>
-          </SheetContent>
-        </Sheet>
+              <div className="border-t bg-background p-3">
+                <SheetClose asChild>
+                  <Button className="h-11 w-full rounded-full text-sm font-bold">
+                    Ver {total} producto{total === 1 ? '' : 's'}
+                  </Button>
+                </SheetClose>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
-      <div className="px-4 lg:px-8 pb-2">
-        <p className="text-xs text-muted-foreground">
-          {isLoading ? 'Cargando…' : `${total} producto${total === 1 ? '' : 's'}`}
-        </p>
-      </div>
+      {/* Filtros activos */}
+      {activeChips.length > 0 && (
+        <div className="scrollbar-none flex items-center gap-1.5 overflow-x-auto px-4 pb-3 lg:px-8">
+          {activeChips.map((chip, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={chip.onRemove}
+              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            >
+              {chip.label}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="shrink-0 whitespace-nowrap px-2 py-1 text-xs font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Limpiar todo
+          </button>
+        </div>
+      )}
 
       <ProductGridM products={products} isLoading={isLoading} className="pb-12" />
     </>
@@ -374,6 +454,36 @@ function FilterChip({
       )}
     >
       {label}
+    </button>
+  );
+}
+
+/** Chip de subcategoría — fila horizontal scrollable bajo el breadcrumb. */
+function SubcategoryChip({
+  label, count, active, onClick,
+}: { label: string; count?: number; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all',
+        active
+          ? 'border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+          : 'border-border bg-card text-foreground hover:border-primary/40'
+      )}
+    >
+      {label}
+      {typeof count === 'number' && (
+        <span
+          className={cn(
+            'text-[10px] font-bold',
+            active ? 'text-primary-foreground/70' : 'text-muted-foreground'
+          )}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }
