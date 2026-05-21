@@ -86,15 +86,15 @@ export function CollectionsGrid({
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-square w-[14.3rem] shrink-0 animate-pulse rounded-3xl bg-muted"
+                  className="aspect-[5/3] w-[18rem] shrink-0 animate-pulse rounded-2xl bg-muted"
                 />
               ))
             : collections.map((c) => (
                 <CollectionCard
                   key={c._id}
                   collection={c}
-                  variant="square"
-                  className="w-[14.3rem] shrink-0 snap-start"
+                  variant="landscape"
+                  className="w-[18rem] shrink-0 snap-start"
                 />
               ))}
         </div>
