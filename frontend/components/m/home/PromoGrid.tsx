@@ -33,6 +33,23 @@ function resolveBannerHref(banner: Banner): string {
   }
 }
 
+/**
+ * Span CSS para cada tamaño de banner en el grid mosaico (placement != home_hero).
+ */
+function sizeClasses(size: Banner['size']): string {
+  switch (size) {
+    case 'wide':
+      return 'aspect-[5/3] lg:aspect-auto lg:col-span-2 lg:row-span-1';
+    case 'tall':
+      return 'aspect-[5/3] lg:aspect-auto lg:col-span-1 lg:row-span-2';
+    case 'hero':
+      return 'aspect-[5/3] lg:aspect-auto lg:col-span-4 lg:row-span-2';
+    case 'normal':
+    default:
+      return 'aspect-[5/3] lg:aspect-auto lg:col-span-1 lg:row-span-1';
+  }
+}
+
 interface BannerTileProps {
   banner: Banner;
   className?: string;
@@ -272,23 +289,32 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
     );
   }
 
-  // Grid uniforme — cada promoción en formato 5:3 (5 ancho × 3 alto)
+  // Mosaic grid para los demás placements
   return (
     <section className={cn('px-4 pb-8 lg:px-8', className)}>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-3',
+          'lg:grid-cols-4 lg:auto-rows-[220px] lg:gap-4'
+        )}
+      >
         {isLoading
-          ? Array.from({ length: 3 }).map((_, i) => (
+          ? Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="aspect-[5/3] animate-pulse rounded-2xl bg-muted"
+                className={cn(
+                  'animate-pulse rounded-2xl bg-muted',
+                  i === 0
+                    ? 'aspect-[5/3] lg:col-span-2 lg:row-span-2 lg:aspect-auto'
+                    : 'aspect-[5/3] lg:col-span-1 lg:row-span-1 lg:aspect-auto'
+                )}
               />
             ))
           : (banners || []).map((b) => (
               <BannerTile
                 key={b._id}
                 banner={b}
-                className="aspect-[5/3]"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className={sizeClasses(b.size)}
               />
             ))}
       </div>
