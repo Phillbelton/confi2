@@ -93,7 +93,7 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
                 initial={{ scale: 0.9, rotate: -4 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-                className="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30"
+                className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30"
               >
                 <Image
                   src="/brand/logo.png"
@@ -101,15 +101,9 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
                   width={64}
                   height={64}
                   priority
-                  className="h-9 w-auto drop-shadow-md"
+                  className="h-8 w-auto drop-shadow-md"
                 />
               </motion.div>
-              <div className="flex flex-col leading-tight">
-                <span className="font-handwriting text-xl text-white/90">¡Hola dulce!</span>
-                <span className="font-display text-[13px] font-bold uppercase tracking-wider opacity-80">
-                  Confitería Quelita
-                </span>
-              </div>
             </Link>
 
             <button
