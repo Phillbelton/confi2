@@ -15,6 +15,9 @@ interface ApiResponse<T> {
   data: T;
 }
 
+// Backend wraps single-order endpoints as { data: { order } }.
+type OrderEnvelope = { order: Order };
+
 interface GetOrdersParams extends AdminPaginationParams, OrderFilters {}
 
 export const adminOrdersService = {
@@ -40,49 +43,49 @@ export const adminOrdersService = {
    * Get order by ID
    */
   getOrderById: async (id: string): Promise<Order> => {
-    const { data } = await adminApi.get<ApiResponse<Order>>(`/orders/${id}`);
-    return data.data;
+    const { data } = await adminApi.get<ApiResponse<OrderEnvelope>>(`/orders/${id}`);
+    return data.data.order;
   },
 
   /**
    * Update order status
    */
   updateOrderStatus: async (id: string, statusData: UpdateOrderStatusData): Promise<Order> => {
-    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/status`, statusData);
-    return data.data;
+    const { data } = await adminApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/status`, statusData);
+    return data.data.order;
   },
 
   /**
    * Mark WhatsApp as sent
    */
   markWhatsAppSent: async (id: string): Promise<Order> => {
-    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/whatsapp-sent`, {
+    const { data } = await adminApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/whatsapp-sent`, {
       whatsappSent: true,
     });
-    return data.data;
+    return data.data.order;
   },
 
   /**
    * Cancel order
    */
   cancelOrder: async (id: string, cancelData: CancelOrderData): Promise<Order> => {
-    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/cancel`, cancelData);
-    return data.data;
+    const { data } = await adminApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/cancel`, cancelData);
+    return data.data.order;
   },
 
   /**
    * Update admin notes
    */
   updateAdminNotes: async (id: string, notesData: UpdateAdminNotesData): Promise<Order> => {
-    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/admin-notes`, notesData);
-    return data.data;
+    const { data } = await adminApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/admin-notes`, notesData);
+    return data.data.order;
   },
 
   /**
    * Edit order items (add, remove, change quantities)
    */
   editOrderItems: async (id: string, itemsData: EditOrderItemsData): Promise<Order> => {
-    const { data } = await adminApi.put<ApiResponse<Order>>(`/orders/${id}/items`, itemsData);
-    return data.data;
+    const { data } = await adminApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/items`, itemsData);
+    return data.data.order;
   },
 };

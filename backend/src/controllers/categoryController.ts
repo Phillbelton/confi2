@@ -193,14 +193,18 @@ export const createCategory = asyncHandler(
       facetableAttributes,
     } = req.body;
 
-    // Validar jerarquía de 3 niveles máximo (raíz → sub → sub-sub)
+    // Jerarquía de 2 niveles: una subcategoría solo puede colgar de una
+    // categoría raíz. No se permiten sub-subcategorías.
     if (parent) {
-      const parentCategory = await Category.findById(parent).populate('parent', '_id parent');
-      if (parentCategory) {
-        const grandparent: any = parentCategory.parent;
-        if (grandparent && grandparent.parent) {
-          throw new AppError(400, 'No se permiten más de 3 niveles de categorías');
-        }
+      const parentCategory = await Category.findById(parent);
+      if (!parentCategory) {
+        throw new AppError(400, 'La categoría padre no existe');
+      }
+      if (parentCategory.parent) {
+        throw new AppError(
+          400,
+          'Solo se pueden crear subcategorías a partir de categorías raíz'
+        );
       }
     }
 
@@ -239,28 +243,19 @@ export const updateCategory = asyncHandler(
       description,
       icon,
       color,
-      parent,
       order,
       active,
       facetableAttributes,
     } = req.body;
 
-    // Validar jerarquía de 3 niveles máximo si se está cambiando el parent
-    if (parent !== undefined && parent !== null) {
-      const parentCategory = await Category.findById(parent).populate('parent', '_id parent');
-      if (parentCategory) {
-        const grandparent: any = parentCategory.parent;
-        if (grandparent && grandparent.parent) {
-          throw new AppError(400, 'No se permiten más de 3 niveles de categorías');
-        }
-      }
-    }
+    // El `parent` NO es editable: una categoría no se puede mover de rama.
+    // La relación raíz/subcategoría se fija al crear y no cambia. Esto evita
+    // ciclos y jerarquías de más de 2 niveles.
 
     if (name !== undefined) category.name = name;
     if (description !== undefined) category.description = description;
     if (icon !== undefined) category.icon = icon;
     if (color !== undefined) category.color = color;
-    if (parent !== undefined) category.parent = parent;
     if (order !== undefined) category.order = order;
     if (active !== undefined) category.active = active;
     if (facetableAttributes !== undefined) {

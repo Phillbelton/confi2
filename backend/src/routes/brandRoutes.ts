@@ -16,8 +16,8 @@ router.get('/:id', validate(brandSchemas.getBrandByIdSchema), brandController.ge
 router.get('/slug/:slug', validate(brandSchemas.getBrandBySlugSchema), brandController.getBrandBySlug);
 
 // Protected routes (admin, funcionario)
-router.post('/', authenticate, authorize('admin', 'funcionario'), validate(brandSchemas.createBrandSchema), auditLog('brand', 'create'), brandController.createBrand);
-router.put('/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Brand), validate(brandSchemas.updateBrandSchema), auditLog('brand', 'update'), brandController.updateBrand);
+router.post('/', authenticate, authorize('admin'), validate(brandSchemas.createBrandSchema), auditLog('brand', 'create'), brandController.createBrand);
+router.put('/:id', authenticate, authorize('admin'), captureBeforeState(Brand), validate(brandSchemas.updateBrandSchema), auditLog('brand', 'update'), brandController.updateBrand);
 
 // Protected routes (admin only)
 router.delete('/:id', authenticate, authorize('admin'), captureBeforeState(Brand), validate(brandSchemas.deleteBrandSchema), auditLog('brand', 'delete'), brandController.deleteBrand);
@@ -26,7 +26,7 @@ router.delete('/:id', authenticate, authorize('admin'), captureBeforeState(Brand
 router.post(
   '/:id/logo',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   uploadSingle,
   handleMulterError,
   uploadController.uploadBrandLogo

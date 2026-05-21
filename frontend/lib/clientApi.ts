@@ -39,8 +39,9 @@ clientApi.interceptors.response.use(
       const message = error.response.data?.error || error.response.data?.message || 'An error occurred';
 
       if (status === 401 && typeof window !== 'undefined') {
-        // Clear client token
+        // Clear client token + persisted user state to avoid stale-auth loops
         localStorage.removeItem('client-token');
+        localStorage.removeItem('client-storage');
         // Redirect to client login
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';

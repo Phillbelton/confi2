@@ -15,7 +15,7 @@ const router = Router();
 router.get(
   '/stats',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   dashboardController.getDashboardStats
 );
 
@@ -25,7 +25,7 @@ router.get(
 router.get(
   '/sales-chart',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   dashboardController.getSalesChart
 );
 
@@ -35,7 +35,7 @@ router.get(
 router.get(
   '/top-products',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   dashboardController.getTopProducts
 );
 
@@ -45,7 +45,7 @@ router.get(
 router.get(
   '/recent-orders',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   dashboardController.getRecentOrders
 );
 

@@ -19,8 +19,8 @@ router.get('/:id/subcategories', validate(categorySchemas.getSubcategoriesSchema
 router.get('/:id/facetable-attributes', validate(categorySchemas.getCategoryByIdSchema), categoryController.getFacetableAttributes);
 
 // Protected routes (admin, funcionario)
-router.post('/', authenticate, authorize('admin', 'funcionario'), validate(categorySchemas.createCategorySchema), auditLog('category', 'create'), categoryController.createCategory);
-router.put('/:id', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Category), validate(categorySchemas.updateCategorySchema), auditLog('category', 'update'), categoryController.updateCategory);
+router.post('/', authenticate, authorize('admin'), validate(categorySchemas.createCategorySchema), auditLog('category', 'create'), categoryController.createCategory);
+router.put('/:id', authenticate, authorize('admin'), captureBeforeState(Category), validate(categorySchemas.updateCategorySchema), auditLog('category', 'update'), categoryController.updateCategory);
 
 // Protected routes (admin only)
 router.delete('/:id', authenticate, authorize('admin'), captureBeforeState(Category), validate(categorySchemas.deleteCategorySchema), auditLog('category', 'delete'), categoryController.deleteCategory);
@@ -29,7 +29,7 @@ router.delete('/:id', authenticate, authorize('admin'), captureBeforeState(Categ
 router.post(
   '/:id/image',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   uploadSingle,
   handleMulterError,
   uploadController.uploadCategoryImage

@@ -12,14 +12,14 @@ router.get('/:id', formatController.getFormatById);
 router.post(
   '/',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(createFormatSchema),
   formatController.createFormat
 );
 router.put(
   '/:id',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(updateFormatSchema),
   formatController.updateFormat
 );

@@ -323,7 +323,7 @@ export const updateProduct = asyncHandler(
     const body = req.body;
     const fields = [
       'name', 'description', 'categories', 'brand', 'format', 'flavor',
-      'barcode', 'provider', 'unitPrice', 'saleUnit', 'tiers',
+      'barcode', 'unitPrice', 'saleUnit', 'tiers',
       'fixedDiscount', 'images', 'featured', 'active',
     ];
     for (const field of fields) {
@@ -336,6 +336,35 @@ export const updateProduct = asyncHandler(
       success: true,
       message: 'Producto actualizado exitosamente',
       data: { product },
+    });
+  }
+);
+
+// =====================================================
+// GET /api/products/admin-stats  (overview counters for admin panel)
+// =====================================================
+export const getAdminStats = asyncHandler(
+  async (_req: AuthRequest, res: Response<ApiResponse<{ stats: Record<string, number> }>>) => {
+    const [total, active, inactive, featured, noImage, noFormat, noBrand, noCategory] =
+      await Promise.all([
+        Product.countDocuments({}),
+        Product.countDocuments({ active: true }),
+        Product.countDocuments({ active: false }),
+        Product.countDocuments({ featured: true }),
+        Product.countDocuments({
+          $or: [{ images: { $exists: false } }, { images: { $size: 0 } }],
+        }),
+        Product.countDocuments({ $or: [{ format: { $exists: false } }, { format: null }] }),
+        Product.countDocuments({ $or: [{ brand: { $exists: false } }, { brand: null }] }),
+        Product.countDocuments({
+          $or: [{ categories: { $exists: false } }, { categories: { $size: 0 } }],
+        }),
+      ]);
+    res.status(200).json({
+      success: true,
+      data: {
+        stats: { total, active, inactive, featured, noImage, noFormat, noBrand, noCategory },
+      },
     });
   }
 );

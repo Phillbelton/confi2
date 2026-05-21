@@ -3,11 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, Sparkles, ShoppingBag, User } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
-import { motion } from 'framer-motion';
+import { Search, Sparkles, ShoppingBag, User } from 'lucide-react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
+import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
 
 interface StickyHeaderProps {
@@ -18,7 +18,28 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
   const [focused, setFocused] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [bump, setBump] = useState(false);
   const itemCount = useCartStoreM((s) => s.itemCount);
+  const prevCount = useRef(itemCount);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (itemCount !== prevCount.current) {
+      prevCount.current = itemCount;
+      if (itemCount > 0) {
+        setBump(true);
+        const t = setTimeout(() => setBump(false), 360);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [itemCount]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -48,7 +69,12 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
       </div>
 
       {/* ============================ Bloque principal ============================ */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground shadow-lg">
+      <div
+        className={cn(
+          'relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground transition-shadow duration-300',
+          scrolled ? 'shadow-2xl' : 'shadow-md'
+        )}
+      >
         {/* Decoración blobs */}
         <div
           className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl"
@@ -59,41 +85,54 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
           aria-hidden
         />
 
-        {/* ---------------------------- MOBILE: layout vertical original ---------------------------- */}
-        <div className="lg:hidden">
-          <div className="relative z-10 flex items-center gap-3 px-4 pt-3">
-            <Link href="/m" className="flex items-center gap-2" aria-label="Inicio Quelita">
-              <motion.div
-                initial={{ scale: 0.9, rotate: -4 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-                className="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30"
-              >
-                <Image
-                  src="/brand/logo.png"
-                  alt="Confitería Quelita"
-                  width={64}
-                  height={64}
-                  priority
-                  className="h-9 w-auto drop-shadow-md"
-                />
-              </motion.div>
-              <div className="flex flex-col leading-tight">
-                <span className="font-handwriting text-xl text-white/90">¡Hola dulce!</span>
-                <span className="font-display text-[13px] font-bold uppercase tracking-wider opacity-80">
-                  Confitería Quelita
-                </span>
-              </div>
+        {/* ---------------------------- MOBILE: hamburguesa + logo + cuenta + carrito, búsqueda debajo ---------------------------- */}
+        <div className="mx-auto w-full max-w-screen-md lg:hidden">
+          <div className="relative z-10 flex items-center gap-2 px-4 pt-3">
+            <MobileMenuDrawer />
+
+            <Link
+              href="/m"
+              className="flex shrink-0 items-center"
+              aria-label="Inicio Quelita"
+            >
+              <Image
+                src="/brand/logo.png"
+                alt="Confitería Quelita"
+                width={120}
+                height={78}
+                priority
+                className="h-9 w-auto drop-shadow-md"
+              />
             </Link>
 
-            <button
-              type="button"
-              className="ml-auto tappable relative grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
-              aria-label="Notificaciones"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 animate-pulse rounded-full bg-accent ring-2 ring-primary" />
-            </button>
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              <Link
+                href="/login"
+                className="tappable inline-flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-white/15"
+                aria-label="Iniciar sesión"
+              >
+                <User className="h-5 w-5" />
+                <span>Iniciar sesión</span>
+              </Link>
+
+              <Link
+                href="/m/carrito"
+                className="tappable relative grid h-10 w-10 place-items-center rounded-full text-white transition-colors hover:bg-white/15"
+                aria-label="Carrito"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <span
+                    className={cn(
+                      'absolute right-0.5 top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-accent px-1 text-[9px] font-bold leading-none text-accent-foreground',
+                      bump && 'stepper-bump'
+                    )}
+                  >
+                    {itemCount > 99 ? '99+' : itemCount}
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
 
           <form onSubmit={onSubmit} className="relative z-10 px-4 pb-5 pt-3">
@@ -157,7 +196,12 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
                 <ShoppingBag className="h-4 w-4" />
                 <span>Carrito</span>
                 {itemCount > 0 && (
-                  <span className="ml-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-foreground">
+                  <span
+                    className={cn(
+                      'ml-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-foreground',
+                      bump && 'stepper-bump'
+                    )}
+                  >
                     {itemCount > 99 ? '99+' : itemCount}
                   </span>
                 )}

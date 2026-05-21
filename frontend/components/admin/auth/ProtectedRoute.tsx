@@ -8,17 +8,11 @@ import { useAdminStore } from '@/store/useAdminStore';
 
 type UserRole = 'admin' | 'funcionario' | 'cliente';
 
-// Define which routes are accessible by which roles
+// Define which routes are accessible by which roles.
+// Matrix MVP: admin = todo el sitio; funcionario = solo /funcionario/* (ciclo de pedidos).
 const roleRoutePermissions: Record<string, UserRole[]> = {
-  '/admin': ['admin', 'funcionario'], // Dashboard
-  '/admin/productos': ['admin', 'funcionario'],
-  '/admin/ordenes': ['admin'], // Solo admin
-  '/admin/categorias': ['admin'], // Solo admin
-  '/admin/marcas': ['admin'], // Solo admin
-  '/admin/usuarios': ['admin'], // Solo admin
-  '/admin/reportes': ['admin'], // Solo admin
-  '/admin/auditoria': ['admin'], // Solo admin
-  '/funcionario': ['funcionario'], // Funcionario dashboard
+  '/admin': ['admin'],
+  '/funcionario': ['admin', 'funcionario'], // admin también puede operar pedidos
 };
 
 // Check if user has permission to access a route

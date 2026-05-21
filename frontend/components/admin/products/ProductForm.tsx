@@ -42,8 +42,8 @@ const productSchema = z.object({
   brand: z.string().optional(),
   format: z.string().optional(),
   flavor: z.string().optional(),
+  sku: z.string().trim().max(40).optional(),
   barcode: z.string().max(32).optional(),
-  provider: z.string().max(120).optional(),
   unitPrice: z.number().min(0),
   saleUnit: z.object({
     type: z.enum(['unidad', 'cantidadMinima', 'display', 'embalaje']),
@@ -99,6 +99,7 @@ export function ProductForm({
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
+      sku: '',
       name: '',
       description: '',
       categories: [],
@@ -246,14 +247,33 @@ export function ProductForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
+                    <Label htmlFor="sku" className="text-xs flex items-center gap-1">
+                      <Hash className="h-3 w-3" />SKU
+                    </Label>
+                    <Input
+                      id="sku"
+                      {...form.register('sku')}
+                      placeholder={isEditing ? '' : 'Auto: QU-XXXXXX'}
+                      readOnly={isEditing}
+                      className={cn(
+                        'font-mono uppercase',
+                        isEditing && 'bg-muted/50 text-muted-foreground cursor-not-allowed'
+                      )}
+                    />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {isEditing
+                        ? 'Identidad del producto — no editable.'
+                        : 'Dejalo vacío para auto-generar, o ingresá uno para sincronizar con el Excel.'}
+                    </p>
+                  </div>
+                  <div>
                     <Label htmlFor="barcode" className="text-xs flex items-center gap-1">
                       <ScanLine className="h-3 w-3" />Código de barras
                     </Label>
                     <Input id="barcode" {...form.register('barcode')} placeholder="7802408003446" inputMode="numeric" className="font-mono" />
-                  </div>
-                  <div>
-                    <Label htmlFor="provider" className="text-xs">Proveedor (interno)</Label>
-                    <Input id="provider" {...form.register('provider')} placeholder="FRUNA 14" />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      EAN del fabricante. Opcional.
+                    </p>
                   </div>
                 </div>
               </CardContent>

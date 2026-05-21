@@ -16,7 +16,7 @@ router.get('/:id', bannerController.getBannerById);
 router.post(
   '/',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   bannerController.createBanner
 );
 
@@ -24,7 +24,7 @@ router.post(
 router.patch(
   '/reorder',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   bannerController.reorderBanners
 );
 
@@ -32,7 +32,7 @@ router.patch(
 router.post(
   '/:id/image',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   uploadSingle,
   handleMulterError,
   uploadController.uploadBannerImage
@@ -42,7 +42,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   bannerController.updateBanner
 );
 

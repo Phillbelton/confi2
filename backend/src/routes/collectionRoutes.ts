@@ -39,7 +39,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(collectionSchemas.createCollectionSchema),
   auditLog('collection', 'create'),
   collectionController.createCollection
@@ -48,7 +48,7 @@ router.post(
 router.patch(
   '/reorder',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(collectionSchemas.reorderCollectionsSchema),
   collectionController.reorderCollections
 );
@@ -56,7 +56,7 @@ router.patch(
 router.put(
   '/:id',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   captureBeforeState(Collection),
   validate(collectionSchemas.updateCollectionSchema),
   auditLog('collection', 'update'),
@@ -67,7 +67,7 @@ router.put(
 router.post(
   '/:id/image',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   uploadSingle,
   handleMulterError,
   uploadController.uploadCollectionImage

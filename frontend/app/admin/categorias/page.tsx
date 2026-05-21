@@ -11,44 +11,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { CategoriesTable } from '@/components/admin/categories/CategoriesTable';
+import { CategoriesTree } from '@/components/admin/categories/CategoriesTree';
 import { CategoryForm } from '@/components/admin/categories/CategoryForm';
 import { useAdminCategories, useCategoryOperations } from '@/hooks/admin/useAdminCategories';
-import { buildCategoryTree } from '@/lib/categoryUtils';
 import type { Category } from '@/types';
 
 export default function CategoriasPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
+  const [defaultParentId, setDefaultParentId] = useState<string | undefined>(undefined);
 
   const { data, isLoading, error } = useAdminCategories();
   const { create, update, deleteCategory, uploadImage, isCreating, isUpdating, isDeleting, isUploadingImage } =
     useCategoryOperations();
 
-  // Backend already returns hierarchical structure
-  const categoriesTree = data?.data?.categories || [];
-
-  // Flatten the tree for CategoryForm (needs flat list for parent selection)
-  const categories = useMemo(() => {
-    const tree = data?.data?.categories || [];
-    const flat: Category[] = [];
-    tree.forEach((cat: any) => {
-      flat.push(cat);
-      if (cat.subcategories && cat.subcategories.length > 0) {
-        flat.push(...cat.subcategories);
-      }
-    });
-    return flat;
+  // El endpoint devuelve TODAS las categorías planas, cada una con sus hijos
+  // embebidos en `subcategories[]`. Normalizamos para evitar duplicados:
+  //  - `categories`  → lista plana deduplicada (para el select de padre)
+  //  - `categoriesTree` → solo raíces, cada una con `subcategories` (para el árbol)
+  const { categories, categoriesTree } = useMemo(() => {
+    const raw: any[] = data?.data?.categories || [];
+    const byId = new Map<string, Category>();
+    const visit = (c: any) => {
+      if (c?._id && !byId.has(c._id)) byId.set(c._id, c);
+      if (Array.isArray(c?.subcategories)) c.subcategories.forEach(visit);
+    };
+    raw.forEach(visit);
+    const flat = Array.from(byId.values());
+    return {
+      categories: flat,
+      categoriesTree: flat.filter((c) => !c.parent),
+    };
   }, [data]);
 
   const handleOpenDialog = (category?: Category) => {
     setSelectedCategory(category);
+    setDefaultParentId(undefined);
+    setIsDialogOpen(true);
+  };
+
+  const handleCreateSubcategory = (parent: Category) => {
+    setSelectedCategory(undefined);
+    setDefaultParentId(parent._id);
     setIsDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedCategory(undefined);
+    setDefaultParentId(undefined);
   };
 
   const handleSubmit = (formData: any) => {
@@ -119,11 +130,12 @@ export default function CategoriasPage() {
         </Card>
       )}
 
-      {/* Categories Table */}
+      {/* Categories Tree */}
       {!isLoading && !error && (
-        <CategoriesTable
+        <CategoriesTree
           categories={categoriesTree}
           onEdit={handleOpenDialog}
+          onCreateSubcategory={handleCreateSubcategory}
           onDelete={handleDelete}
           isDeleting={isDeleting}
         />
@@ -134,17 +146,24 @@ export default function CategoriasPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedCategory ? 'Editar categoría' : 'Nueva categoría'}
+              {selectedCategory
+                ? 'Editar categoría'
+                : defaultParentId
+                  ? 'Nueva subcategoría'
+                  : 'Nueva categoría'}
             </DialogTitle>
             <DialogDescription>
               {selectedCategory
                 ? 'Modifica los datos de la categoría'
-                : 'Completa los datos para crear una nueva categoría'}
+                : defaultParentId
+                  ? `Crear una subcategoría dentro de "${categories.find((c) => c._id === defaultParentId)?.name || ''}"`
+                  : 'Completa los datos para crear una nueva categoría'}
             </DialogDescription>
           </DialogHeader>
           <CategoryForm
             category={selectedCategory}
             categories={categories}
+            defaultParentId={defaultParentId}
             onSubmit={handleSubmit}
             onUploadImage={handleUploadImage}
             onCancel={handleCloseDialog}

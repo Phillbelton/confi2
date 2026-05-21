@@ -1,6 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductCardM } from '@/components/m/catalog/ProductCardM';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -11,61 +13,44 @@ interface ProductCarouselProps {
 }
 
 /**
- * Vitrina horizontal de productos. Scroll nativo en touch, drag-to-scroll
- * con mouse en desktop. Sin flechas — UX consistente con mobile.
+ * Vitrina horizontal de productos basada en embla-carousel.
+ * - Touch: scroll nativo arrastrable.
+ * - Mouse: drag-to-scroll desde cualquier parte de la card (incluida la
+ *   imagen). Embla diferencia drag vs click sin bloquear botones.
+ * - Desktop: flechas opcionales para los usuarios que prefieren clic.
  */
 export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef({
-    active: false,
-    startX: 0,
-    scrollStart: 0,
-    moved: false,
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: 'start',
+    dragFree: true,
+    containScroll: 'trimSnaps',
+    skipSnaps: true,
   });
-  const [isDragging, setIsDragging] = useState(false);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
 
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Solo mouse — touch usa scroll nativo
-    if (e.pointerType !== 'mouse') return;
-    const el = scrollerRef.current;
-    if (!el) return;
-    dragRef.current.active = true;
-    dragRef.current.startX = e.pageX;
-    dragRef.current.scrollStart = el.scrollLeft;
-    dragRef.current.moved = false;
-    setIsDragging(true);
-    el.setPointerCapture(e.pointerId);
-  };
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setCanPrev(emblaApi.canScrollPrev());
+    setCanNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
 
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current.active) return;
-    const el = scrollerRef.current;
-    if (!el) return;
-    const dx = e.pageX - dragRef.current.startX;
-    if (Math.abs(dx) > 5) dragRef.current.moved = true;
-    el.scrollLeft = dragRef.current.scrollStart - dx;
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current.active) return;
-    dragRef.current.active = false;
-    setIsDragging(false);
-    const el = scrollerRef.current;
-    if (el) el.releasePointerCapture(e.pointerId);
-  };
-
-  // Cancela el click si se hizo drag (evita navegar al producto al soltar)
-  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (dragRef.current.moved) {
-      e.preventDefault();
-      e.stopPropagation();
-      dragRef.current.moved = false;
-    }
-  };
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+    emblaApi.on('scroll', onSelect);
+    return () => {
+      emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
+      emblaApi.off('scroll', onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
   if (isLoading) {
     return (
-      <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-none lg:px-8 lg:gap-4">
+      <div className="flex gap-3 overflow-hidden px-4 pb-4 lg:px-8 lg:gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
@@ -85,28 +70,44 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
   }
 
   return (
-    <div
-      ref={scrollerRef}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onClickCapture={onClickCapture}
-      className={cn(
-        'snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:px-8 lg:gap-4 lg:pb-6',
-        // cursor grab solo en desktop con mouse
-        'lg:cursor-grab lg:select-none',
-        isDragging && 'lg:cursor-grabbing'
-      )}
-    >
-      {products.map((p) => (
-        <ProductCardM
-          key={p._id}
-          product={p}
-          horizontal
-          className="lg:w-56 lg:shrink-0"
-        />
-      ))}
+    <div className="relative">
+      <div ref={emblaRef} className="overflow-hidden px-4 pb-4 lg:px-8 lg:pb-6">
+        <div className="flex gap-3 lg:gap-4 touch-pan-y">
+          {products.map((p) => (
+            <div key={p._id} className="shrink-0 w-44 lg:w-56">
+              <ProductCardM product={p} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Flechas (solo desktop) — opcionales, no requeridas para usar el carrusel */}
+      <button
+        type="button"
+        aria-label="Anterior"
+        onClick={() => emblaApi?.scrollPrev()}
+        disabled={!canPrev}
+        className={cn(
+          'hidden lg:grid absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 place-items-center',
+          'rounded-full bg-background/90 shadow-md backdrop-blur-sm transition-opacity',
+          'hover:bg-background disabled:opacity-0 disabled:pointer-events-none'
+        )}
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button
+        type="button"
+        aria-label="Siguiente"
+        onClick={() => emblaApi?.scrollNext()}
+        disabled={!canNext}
+        className={cn(
+          'hidden lg:grid absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 place-items-center',
+          'rounded-full bg-background/90 shadow-md backdrop-blur-sm transition-opacity',
+          'hover:bg-background disabled:opacity-0 disabled:pointer-events-none'
+        )}
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
     </div>
   );
 }

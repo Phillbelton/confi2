@@ -60,8 +60,14 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/perfil';
-  const { isAuthenticated, _hasHydrated } = useClientStore();
+  const { isAuthenticated, user, _hasHydrated } = useClientStore();
   const loginMutation = useClientLogin(redirectTo);
+
+  // Token must exist AND user must be loaded to consider auth real.
+  // Prevents redirect loops with stale persisted `isAuthenticated=true` after token expiry.
+  const hasToken =
+    typeof window !== 'undefined' && !!localStorage.getItem('client-token');
+  const isReallyAuth = isAuthenticated && !!user && hasToken;
 
   const {
     register,
@@ -75,19 +81,19 @@ function LoginContent() {
     },
   });
 
-  // Redirigir si ya está autenticado
+  // Redirigir si ya está autenticado (token + user válidos)
   useEffect(() => {
-    if (_hasHydrated && isAuthenticated) {
+    if (_hasHydrated && isReallyAuth) {
       router.push(redirectTo);
     }
-  }, [_hasHydrated, isAuthenticated, router, redirectTo]);
+  }, [_hasHydrated, isReallyAuth, router, redirectTo]);
 
   const onSubmit = async (data: LoginFormData) => {
     loginMutation.mutate(data);
   };
 
   // Show loading while checking auth or redirecting
-  if (!_hasHydrated || isAuthenticated) {
+  if (!_hasHydrated || isReallyAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

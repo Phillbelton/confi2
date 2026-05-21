@@ -24,6 +24,9 @@ const router = Router();
 router.get('/', validate(getProductsQuerySchema), productController.listProducts);
 router.get('/featured', validate(getFeaturedProductsSchema), productController.listFeaturedProducts);
 router.get('/facets', productFacetsController.getProductFacets);
+
+// Admin: stats overview (counters por estado y problemas comunes)
+router.get('/admin-stats', authenticate, authorize('admin'), productController.getAdminStats);
 router.get('/slug/:slug', validate(getProductBySlugSchema), productController.getProductBySlug);
 router.get('/:id', validate(getProductByIdSchema), productController.getProductById);
 
@@ -54,7 +57,7 @@ router.post(
   uploadMultiple,
   handleMulterError,
   parseProductFormData,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   validate(createProductSchema),
   auditLog('product', 'create'),
   productController.createProduct
@@ -62,7 +65,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  authorize('admin', 'funcionario'),
+  authorize('admin'),
   captureBeforeState(Product),
   validate(updateProductSchema),
   auditLog('product', 'update'),

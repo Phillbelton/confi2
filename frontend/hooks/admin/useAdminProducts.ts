@@ -15,6 +15,14 @@ export function useAdminProducts(params?: ProductQueryParams) {
   });
 }
 
+export function useAdminProductStats() {
+  return useQuery({
+    queryKey: ['admin-products', 'stats'],
+    queryFn: () => adminProductService.stats(),
+    staleTime: 30_000,
+  });
+}
+
 export function useAdminProduct(id: string) {
   return useQuery({
     queryKey: ['admin-product', id],

@@ -1,6 +1,5 @@
 'use client';
 
-import { CategoryChips } from '@/components/m/shell/CategoryChips';
 import { SectionHeader } from '@/components/m/home/SectionHeader';
 import { ProductCarousel } from '@/components/m/home/ProductCarousel';
 import { CollectionsGrid } from '@/components/m/home/CollectionsGrid';
@@ -34,8 +33,7 @@ export default function MHomePage() {
   return (
     <>
       {/* Banner hero principal — gestionable desde /admin/banners (placement=home_hero) */}
-      <PromoGrid placement="home_hero" className="pt-3 lg:pt-4" />
-      <CategoryChips />
+      <PromoGrid placement="home_hero" className="px-4 pt-3 lg:px-0 lg:pt-4" />
 
       <SectionHeader
         title="Destacados"
@@ -44,7 +42,7 @@ export default function MHomePage() {
       />
       <ProductCarousel products={featured} isLoading={featuredLoading} />
 
-      <CollectionsGrid variant="double" />
+      <CollectionsGrid variant="carousel" />
 
       <SectionHeader
         title="Ofertas"
@@ -74,6 +72,9 @@ export default function MHomePage() {
         href="/m/productos?sort=newest"
       />
       <ProductCarousel products={newest} isLoading={newestLoading} />
+
+      {/* Banners secundarios — gestionables desde /admin/banners (placement=home_secondary) */}
+      <PromoGrid placement="home_secondary" />
 
       <SectionHeader
         title="Más vendidos"
