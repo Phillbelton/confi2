@@ -85,45 +85,45 @@ export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
           aria-hidden
         />
 
-        {/* ---------------------------- MOBILE: layout vertical original ---------------------------- */}
+        {/* ---------------------------- MOBILE: logo + búsqueda + notificaciones en una fila ---------------------------- */}
         <div className="mx-auto w-full max-w-screen-md lg:hidden">
-          <div className="relative z-10 flex items-center gap-3 px-4 pt-3">
-            <Link href="/m" className="flex items-center gap-2" aria-label="Inicio Quelita">
+          <div className="relative z-10 flex items-center gap-2.5 px-4 py-3">
+            <Link href="/m" className="flex shrink-0 items-center" aria-label="Inicio Quelita">
               <motion.div
                 initial={{ scale: 0.9, rotate: -4 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-                className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30"
+                className="relative grid h-12 w-16 place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30"
               >
                 <Image
                   src="/brand/logo.png"
                   alt="Confitería Quelita"
-                  width={64}
+                  width={96}
                   height={64}
                   priority
-                  className="h-8 w-auto drop-shadow-md"
+                  className="h-9 w-auto drop-shadow-md"
                 />
               </motion.div>
             </Link>
 
+            <form onSubmit={onSubmit} className="min-w-0 flex-1">
+              <SearchField
+                q={q}
+                setQ={setQ}
+                focused={focused}
+                setFocused={setFocused}
+              />
+            </form>
+
             <button
               type="button"
-              className="ml-auto tappable relative grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
+              className="tappable relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
               aria-label="Notificaciones"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 animate-pulse rounded-full bg-accent ring-2 ring-primary" />
+              <span className="absolute right-2.5 top-2.5 h-2 w-2 animate-pulse rounded-full bg-accent ring-2 ring-primary" />
             </button>
           </div>
-
-          <form onSubmit={onSubmit} className="relative z-10 px-4 pb-5 pt-3">
-            <SearchField
-              q={q}
-              setQ={setQ}
-              focused={focused}
-              setFocused={setFocused}
-            />
-          </form>
         </div>
 
         {/* ---------------------------- DESKTOP: layout horizontal estilo Jumbo ---------------------------- */}
