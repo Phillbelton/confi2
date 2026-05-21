@@ -44,7 +44,7 @@ export default function MHomePage() {
       />
       <ProductCarousel products={featured} isLoading={featuredLoading} />
 
-      <CollectionsGrid variant="double" />
+      <CollectionsGrid variant="carousel" />
 
       <SectionHeader
         title="Ofertas"
