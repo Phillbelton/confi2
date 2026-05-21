@@ -199,7 +199,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 
   if (total === 1) {
     return (
-      <div className="aspect-[5/3] lg:aspect-[16/6]">
+      <div className="aspect-[16/9] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0">
         <BannerTile banner={banners[0]} priority sizes="100vw" rounded={false} />
       </div>
     );
@@ -213,7 +213,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setTimeout(() => setPaused(false), 3000)}
     >
-      <div className="relative aspect-[5/3] overflow-hidden lg:aspect-[16/6]">
+      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0">
         {banners.map((b, i) => (
           <div
             key={b._id}
@@ -281,7 +281,7 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
     return (
       <section className={className}>
         {isLoading ? (
-          <div className="aspect-[5/3] animate-pulse bg-muted lg:aspect-[16/6]" />
+          <div className="aspect-[16/9] animate-pulse rounded-2xl bg-muted lg:aspect-[16/6] lg:rounded-none" />
         ) : (
           <HeroCarousel banners={banners || []} />
         )}

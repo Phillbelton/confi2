@@ -34,7 +34,7 @@ export default function MHomePage() {
   return (
     <>
       {/* Banner hero principal — gestionable desde /admin/banners (placement=home_hero) */}
-      <PromoGrid placement="home_hero" />
+      <PromoGrid placement="home_hero" className="px-4 pt-3 lg:px-0 lg:pt-4" />
       <CategoryChips />
 
       <SectionHeader
