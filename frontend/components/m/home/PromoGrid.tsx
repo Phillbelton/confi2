@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useBanners } from '@/hooks/useBanners';
@@ -178,8 +178,9 @@ function BannerTile({ banner, className, priority, sizes, rounded = true }: Bann
 }
 
 /**
- * Carrusel para placement=home_hero: uno a la vez, auto-rotate cada 5s,
- * pausa al hover (desktop) o touch (mobile), dots de navegación.
+ * Carrusel para placement=home_hero: track deslizable de un banner a la vez.
+ * Auto-rotate cada 5s (pausa al hover, al arrastrar o tras interactuar),
+ * arrastrable con dedo o mouse, flechas en desktop y dots de navegación.
  */
 function HeroCarousel({ banners }: { banners: Banner[] }) {
   const [active, setActive] = useState(0);
@@ -187,15 +188,23 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
   const total = banners.length;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Estado de arrastre
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
+  const axis = useRef<'h' | 'v' | null>(null);
+  const moved = useRef(false);
+  const [dragDX, setDragDX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+
   useEffect(() => {
-    if (total <= 1 || paused) return;
+    if (total <= 1 || paused || dragging) return;
     intervalRef.current = setInterval(() => {
       setActive((i) => (i + 1) % total);
     }, 5000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [total, paused]);
+  }, [total, paused, dragging]);
 
   if (total === 1) {
     return (
@@ -205,36 +214,102 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
     );
   }
 
+  const goTo = (i: number) => setActive((i + total) % total);
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    axis.current = null;
+    moved.current = false;
+    setDragging(true);
+    setPaused(true);
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    // Decidir el eje del gesto la primera vez que se supera el umbral
+    if (axis.current === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      axis.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      if (axis.current === 'h') {
+        viewportRef.current?.setPointerCapture(e.pointerId);
+      }
+    }
+    if (axis.current === 'h') {
+      moved.current = true;
+      // Resistencia al arrastrar más allá del primer/último banner
+      const overscroll =
+        (active === 0 && dx > 0) || (active === total - 1 && dx < 0);
+      setDragDX(overscroll ? dx * 0.35 : dx);
+    }
+  };
+
+  const onPointerEnd = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const wasHorizontal = axis.current === 'h';
+    dragStart.current = null;
+    axis.current = null;
+    setDragging(false);
+    setDragDX(0);
+    window.setTimeout(() => setPaused(false), 3000);
+
+    // Avanza o retrocede según la dirección del arrastre si supera el umbral
+    const width = viewportRef.current?.offsetWidth || 1;
+    const threshold = Math.min(72, width * 0.18);
+    if (wasHorizontal && Math.abs(dx) > threshold) {
+      goTo(active + (dx < 0 ? 1 : -1));
+    }
+  };
+
   return (
     <div
       className="relative"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setTimeout(() => setPaused(false), 3000)}
     >
-      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0">
-        {banners.map((b, i) => (
-          <div
-            key={b._id}
-            className={cn(
-              'absolute inset-0 transition-opacity duration-500',
-              i === active ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-            )}
-            aria-hidden={i !== active}
-          >
-            {/* priority en todas las slides del carrusel para precargar y
-                evitar que las "ocultas" queden vacías al rotar (algunos browsers
-                no cargan imágenes con opacity:0). */}
-            <BannerTile banner={b} priority sizes="100vw" rounded={false} />
-          </div>
-        ))}
+      <div
+        ref={viewportRef}
+        className="relative aspect-[16/9] cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 active:cursor-grabbing lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+        onDragStart={(e) => e.preventDefault()}
+        onClickCapture={(e) => {
+          // Si hubo arrastre, anular el click para no navegar al banner
+          if (moved.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            moved.current = false;
+          }
+        }}
+      >
+        <div
+          className={cn(
+            'flex h-full',
+            !dragging && 'transition-transform duration-500 ease-out'
+          )}
+          style={{
+            transform: `translateX(calc(${-active * 100}% + ${dragDX}px))`,
+          }}
+        >
+          {banners.map((b, i) => (
+            <div
+              key={b._id}
+              className="h-full w-full shrink-0"
+              aria-hidden={i !== active}
+            >
+              <BannerTile banner={b} priority sizes="100vw" rounded={false} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Prev / Next */}
       <button
         type="button"
-        onClick={() => setActive((i) => (i - 1 + total) % total)}
+        onClick={() => goTo(active - 1)}
         aria-label="Anterior"
         className="absolute left-2 top-1/2 z-20 hidden -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-gray-900 shadow-md backdrop-blur transition hover:scale-105 lg:flex"
       >
@@ -242,7 +317,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
       </button>
       <button
         type="button"
-        onClick={() => setActive((i) => (i + 1) % total)}
+        onClick={() => goTo(active + 1)}
         aria-label="Siguiente"
         className="absolute right-2 top-1/2 z-20 hidden -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-gray-900 shadow-md backdrop-blur transition hover:scale-105 lg:flex"
       >
@@ -255,7 +330,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
           <button
             key={i}
             type="button"
-            onClick={() => setActive(i)}
+            onClick={() => goTo(i)}
             aria-label={`Ir al banner ${i + 1}`}
             className={cn(
               'h-1.5 rounded-full transition-all',
