@@ -1,23 +1,44 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { Order } from '../models/Order';
-import Product from '../models/Product';
+import Product, { ITier } from '../models/Product';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 
-interface CartItemInput {
+export interface CartItemInput {
   productId: string;
   quantity: number;
 }
 
-function effectiveUnitPrice(product: any, quantity: number): number {
-  const tiers = (product.tiers || []) as Array<{ minQuantity: number; pricePerUnit: number }>;
+/**
+ * Tipo mínimo que `effectiveUnitPrice` necesita de un producto.
+ * Aceptamos cualquier objeto que tenga `unitPrice` y opcionalmente `tiers`
+ * para poder usar tanto documentos Mongoose hidratados como `.lean()`.
+ */
+export interface PriceableProduct {
+  unitPrice: number;
+  tiers?: Pick<ITier, 'minQuantity' | 'pricePerUnit'>[];
+}
+
+/**
+ * Calcula el precio efectivo por unidad para un producto y una cantidad
+ * dada. Si la cantidad alcanza un tier (`quantity >= tier.minQuantity`),
+ * se aplica el tier de mayor `minQuantity` que cumpla. Si ningún tier
+ * aplica (o no hay tiers), se retorna `unitPrice`.
+ *
+ * Exportado para permitir tests unitarios sobre la matemática del tier.
+ */
+export function effectiveUnitPrice(
+  product: PriceableProduct,
+  quantity: number
+): number {
+  const tiers = product.tiers || [];
   const sorted = [...tiers].sort((a, b) => b.minQuantity - a.minQuantity);
   for (const t of sorted) if (quantity >= t.minQuantity) return t.pricePerUnit;
   return product.unitPrice;
 }
 
-async function buildOrderItems(items: CartItemInput[]) {
+export async function buildOrderItems(items: CartItemInput[]) {
   const orderItems: any[] = [];
   let subtotal = 0;
   let totalDiscount = 0;
