@@ -3,6 +3,7 @@ import path from 'path';
 import { Request } from 'express';
 import fs from 'fs';
 import { ENV } from '../config/env';
+import logger from '../config/logger';
 
 // Asegurar que el directorio de uploads existe
 const ensureUploadDirExists = () => {
@@ -20,7 +21,7 @@ const ensureUploadDirExists = () => {
   dirs.forEach((dir) => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
-      console.log(`📁 Directorio creado: ${dir}`);
+      logger.info('Directorio de uploads creado', { dir });
     }
   });
 };
@@ -148,12 +149,12 @@ export const deleteFile = (filePath: string): Promise<void> => {
       if (err) {
         // Si el archivo no existe, no es un error crítico
         if (err.code === 'ENOENT') {
-          console.warn(`⚠️  Archivo no encontrado: ${filePath}`);
+          logger.warn('Archivo no encontrado al eliminar', { filePath });
           return resolve();
         }
         return reject(err);
       }
-      console.log(`🗑️  Archivo eliminado: ${filePath}`);
+      logger.debug('Archivo eliminado', { filePath });
       resolve();
     });
   });

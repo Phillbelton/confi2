@@ -4,6 +4,7 @@ import * as passwordController from '../controllers/passwordController';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createTestAwareRateLimiter } from '../middleware/rateLimiter';
+import logger from '../config/logger';
 import {
   registerSchema,
   loginSchema,
@@ -39,8 +40,10 @@ const loginLimiter = createTestAwareRateLimiter({
   },
   // Registrar intentos bloqueados
   handler: (req, res) => {
-    console.warn(`⚠️  Rate limit excedido en /login`);
-    console.warn(`   IP: ${req.ip}, Email: ${req.body?.email || 'N/A'}`);
+    logger.warn('Rate limit excedido en /login', {
+      ip: req.ip,
+      email: req.body?.email || 'N/A',
+    });
     res.status(429).json({
       success: false,
       error: 'Demasiados intentos de login. Por favor, intenta de nuevo en 15 minutos.',
@@ -58,8 +61,10 @@ const registerLimiter = createTestAwareRateLimiter({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    console.warn(`⚠️  Rate limit excedido en /register`);
-    console.warn(`   IP: ${req.ip}, Email: ${req.body?.email || 'N/A'}`);
+    logger.warn('Rate limit excedido en /register', {
+      ip: req.ip,
+      email: req.body?.email || 'N/A',
+    });
     res.status(429).json({
       success: false,
       error: 'Demasiados intentos de registro. Por favor, intenta de nuevo en 1 hora.',

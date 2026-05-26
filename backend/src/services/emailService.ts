@@ -1,6 +1,7 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import { ENV } from '../config/env';
 import { IOrder } from '../models/Order';
+import logger from '../config/logger';
 
 /**
  * Email Service
@@ -21,7 +22,7 @@ class EmailService {
   private initializeTransporter(): void {
     // Verificar si las credenciales SMTP están configuradas
     if (!ENV.SMTP_HOST || !ENV.SMTP_USER || !ENV.SMTP_PASS) {
-      console.warn('⚠️  Credenciales SMTP no configuradas. Los emails no se enviarán.');
+      logger.warn('Credenciales SMTP no configuradas. Los emails no se enviarán.');
       this.isConfigured = false;
       return;
     }
@@ -38,9 +39,9 @@ class EmailService {
       });
 
       this.isConfigured = true;
-      console.log('✅ Email service configurado correctamente');
+      logger.info('Email service configurado correctamente');
     } catch (error) {
-      console.error('❌ Error configurando email service:', error);
+      logger.error('Error configurando email service', { error });
       this.isConfigured = false;
     }
   }
@@ -55,10 +56,10 @@ class EmailService {
 
     try {
       await this.transporter.verify();
-      console.log('✅ Conexión SMTP verificada');
+      logger.info('Conexión SMTP verificada');
       return true;
     } catch (error) {
-      console.error('❌ Error verificando conexión SMTP:', error);
+      logger.error('Error verificando conexión SMTP', { error });
       return false;
     }
   }
@@ -73,7 +74,7 @@ class EmailService {
     text?: string;
   }): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
-      console.warn('⚠️  Email service no configurado. Email no enviado.');
+      logger.warn('Email service no configurado. Email no enviado.');
       return false;
     }
 
@@ -86,10 +87,10 @@ class EmailService {
         text: options.text || options.html.replace(/<[^>]*>/g, ''), // Fallback: strip HTML
       });
 
-      console.log(`📧 Email enviado: ${info.messageId} a ${options.to}`);
+      logger.info('Email enviado', { messageId: info.messageId, to: options.to });
       return true;
     } catch (error) {
-      console.error('❌ Error enviando email:', error);
+      logger.error('Error enviando email', { error, to: options.to });
       return false;
     }
   }

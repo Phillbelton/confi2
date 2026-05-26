@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { UserRole } from '../types';
+import logger from '../config/logger';
 
 export interface IAddress {
   _id: mongoose.Types.ObjectId;
@@ -223,7 +224,7 @@ userSchema.methods.incrementLoginAttempts = async function (): Promise<void> {
 
   if (this.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
     this.lockUntil = new Date(Date.now() + LOCK_TIME);
-    console.warn(`🔒 Cuenta bloqueada por intentos fallidos: ${this.email}`);
+    logger.warn('Cuenta bloqueada por intentos fallidos', { email: this.email });
   }
 
   await this.save();

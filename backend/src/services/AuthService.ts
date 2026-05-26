@@ -14,6 +14,7 @@ import { emailService } from './emailService';
 import { ENV } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
 import { TokenPayload } from '../types';
+import logger from '../config/logger';
 
 export interface RegisterDTO {
   name: string;
@@ -98,7 +99,7 @@ export class AuthService {
     // Enviar email de bienvenida (no bloqueante)
     if (user.role === 'cliente') {
       emailService.sendWelcomeEmail(user.email, user.name).catch((err) => {
-        console.error('Error enviando email de bienvenida:', err);
+        logger.error('Error enviando email de bienvenida', { error: err });
       });
     }
 
