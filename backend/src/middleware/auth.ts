@@ -3,11 +3,52 @@ import jwt from 'jsonwebtoken';
 import { ENV } from '../config/env';
 import { AuthRequest, TokenPayload } from '../types';
 import { AppError } from './errorHandler';
+import { User } from '../models/User';
+import { UserRole } from '../types';
+import logger from '../config/logger';
 
 // Re-export AuthRequest for convenience
 export type { AuthRequest } from '../types';
 
-export const authenticate = (
+// Cache simple en memoria del estado de usuarios para evitar un round-trip
+// a Mongo en cada request autenticado. TTL corto para que cambios de
+// active/role/baneo se propaguen en orden de minuto, no de días (los JWT
+// expiran en 7d, así que sin esto un usuario desactivado mantiene acceso).
+const USER_STATE_CACHE_TTL_MS = 60 * 1000; // 60s
+type UserState = { active: boolean; role: UserRole };
+const userStateCache = new Map<string, { value: UserState; expiresAt: number }>();
+
+const getUserState = async (userId: string): Promise<UserState | null> => {
+  const cached = userStateCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
+  const user = await User.findById(userId).select('active role').lean<{
+    active: boolean;
+    role: UserRole;
+  } | null>();
+
+  if (!user) return null;
+
+  const value: UserState = { active: user.active, role: user.role };
+  userStateCache.set(userId, {
+    value,
+    expiresAt: Date.now() + USER_STATE_CACHE_TTL_MS,
+  });
+  return value;
+};
+
+/**
+ * Invalida el caché de estado de un usuario. Llamar después de cambios
+ * críticos (desactivar, cambiar rol, eliminar) para que la próxima request
+ * no use el snapshot viejo.
+ */
+export const invalidateUserStateCache = (userId: string): void => {
+  userStateCache.delete(userId);
+};
+
+export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -25,11 +66,22 @@ export const authenticate = (
     // Verificar token
     const decoded = jwt.verify(token, ENV.JWT_SECRET) as TokenPayload;
 
-    // Agregar usuario al request
+    // Rechequear el usuario en DB (con caché) para invalidar JWTs de
+    // usuarios desactivados/eliminados sin esperar la expiración del token.
+    const state = await getUserState(decoded.id);
+    if (!state) {
+      throw new AppError(401, 'Usuario no encontrado');
+    }
+    if (!state.active) {
+      throw new AppError(403, 'Cuenta desactivada');
+    }
+
+    // Agregar usuario al request (usar el rol actual de DB, no el del JWT,
+    // para reflejar cambios de rol dentro del TTL del caché)
     req.user = {
       id: decoded.id,
       email: decoded.email,
-      role: decoded.role,
+      role: state.role,
     };
 
     next();
@@ -40,7 +92,10 @@ export const authenticate = (
       next(new AppError(401, 'Token expirado'));
     } else if (error instanceof jwt.JsonWebTokenError) {
       next(new AppError(401, 'Token inválido'));
+    } else if (error instanceof AppError) {
+      next(error);
     } else {
+      logger.error('Error inesperado en authenticate', { error });
       next(error);
     }
   }

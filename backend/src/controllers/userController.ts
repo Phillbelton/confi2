@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { User, IUser } from '../models/User';
 import { AuthRequest, ApiResponse, PaginatedResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { invalidateUserStateCache } from '../middleware/auth';
 
 /**
  * Controller para User (Gestión de usuarios por admin)
@@ -141,6 +142,10 @@ export const updateUser = asyncHandler(
 
     await user.save();
 
+    // Invalidar caché del middleware auth para que el cambio de role/active
+    // se aplique a la próxima request sin esperar el TTL.
+    invalidateUserStateCache(user._id.toString());
+
     const userObj = user.toObject();
     delete (userObj as any).password;
 
@@ -194,6 +199,9 @@ export const deactivateUser = asyncHandler(
     user.active = false;
     await user.save();
 
+    // Cortar acceso inmediato del usuario desactivado.
+    invalidateUserStateCache(user._id.toString());
+
     res.status(200).json({
       success: true,
       message: 'Usuario desactivado exitosamente',
@@ -214,6 +222,8 @@ export const activateUser = asyncHandler(
 
     user.active = true;
     await user.save();
+
+    invalidateUserStateCache(user._id.toString());
 
     res.status(200).json({
       success: true,
