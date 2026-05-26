@@ -10,13 +10,9 @@ import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
 
-interface StickyHeaderProps {
-  initialQuery?: string;
-}
-
-export function StickyHeader({ initialQuery = '' }: StickyHeaderProps) {
+export function StickyHeader() {
   const router = useRouter();
-  const [q, setQ] = useState(initialQuery);
+  const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [bump, setBump] = useState(false);
