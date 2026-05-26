@@ -34,10 +34,12 @@ export const authenticate = (
 
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      next(new AppError(401, 'Token inválido'));
-    } else if (error instanceof jwt.TokenExpiredError) {
+    // TokenExpiredError extiende JsonWebTokenError, por lo que debe
+    // chequearse primero o nunca se alcanza la rama "Token expirado".
+    if (error instanceof jwt.TokenExpiredError) {
       next(new AppError(401, 'Token expirado'));
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      next(new AppError(401, 'Token inválido'));
     } else {
       next(error);
     }
