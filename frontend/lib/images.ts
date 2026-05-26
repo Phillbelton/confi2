@@ -2,12 +2,12 @@
  * Image URL utilities
  * Converts relative backend URLs to absolute URLs for image rendering
  */
+import { API_URL } from './apiConfig';
 
 // Get the base URL for the backend (without /api)
 const getBackendBaseUrl = (): string => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
   // Remove the /api suffix to get the base URL
-  return apiUrl.replace(/\/api$/, '');
+  return API_URL.replace(/\/api$/, '');
 };
 
 /**

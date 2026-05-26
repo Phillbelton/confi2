@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { API_URL } from '@/lib/apiConfig';
 
 interface ImportReport {
   categoriesCreated: number;
@@ -62,9 +63,8 @@ export default function ImportarProductosPage() {
       fd.append('limit', String(limit));
 
       const token = localStorage.getItem('admin-token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       const resp = await fetch(
-        `${apiUrl}/products/import-excel`,
+        `${API_URL}/products/import-excel`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },

@@ -17,6 +17,7 @@ import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { useClientStore } from '@/store/useClientStore';
 import { orderService } from '@/services/orders';
 import { getSafeImageUrl } from '@/lib/image-utils';
+import { API_URL } from '@/lib/apiConfig';
 import { ShoppingCart, Truck, MapPin, CreditCard, AlertCircle, Loader2, User, LogIn, UserPlus, Info } from 'lucide-react';
 import type { DeliveryMethod, PaymentMethod } from '@/types';
 
@@ -95,7 +96,6 @@ export default function CheckoutPage() {
 
     setCheckingPhone(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       const res = await fetch(`${API_URL}/auth/check-phone`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
