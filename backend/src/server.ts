@@ -35,23 +35,37 @@ const allowedOrigins = [
   ENV.FRONTEND_URL,
 ];
 
+// Sufijos de hostname permitidos en producción (plataformas de despliegue)
+const ALLOWED_HOSTNAME_SUFFIXES = ['.seenode.com'];
+
+const isOriginAllowed = (origin: string): boolean => {
+  // Match exacto contra lista blanca
+  if (allowedOrigins.indexOf(origin) !== -1) return true;
+
+  // En producción, permitir subdominios de plataformas confiables.
+  // Validar por hostname para evitar bypass tipo "https://seenode.com.evil.com".
+  if (ENV.NODE_ENV === 'production') {
+    try {
+      const { hostname } = new URL(origin);
+      return ALLOWED_HOSTNAME_SUFFIXES.some(
+        (suffix) => hostname === suffix.slice(1) || hostname.endsWith(suffix)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
 
-      // In production, be more flexible with CORS to handle Seenode dynamic URLs
-      if (ENV.NODE_ENV === 'production') {
-        // Allow any origin that includes seenode.com (Seenode platform)
-        if (origin.includes('seenode.com') || allowedOrigins.indexOf(origin) !== -1) {
-          return callback(null, true);
-        }
-      } else {
-        // In development, use strict origin checking
-        if (allowedOrigins.indexOf(origin) !== -1) {
-          return callback(null, true);
-        }
+      if (isOriginAllowed(origin)) {
+        return callback(null, true);
       }
 
       logger.warn(`CORS blocked request from origin: ${origin}`);
