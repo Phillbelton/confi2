@@ -77,10 +77,6 @@ app.use(
   })
 );
 
-// Rate limiting - Diferenciado por rol (debe ir DESPUÉS de autenticación)
-// NOTA: El rate limiter se aplica después de que las rutas identifiquen al usuario
-// Por eso se mueve al final, justo antes de las rutas de API
-
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
