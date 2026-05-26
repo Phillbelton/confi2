@@ -69,6 +69,14 @@ export const validateEnv = (): void => {
       throw new Error('❌ JWT_SECRET debe ser cambiado en producción');
     }
 
+    if (ENV.JWT_REFRESH_SECRET === 'default_refresh_secret') {
+      throw new Error('❌ JWT_REFRESH_SECRET debe ser cambiado en producción');
+    }
+
+    if (ENV.JWT_REFRESH_SECRET === ENV.JWT_SECRET) {
+      throw new Error('❌ JWT_REFRESH_SECRET no puede ser igual a JWT_SECRET');
+    }
+
     // Validar configuración de email en producción
     if (!ENV.SMTP_HOST || !ENV.SMTP_USER || !ENV.SMTP_PASS) {
       console.warn('⚠️  ADVERTENCIA: Credenciales SMTP no configuradas. El servicio de emails no funcionará.');
