@@ -62,8 +62,9 @@ export default function ImportarProductosPage() {
       fd.append('limit', String(limit));
 
       const token = localStorage.getItem('admin-token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       const resp = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/products/import-excel`,
+        `${apiUrl}/products/import-excel`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
