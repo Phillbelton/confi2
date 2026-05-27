@@ -74,6 +74,25 @@ export async function buildOrderItems(items: CartItemInput[]) {
   return { orderItems, subtotal, totalDiscount };
 }
 
+/**
+ * Política de acceso a una orden individual:
+ *   - admin/funcionario: siempre pueden ver.
+ *   - cliente: solo si la orden tiene `customer.user` que matchea su id.
+ *   - guest (sin user): nadie excepto admin/funcionario puede leer/cancelar.
+ *
+ * Se usa en GET /:id, GET /number/:orderNumber y PUT /:id/cancel para
+ * impedir IDOR (acceder por id directo a órdenes ajenas).
+ */
+const canAccessOrder = (
+  order: { customer?: { user?: mongoose.Types.ObjectId | string | null } },
+  user: { id: string; role: string } | undefined
+): boolean => {
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'funcionario') return true;
+  const ownerId = order.customer?.user?.toString();
+  return !!ownerId && ownerId === user.id;
+};
+
 export const validateCart = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const { items } = req.body as { items: CartItemInput[] };
@@ -134,6 +153,10 @@ export const getOrderById = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const order = await Order.findById(req.params.id).lean();
     if (!order) throw new AppError(404, 'Orden no encontrada');
+    if (!canAccessOrder(order, req.user)) {
+      // 404 (no 403) para no filtrar la existencia de la orden.
+      throw new AppError(404, 'Orden no encontrada');
+    }
     res.status(200).json({ success: true, data: { order } });
   }
 );
@@ -142,6 +165,9 @@ export const getOrderByNumber = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const order = await Order.findOne({ orderNumber: req.params.orderNumber }).lean();
     if (!order) throw new AppError(404, 'Orden no encontrada');
+    if (!canAccessOrder(order, req.user)) {
+      throw new AppError(404, 'Orden no encontrada');
+    }
     res.status(200).json({ success: true, data: { order } });
   }
 );
@@ -183,6 +209,11 @@ export const cancelOrder = asyncHandler(
     const { cancellationReason } = req.body || {};
     const order = await Order.findById(req.params.id);
     if (!order) throw new AppError(404, 'Orden no encontrada');
+    if (!canAccessOrder(order, req.user)) {
+      // 404 para no filtrar existencia. Un cliente intentando cancelar
+      // una orden ajena recibe el mismo error que si no existiera.
+      throw new AppError(404, 'Orden no encontrada');
+    }
     order.status = 'cancelled';
     order.cancellationReason = cancellationReason;
     order.cancelledAt = new Date();
