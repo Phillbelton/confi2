@@ -25,8 +25,12 @@ const makeReq = (token?: string, source: 'cookie' | 'header' | 'both' = 'both'):
 
 const makeRes = (): Response => ({} as any);
 
-const signToken = (payload: Record<string, unknown>, opts?: jwt.SignOptions) =>
-  jwt.sign(payload, ENV.JWT_SECRET, opts);
+import { signTokenFor } from '../setup/authTestHelpers';
+
+const signToken = (
+  payload: Record<string, unknown>,
+  opts?: jwt.SignOptions
+) => jwt.sign(payload, ENV.JWT_SECRET, { algorithm: 'HS256', ...(opts || {}) });
 
 /**
  * Crea un usuario y devuelve { user, token } con un JWT firmado con
@@ -50,12 +54,7 @@ const createUserWithToken = async (
     active: overrides.active ?? true,
   });
 
-  const token = signToken({
-    id: user._id.toString(),
-    email: user.email,
-    role: user.role,
-  });
-
+  const token = signTokenFor(user);
   return { user, token };
 };
 

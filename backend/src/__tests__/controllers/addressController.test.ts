@@ -1,9 +1,8 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
 import app from '../../server';
 import { User, IUser } from '../../models/User';
-import { ENV } from '../../config/env';
+import { signTokenFor } from '../setup/authTestHelpers';
 
 /**
  * Tests e2e del CRUD de direcciones del cliente.
@@ -29,10 +28,7 @@ const createUserAndToken = async () => {
     role: 'cliente',
     active: true,
   }) as IUser;
-  const token = jwt.sign(
-    { id: user._id.toString(), email: user.email, role: user.role },
-    ENV.JWT_SECRET
-  );
+  const token = signTokenFor(user);
   return { user, token };
 };
 

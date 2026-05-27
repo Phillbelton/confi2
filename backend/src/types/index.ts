@@ -11,10 +11,14 @@ export interface AuthRequest extends Request {
 }
 
 // JWT Payload personalizado
+// `tv` (token version) se compara contra User.tokenVersion en cada request
+// autenticado. Permite invalidar TODOS los tokens vivos de un usuario al
+// cambiar la password o al desactivar la cuenta sin esperar la expiración.
 export interface TokenPayload extends JwtPayload {
   id: string;
   email: string;
   role: 'cliente' | 'funcionario' | 'admin';
+  tv: number;
 }
 
 // Response estándar de API

@@ -12,11 +12,15 @@ export type { AuthRequest } from '../types';
 
 // Cache simple en memoria del estado de usuarios para evitar un round-trip
 // a Mongo en cada request autenticado. TTL corto para que cambios de
-// active/role/baneo se propaguen en orden de minuto, no de días (los JWT
-// expiran en 7d, así que sin esto un usuario desactivado mantiene acceso).
+// active/role/tokenVersion se propaguen en orden de minuto, no de días
+// (los JWT expiran en 7d, así que sin esto un usuario desactivado mantiene
+// acceso). Para cambios críticos (password change, desactivación) se invoca
+// además `invalidateUserStateCache(userId)` para propagación inmediata.
 const USER_STATE_CACHE_TTL_MS = 60 * 1000; // 60s
-type UserState = { active: boolean; role: UserRole };
+type UserState = { active: boolean; role: UserRole; tokenVersion: number };
 const userStateCache = new Map<string, { value: UserState; expiresAt: number }>();
+
+const ALGORITHMS: jwt.Algorithm[] = ['HS256'];
 
 const getUserState = async (userId: string): Promise<UserState | null> => {
   const cached = userStateCache.get(userId);
@@ -24,14 +28,21 @@ const getUserState = async (userId: string): Promise<UserState | null> => {
     return cached.value;
   }
 
-  const user = await User.findById(userId).select('active role').lean<{
-    active: boolean;
-    role: UserRole;
-  } | null>();
+  const user = await User.findById(userId)
+    .select('active role tokenVersion')
+    .lean<{
+      active: boolean;
+      role: UserRole;
+      tokenVersion?: number;
+    } | null>();
 
   if (!user) return null;
 
-  const value: UserState = { active: user.active, role: user.role };
+  const value: UserState = {
+    active: user.active,
+    role: user.role,
+    tokenVersion: user.tokenVersion ?? 0,
+  };
   userStateCache.set(userId, {
     value,
     expiresAt: Date.now() + USER_STATE_CACHE_TTL_MS,
@@ -63,8 +74,11 @@ export const authenticate = async (
       throw new AppError(401, 'No autenticado - Token no proporcionado');
     }
 
-    // Verificar token
-    const decoded = jwt.verify(token, ENV.JWT_SECRET) as TokenPayload;
+    // Verificar token con algoritmo HS256 explícito (defensa contra
+    // futuras vulnerabilidades de algorithm confusion en jsonwebtoken).
+    const decoded = jwt.verify(token, ENV.JWT_SECRET, {
+      algorithms: ALGORITHMS,
+    }) as TokenPayload;
 
     // Rechequear el usuario en DB (con caché) para invalidar JWTs de
     // usuarios desactivados/eliminados sin esperar la expiración del token.
@@ -74,6 +88,13 @@ export const authenticate = async (
     }
     if (!state.active) {
       throw new AppError(403, 'Cuenta desactivada');
+    }
+
+    // Validar token version: si el usuario cambió su password o un admin
+    // forzó el logout, el `tokenVersion` en DB se incrementó y todos los
+    // tokens emitidos antes (incluido éste) quedan inválidos.
+    if (state.tokenVersion !== decoded.tv) {
+      throw new AppError(401, 'Token revocado');
     }
 
     // Agregar usuario al request (usar el rol actual de DB, no el del JWT,
@@ -129,7 +150,9 @@ export const optionalAuth = (
     const token = tokenFromCookie || tokenFromHeader;
 
     if (token) {
-      const decoded = jwt.verify(token, ENV.JWT_SECRET) as TokenPayload;
+      const decoded = jwt.verify(token, ENV.JWT_SECRET, {
+        algorithms: ALGORITHMS,
+      }) as TokenPayload;
       req.user = {
         id: decoded.id,
         email: decoded.email,

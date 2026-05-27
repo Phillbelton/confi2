@@ -7,6 +7,7 @@
  */
 
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { User, IUser } from '../models/User';
 import { PasswordResetToken } from '../models/PasswordResetToken';
@@ -14,7 +15,18 @@ import { emailService } from './emailService';
 import { ENV } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
 import { TokenPayload } from '../types';
+import { invalidateUserStateCache } from '../middleware/auth';
 import logger from '../config/logger';
+
+const JWT_ALGORITHM = 'HS256' as const;
+
+/**
+ * Hash dummy precomputado para neutralizar timing attacks en login. Cuando el
+ * email no existe, igualmente se ejecuta un bcrypt.compare contra este hash
+ * para que la latencia sea indistinguible del caso "usuario existe + password
+ * incorrecta". El plaintext es irrelevante; es solo un costo computacional.
+ */
+const DUMMY_BCRYPT_HASH = bcrypt.hashSync('dummy-password-for-timing-defense', 10);
 
 export interface RegisterDTO {
   name: string;
@@ -37,25 +49,43 @@ export interface AuthResult {
 
 export class AuthService {
   /**
-   * Generar JWT access token
+   * Arma el payload del JWT a partir del documento de usuario. Incluye
+   * `tv` (token version): si el valor en DB se incrementa, todos los
+   * tokens emitidos previamente con la versión anterior quedan inválidos.
    */
-  private generateToken(payload: TokenPayload): string {
-    return jwt.sign(payload, ENV.JWT_SECRET, {
+  private buildPayload(user: IUser): TokenPayload {
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      tv: user.tokenVersion ?? 0,
+    };
+  }
+
+  /**
+   * Genera ambos tokens (access + refresh) a partir del payload base.
+   * Algoritmo HS256 explícito para evitar algorithm confusion.
+   */
+  private issueTokens(user: IUser): { token: string; refreshToken: string } {
+    const payload = this.buildPayload(user);
+    const token = jwt.sign(payload, ENV.JWT_SECRET, {
       expiresIn: ENV.JWT_EXPIRES_IN,
+      algorithm: JWT_ALGORITHM,
     } as jwt.SignOptions);
-  }
-
-  /**
-   * Generar refresh token
-   */
-  private generateRefreshToken(payload: TokenPayload): string {
-    return jwt.sign(payload, ENV.JWT_REFRESH_SECRET, {
+    const refreshToken = jwt.sign(payload, ENV.JWT_REFRESH_SECRET, {
       expiresIn: ENV.JWT_REFRESH_EXPIRES_IN,
+      algorithm: JWT_ALGORITHM,
     } as jwt.SignOptions);
+    return { token, refreshToken };
   }
 
   /**
-   * Registrar nuevo usuario
+   * Registrar nuevo usuario PÚBLICO.
+   *
+   * El rol siempre se fuerza a 'cliente' acá. Cualquier `role` que venga
+   * en el DTO se ignora explícitamente — no confiamos en pickeo del
+   * controller como única defensa. La creación de funcionarios/admins
+   * pasa por POST /api/users (admin-only).
    */
   async register(data: RegisterDTO): Promise<AuthResult> {
     // Normalizar email a minúsculas para comparación
@@ -75,7 +105,9 @@ export class AuthService {
         email: normalizedEmail,
         password: data.password, // Se hasheará en el pre-save hook
         phone: data.phone,
-        role: data.role || 'cliente',
+        // ROLE FORZADO. Ignoramos data.role aquí intencionalmente: ningún
+        // registro público puede crear funcionarios o admins.
+        role: 'cliente',
         active: true,
       });
     } catch (error: any) {
@@ -86,15 +118,7 @@ export class AuthService {
       throw error;
     }
 
-    // Generar tokens
-    const payload: TokenPayload = {
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    };
-
-    const token = this.generateToken(payload);
-    const refreshToken = this.generateRefreshToken(payload);
+    const { token, refreshToken } = this.issueTokens(user);
 
     // Enviar email de bienvenida (no bloqueante)
     if (user.role === 'cliente') {
@@ -107,22 +131,42 @@ export class AuthService {
   }
 
   /**
-   * Login de usuario
+   * Login de usuario.
+   *
+   * Orden de verificación blindado contra timing y user-enumeration:
+   *   1. Buscar el user (silenciosamente — sin filtrar por active).
+   *   2. SIEMPRE ejecutar bcrypt.compare, incluso si el user no existe
+   *      (contra DUMMY_BCRYPT_HASH). Eso iguala la latencia y previene
+   *      enumerar emails registrados midiendo el tiempo de respuesta.
+   *   3. Si la password no matchea (o no había user): 401 genérico. Solo
+   *      incrementamos loginAttempts si el user existe — para no inflar
+   *      el contador sobre emails desconocidos.
+   *   4. Solo cuando la password fue VERIFICADA, chequear estado:
+   *      - active=false → 403
+   *      - locked → 423
+   *      Esto evita que un atacante distinga "usuario activo con pw mala"
+   *      de "usuario desactivado con pw mala" sin tener la pw correcta.
+   *   5. Si todo OK, reset attempts + emitir tokens.
    */
   async login(credentials: LoginDTO): Promise<AuthResult> {
-    // Buscar usuario con contraseña incluida (sin filtrar por active primero)
     const user = await User.findOne({ email: credentials.email }).select('+password');
 
-    if (!user) {
+    const passwordHash = user ? user.password : DUMMY_BCRYPT_HASH;
+    const passwordOk = await bcrypt.compare(credentials.password, passwordHash);
+
+    if (!user || !passwordOk) {
+      if (user) {
+        // Solo incrementamos contra usuarios existentes para no inflar
+        // intentos en emails que ni siquiera están registrados.
+        await user.incrementLoginAttempts();
+      }
       throw new AppError(401, 'Credenciales inválidas');
     }
 
-    // Verificar si la cuenta está activa
     if (!user.active) {
       throw new AppError(403, 'Cuenta desactivada. Contacta a soporte.');
     }
 
-    // Verificar si la cuenta está bloqueada
     if (user.isLocked()) {
       throw new AppError(
         423,
@@ -130,58 +174,42 @@ export class AuthService {
       );
     }
 
-    // Verificar contraseña
-    const isMatch = await user.comparePassword(credentials.password);
-
-    if (!isMatch) {
-      // Incrementar intentos fallidos
-      await user.incrementLoginAttempts();
-      throw new AppError(401, 'Credenciales inválidas');
-    }
-
-    // Reset intentos fallidos si el login es exitoso
     await user.resetLoginAttempts();
 
-    // Generar tokens
-    const payload: TokenPayload = {
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    };
-
-    const token = this.generateToken(payload);
-    const refreshToken = this.generateRefreshToken(payload);
-
+    const { token, refreshToken } = this.issueTokens(user);
     return { user, token, refreshToken };
   }
 
   /**
-   * Refresh token
+   * Refresh token.
+   *
+   * Verifica con algoritmo HS256 explícito y valida la `tv` (token version)
+   * contra el valor actual del usuario en DB. Si la version no coincide
+   * (ej. el usuario cambió la password después de emitir el refresh
+   * token), el refresh queda inválido — el cliente debe volver a loguear.
    */
   async refreshToken(refreshToken: string): Promise<AuthResult> {
     try {
-      // Verificar refresh token
-      const decoded = jwt.verify(refreshToken, ENV.JWT_REFRESH_SECRET) as TokenPayload;
+      const decoded = jwt.verify(refreshToken, ENV.JWT_REFRESH_SECRET, {
+        algorithms: [JWT_ALGORITHM],
+      }) as TokenPayload;
 
-      // Buscar usuario
       const user = await User.findById(decoded.id);
 
       if (!user || !user.active) {
         throw new AppError(401, 'Usuario no encontrado o inactivo');
       }
 
-      // Generar nuevos tokens
-      const payload: TokenPayload = {
-        id: user._id.toString(),
-        email: user.email,
-        role: user.role,
-      };
+      if ((user.tokenVersion ?? 0) !== decoded.tv) {
+        throw new AppError(401, 'Refresh token revocado');
+      }
 
-      const newToken = this.generateToken(payload);
-      const newRefreshToken = this.generateRefreshToken(payload);
-
-      return { user, token: newToken, refreshToken: newRefreshToken };
+      const tokens = this.issueTokens(user);
+      return { user, token: tokens.token, refreshToken: tokens.refreshToken };
     } catch (error) {
+      // Preservar AppError (incluye nuestro 'Refresh token revocado');
+      // cualquier otro error de jwt cae al genérico.
+      if (error instanceof AppError) throw error;
       throw new AppError(401, 'Refresh token inválido o expirado');
     }
   }
@@ -233,56 +261,58 @@ export class AuthService {
   }
 
   /**
-   * Restablecer contraseña con token
+   * Restablecer contraseña con token. Al cambiar la password se incrementa
+   * `tokenVersion`, lo que invalida cualquier JWT/refresh emitido antes
+   * (defensa contra el caso "robaron mi cuenta, cambio password pero el
+   * atacante mantiene su sesión vigente"). También se purga el caché de
+   * estado en memoria del middleware auth para que la propagación sea
+   * inmediata, sin esperar el TTL.
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    // Validar y consumir token
     const validation = await (PasswordResetToken as any).validateAndConsumeToken(token);
 
     if (!validation.valid) {
       throw new AppError(400, validation.message || 'Token inválido o expirado');
     }
 
-    // Buscar usuario
     const user = await User.findById(validation.userId);
 
     if (!user || !user.active) {
       throw new AppError(404, 'Usuario no encontrado');
     }
 
-    // Actualizar contraseña
     user.password = newPassword;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
     await user.save();
 
-    // Resetear intentos de login fallidos
-    if ((user as any).loginAttempts) {
-      (user as any).loginAttempts = 0;
-      (user as any).lockUntil = undefined;
-      await user.save();
-    }
+    invalidateUserStateCache(user._id.toString());
   }
 
   /**
-   * Cambiar contraseña (usuario autenticado)
+   * Cambiar contraseña (usuario autenticado). Mismo blindaje que
+   * resetPassword: incrementa tokenVersion para forzar re-login en TODAS
+   * las sesiones del usuario.
    */
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    // Buscar usuario con contraseña incluida
     const user = await User.findById(userId).select('+password');
 
     if (!user) {
       throw new AppError(404, 'Usuario no encontrado');
     }
 
-    // Verificar contraseña actual
     const isMatch = await user.comparePassword(currentPassword);
 
     if (!isMatch) {
       throw new AppError(401, 'Contraseña actual incorrecta');
     }
 
-    // Actualizar contraseña
     user.password = newPassword;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
+
+    invalidateUserStateCache(user._id.toString());
   }
 
   /**

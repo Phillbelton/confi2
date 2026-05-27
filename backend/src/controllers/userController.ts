@@ -171,7 +171,13 @@ export const changeUserPassword = asyncHandler(
     const { newPassword } = req.body;
 
     user.password = newPassword;
+    // Forzar invalidación de TODAS las sesiones del usuario al cambiar
+    // la password (defensa contra "robaron mi cuenta — cambio password
+    // pero el atacante mantiene su JWT vigente").
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
+
+    invalidateUserStateCache(user._id.toString());
 
     res.status(200).json({
       success: true,
@@ -197,6 +203,11 @@ export const deactivateUser = asyncHandler(
     }
 
     user.active = false;
+    // Además de cortar via active=false, incrementamos tokenVersion para
+    // que cualquier sesión activa devuelva 401 'Token revocado' (en vez
+    // de 403 'Cuenta desactivada'). Eso obliga al cliente a abandonar el
+    // token y volver a loguear si la cuenta se reactiva luego.
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
 
     // Cortar acceso inmediato del usuario desactivado.

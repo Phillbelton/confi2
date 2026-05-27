@@ -1,11 +1,10 @@
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
 import type { Response, NextFunction } from 'express';
 import app from '../../server';
 import { authorize, invalidateUserStateCache } from '../../middleware/auth';
 import { AppError } from '../../middleware/errorHandler';
 import { User, IUser } from '../../models/User';
-import { ENV } from '../../config/env';
+import { signTokenFor } from '../setup/authTestHelpers';
 import type { AuthRequest, UserRole } from '../../types';
 
 /**
@@ -38,10 +37,7 @@ const createUserAndToken = async (
     role,
     active: true,
   });
-  const token = jwt.sign(
-    { id: user._id.toString(), email: user.email, role: user.role },
-    ENV.JWT_SECRET
-  );
+  const token = signTokenFor(user);
   return { user, token };
 };
 

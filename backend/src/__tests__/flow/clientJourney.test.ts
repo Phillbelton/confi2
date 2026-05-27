@@ -1,11 +1,10 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
 import app from '../../server';
 import { User, IUser } from '../../models/User';
 import Product from '../../models/Product';
 import { Category } from '../../models/Category';
-import { ENV } from '../../config/env';
+import { signTokenFor } from '../setup/authTestHelpers';
 import type { UserRole } from '../../types';
 
 /**
@@ -53,10 +52,7 @@ const createAdminToken = async (): Promise<string> => {
     role: 'admin',
     active: true,
   });
-  return jwt.sign(
-    { id: u._id.toString(), email: u.email, role: 'admin' as UserRole },
-    ENV.JWT_SECRET
-  );
+  return signTokenFor(u);
 };
 
 const seedProduct = async () => {

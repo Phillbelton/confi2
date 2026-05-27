@@ -55,6 +55,53 @@ export const ENV = {
   EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@confiteriaquelita.com',
 } as const;
 
+/**
+ * Longitud mínima exigida para los JWT secrets en producción.
+ *
+ * Justificación: HMAC-SHA256 con clave de N bytes tiene como máximo
+ * N*8 bits de entropía. 32 bytes = 256 bits = matchea el espacio de
+ * salida de SHA-256 (no se gana nada con más, no se debería usar menos).
+ *
+ * 32 CHARACTERES no equivale a 32 bytes de entropía (depende del juego
+ * de caracteres) pero es el piso "obvio" para detectar el caso típico
+ * de un developer poniendo "password123" o "supersecretoseguro".
+ *
+ * Para uso real, generar con:
+ *   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+ */
+const MIN_JWT_SECRET_LENGTH = 32;
+
+/**
+ * Patrones que indican baja entropía evidente: secreto compuesto solo
+ * por minúsculas, solo dígitos, o solo el mismo carácter repetido. NO
+ * pretende reemplazar un cálculo formal de entropía — solo bloquea los
+ * errores groseros más comunes en deploys apresurados.
+ */
+const LOW_ENTROPY_PATTERNS: { name: string; matches: (s: string) => boolean }[] = [
+  { name: 'solo minúsculas', matches: (s) => /^[a-z]+$/.test(s) },
+  { name: 'solo dígitos', matches: (s) => /^\d+$/.test(s) },
+  { name: 'un único carácter repetido', matches: (s) => /^(.)\1+$/.test(s) },
+];
+
+const ensureSecretStrength = (label: string, value: string): void => {
+  if (value.length < MIN_JWT_SECRET_LENGTH) {
+    throw new Error(
+      `❌ ${label} debe tener al menos ${MIN_JWT_SECRET_LENGTH} caracteres ` +
+      `(actual: ${value.length}). Generar con: ` +
+      `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+    );
+  }
+  for (const pattern of LOW_ENTROPY_PATTERNS) {
+    if (pattern.matches(value)) {
+      throw new Error(
+        `❌ ${label} tiene baja entropía (${pattern.name}). ` +
+        `Generar uno aleatorio con: ` +
+        `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+      );
+    }
+  }
+};
+
 // Validar variables críticas
 export const validateEnv = (): void => {
   const required = ['MONGODB_URI', 'JWT_SECRET'];
@@ -76,6 +123,12 @@ export const validateEnv = (): void => {
     if (ENV.JWT_REFRESH_SECRET === ENV.JWT_SECRET) {
       throw new Error('❌ JWT_REFRESH_SECRET no puede ser igual a JWT_SECRET');
     }
+
+    // Forzar longitud + entropía mínima de ambos secretos. El JWT_SECRET
+    // firma access tokens (acceso a la API). Si es brute-forceable
+    // offline, un atacante puede falsificar tokens admin.
+    ensureSecretStrength('JWT_SECRET', ENV.JWT_SECRET);
+    ensureSecretStrength('JWT_REFRESH_SECRET', ENV.JWT_REFRESH_SECRET);
 
     // Validar configuración de email en producción
     if (!ENV.SMTP_HOST || !ENV.SMTP_USER || !ENV.SMTP_PASS) {

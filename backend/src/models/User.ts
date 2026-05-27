@@ -29,6 +29,9 @@ export interface IUser extends Document {
   loginAttempts: number;
   lockUntil?: Date;
 
+  // Security: JWT versioning (ver schema más abajo)
+  tokenVersion: number;
+
   createdBy?: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
   deletedBy?: mongoose.Types.ObjectId;
@@ -137,6 +140,16 @@ const userSchema = new Schema<IUser>(
     lockUntil: {
       type: Date,
       required: false,
+    },
+    // Security: JWT version. Cada JWT emitido para este usuario incluye
+    // este número. En cada request autenticado, el middleware compara
+    // contra el valor actual en DB; si difieren, el token se rechaza.
+    // Se incrementa al cambiar la password (cualquier mecanismo) y al
+    // desactivar la cuenta, invalidando inmediatamente TODAS las sesiones.
+    tokenVersion: {
+      type: Number,
+      default: 0,
+      required: true,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
