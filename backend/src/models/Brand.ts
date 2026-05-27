@@ -79,8 +79,10 @@ brandSchema.pre('save', function (next) {
 
 // Método de instancia: Verificar si tiene productos
 brandSchema.methods.hasProducts = async function (): Promise<boolean> {
-  const ProductParent = mongoose.model('ProductParent');
-  const count = await ProductParent.countDocuments({ brand: this._id, active: true });
+  // El modelo se llama 'Product' (modelo plano Quelita); 'ProductParent'
+  // era el nombre legacy del split parent+variant ya retirado.
+  const Product = mongoose.model('Product');
+  const count = await Product.countDocuments({ brand: this._id, active: true });
   return count > 0;
 };
 

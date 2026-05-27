@@ -185,8 +185,10 @@ categorySchema.methods.hasSubcategories = async function (): Promise<boolean> {
 
 // Método de instancia: Verificar si tiene productos
 categorySchema.methods.hasProducts = async function (): Promise<boolean> {
-  const ProductParent = mongoose.model('ProductParent');
-  const count = await ProductParent.countDocuments({
+  // El modelo se llama 'Product' (modelo plano Quelita); 'ProductParent'
+  // era el nombre legacy del split parent+variant ya retirado.
+  const Product = mongoose.model('Product');
+  const count = await Product.countDocuments({
     categories: this._id,
     active: true
   });
