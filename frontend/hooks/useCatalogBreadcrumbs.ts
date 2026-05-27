@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
-import type { Category, Brand, Format, Flavor, Collection, Product, ApiResponse } from '@/types';
+import type { Category, Collection, Product, ApiResponse } from '@/types';
 import type { BreadcrumbItem } from '@/components/m/detail/Breadcrumbs';
 
 interface CatalogContext {

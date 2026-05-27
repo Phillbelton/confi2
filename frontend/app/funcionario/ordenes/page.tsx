@@ -58,7 +58,7 @@ export default function OrdenesPage() {
     return params;
   };
 
-  const { orders, pagination, isLoading, markWhatsAppSent, isMarkingWhatsApp, refetch } =
+  const { orders, pagination, isLoading, markWhatsAppSent, refetch } =
     useFuncionarioOrders(getParams());
 
   const handleFilterChange = (key: string, value: any) => {

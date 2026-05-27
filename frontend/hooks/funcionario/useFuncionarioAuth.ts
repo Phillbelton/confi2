@@ -10,7 +10,7 @@ export function useFuncionarioAuth() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { setUser, logout: clearStore, setLoading } = useFuncionarioStore();
+  const { setUser, logout: clearStore } = useFuncionarioStore();
 
   // Don't fetch profile on login page to avoid unnecessary 401 errors
   const isLoginPage = pathname === '/funcionario/login';

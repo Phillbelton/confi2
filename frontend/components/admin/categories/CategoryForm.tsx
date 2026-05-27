@@ -23,7 +23,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { InlineHelp } from '@/components/ui/inline-help';
 import type { Category, FacetableAttribute } from '@/types';
 
 const slugify = (s: string) =>

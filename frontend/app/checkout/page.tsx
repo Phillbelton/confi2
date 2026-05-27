@@ -31,7 +31,6 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [continueAsGuest, setContinueAsGuest] = useState(false);
   const [phoneRegistered, setPhoneRegistered] = useState(false);
-  const [checkingPhone, setCheckingPhone] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -48,22 +47,23 @@ export default function CheckoutPage() {
     customerNotes: '',
   });
 
-  // Pre-fill form if user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      // Quitar el prefijo +56 del teléfono si viene del usuario
-      let phone = user.phone || '';
-      if (phone.startsWith('+56')) {
-        phone = phone.slice(3);
-      }
-      setFormData((prev) => ({
-        ...prev,
-        name: user.name || prev.name,
-        email: user.email || prev.email,
-        phone: phone || prev.phone,
-      }));
-    }
-  }, [isAuthenticated, user]);
+  // Pre-fill form la primera vez que el user autenticado está disponible.
+  // El user llega async (post-hydration del store + fetch del perfil), por
+  // eso no podemos lazy-init formData. Patrón "store info from previous
+  // renders" de React (set state during render con guard) — evita el
+  // useEffect + setState que dispararía cascading renders.
+  // https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  const [prefilledForUserId, setPrefilledForUserId] = useState<string | null>(null);
+  if (isAuthenticated && user && user._id !== prefilledForUserId) {
+    setPrefilledForUserId(user._id);
+    const phone = (user.phone || '').replace(/^\+56/, '');
+    setFormData((prev) => ({
+      ...prev,
+      name: user.name || prev.name,
+      email: user.email || prev.email,
+      phone: phone || prev.phone,
+    }));
+  }
 
   // Redirect if cart is empty — pero NO después de colocar la orden
   // (al confirmar, vaciamos el carrito y redirigimos a la orden: este effect
@@ -94,7 +94,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    setCheckingPhone(true);
     try {
       const res = await fetch(`${API_URL}/auth/check-phone`, {
         method: 'POST',
@@ -106,8 +105,6 @@ export default function CheckoutPage() {
     } catch {
       // Silenciar error — no bloquear checkout
       setPhoneRegistered(false);
-    } finally {
-      setCheckingPhone(false);
     }
   };
 

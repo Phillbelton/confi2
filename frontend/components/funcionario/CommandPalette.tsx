@@ -8,7 +8,6 @@ import {
   Home,
   Package,
   Clock,
-  CheckCircle,
   BarChart3,
   User,
   FileText,

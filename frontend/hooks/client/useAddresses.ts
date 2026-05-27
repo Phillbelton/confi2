@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { addressService, type Address, type CreateAddressData, type UpdateAddressData } from '@/services/client/addresses';
+import { addressService, type CreateAddressData, type UpdateAddressData } from '@/services/client/addresses';
 
 /**
  * Hook para obtener todas las direcciones

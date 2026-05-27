@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { ProductForm, type ProductFormValues } from '@/components/admin/products/ProductForm';
 import { useAdminProduct, useProductOperations } from '@/hooks/admin/useAdminProducts';
-import type { Product, Brand, Category, Format, Flavor } from '@/types';
+import type { Product } from '@/types';
 
 export default function EditarProductoPage() {
   const router = useRouter();

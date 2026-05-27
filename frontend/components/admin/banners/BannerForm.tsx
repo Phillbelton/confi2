@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, ImagePlus, Trash2 } from 'lucide-react';
+import { Loader2, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -25,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { useCategoriesFlat } from '@/hooks/useCategories';
 import { api } from '@/lib/axios';

@@ -83,7 +83,7 @@ export async function collectWebVitals(
   });
 
   // Navigate
-  const response = await page.goto(url, { waitUntil: 'load' });
+  await page.goto(url, { waitUntil: 'load' });
 
   // Wait for specific content if needed
   if (options?.waitForSelector) {

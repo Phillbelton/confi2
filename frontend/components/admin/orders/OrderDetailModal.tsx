@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Package, User, MapPin, Phone, Mail, FileText, Calendar, Edit } from 'lucide-react';
+import { Package, User, MapPin, Phone, Mail, FileText, Edit } from 'lucide-react';
 import {
   Dialog,
   DialogContent,

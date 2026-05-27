@@ -83,7 +83,7 @@ export function useBrandOperations() {
   const uploadLogoMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
       adminBrandService.uploadLogo(id, file),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success('Logo cargado correctamente');
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['admin-brand'] });

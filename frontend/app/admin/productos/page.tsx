@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useState, useMemo } from 'react';
 import {
   Plus, Search, Trash2, Loader2, Upload, Edit, Eye, EyeOff,
-  Grid3x3, List, ImageOff, Tag as TagIcon, Filter, X, Star,
+  Grid3x3, List, ImageOff, Filter, X, Star,
   AlertTriangle, ArrowUpDown, FolderTree, BadgeCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

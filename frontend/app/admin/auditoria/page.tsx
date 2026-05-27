@@ -16,7 +16,7 @@ export default function AuditoriaPage() {
     limit: 50,
   });
 
-  const [statsFilters, setStatsFilters] = useState({});
+  const [statsFilters] = useState({});
 
   // Queries
   const { data: logsData, isLoading: logsLoading } = useAuditLogs(filters);

@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { funcionarioOrdersService } from '@/services/funcionario/orders';
-import { startOfToday, endOfToday, startOfYesterday, endOfYesterday } from 'date-fns';
+import { startOfToday, endOfToday } from 'date-fns';
 
 export function useFuncionarioDashboard() {
   const today = startOfToday();
   const todayEnd = endOfToday();
-  const yesterday = startOfYesterday();
-  const yesterdayEnd = endOfYesterday();
 
   // Get orders from today
   const todayOrdersQuery = useQuery({

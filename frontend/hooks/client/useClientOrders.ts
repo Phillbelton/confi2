@@ -45,7 +45,7 @@ export function useCancelOrder() {
     mutationFn: async ({ orderId, reason }: { orderId: string; reason: string }) => {
       return await clientOrdersService.cancelOrder(orderId, reason);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       queryClient.invalidateQueries({ queryKey: ['order'] });
       toast.success('Pedido cancelado exitosamente');

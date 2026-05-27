@@ -4,7 +4,6 @@ import { Eye, Package } from 'lucide-react';
 import Image from 'next/image';
 import { SaleUnitBadge } from '@/components/m/catalog/SaleUnitBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import type { SaleUnit, ProductTier } from '@/types';
 
 interface Props {
@@ -16,12 +15,11 @@ interface Props {
   brandName?: string;
   formatLabel?: string;
   flavorName?: string;
-  flavorColor?: string;
 }
 
 export function ProductLivePreview({
   name, unitPrice, saleUnit, tiers, imagePreview,
-  brandName, formatLabel, flavorName, flavorColor,
+  brandName, formatLabel, flavorName,
 }: Props) {
   const sortedTiers = [...(tiers || [])].sort((a, b) => a.minQuantity - b.minQuantity);
   const cheapest = sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1].pricePerUnit : unitPrice;

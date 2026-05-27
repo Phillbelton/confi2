@@ -22,7 +22,7 @@ export interface CreateAddressData {
   isDefault?: boolean;
 }
 
-export interface UpdateAddressData extends Partial<CreateAddressData> {}
+export type UpdateAddressData = Partial<CreateAddressData>;
 
 export const addressService = {
   /**

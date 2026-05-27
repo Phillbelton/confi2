@@ -126,7 +126,7 @@ export async function countProductCards(page: Page): Promise<number> {
  */
 export async function requireProducts(page: Page, hasProducts: boolean) {
   if (!hasProducts) {
-    // eslint-disable-next-line no-console
+     
     console.warn('Catalog is empty (possibly rate-limited). Skipping test.');
   }
   expect(hasProducts, 'Catalog must have products (API may be rate-limited)').toBe(true);

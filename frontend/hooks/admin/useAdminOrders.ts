@@ -97,8 +97,6 @@ export function useAdminOrders(params: UseOrdersParams) {
 }
 
 export function useAdminOrder(id: string) {
-  const queryClient = useQueryClient();
-
   const orderQuery = useQuery({
     queryKey: ['admin-order', id],
     queryFn: () => adminOrdersService.getOrderById(id),

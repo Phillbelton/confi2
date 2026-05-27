@@ -10,7 +10,7 @@ export function useAdminAuth() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { setUser, logout: clearStore, setLoading } = useAdminStore();
+  const { setUser, logout: clearStore } = useAdminStore();
 
   // Don't fetch profile on login page to avoid unnecessary 401 errors
   const isLoginPage = pathname === '/admin/login';

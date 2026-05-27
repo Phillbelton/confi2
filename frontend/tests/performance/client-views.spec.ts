@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import {
   collectWebVitals,
   collectNetworkStats,
-  measureTTI,
   formatMetrics,
   THRESHOLDS,
   type WebVitals,

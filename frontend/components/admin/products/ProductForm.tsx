@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Box, Loader2, Package, PackageOpen, Plus, Save, Trash2, Hash,
+  ArrowLeft, Box, Loader2, PackageOpen, Plus, Save, Trash2, Hash,
   Sparkles, TrendingDown, ScanLine,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -588,7 +588,6 @@ export function ProductForm({
               imagePreview={previewImage}
               formatLabel={formatLabel}
               flavorName={flavorObj?.name}
-              flavorColor={flavorObj?.color}
             />
           </div>
         </div>

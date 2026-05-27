@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { goToCatalog, clearCart, waitForNavigation, requireProducts } from './helpers';
+import { goToCatalog, clearCart, requireProducts } from './helpers';
 
 // ============================================================================
 // PRODUCT DETAIL — Navigation, info display, variant selection, add to cart
@@ -108,9 +108,6 @@ test.describe('Product Detail — Variants', () => {
     const isVisible = await variantSelect.isVisible({ timeout: 3000 }).catch(() => false);
 
     if (isVisible) {
-      // Get current price text
-      const priceBefore = await page.locator('.font-bold.text-primary').first().textContent();
-
       // Open select and pick a different option
       await variantSelect.click();
       const options = page.locator('[role="option"]');

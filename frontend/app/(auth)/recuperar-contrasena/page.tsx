@@ -7,11 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { clientAuthService } from '@/services/client/auth';
 
 export default function RecuperarContrasenaPage() {
-  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -22,12 +20,11 @@ export default function RecuperarContrasenaPage() {
 
     try {
       await clientAuthService.forgotPassword(email);
-      setEmailSent(true);
-    } catch (error: any) {
-      // Even on error, show success message for security
-      // (don't reveal if email exists or not)
-      setEmailSent(true);
+    } catch {
+      // Falla silenciosa por seguridad: no revelamos si el email existe
+      // o no — el backend devuelve el mismo mensaje en ambos casos.
     } finally {
+      setEmailSent(true);
       setIsLoading(false);
     }
   };

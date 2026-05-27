@@ -36,7 +36,7 @@ export const categoryService = {
   getAllFlat: async (): Promise<Category[]> => {
     const { data } = await api.get<ApiResponse<{ categories: Category[] }>>('/categories');
     const raw = (data.data as any)?.categories || [];
-    return dedupeById(raw).map(({ subcategories, ...rest }: any) => rest as Category);
+    return dedupeById(raw).map(({ subcategories: _subcategories, ...rest }: any) => rest as Category);
   },
 
   /**

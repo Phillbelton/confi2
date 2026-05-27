@@ -98,7 +98,7 @@ export function useCategoryOperations() {
   const uploadImageMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
       adminCategoryService.uploadImage(id, file),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success('Imagen cargada correctamente');
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['main-categories'] });

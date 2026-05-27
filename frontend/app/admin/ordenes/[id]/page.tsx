@@ -1,7 +1,6 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -51,7 +50,6 @@ export default function AdminOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
-  const router = useRouter();
   const { order, isLoading, error, refetch } = useAdminOrder(resolvedParams.id);
   const { cancelOrder, isCancelling } = useAdminOrders({ page: 1, limit: 1 });
 

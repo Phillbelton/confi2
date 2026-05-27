@@ -4,7 +4,7 @@ import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useClientStore, type ClientUser } from '@/store/useClientStore';
+import { useClientStore } from '@/store/useClientStore';
 import { clientAuthService, type LoginCredentials, type RegisterData, type UpdateProfileData } from '@/services/client/auth';
 
 /**
@@ -170,9 +170,7 @@ export function useClientAuth() {
     isAuthenticated,
     isLoading,
     _hasHydrated,
-    setUser,
     setLoading,
-    logout: storeLogout,
   } = useClientStore();
 
   const { refetch: refetchProfile, isLoading: isProfileLoading } = useClientProfile();

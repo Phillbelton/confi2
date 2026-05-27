@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
@@ -84,7 +84,6 @@ function RegisterContent() {
     register,
     handleSubmit,
     control,
-    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -109,8 +108,8 @@ function RegisterContent() {
   }, [_hasHydrated, isAuthenticated, router]);
 
   const onSubmit = async (data: RegisterFormData) => {
-    const { confirmPassword, ...registerData } = data;
-    // Prepend +56 and remove spaces from phone
+    // Excluir confirmPassword (Zod ya validó que coincide) y normalizar phone.
+    const { confirmPassword: _confirmPassword, ...registerData } = data;
     const phoneClean = registerData.phone.replace(/\s/g, '');
     registerMutation.mutate({
       ...registerData,

@@ -192,14 +192,6 @@ export default function AddressesPage() {
     }
   };
 
-  const getAddressIcon = (label: string) => {
-    const lowerLabel = label.toLowerCase();
-    if (lowerLabel.includes('trabajo') || lowerLabel.includes('oficina')) {
-      return Building;
-    }
-    return Home;
-  };
-
   if (isLoading) {
     return <AddressesSkeleton />;
   }

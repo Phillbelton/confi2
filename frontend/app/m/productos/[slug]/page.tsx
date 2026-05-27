@@ -16,13 +16,11 @@ import {
   getDisplayTiers,
   isPackagedSale,
   minQuantity,
-  presentationPrice,
   presentationPriceSuffix,
   quantityStep,
   getFixedDiscountBadge,
   hasActiveFixedDiscount,
 } from '@/lib/discountCalculator';
-import { cn } from '@/lib/utils';
 import type { Brand, Category, Format, Flavor } from '@/types';
 
 export default function ProductDetailPage() {
@@ -51,7 +49,6 @@ export default function ProductDetailPage() {
   const breadcrumbs = useProductBreadcrumbs(product, fromCtx);
 
   const addItem = useCartStoreM((s) => s.addItem);
-  const items = useCartStoreM((s) => s.items);
 
   const [quantity, setQuantity] = useState<number>(1);
 
