@@ -192,7 +192,13 @@ export const getFileUrl = (filename: string, subdir: string = 'temp', absolute: 
 };
 
 /**
- * Middleware de manejo de errores de Multer
+ * Middleware de manejo de errores de Multer.
+ *
+ * IMPORTANTE: solo intercepta errores que provienen de Multer o de su
+ * fileFilter. Cualquier otro error (p.ej. AppError(401) de `authenticate`
+ * o `authorize`) se debe pasar al error handler global con `next(err)`
+ * para que conserve su statusCode correcto. De lo contrario un cliente
+ * sin auth recibiría 400 en vez de 401 en endpoints con `uploadMultiple`.
  */
 export const handleMulterError = (err: any, req: Request, res: any, next: any) => {
   if (err instanceof multer.MulterError) {
@@ -224,13 +230,21 @@ export const handleMulterError = (err: any, req: Request, res: any, next: any) =
     });
   }
 
-  // Errores de validación (fileFilter)
-  if (err) {
+  // Errores de validación generados por fileFilter (multer los recibe
+  // como Error genérico — no MulterError — porque vienen de cb(new Error(...))).
+  // Los identificamos por contener "permitido" o "permitida" en el mensaje,
+  // que es el patrón que usa nuestro fileFilter en este mismo archivo.
+  if (err && typeof err.message === 'string' &&
+      /no permitid[ao]/i.test(err.message)) {
     return res.status(400).json({
       success: false,
-      error: err.message || 'Error al procesar el archivo',
+      error: err.message,
     });
   }
+
+  // Cualquier otro error (auth, validación Zod, app errors): delegar al
+  // error handler global para que preserve statusCode/semántica.
+  if (err) return next(err);
 
   next();
 };
