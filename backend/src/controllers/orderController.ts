@@ -178,11 +178,14 @@ export const confirmOrder = asyncHandler(
 
 export const cancelOrder = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { reason } = req.body || {};
+    // El schema Zod (cancelOrderSchema) ya valida que cancellationReason
+    // esté presente y tenga ≥10 chars; acá solo lo leemos.
+    const { cancellationReason } = req.body || {};
     const order = await Order.findById(req.params.id);
     if (!order) throw new AppError(404, 'Orden no encontrada');
     order.status = 'cancelled';
-    order.cancellationReason = reason;
+    order.cancellationReason = cancellationReason;
+    order.cancelledAt = new Date();
     if (req.user?.id) order.cancelledBy = new mongoose.Types.ObjectId(req.user.id);
     await order.save();
     res.status(200).json({ success: true, data: { order } });
