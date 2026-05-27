@@ -1,23 +1,44 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { Order } from '../models/Order';
-import Product from '../models/Product';
+import Product, { ITier } from '../models/Product';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 
-interface CartItemInput {
+export interface CartItemInput {
   productId: string;
   quantity: number;
 }
 
-function effectiveUnitPrice(product: any, quantity: number): number {
-  const tiers = (product.tiers || []) as Array<{ minQuantity: number; pricePerUnit: number }>;
+/**
+ * Tipo mínimo que `effectiveUnitPrice` necesita de un producto.
+ * Aceptamos cualquier objeto que tenga `unitPrice` y opcionalmente `tiers`
+ * para poder usar tanto documentos Mongoose hidratados como `.lean()`.
+ */
+export interface PriceableProduct {
+  unitPrice: number;
+  tiers?: Pick<ITier, 'minQuantity' | 'pricePerUnit'>[];
+}
+
+/**
+ * Calcula el precio efectivo por unidad para un producto y una cantidad
+ * dada. Si la cantidad alcanza un tier (`quantity >= tier.minQuantity`),
+ * se aplica el tier de mayor `minQuantity` que cumpla. Si ningún tier
+ * aplica (o no hay tiers), se retorna `unitPrice`.
+ *
+ * Exportado para permitir tests unitarios sobre la matemática del tier.
+ */
+export function effectiveUnitPrice(
+  product: PriceableProduct,
+  quantity: number
+): number {
+  const tiers = product.tiers || [];
   const sorted = [...tiers].sort((a, b) => b.minQuantity - a.minQuantity);
   for (const t of sorted) if (quantity >= t.minQuantity) return t.pricePerUnit;
   return product.unitPrice;
 }
 
-async function buildOrderItems(items: CartItemInput[]) {
+export async function buildOrderItems(items: CartItemInput[]) {
   const orderItems: any[] = [];
   let subtotal = 0;
   let totalDiscount = 0;
@@ -52,6 +73,25 @@ async function buildOrderItems(items: CartItemInput[]) {
   }
   return { orderItems, subtotal, totalDiscount };
 }
+
+/**
+ * Política de acceso a una orden individual:
+ *   - admin/funcionario: siempre pueden ver.
+ *   - cliente: solo si la orden tiene `customer.user` que matchea su id.
+ *   - guest (sin user): nadie excepto admin/funcionario puede leer/cancelar.
+ *
+ * Se usa en GET /:id, GET /number/:orderNumber y PUT /:id/cancel para
+ * impedir IDOR (acceder por id directo a órdenes ajenas).
+ */
+const canAccessOrder = (
+  order: { customer?: { user?: mongoose.Types.ObjectId | string | null } },
+  user: { id: string; role: string } | undefined
+): boolean => {
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'funcionario') return true;
+  const ownerId = order.customer?.user?.toString();
+  return !!ownerId && ownerId === user.id;
+};
 
 export const validateCart = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
@@ -113,6 +153,10 @@ export const getOrderById = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const order = await Order.findById(req.params.id).lean();
     if (!order) throw new AppError(404, 'Orden no encontrada');
+    if (!canAccessOrder(order, req.user)) {
+      // 404 (no 403) para no filtrar la existencia de la orden.
+      throw new AppError(404, 'Orden no encontrada');
+    }
     res.status(200).json({ success: true, data: { order } });
   }
 );
@@ -121,6 +165,9 @@ export const getOrderByNumber = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const order = await Order.findOne({ orderNumber: req.params.orderNumber }).lean();
     if (!order) throw new AppError(404, 'Orden no encontrada');
+    if (!canAccessOrder(order, req.user)) {
+      throw new AppError(404, 'Orden no encontrada');
+    }
     res.status(200).json({ success: true, data: { order } });
   }
 );
@@ -157,11 +204,19 @@ export const confirmOrder = asyncHandler(
 
 export const cancelOrder = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { reason } = req.body || {};
+    // El schema Zod (cancelOrderSchema) ya valida que cancellationReason
+    // esté presente y tenga ≥10 chars; acá solo lo leemos.
+    const { cancellationReason } = req.body || {};
     const order = await Order.findById(req.params.id);
     if (!order) throw new AppError(404, 'Orden no encontrada');
+    if (!canAccessOrder(order, req.user)) {
+      // 404 para no filtrar existencia. Un cliente intentando cancelar
+      // una orden ajena recibe el mismo error que si no existiera.
+      throw new AppError(404, 'Orden no encontrada');
+    }
     order.status = 'cancelled';
-    order.cancellationReason = reason;
+    order.cancellationReason = cancellationReason;
+    order.cancelledAt = new Date();
     if (req.user?.id) order.cancelledBy = new mongoose.Types.ObjectId(req.user.id);
     await order.save();
     res.status(200).json({ success: true, data: { order } });

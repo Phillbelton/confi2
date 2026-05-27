@@ -1,7 +1,12 @@
 import { z } from 'zod';
+import { strongPasswordSchema } from './userSchemas';
 
 /**
- * Schemas de validación para autenticación
+ * Schemas de validación para autenticación.
+ *
+ * La política de complejidad de password está centralizada en
+ * `strongPasswordSchema` (userSchemas.ts) y se reusa acá para no caer
+ * en asimetrías (registro público con regla X, admin con regla Y, etc).
  */
 
 // Schema para registro de usuario
@@ -23,18 +28,7 @@ export const registerSchema = z.object({
       .toLowerCase()
       .trim(),
 
-    password: z
-      .string({
-        required_error: 'La contraseña es requerida',
-      })
-      .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .regex(/[A-Z]/, 'La contraseña debe contener al menos una letra mayúscula')
-      .regex(/[a-z]/, 'La contraseña debe contener al menos una letra minúscula')
-      .regex(/[0-9]/, 'La contraseña debe contener al menos un número')
-      .regex(
-        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-        'La contraseña debe contener al menos un carácter especial'
-      ),
+    password: strongPasswordSchema,
 
     phone: z
       .string()
@@ -81,18 +75,7 @@ export const resetPasswordSchema = z.object({
     }),
   }),
   body: z.object({
-    newPassword: z
-      .string({
-        required_error: 'La nueva contraseña es requerida',
-      })
-      .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .regex(/[A-Z]/, 'La contraseña debe contener al menos una letra mayúscula')
-      .regex(/[a-z]/, 'La contraseña debe contener al menos una letra minúscula')
-      .regex(/[0-9]/, 'La contraseña debe contener al menos un número')
-      .regex(
-        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-        'La contraseña debe contener al menos un carácter especial'
-      ),
+    newPassword: strongPasswordSchema,
 
     confirmPassword: z.string({
       required_error: 'Confirmar contraseña es requerido',
@@ -110,18 +93,7 @@ export const changePasswordSchema = z.object({
       required_error: 'La contraseña actual es requerida',
     }),
 
-    newPassword: z
-      .string({
-        required_error: 'La nueva contraseña es requerida',
-      })
-      .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .regex(/[A-Z]/, 'La contraseña debe contener al menos una letra mayúscula')
-      .regex(/[a-z]/, 'La contraseña debe contener al menos una letra minúscula')
-      .regex(/[0-9]/, 'La contraseña debe contener al menos un número')
-      .regex(
-        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-        'La contraseña debe contener al menos un carácter especial'
-      ),
+    newPassword: strongPasswordSchema,
 
     confirmPassword: z.string({
       required_error: 'Confirmar contraseña es requerido',

@@ -12,6 +12,31 @@ const objectIdSchema = z
     message: 'ID inválido',
   });
 
+/**
+ * Política única de complejidad de contraseña.
+ *
+ * Se aplica idénticamente a:
+ *   - registerSchema (registro público)
+ *   - createUserSchema (admin crea funcionarios/admins)
+ *   - changeUserPasswordSchema (admin cambia password de un usuario)
+ *   - changePasswordSchema (usuario cambia su propia password)
+ *   - resetPasswordSchema (cliente con token de reset)
+ *
+ * No queremos asimetría: un admin no debería poder crear OTRO admin con
+ * una password trivial tipo "12345678".
+ */
+export const strongPasswordSchema = z
+  .string({ required_error: 'La contraseña es requerida' })
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
+  .max(128, 'La contraseña no puede exceder 128 caracteres')
+  .regex(/[A-Z]/, 'La contraseña debe contener al menos una letra mayúscula')
+  .regex(/[a-z]/, 'La contraseña debe contener al menos una letra minúscula')
+  .regex(/[0-9]/, 'La contraseña debe contener al menos un número')
+  .regex(
+    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+    'La contraseña debe contener al menos un carácter especial'
+  );
+
 // Schema para dirección
 const addressSchema = z.object({
   label: z
@@ -78,11 +103,7 @@ export const createUserSchema = z.object({
       .toLowerCase()
       .trim(),
 
-    password: z
-      .string({
-        required_error: 'La contraseña es requerida',
-      })
-      .min(8, 'La contraseña debe tener al menos 8 caracteres'),
+    password: strongPasswordSchema,
 
     role: z.enum(['cliente', 'funcionario', 'admin'], {
       errorMap: () => ({ message: 'Rol inválido' }),
@@ -189,18 +210,7 @@ export const changeUserPasswordSchema = z.object({
     id: objectIdSchema,
   }),
   body: z.object({
-    newPassword: z
-      .string({
-        required_error: 'La nueva contraseña es requerida',
-      })
-      .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .regex(/[A-Z]/, 'La contraseña debe contener al menos una letra mayúscula')
-      .regex(/[a-z]/, 'La contraseña debe contener al menos una letra minúscula')
-      .regex(/[0-9]/, 'La contraseña debe contener al menos un número')
-      .regex(
-        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-        'La contraseña debe contener al menos un carácter especial'
-      ),
+    newPassword: strongPasswordSchema,
   }),
 });
 

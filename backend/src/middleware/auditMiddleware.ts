@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import AuditLog, { AuditAction, AuditEntity } from '../models/AuditLog';
 import { AuthRequest } from '../types';
 import mongoose from 'mongoose';
+import logger from '../config/logger';
 
 /**
  * Middleware para registrar automáticamente acciones de auditoría
@@ -123,16 +124,16 @@ export const auditLog = (entity: AuditEntity, action: AuditAction) => {
                     userAgent: req.headers['user-agent'] || 'Unknown',
                   }
                 );
-                console.log(`✅ Audit log created: ${action} ${entity} ${entityId}`);
+                logger.debug('Audit log created', { action, entity, entityId: String(entityId) });
               } catch (error) {
-                console.error('❌ Error al registrar auditoría:', error);
+                logger.error('Error al registrar auditoría', { error, action, entity });
               }
             });
           } else {
-            console.warn(`⚠️  Audit log skipped: ${action} ${entity} - Missing entityId or userId`);
+            logger.warn('Audit log skipped: missing entityId or userId', { action, entity });
           }
         } catch (error) {
-          console.error('❌ Error al procesar auditoría:', error);
+          logger.error('Error al procesar auditoría', { error });
         }
       }
     };
@@ -140,14 +141,18 @@ export const auditLog = (entity: AuditEntity, action: AuditAction) => {
     // Override del método send
     res.send = function (data: any): Response {
       res.send = originalSend;
-      processAuditLog(data).catch(console.error);
+      processAuditLog(data).catch((err) =>
+        logger.error('processAuditLog (send) falló', { error: err })
+      );
       return originalSend.call(res, data);
     };
 
     // Override del método json (algunos controladores usan .json en lugar de .send)
     res.json = function (data: any): Response {
       res.json = originalJson;
-      processAuditLog(data).catch(console.error);
+      processAuditLog(data).catch((err) =>
+        logger.error('processAuditLog (json) falló', { error: err })
+      );
       return originalJson.call(res, data);
     };
 
@@ -179,7 +184,7 @@ export const logAudit = async (
       }
     );
   } catch (error) {
-    console.error('Error al registrar auditoría manual:', error);
+    logger.error('Error al registrar auditoría manual', { error });
     // No lanzar error para no interrumpir el flujo
   }
 };
@@ -232,7 +237,7 @@ export const captureBeforeState = (Model: any, paramName: string = 'id') => {
         }
       }
     } catch (error) {
-      console.error('Error al capturar estado previo:', error);
+      logger.error('Error al capturar estado previo', { error });
     }
 
     next();

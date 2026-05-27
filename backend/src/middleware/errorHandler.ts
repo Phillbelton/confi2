@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { ENV } from '../config/env';
 import { ApiResponse } from '../types';
 import logger from '../config/logger';
@@ -36,6 +37,24 @@ export const errorHandler = (
     statusCode = 400;
     const field = Object.keys((err as any).keyPattern || {})[0] || 'campo';
     message = `Ya existe un registro con ese ${field}`;
+    isOperational = true;
+  }
+
+  // Handle Mongoose ValidationError (campos inválidos en el schema)
+  if (err instanceof mongoose.Error.ValidationError) {
+    statusCode = 400;
+    const fields = Object.values(err.errors).map((e) => e.message);
+    message = fields.length > 0 ? fields.join('; ') : 'Datos inválidos';
+    isOperational = true;
+  }
+
+  // Handle Mongoose CastError (típicamente ObjectId malformado)
+  if (err instanceof mongoose.Error.CastError) {
+    statusCode = 400;
+    message =
+      err.path === '_id' || err.kind === 'ObjectId'
+        ? 'ID inválido'
+        : `Valor inválido para el campo "${err.path}"`;
     isOperational = true;
   }
 

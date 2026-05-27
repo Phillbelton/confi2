@@ -1,4 +1,5 @@
 import { IOrder } from '../models/Order';
+import logger from '../config/logger';
 
 /**
  * Service para integración con WhatsApp
@@ -177,7 +178,7 @@ export function generateOrderMessage(order: IOrder): string {
 
     return lines.join('\n');
   } catch (error) {
-    console.error('Error en generateOrderMessage:', error);
+    logger.error('Error en generateOrderMessage', { error });
     throw error;
   }
 }
@@ -214,7 +215,7 @@ export function formatProductList(order: IOrder): string {
 
     return items.join('\n');
   } catch (error) {
-    console.error('Error en formatProductList:', error);
+    logger.error('Error en formatProductList', { error });
     throw error;
   }
 }
@@ -241,7 +242,7 @@ export function generateWhatsAppURL(order: IOrder, phoneNumber: string): string 
 
     return whatsappURL;
   } catch (error) {
-    console.error('Error en generateWhatsAppURL:', error);
+    logger.error('Error en generateWhatsAppURL', { error });
     throw error;
   }
 }
@@ -303,7 +304,7 @@ export function generateOrderReceivedMessage(order: IOrder): string {
 
     return lines.join('\n');
   } catch (error) {
-    console.error('Error en generateOrderReceivedMessage:', error);
+    logger.error('Error en generateOrderReceivedMessage', { error });
     throw error;
   }
 }
@@ -363,7 +364,7 @@ export function generateConfirmationMessage(order: IOrder): string {
 
     return lines.join('\n');
   } catch (error) {
-    console.error('Error en generateConfirmationMessage:', error);
+    logger.error('Error en generateConfirmationMessage', { error });
     throw error;
   }
 }
@@ -412,7 +413,7 @@ export function generateReadyForDeliveryMessage(order: IOrder): string {
 
     return lines.join('\n');
   } catch (error) {
-    console.error('Error en generateReadyForDeliveryMessage:', error);
+    logger.error('Error en generateReadyForDeliveryMessage', { error });
     throw error;
   }
 }
@@ -461,7 +462,7 @@ export function generateOrderEditedMessage(order: IOrder): string {
 
     return lines.join('\n');
   } catch (error) {
-    console.error('Error en generateOrderEditedMessage:', error);
+    logger.error('Error en generateOrderEditedMessage', { error });
     throw error;
   }
 }
@@ -493,7 +494,7 @@ export function generateCompletedMessage(order: IOrder): string {
 
     return lines.join('\n');
   } catch (error) {
-    console.error('Error en generateCompletedMessage:', error);
+    logger.error('Error en generateCompletedMessage', { error });
     throw error;
   }
 }
@@ -528,7 +529,7 @@ export function generateCancellationMessage(order: IOrder): string {
 
     return lines.join('\n');
   } catch (error) {
-    console.error('Error en generateCancellationMessage:', error);
+    logger.error('Error en generateCancellationMessage', { error });
     throw error;
   }
 }

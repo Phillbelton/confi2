@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { UserRole } from '../types';
+import logger from '../config/logger';
 
 export interface IAddress {
   _id: mongoose.Types.ObjectId;
@@ -27,6 +28,9 @@ export interface IUser extends Document {
   // Security: Account lockout
   loginAttempts: number;
   lockUntil?: Date;
+
+  // Security: JWT versioning (ver schema más abajo)
+  tokenVersion: number;
 
   createdBy?: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
@@ -137,6 +141,16 @@ const userSchema = new Schema<IUser>(
       type: Date,
       required: false,
     },
+    // Security: JWT version. Cada JWT emitido para este usuario incluye
+    // este número. En cada request autenticado, el middleware compara
+    // contra el valor actual en DB; si difieren, el token se rechaza.
+    // Se incrementa al cambiar la password (cualquier mecanismo) y al
+    // desactivar la cuenta, invalidando inmediatamente TODAS las sesiones.
+    tokenVersion: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -223,7 +237,7 @@ userSchema.methods.incrementLoginAttempts = async function (): Promise<void> {
 
   if (this.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
     this.lockUntil = new Date(Date.now() + LOCK_TIME);
-    console.warn(`🔒 Cuenta bloqueada por intentos fallidos: ${this.email}`);
+    logger.warn('Cuenta bloqueada por intentos fallidos', { email: this.email });
   }
 
   await this.save();

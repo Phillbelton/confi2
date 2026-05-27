@@ -211,10 +211,12 @@ export const getTopProducts = asyncHandler(
       },
       {
         $group: {
-          _id: '$items.variantSnapshot.name',
+          // 'productSnapshot' es el nombre actual del campo en Order.items
+          // (antes era 'variantSnapshot' bajo el modelo legacy parent+variant).
+          _id: '$items.productSnapshot.name',
           totalSold: { $sum: '$items.quantity' },
           revenue: { $sum: '$items.subtotal' },
-          image: { $first: '$items.variantSnapshot.image' },
+          image: { $first: '$items.productSnapshot.image' },
         },
       },
       {

@@ -3,6 +3,7 @@ import path from 'path';
 import { Request } from 'express';
 import fs from 'fs';
 import { ENV } from '../config/env';
+import logger from '../config/logger';
 
 // Asegurar que el directorio de uploads existe
 const ensureUploadDirExists = () => {
@@ -20,7 +21,7 @@ const ensureUploadDirExists = () => {
   dirs.forEach((dir) => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
-      console.log(`📁 Directorio creado: ${dir}`);
+      logger.info('Directorio de uploads creado', { dir });
     }
   });
 };
@@ -148,12 +149,12 @@ export const deleteFile = (filePath: string): Promise<void> => {
       if (err) {
         // Si el archivo no existe, no es un error crítico
         if (err.code === 'ENOENT') {
-          console.warn(`⚠️  Archivo no encontrado: ${filePath}`);
+          logger.warn('Archivo no encontrado al eliminar', { filePath });
           return resolve();
         }
         return reject(err);
       }
-      console.log(`🗑️  Archivo eliminado: ${filePath}`);
+      logger.debug('Archivo eliminado', { filePath });
       resolve();
     });
   });
@@ -191,7 +192,13 @@ export const getFileUrl = (filename: string, subdir: string = 'temp', absolute: 
 };
 
 /**
- * Middleware de manejo de errores de Multer
+ * Middleware de manejo de errores de Multer.
+ *
+ * IMPORTANTE: solo intercepta errores que provienen de Multer o de su
+ * fileFilter. Cualquier otro error (p.ej. AppError(401) de `authenticate`
+ * o `authorize`) se debe pasar al error handler global con `next(err)`
+ * para que conserve su statusCode correcto. De lo contrario un cliente
+ * sin auth recibiría 400 en vez de 401 en endpoints con `uploadMultiple`.
  */
 export const handleMulterError = (err: any, req: Request, res: any, next: any) => {
   if (err instanceof multer.MulterError) {
@@ -223,13 +230,21 @@ export const handleMulterError = (err: any, req: Request, res: any, next: any) =
     });
   }
 
-  // Errores de validación (fileFilter)
-  if (err) {
+  // Errores de validación generados por fileFilter (multer los recibe
+  // como Error genérico — no MulterError — porque vienen de cb(new Error(...))).
+  // Los identificamos por contener "permitido" o "permitida" en el mensaje,
+  // que es el patrón que usa nuestro fileFilter en este mismo archivo.
+  if (err && typeof err.message === 'string' &&
+      /no permitid[ao]/i.test(err.message)) {
     return res.status(400).json({
       success: false,
-      error: err.message || 'Error al procesar el archivo',
+      error: err.message,
     });
   }
+
+  // Cualquier otro error (auth, validación Zod, app errors): delegar al
+  // error handler global para que preserve statusCode/semántica.
+  if (err) return next(err);
 
   next();
 };

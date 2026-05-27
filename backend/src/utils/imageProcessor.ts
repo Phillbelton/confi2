@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
+import logger from '../config/logger';
 
 export interface ImageProcessOptions {
   width?: number;
@@ -52,9 +53,9 @@ export async function processImage(
 
     await pipeline.toFile(outputPath);
 
-    console.log(`✅ Imagen procesada: ${path.basename(outputPath)}`);
+    logger.debug('Imagen procesada', { file: path.basename(outputPath) });
   } catch (error) {
-    console.error('❌ Error procesando imagen:', error);
+    logger.error('Error procesando imagen', { error });
     throw new Error('Error al procesar la imagen');
   }
 }
@@ -96,7 +97,7 @@ export async function processImageMultiSize(
   const defaultW = widths[Math.floor(widths.length / 2)];
   const baseFilename = `${baseName}-w${defaultW}${ext}`;
 
-  console.log(`✅ Multi-size generado: ${baseName} (${widths.join('w, ')}w)`);
+  logger.debug('Multi-size generado', { baseName, widths });
   return { baseFilename, paths };
 }
 
@@ -155,11 +156,11 @@ export async function generateImageVariants(
       fit: 'cover',
     });
 
-    console.log(`✅ Variantes generadas para: ${baseName}`);
+    logger.debug('Variantes generadas', { baseName });
 
     return variants;
   } catch (error) {
-    console.error('❌ Error generando variantes:', error);
+    logger.error('Error generando variantes', { error });
     throw new Error('Error al generar variantes de imagen');
   }
 }
@@ -177,15 +178,13 @@ export async function optimizeImage(
   quality: number = 85
 ): Promise<void> {
   try {
-    const metadata = await sharp(inputPath).metadata();
-
     await sharp(inputPath)
       .webp({ quality })
       .toFile(outputPath);
 
-    console.log(`✅ Imagen optimizada: ${path.basename(outputPath)}`);
+    logger.debug('Imagen optimizada', { file: path.basename(outputPath) });
   } catch (error) {
-    console.error('❌ Error optimizando imagen:', error);
+    logger.error('Error optimizando imagen', { error });
     throw new Error('Error al optimizar la imagen');
   }
 }
@@ -202,7 +201,7 @@ export async function getImageMetadata(
   try {
     return await sharp(imagePath).metadata();
   } catch (error) {
-    console.error('❌ Error obteniendo metadata:', error);
+    logger.error('Error obteniendo metadata', { error });
     throw new Error('Error al obtener metadata de la imagen');
   }
 }
@@ -282,10 +281,10 @@ export async function deleteImageVariants(basePath: string): Promise<void> {
     try {
       if (fs.existsSync(variant)) {
         await fs.promises.unlink(variant);
-        console.log(`🗑️  Variante eliminada: ${path.basename(variant)}`);
+        logger.debug('Variante eliminada', { file: path.basename(variant) });
       }
     } catch (error) {
-      console.error(`❌ Error eliminando ${variant}:`, error);
+      logger.error('Error eliminando variante', { variant, error });
     }
   }
 }
