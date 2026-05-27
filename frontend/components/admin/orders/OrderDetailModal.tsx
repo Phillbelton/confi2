@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Package, User, MapPin, Phone, Mail, FileText, Calendar, Edit } from 'lucide-react';
@@ -175,9 +176,11 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
                   className="flex items-center gap-3 p-3 rounded-lg border"
                 >
                   {item.productSnapshot.image && (
-                    <img
+                    <Image
                       src={getImageUrl(item.productSnapshot.image)}
                       alt={item.productSnapshot.name}
+                      width={64}
+                      height={64}
                       className="w-16 h-16 rounded-md object-cover"
                     />
                   )}

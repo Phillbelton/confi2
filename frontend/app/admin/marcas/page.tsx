@@ -127,14 +127,17 @@ export default function MarcasPage() {
                 : 'Completa los datos para crear una nueva marca'}
             </DialogDescription>
           </DialogHeader>
-          <BrandForm
-            brand={selectedBrand}
-            onSubmit={handleSubmit}
-            onUploadLogo={handleUploadLogo}
-            onCancel={handleCloseDialog}
-            isSubmitting={isCreating || isUpdating}
-            isUploadingLogo={isUploadingLogo}
-          />
+          {isDialogOpen && (
+            <BrandForm
+              key={selectedBrand?._id ?? 'new'}
+              brand={selectedBrand}
+              onSubmit={handleSubmit}
+              onUploadLogo={handleUploadLogo}
+              onCancel={handleCloseDialog}
+              isSubmitting={isCreating || isUpdating}
+              isUploadingLogo={isUploadingLogo}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

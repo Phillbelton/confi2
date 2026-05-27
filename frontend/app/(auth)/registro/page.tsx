@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -83,7 +83,7 @@ function RegisterContent() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
@@ -97,8 +97,8 @@ function RegisterContent() {
     },
   });
 
-  const password = watch('password');
-  const confirmPassword = watch('confirmPassword');
+  const password = useWatch({ control, name: 'password' });
+  const confirmPassword = useWatch({ control, name: 'confirmPassword' });
   const passwordsMatch = password && confirmPassword && password === confirmPassword ? true : undefined;
 
   // Redirigir si ya está autenticado

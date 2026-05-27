@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { use } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -76,13 +75,16 @@ export default function OrderDetailPage({
   const { data: order, isLoading, error, refetch } = useOrderDetail(orderNumber);
   const addItem = useCartStoreM((state: any) => state.addItem);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [confettiShown, setConfettiShown] = useState(false);
+  // Flag para disparar la animación de confetti una sola vez. Un ref
+  // alcanza porque no necesitamos re-renderizar al marcarlo: el effect
+  // ya se re-ejecuta cuando cambia order?.status.
+  const confettiShown = useRef(false);
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
 
   // Trigger confetti when order is completed
   useEffect(() => {
-    if (order?.status === 'completed' && !confettiShown) {
-      setConfettiShown(true);
+    if (order?.status === 'completed' && !confettiShown.current) {
+      confettiShown.current = true;
 
       // Main confetti burst
       confetti({
@@ -113,7 +115,7 @@ export default function OrderDetailPage({
         });
       }, 400);
     }
-  }, [order?.status, confettiShown]);
+  }, [order?.status]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {

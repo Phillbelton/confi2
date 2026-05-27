@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, ImagePlus, Trash2 } from 'lucide-react';
@@ -122,14 +122,9 @@ export function BannerForm({
     },
   });
 
-  useEffect(() => {
-    if (banner) {
-      setImagePreview(banner.image ? getSafeImageUrl(banner.image) : null);
-      setImageMobilePreview(
-        banner.imageMobile ? getSafeImageUrl(banner.imageMobile) : null
-      );
-    }
-  }, [banner]);
+  // Resync de previews desde props NO se necesita: el callsite (edit page)
+  // monta el form sólo cuando `banner` ya está cargado, y new-page monta sin
+  // banner. State inicializa lazy desde props arriba (líneas 101-106).
 
   const handleImageSelect =
     (variant: 'main' | 'mobile') => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +139,7 @@ export function BannerForm({
       onUploadImage(banner._id, file, variant);
     };
 
-  const watchedLinkType = form.watch('linkType') as BannerLinkType;
+  const watchedLinkType = useWatch({ control: form.control, name: 'linkType' }) as BannerLinkType;
 
   // Loaders para los pickers
   const { data: categoriesRaw } = useCategoriesFlat();

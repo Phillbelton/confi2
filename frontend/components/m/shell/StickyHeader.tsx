@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Sparkles, ShoppingBag, User } from 'lucide-react';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
@@ -15,9 +15,13 @@ export function StickyHeader() {
   const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [bump, setBump] = useState(false);
   const itemCount = useCartStoreM((s) => s.itemCount);
-  const prevCount = useRef(itemCount);
+  // Preserve original UX: badge ya cargado del carrito persistido no debe
+  // bumpear al primer paint; sí debe bumpear ante cambios reales.
+  // useState con lazy init captura el valor del primer render como una
+  // constante estable, sin necesidad de leer ref.current durante render.
+  const [initialItemCount] = useState(itemCount);
+  const shouldBump = itemCount !== initialItemCount;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -25,17 +29,6 @@ export function StickyHeader() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  useEffect(() => {
-    if (itemCount !== prevCount.current) {
-      prevCount.current = itemCount;
-      if (itemCount > 0) {
-        setBump(true);
-        const t = setTimeout(() => setBump(false), 360);
-        return () => clearTimeout(t);
-      }
-    }
-  }, [itemCount]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -119,9 +112,10 @@ export function StickyHeader() {
                 <ShoppingBag className="h-5 w-5" />
                 {itemCount > 0 && (
                   <span
+                    key={itemCount}
                     className={cn(
                       'absolute right-0.5 top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-accent px-1 text-[9px] font-bold leading-none text-accent-foreground',
-                      bump && 'stepper-bump'
+                      shouldBump && 'stepper-bump'
                     )}
                   >
                     {itemCount > 99 ? '99+' : itemCount}
@@ -193,9 +187,10 @@ export function StickyHeader() {
                 <span>Carrito</span>
                 {itemCount > 0 && (
                   <span
+                    key={itemCount}
                     className={cn(
                       'ml-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-foreground',
-                      bump && 'stepper-bump'
+                      shouldBump && 'stepper-bump'
                     )}
                   >
                     {itemCount > 99 ? '99+' : itemCount}

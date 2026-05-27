@@ -135,14 +135,17 @@ export default function ColeccionesPage() {
                 : 'Una colección agrupa productos curados (como una "categoría blanda" personalizada).'}
             </DialogDescription>
           </DialogHeader>
-          <CollectionForm
-            collection={selected}
-            onSubmit={handleSubmit}
-            onCancel={handleCloseDialog}
-            isSubmitting={isCreating || isUpdating}
-            onUploadImage={(id, file) => uploadImage({ id, file })}
-            isUploadingImage={isUploadingImage}
-          />
+          {isDialogOpen && (
+            <CollectionForm
+              key={selected?._id ?? 'new'}
+              collection={selected}
+              onSubmit={handleSubmit}
+              onCancel={handleCloseDialog}
+              isSubmitting={isCreating || isUpdating}
+              onUploadImage={(id, file) => uploadImage({ id, file })}
+              isUploadingImage={isUploadingImage}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

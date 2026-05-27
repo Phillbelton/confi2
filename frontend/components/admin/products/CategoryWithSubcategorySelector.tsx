@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronRight, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCategoriesFlat } from '@/hooks/useCategories';
-import { cn } from '@/lib/utils';
 import type { Category } from '@/types';
 
 interface Props {
@@ -18,6 +17,10 @@ interface Props {
   onChange: (ids: string[]) => void;
   disabled?: boolean;
 }
+
+// Identidad estable: evita que useMemo/useEffect detecten cambio cada render
+// cuando el fetch aún no resolvió.
+const EMPTY_CATS: Category[] = [];
 
 /**
  * Selector de categorías con 3 niveles encadenados (L1 → L2 → L3).
@@ -27,7 +30,7 @@ export function CategoryWithSubcategorySelector({
   selectedIds, onChange, disabled,
 }: Props) {
   const { data, isLoading } = useCategoriesFlat();
-  const cats: Category[] = data || [];
+  const cats: Category[] = data ?? EMPTY_CATS;
 
   const parentIdOf = (c: Category) =>
     typeof c.parent === 'string' ? c.parent : c.parent?._id;
@@ -50,9 +53,17 @@ export function CategoryWithSubcategorySelector({
     [cats, l2Id]
   );
 
-  // Reset cuando cambia padre
-  useEffect(() => { setL2Id(''); setL3Id(''); }, [l1Id]);
-  useEffect(() => { setL3Id(''); }, [l2Id]);
+  // Resetear hijos al cambiar padre se hace inline en onValueChange
+  // (eliminamos los useEffect que disparaban setState dentro del effect).
+  const handleL1Change = (v: string) => {
+    setL1Id(v);
+    setL2Id('');
+    setL3Id('');
+  };
+  const handleL2Change = (v: string) => {
+    setL2Id(v);
+    setL3Id('');
+  };
 
   const handleAdd = () => {
     // Tomar el más profundo seleccionado
@@ -115,7 +126,7 @@ export function CategoryWithSubcategorySelector({
           {/* L1 */}
           <div className="flex-1 min-w-[140px]">
             <Label className="text-[10px] uppercase">Categoría</Label>
-            <Select value={l1Id} onValueChange={setL1Id} disabled={disabled || l1.length === 0}>
+            <Select value={l1Id} onValueChange={handleL1Change} disabled={disabled || l1.length === 0}>
               <SelectTrigger><SelectValue placeholder="Seleccionar…" /></SelectTrigger>
               <SelectContent>
                 {l1.map((c) => (
@@ -130,7 +141,7 @@ export function CategoryWithSubcategorySelector({
               <ChevronRight className="h-4 w-4 text-muted-foreground self-center mt-4" />
               <div className="flex-1 min-w-[140px]">
                 <Label className="text-[10px] uppercase">Subcategoría</Label>
-                <Select value={l2Id} onValueChange={setL2Id} disabled={disabled || l2.length === 0}>
+                <Select value={l2Id} onValueChange={handleL2Change} disabled={disabled || l2.length === 0}>
                   <SelectTrigger>
                     <SelectValue placeholder={l2.length === 0 ? 'Sin subcategorías' : 'Opcional'} />
                   </SelectTrigger>

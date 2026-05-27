@@ -40,6 +40,12 @@ type StatusFilter = 'all' | 'active' | 'inactive' | 'featured' | 'no-image' | 'n
 type View = 'list' | 'grid';
 type SortKey = NonNullable<ProductQueryParams['sort']>;
 
+// Identidades estables: previenen que useMemo se invalide cada render
+// cuando los queries aún no resolvieron (data?.data ?? []) crea una
+// referencia nueva cada vez.
+const EMPTY_PRODUCTS: Product[] = [];
+const EMPTY_CATEGORIES: Category[] = [];
+
 const SORTS: { value: SortKey; label: string }[] = [
   { value: 'newest', label: 'Recientes primero' },
   { value: 'oldest', label: 'Antiguos primero' },
@@ -82,17 +88,20 @@ export default function ProductsPage() {
   const { data: brandsData } = useAdminBrands();
   const { remove, isDeleting, update } = useProductOperations();
 
-  const categories: Category[] = categoriesData ?? [];
+  const categories: Category[] = categoriesData ?? EMPTY_CATEGORIES;
 
   const brands: Brand[] = useMemo(() => {
-    const raw: any = brandsData;
+    const raw: unknown = brandsData;
     if (Array.isArray(raw)) return raw;
-    if (Array.isArray(raw?.data)) return raw.data;
-    if (Array.isArray(raw?.brands)) return raw.brands;
+    if (raw && typeof raw === 'object') {
+      const obj = raw as { data?: unknown; brands?: unknown };
+      if (Array.isArray(obj.data)) return obj.data;
+      if (Array.isArray(obj.brands)) return obj.brands;
+    }
     return [];
   }, [brandsData]);
 
-  const allProducts: Product[] = data?.data || [];
+  const allProducts: Product[] = data?.data ?? EMPTY_PRODUCTS;
   const products = useMemo(() => {
     let r = allProducts;
     if (status === 'no-image') r = r.filter((p) => !p.images?.length);

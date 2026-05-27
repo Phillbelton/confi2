@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useFuncionarioAuth } from '@/hooks/funcionario/useFuncionarioAuth';
@@ -10,12 +10,6 @@ export function FuncionarioProtectedRoute({ children }: { children: React.ReactN
   const router = useRouter();
   const { user, isLoading } = useFuncionarioAuth();
   const { setUser, _hasHydrated } = useFuncionarioStore();
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Wait for hydration to complete
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     if (user) {
@@ -25,13 +19,13 @@ export function FuncionarioProtectedRoute({ children }: { children: React.ReactN
   }, [user, setUser]);
 
   useEffect(() => {
-    if (!isLoading && !user && _hasHydrated && isMounted) {
+    if (!isLoading && !user && _hasHydrated) {
       router.push('/funcionario/login');
     }
-  }, [isLoading, user, router, _hasHydrated, isMounted]);
+  }, [isLoading, user, router, _hasHydrated]);
 
   // Show loading state during hydration or auth check
-  if (!isMounted || !_hasHydrated || isLoading) {
+  if (!_hasHydrated || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">

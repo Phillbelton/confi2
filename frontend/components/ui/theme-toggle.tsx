@@ -60,6 +60,20 @@ const themes: Record<Theme, ThemeConfig> = {
   },
 };
 
+// Pure side-effect helper: no React state, no closure deps. Lives outside
+// the component so its identity is stable across renders and it can be
+// referenced inside the mount effect without TDZ / stale-closure issues.
+function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+  root.classList.remove('dark', 'theme-clara', 'theme-suave', 'theme-viva');
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  } else {
+    root.classList.add(`theme-${theme}`);
+  }
+  localStorage.setItem('theme', theme);
+}
+
 export function ThemeToggle() {
   const [currentTheme, setCurrentTheme] = React.useState<Theme>('dark');
   const [mounted, setMounted] = React.useState(false);
@@ -72,24 +86,6 @@ export function ThemeToggle() {
     setCurrentTheme(initialTheme);
     applyTheme(initialTheme);
   }, []);
-
-  const applyTheme = (theme: Theme) => {
-    const root = document.documentElement;
-
-    // Remove all theme classes
-    root.classList.remove('dark', 'theme-clara', 'theme-suave', 'theme-viva');
-
-    // Apply new theme class
-    if (theme === 'dark') {
-      // Dark is default in :root, but we can add class for specificity
-      root.classList.add('dark');
-    } else {
-      root.classList.add(`theme-${theme}`);
-    }
-
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
-  };
 
   const handleThemeChange = (theme: Theme) => {
     setCurrentTheme(theme);

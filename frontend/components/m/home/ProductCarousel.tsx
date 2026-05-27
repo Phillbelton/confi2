@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductCardM } from '@/components/m/catalog/ProductCardM';
@@ -18,6 +18,11 @@ interface ProductCarouselProps {
  * - Mouse: drag-to-scroll desde cualquier parte de la card (incluida la
  *   imagen). Embla diferencia drag vs click sin bloquear botones.
  * - Desktop: flechas opcionales para los usuarios que prefieren clic.
+ *
+ * canPrev/canNext se derivan de embla con useSyncExternalStore (en lugar
+ * de un useState + useEffect que llamaba setState dentro del effect, lo
+ * que generaba cascading renders). Patrón canónico de React 19 para
+ * suscribirse a APIs imperativas externas.
  */
 export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -26,27 +31,34 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
     containScroll: 'trimSnaps',
     skipSnaps: true,
   });
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
 
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setCanPrev(emblaApi.canScrollPrev());
-    setCanNext(emblaApi.canScrollNext());
-  }, [emblaApi]);
+  const subscribe = useCallback(
+    (cb: () => void) => {
+      if (!emblaApi) return () => {};
+      emblaApi.on('init', cb);
+      emblaApi.on('select', cb);
+      emblaApi.on('reInit', cb);
+      emblaApi.on('scroll', cb);
+      return () => {
+        emblaApi.off('init', cb);
+        emblaApi.off('select', cb);
+        emblaApi.off('reInit', cb);
+        emblaApi.off('scroll', cb);
+      };
+    },
+    [emblaApi]
+  );
 
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
-    emblaApi.on('scroll', onSelect);
-    return () => {
-      emblaApi.off('select', onSelect);
-      emblaApi.off('reInit', onSelect);
-      emblaApi.off('scroll', onSelect);
-    };
-  }, [emblaApi, onSelect]);
+  const canPrev = useSyncExternalStore(
+    subscribe,
+    () => emblaApi?.canScrollPrev() ?? false,
+    () => false
+  );
+  const canNext = useSyncExternalStore(
+    subscribe,
+    () => emblaApi?.canScrollNext() ?? false,
+    () => false
+  );
 
   if (isLoading) {
     return (

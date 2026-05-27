@@ -21,8 +21,10 @@ import {
   RefreshCw,
   ArrowRight,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getImageUrl } from '@/lib/images';
 import { useFuncionarioOrder } from '@/hooks/funcionario/useFuncionarioOrder';
 import { useFuncionarioOrders } from '@/hooks/funcionario/useFuncionarioOrders';
 import { OrderStatusBadge } from '@/components/funcionario/orders/OrderStatusBadge';
@@ -393,11 +395,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="flex gap-3">
                       {/* Product Image */}
                       {item.productSnapshot.image && (
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
-                          <img
-                            src={item.productSnapshot.image}
+                        <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
+                          <Image
+                            src={getImageUrl(item.productSnapshot.image)}
                             alt={item.productSnapshot.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 640px) 48px, 64px"
+                            className="object-cover"
                           />
                         </div>
                       )}

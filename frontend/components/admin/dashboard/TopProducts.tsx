@@ -1,7 +1,7 @@
 'use client';
 
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import type { TopProduct } from '@/types/admin';
 import { getImageUrl } from '@/lib/images';
 
@@ -36,9 +36,11 @@ export function TopProducts({ products }: TopProductsProps) {
 
                 {/* Product Image */}
                 {product.image ? (
-                  <img
+                  <Image
                     src={getImageUrl(product.image)}
                     alt={product.name}
+                    width={40}
+                    height={40}
                     className="w-10 h-10 rounded-md object-cover"
                   />
                 ) : (

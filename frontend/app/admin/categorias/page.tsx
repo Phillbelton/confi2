@@ -160,16 +160,19 @@ export default function CategoriasPage() {
                   : 'Completa los datos para crear una nueva categoría'}
             </DialogDescription>
           </DialogHeader>
-          <CategoryForm
-            category={selectedCategory}
-            categories={categories}
-            defaultParentId={defaultParentId}
-            onSubmit={handleSubmit}
-            onUploadImage={handleUploadImage}
-            onCancel={handleCloseDialog}
-            isSubmitting={isCreating || isUpdating}
-            isUploadingImage={isUploadingImage}
-          />
+          {isDialogOpen && (
+            <CategoryForm
+              key={selectedCategory?._id ?? `new:${defaultParentId ?? 'root'}`}
+              category={selectedCategory}
+              categories={categories}
+              defaultParentId={defaultParentId}
+              onSubmit={handleSubmit}
+              onUploadImage={handleUploadImage}
+              onCancel={handleCloseDialog}
+              isSubmitting={isCreating || isUpdating}
+              isUploadingImage={isUploadingImage}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
