@@ -21,11 +21,11 @@ function resolveBannerHref(banner: Banner): string {
   if (!target || type === 'none') return '';
   switch (type) {
     case 'collection':
-      return `/m/productos?coleccion=${target}`;
+      return `/productos?coleccion=${target}`;
     case 'product':
-      return `/m/productos/${target}`;
+      return `/productos/${target}`;
     case 'category':
-      return `/m/productos?categoria=${target}`;
+      return `/productos?categoria=${target}`;
     case 'external':
       return target;
     default:

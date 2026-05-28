@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import type { Category } from '@/types';
 
 interface CategoriesDropdownProps {
-  /** Base path para los links. Default: '/productos'. Para shell /m/ pasar '/m/productos'. */
+  /** Base path para los links. Default: '/productos'. */
   basePath?: string;
   /** Si true, las URLs usan `slug` en vez de `_id`. Default: false. */
   useSlug?: boolean;

@@ -37,6 +37,9 @@ yarn-error.log*
 logs/
 *.log
 
+# Lint scratch output (output redirigido de npm run lint, no se commitea)
+lint-output*.txt
+
 # Claude Code local config (contiene rutas y settings locales)
 .claude/settings.local.json
 

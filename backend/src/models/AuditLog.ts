@@ -106,7 +106,17 @@ const auditLogSchema = new Schema<IAuditLog>(
 auditLogSchema.index({ user: 1, createdAt: -1 });
 auditLogSchema.index({ entity: 1, entityId: 1 });
 auditLogSchema.index({ action: 1 });
-auditLogSchema.index({ createdAt: -1 });
+// TTL — los audit logs se autoborran a los 180 días. La compliance estándar
+// de retención de logs operacionales para e-commerce es 90-365 días (ISO
+// 27001 sugiere ≥90); 180d es un balance entre traza forense y crecimiento
+// de la colección. Estimado: ~200-1000 logs/día → 36K-180K docs en stock
+// permanente, ~50MB max. Mantiene Atlas free tier (512MB) muy holgado.
+// Si se rota antes del schema fix, ejecutar primero `npm run migrate:indexes`
+// que dropea el índice {createdAt: -1} sin TTL que ya existía.
+auditLogSchema.index(
+  { createdAt: -1 },
+  { expireAfterSeconds: 60 * 60 * 24 * 180 }
+);
 
 // Método estático: crear log de auditoría
 auditLogSchema.statics.log = async function (

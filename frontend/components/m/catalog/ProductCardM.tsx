@@ -80,8 +80,8 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
     });
     const ctxStr = ctx.toString();
     return ctxStr
-      ? `/m/productos/${product.slug}?from=${encodeURIComponent(ctxStr)}`
-      : `/m/productos/${product.slug}`;
+      ? `/productos/${product.slug}?from=${encodeURIComponent(ctxStr)}`
+      : `/productos/${product.slug}`;
   })();
 
   const handleAdd = () => {

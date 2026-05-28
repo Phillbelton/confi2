@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface ClientUser {
-  _id: string;
+  // El backend devuelve `id` (string) en /auth/login y /auth/me — NO `_id`.
+  // Mantener este campo alineado con la respuesta real evita bugs como
+  // user._id === undefined que rompió el prefill del checkout.
+  id: string;
   name: string;
   email: string;
   phone?: string;

@@ -12,6 +12,14 @@ interface MobileShellProps {
   hideHeader?: boolean;
   hideFab?: boolean;
   hideFooter?: boolean;
+  /**
+   * Oculta la barra de navegación inferior (BottomTabBar). Usar en páginas
+   * que tienen su propia sticky CTA bar mobile (ej. /checkout) para evitar
+   * que ambas peleen por el bottom del viewport.
+   * Cuando está activo también remueve el padding bottom que reservaba el
+   * espacio para la tab bar (la página maneja su propio espaciado).
+   */
+  hideTabBar?: boolean;
 }
 
 /**
@@ -27,6 +35,7 @@ export function MobileShell({
   hideHeader,
   hideFab,
   hideFooter,
+  hideTabBar,
 }: MobileShellProps) {
   return (
     <div className="theme-catalog flex min-h-dvh flex-col overflow-x-clip bg-background">
@@ -34,7 +43,10 @@ export function MobileShell({
 
       <main
         className={cn(
-          'flex-1 pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12'
+          'flex-1',
+          hideTabBar
+            ? 'pb-0'
+            : 'pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12'
         )}
       >
         <div className="mx-auto w-full max-w-screen-md lg:max-w-[1440px]">
@@ -44,7 +56,7 @@ export function MobileShell({
       </main>
 
       {!hideFab && <CartFab />}
-      <BottomTabBar />
+      {!hideTabBar && <BottomTabBar />}
     </div>
   );
 }

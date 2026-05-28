@@ -14,6 +14,7 @@ import {
   Edit,
   Loader2,
   Calendar,
+  LogOut,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -79,7 +80,7 @@ const quickActions = [
 
 export default function ProfilePage() {
   const { user } = useClientStore();
-  const { isLoading: authLoading } = useClientAuth();
+  const { isLoading: authLoading, logout, isLoggingOut } = useClientAuth();
   const updateProfileMutation = useUpdateClientProfile();
   const { data: ordersData, isLoading: ordersLoading } = useMyOrders();
 
@@ -269,6 +270,23 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Cerrar sesión */}
+      <motion.div variants={itemVariants}>
+        <Button
+          variant="outline"
+          className="w-full h-12"
+          onClick={() => logout()}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="mr-2 h-4 w-4" />
+          )}
+          Cerrar sesión
+        </Button>
       </motion.div>
 
       {/* Dialog Editar Perfil */}

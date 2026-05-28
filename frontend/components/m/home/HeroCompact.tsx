@@ -42,7 +42,7 @@ export function HeroCompact() {
           </p>
 
           <Link
-            href="/m/productos"
+            href="/productos"
             className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-bold text-primary shadow-md hover:scale-105 active:scale-95 transition-transform lg:mt-6 lg:px-6 lg:py-3 lg:text-base"
           >
             Ver catálogo

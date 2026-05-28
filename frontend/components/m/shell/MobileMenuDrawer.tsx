@@ -29,9 +29,9 @@ import type { Category } from '@/types';
 const cleanName = (name: string) => name.replace(/^Categoria-\d+-/, '');
 
 const QUICK_LINKS = [
-  { label: 'Ofertas', href: '/m/productos?onSale=true', icon: Tag },
-  { label: 'Destacados', href: '/m/productos?featured=true', icon: Sparkles },
-  { label: 'Novedades', href: '/m/productos?sort=newest', icon: Clock },
+  { label: 'Ofertas', href: '/productos?onSale=true', icon: Tag },
+  { label: 'Destacados', href: '/productos?featured=true', icon: Sparkles },
+  { label: 'Novedades', href: '/productos?sort=newest', icon: Clock },
 ];
 
 /**
@@ -110,7 +110,7 @@ export function MobileMenuDrawer() {
           <nav className="p-2 pb-8">
             <SheetClose asChild>
               <Link
-                href="/m/productos"
+                href="/productos"
                 className="mb-1 flex items-center gap-3 rounded-xl bg-primary/10 px-3 py-3 transition-colors hover:bg-primary/20"
               >
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
@@ -140,7 +140,7 @@ export function MobileMenuDrawer() {
                       <div className="flex items-center">
                         <SheetClose asChild>
                           <Link
-                            href={`/m/productos?categoria=${cat.slug}`}
+                            href={`/productos?categoria=${cat.slug}`}
                             className="flex flex-1 items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-muted"
                           >
                             <span
@@ -186,7 +186,7 @@ export function MobileMenuDrawer() {
                           {subs.map((sub) => (
                             <SheetClose key={sub._id} asChild>
                               <Link
-                                href={`/m/productos?categoria=${cat.slug}&subcategoria=${sub.slug}`}
+                                href={`/productos?categoria=${cat.slug}&subcategoria=${sub.slug}`}
                                 className="block rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                               >
                                 {cleanName(sub.name)}

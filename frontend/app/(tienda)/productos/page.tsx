@@ -71,7 +71,7 @@ function CatalogContent() {
       if (v === undefined || v === '') params.delete(k);
       else params.set(k, v);
     }
-    router.replace(`/m/productos?${params.toString()}`);
+    router.replace(`/productos?${params.toString()}`);
   };
 
   const productQuery: ProductQueryParams = {

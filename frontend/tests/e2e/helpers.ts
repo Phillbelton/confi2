@@ -101,7 +101,50 @@ export async function clearCart(page: Page) {
 export async function clearAuth(page: Page) {
   await page.evaluate(() => {
     localStorage.removeItem('client-storage');
+    localStorage.removeItem('client-token');
+    localStorage.removeItem('admin-token');
   });
+}
+
+/**
+ * Loguea a un usuario vía API directa (sin pasar por el form de UI) e inyecta
+ * el JWT + estado del store en `localStorage` antes de cargar ninguna página.
+ * Devuelve el user para hacer asserts. Lanza si el backend responde no-200.
+ *
+ * Útil para tests que necesitan flow autenticado (mis-ordenes, perfil, etc).
+ * Requiere que el backend esté corriendo en API_URL (default localhost:5000).
+ */
+export async function loginAsClient(
+  page: Page,
+  creds: { email: string; password: string }
+) {
+  const apiUrl = process.env.API_URL || 'http://localhost:5000/api';
+  const res = await page.request.post(`${apiUrl}/auth/login`, {
+    data: creds,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  expect(res.ok(), `login API falló: ${res.status()} ${await res.text()}`).toBeTruthy();
+  const { data } = (await res.json()) as {
+    data: { token: string; user: { id: string; name: string; email: string; role: string } };
+  };
+
+  await page.addInitScript(({ token, user }) => {
+    localStorage.setItem('client-token', token);
+    localStorage.setItem(
+      'client-storage',
+      JSON.stringify({
+        state: {
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          _hasHydrated: true,
+        },
+        version: 0,
+      })
+    );
+  }, { token: data.token, user: data.user });
+
+  return data.user;
 }
 
 /**

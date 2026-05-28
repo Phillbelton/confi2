@@ -18,7 +18,7 @@ export function CollectionCard({
   className,
   variant = 'square',
 }: CollectionCardProps) {
-  const href = `/m/productos?coleccion=${collection.slug}`;
+  const href = `/productos?coleccion=${collection.slug}`;
   const gradient = collection.gradient || 'from-primary to-secondary';
   const hasImage = !!collection.image;
   const imgAttrs = hasImage ? buildSrcSet(collection.image, SIZESET.card) : null;

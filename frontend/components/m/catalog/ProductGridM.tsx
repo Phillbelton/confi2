@@ -33,7 +33,7 @@ export function ProductGridM({ products, isLoading, className }: ProductGridMPro
         emoji="🍭"
         title="No encontramos productos"
         description="Probá quitando algún filtro o cambiando lo que buscás. ¡Seguro tenemos algo dulce para vos!"
-        action={{ label: 'Ver todo el catálogo', href: '/m/productos' }}
+        action={{ label: 'Ver todo el catálogo', href: '/productos' }}
       />
     );
   }

@@ -34,7 +34,7 @@ export function StickyHeader() {
     e.preventDefault();
     const term = q.trim();
     router.push(
-      term ? `/m/productos?search=${encodeURIComponent(term)}` : '/m/productos'
+      term ? `/productos?search=${encodeURIComponent(term)}` : '/productos'
     );
   };
 
@@ -80,7 +80,7 @@ export function StickyHeader() {
             <MobileMenuDrawer />
 
             <Link
-              href="/m"
+              href="/"
               className="flex shrink-0 items-center"
               aria-label="Inicio Quelita"
             >
@@ -105,7 +105,7 @@ export function StickyHeader() {
               </Link>
 
               <Link
-                href="/m/carrito"
+                href="/carrito"
                 className="tappable relative grid h-10 w-10 place-items-center rounded-full text-white transition-colors hover:bg-white/15"
                 aria-label="Carrito"
               >
@@ -139,7 +139,7 @@ export function StickyHeader() {
         <div className="hidden lg:block">
           <div className="relative z-10 mx-auto flex w-full max-w-[1440px] items-center gap-6 px-8 py-4">
             <Link
-              href="/m"
+              href="/"
               className="flex shrink-0 items-center gap-3"
               aria-label="Inicio Quelita"
             >
@@ -156,7 +156,7 @@ export function StickyHeader() {
             </Link>
 
             {/* Selector de categorías (dropdown con mega-panel hover) */}
-            <CategoriesDropdown basePath="/m/productos" useSlug />
+            <CategoriesDropdown basePath="/productos" useSlug />
 
             {/* Search expandido */}
             <form onSubmit={onSubmit} className="flex-1 max-w-2xl">
@@ -171,15 +171,15 @@ export function StickyHeader() {
             {/* CTAs derecha: Cuenta + Carrito */}
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <Link
-                href="/m/cuenta"
+                href="/perfil"
                 className="tappable inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/25"
-                aria-label="Cuenta"
+                aria-label="Perfil"
               >
                 <User className="h-4 w-4" />
-                <span>Cuenta</span>
+                <span>Perfil</span>
               </Link>
               <Link
-                href="/m/carrito"
+                href="/carrito"
                 className="tappable relative inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/25"
                 aria-label="Carrito"
               >

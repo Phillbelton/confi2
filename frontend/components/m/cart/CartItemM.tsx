@@ -19,7 +19,7 @@ export function CartItemM({ item }: Props) {
   return (
     <div className="flex gap-3 rounded-2xl border bg-card p-3">
       <Link
-        href={`/m/productos/${item.product.slug}`}
+        href={`/productos/${item.product.slug}`}
         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted"
       >
         {item.product.images?.[0] ? (
@@ -44,7 +44,7 @@ export function CartItemM({ item }: Props) {
       </Link>
 
       <div className="flex flex-1 min-w-0 flex-col">
-        <Link href={`/m/productos/${item.product.slug}`} className="block">
+        <Link href={`/productos/${item.product.slug}`} className="block">
           <h3 className="line-clamp-2 text-sm font-semibold leading-tight">
             {item.product.name}
           </h3>

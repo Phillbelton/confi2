@@ -48,6 +48,25 @@ export function useClientLogin(redirectTo?: string) {
       setLoading(true);
     },
     onSuccess: (data) => {
+      // Solo cuentas de rol 'cliente' pueden usar el storefront. Admin y
+      // funcionario tienen sus propios portales (/admin/login, /funcionario/login)
+      // y endpoints como /api/orders/my-orders les responden 403, llevando a
+      // pantallas rotas. Acá rechazamos el login y limpiamos el token que el
+      // service ya guardó en localStorage. Espejo de useAdminAuth.useAdminLogin.
+      if (data.user.role !== 'cliente') {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('client-token');
+        }
+        setLoading(false);
+        const msg =
+          data.user.role === 'admin'
+            ? 'Esta cuenta es de administrador. Ingresá por /admin/login.'
+            : data.user.role === 'funcionario'
+              ? 'Esta cuenta es de funcionario. Ingresá por /funcionario/login.'
+              : 'Esta cuenta no tiene acceso al portal de clientes.';
+        toast.error(msg);
+        return;
+      }
       setUser(data.user);
       queryClient.setQueryData(['client-profile'], data.user);
       toast.success('¡Bienvenido de vuelta!');

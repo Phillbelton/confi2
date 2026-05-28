@@ -65,7 +65,7 @@ function CartToastMContent({
         </div>
 
         <Link
-          href="/m/carrito"
+          href="/carrito"
           onClick={() => toast.dismiss(toastId)}
           className="mt-2 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95"
         >

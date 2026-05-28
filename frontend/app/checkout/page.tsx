@@ -54,9 +54,13 @@ export default function CheckoutPage() {
   // renders" de React (set state during render con guard) — evita el
   // useEffect + setState que dispararía cascading renders.
   // https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  //
+  // Comparamos contra `user.id` (no `_id`): el backend devuelve `id` en
+  // /auth/login y /auth/me. Usar `_id` rompía la condición pero igual
+  // disparaba el prefill por accidente; ahora es explícito y correcto.
   const [prefilledForUserId, setPrefilledForUserId] = useState<string | null>(null);
-  if (isAuthenticated && user && user._id !== prefilledForUserId) {
-    setPrefilledForUserId(user._id);
+  if (isAuthenticated && user && user.id !== prefilledForUserId) {
+    setPrefilledForUserId(user.id);
     const phone = (user.phone || '').replace(/^\+56/, '');
     setFormData((prev) => ({
       ...prev,
@@ -198,11 +202,9 @@ export default function CheckoutPage() {
   // Auth Gate Component
   if (showAuthGate) {
     return (
-      <div className="min-h-screen flex flex-col">
-        
-        <main className="flex-1 theme-catalog bg-background">
-          <div className="container px-4 py-8 md:px-6">
-            <div className="max-w-md mx-auto">
+      <>
+        <div className="container px-4 py-8 md:px-6">
+          <div className="max-w-md mx-auto">
               <div className="text-center mb-8">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                   <User className="h-8 w-8 text-primary" />
@@ -284,19 +286,15 @@ export default function CheckoutPage() {
               </div>
             </div>
           </div>
-        </main>
         <Footer />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      
-
-      <main className="flex-1 theme-catalog bg-background">
-        <div className="container px-4 py-6 md:py-8 pb-28 lg:pb-8">
-          <div className="max-w-6xl mx-auto">
+    <>
+      <div className="container px-4 py-6 md:py-8 pb-28 lg:pb-8">
+        <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-6 md:mb-8">
               <h1 className="font-display text-xl md:text-3xl font-bold text-foreground mb-1">Finalizar Compra</h1>
@@ -709,7 +707,6 @@ export default function CheckoutPage() {
             </form>
           </div>
         </div>
-      </main>
 
       {/* Mobile Sticky CTA Bar */}
       <div className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -740,6 +737,6 @@ export default function CheckoutPage() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }
