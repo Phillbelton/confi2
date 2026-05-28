@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -105,7 +105,7 @@ export default function AddressesPage() {
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
@@ -120,7 +120,7 @@ export default function AddressesPage() {
     },
   });
 
-  const isDefault = watch('isDefault');
+  const isDefault = useWatch({ control, name: 'isDefault' });
 
   const openCreateDialog = () => {
     setEditingAddress(null);
@@ -190,14 +190,6 @@ export default function AddressesPage() {
     if (!address.isDefault) {
       setDefaultMutation.mutate(address._id);
     }
-  };
-
-  const getAddressIcon = (label: string) => {
-    const lowerLabel = label.toLowerCase();
-    if (lowerLabel.includes('trabajo') || lowerLabel.includes('oficina')) {
-      return Building;
-    }
-    return Home;
   };
 
   if (isLoading) {

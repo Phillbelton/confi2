@@ -26,7 +26,7 @@ test.describe('Catalog — Product Grid', () => {
   });
 
   test.skip('shows breadcrumb or back link with "Productos" context', async ({ page }) => {
-    const hasProducts = await goToCatalog(page);
+    await goToCatalog(page);
     // This should work even without products
     await expect(page.locator('text=/[Pp]roductos/')).toBeVisible();
   });
@@ -74,19 +74,19 @@ test.describe('Catalog — Desktop Filters', () => {
   test.skip(({ isMobile }) => isMobile, 'Desktop only');
 
   test.skip('filter sidebar is visible', async ({ page }) => {
-    const hasProducts = await goToCatalog(page);
+    await goToCatalog(page);
     const sidebar = page.locator('aside').first();
     await expect(sidebar).toBeVisible();
   });
 
   test.skip('price filter section exists', async ({ page }) => {
-    const hasProducts = await goToCatalog(page);
+    await goToCatalog(page);
     // Price section uses a slider — look for the slider role
     await expect(page.locator('aside').locator('span[role="slider"]').first()).toBeVisible();
   });
 
   test.skip('categories section is visible', async ({ page }) => {
-    const hasProducts = await goToCatalog(page);
+    await goToCatalog(page);
     // CollapsibleSection with title "Categorías"
     await expect(page.locator('aside').getByText('Categorías')).toBeVisible();
   });
@@ -100,14 +100,9 @@ test.describe('Catalog — Desktop Filters', () => {
     await page.locator('aside').getByText('Categorías').click();
     await page.waitForTimeout(300);
 
-    // Click the first category button inside the categories section
-    const categoryButtons = page.locator('aside').locator('button').filter({ hasText: /^(?!.*Categorías)/ });
-    // Find category buttons that appear after the Categories heading
-    const firstCategory = page.locator('aside').locator('button[class*="text-left"], button[class*="justify-between"]').filter({ hasText: /\w+/ }).first();
-
-    // Alternative: just look for clickable items after Categories is expanded
-    const catSection = page.locator('aside');
-    const allButtons = catSection.locator('button');
+    // Recorre buttons del aside (saltando headers de sección) hasta
+    // encontrar uno que sea una categoría real y la clickea.
+    const allButtons = page.locator('aside').locator('button');
     const buttonCount = await allButtons.count();
 
     // Find first category button (skip section headers)
@@ -176,7 +171,7 @@ test.describe('Catalog — Mobile Filters', () => {
   test.skip(({ isMobile }) => !isMobile, 'Mobile only');
 
   test('filter button opens sheet', async ({ page }) => {
-    const hasProducts = await goToCatalog(page);
+    await goToCatalog(page);
 
     await page.locator('button').filter({ hasText: 'Filtros' }).click();
     await page.waitForSelector('[role="dialog"]', { state: 'visible', timeout: 5000 });

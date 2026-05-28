@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -128,7 +128,10 @@ export default function UsuariosPage() {
     page,
     limit: 10,
     search: search || undefined,
-    role: roleFilter === 'staff' ? undefined : (roleFilter === 'all' ? undefined : roleFilter as any),
+    role:
+      roleFilter === 'staff' || roleFilter === 'all'
+        ? undefined
+        : (roleFilter as 'admin' | 'funcionario' | 'cliente'),
     active: activeFilter === 'all' ? undefined : activeFilter === 'active',
   };
 
@@ -167,6 +170,12 @@ export default function UsuariosPage() {
       confirmPassword: '',
     },
   });
+
+  // Subscripciones aisladas a campos controlados (Select). useWatch es
+  // compatible con React Compiler y solo re-renderiza cuando ese campo
+  // específico cambia.
+  const createRole = useWatch({ control: createForm.control, name: 'role' });
+  const editRole = useWatch({ control: editForm.control, name: 'role' });
 
   const handleCreate = (data: CreateUserForm) => {
     // Add +56 prefix to phone if provided
@@ -665,7 +674,7 @@ export default function UsuariosPage() {
             <div className="space-y-2">
               <Label htmlFor="create-role">Rol</Label>
               <Select
-                value={createForm.watch('role')}
+                value={createRole}
                 onValueChange={(value) => createForm.setValue('role', value as 'admin' | 'funcionario')}
               >
                 <SelectTrigger>
@@ -746,7 +755,7 @@ export default function UsuariosPage() {
             <div className="space-y-2">
               <Label htmlFor="edit-role">Rol</Label>
               <Select
-                value={editForm.watch('role')}
+                value={editRole}
                 onValueChange={(value) => editForm.setValue('role', value as 'admin' | 'funcionario')}
               >
                 <SelectTrigger>

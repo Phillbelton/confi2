@@ -21,8 +21,10 @@ import {
   RefreshCw,
   ArrowRight,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getImageUrl } from '@/lib/images';
 import { useFuncionarioOrder } from '@/hooks/funcionario/useFuncionarioOrder';
 import { useFuncionarioOrders } from '@/hooks/funcionario/useFuncionarioOrders';
 import { OrderStatusBadge } from '@/components/funcionario/orders/OrderStatusBadge';
@@ -36,6 +38,7 @@ import { EditShippingCost } from '@/components/funcionario/orders/EditShippingCo
 import { formatCurrency } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import type { OrderStatus, UpdateOrderStatusData, EditOrderItemsData } from '@/types/order';
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -113,7 +116,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   // Handle update status
-  const handleUpdateStatus = (data: { status: any; adminNotes?: string }) => {
+  const handleUpdateStatus = (data: UpdateOrderStatusData) => {
     updateStatus(
       { id: order._id, data },
       {
@@ -139,7 +142,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   // Handle edit order items
-  const handleEditOrderItems = (data: { items: any[]; adminNotes?: string }) => {
+  const handleEditOrderItems = (data: EditOrderItemsData) => {
     editOrderItems(
       { id: order._id, data },
       {
@@ -152,7 +155,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   // Quick status change
-  const handleQuickStatusChange = (newStatus: any) => {
+  const handleQuickStatusChange = (newStatus: OrderStatus) => {
     updateStatus(
       { id: order._id, data: { status: newStatus } },
       {
@@ -393,11 +396,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="flex gap-3">
                       {/* Product Image */}
                       {item.productSnapshot.image && (
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
-                          <img
-                            src={item.productSnapshot.image}
+                        <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
+                          <Image
+                            src={getImageUrl(item.productSnapshot.image)}
                             alt={item.productSnapshot.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 640px) 48px, 64px"
+                            className="object-cover"
                           />
                         </div>
                       )}

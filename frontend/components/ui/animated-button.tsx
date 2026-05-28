@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion, HTMLMotionProps, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import type { VariantProps } from 'class-variance-authority';
@@ -108,7 +108,6 @@ export const AnimatedButton = React.forwardRef<
     },
     ref
   ) => {
-    const [isPressed, setIsPressed] = React.useState(false);
     const [ripples, setRipples] = React.useState<
       Array<{ id: number; x: number; y: number }>
     >([]);
@@ -152,9 +151,6 @@ export const AnimatedButton = React.forwardRef<
         whileHover={{ scale: config.scale.hover }}
         whileTap={{ scale: config.scale.tap }}
         transition={config.transition}
-        onTapStart={() => setIsPressed(true)}
-        onTap={() => setIsPressed(false)}
-        onTapCancel={() => setIsPressed(false)}
       >
         <Button
           ref={ref}
@@ -298,8 +294,10 @@ AnimatedButton.displayName = 'AnimatedButton';
  * Predefined button variants with animations
  */
 
-interface AnimatedButtonVariantProps
-  extends Omit<AnimatedButtonProps, 'shimmer' | 'glow' | 'intensity'> {}
+type AnimatedButtonVariantProps = Omit<
+  AnimatedButtonProps,
+  'shimmer' | 'glow' | 'intensity'
+>;
 
 /**
  * Primary action button with shimmer effect

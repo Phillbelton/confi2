@@ -7,7 +7,7 @@ export const brandService = {
     const { data } = await api.get<ApiResponse<{ brands: Brand[] }>>('/brands');
     // Backend returns { success: true, data: { brands: [...] } }
     // We need to unwrap to return just the brands array
-    return (data.data as any)?.brands || [];
+    return data.data?.brands ?? [];
   },
 
   // Get brand by ID

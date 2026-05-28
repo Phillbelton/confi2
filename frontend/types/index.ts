@@ -301,13 +301,20 @@ export interface Cart {
 // API RESPONSE TYPES
 // ============================================================================
 
+// Forma de la paginación. El backend devuelve "total" en la mayoría de
+// endpoints y "totalItems" en algunos (auditoría). Ambos se marcan como
+// opcionales para reflejar la realidad — el consumidor usa el que aplica.
+// TODO: unificar en el backend; mientras tanto los chequeos `?? 0` cubren.
 export interface PaginationMeta {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
+  currentPage?: number;
+  page?: number;
+  totalPages?: number;
+  total?: number;
+  totalItems?: number;
+  itemsPerPage?: number;
+  limit?: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -424,12 +431,35 @@ export interface FacetEntry {
   count: number;
 }
 
+// El backend devuelve estos chips con label en algunos endpoints y name
+// en otros (legado). Ambos opcionales para tolerar la inconsistencia
+// mientras se unifica del lado del backend.
+export interface FacetLabeledEntry {
+  _id: string;
+  label?: string;
+  name?: string;
+  slug: string;
+  count: number;
+}
+
+export interface DynamicFacetAttribute {
+  key: string;
+  label: string;
+  multiSelect: boolean;
+  options: Array<{ value: string; label: string; count: number }>;
+}
+
+// Todos los campos opcionales: el backend puede omitirlos cuando el
+// catálogo viene filtrado y no quedan opciones de esa dimensión.
 export interface ProductFacets {
-  total: number;
-  subcategories: FacetEntry[];
-  brands: FacetEntry[];
-  collections: FacetEntry[];
-  promos: { onSale: number; featured: number };
+  total?: number;
+  subcategories?: FacetEntry[];
+  brands?: FacetEntry[];
+  collections?: FacetEntry[];
+  formats?: FacetLabeledEntry[];
+  flavors?: FacetLabeledEntry[];
+  attributes?: DynamicFacetAttribute[];
+  promos?: { onSale: number; featured: number };
 }
 
 export interface ProductSort {

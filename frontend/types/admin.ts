@@ -1,12 +1,23 @@
 // Admin-specific TypeScript types
 
+export interface AdminAddress {
+  _id?: string;
+  label?: string;
+  street?: string;
+  number?: string;
+  city?: string;
+  neighborhood?: string;
+  reference?: string;
+  isDefault?: boolean;
+}
+
 export interface AdminUser {
   id: string;
   name: string;
   email: string;
   role: 'admin' | 'funcionario' | 'cliente';
   phone?: string;
-  addresses?: any[];
+  addresses?: AdminAddress[];
   active?: boolean;
   createdAt?: string;
   updatedAt?: string;

@@ -13,7 +13,7 @@ export function CartFab() {
 
   return (
     <Link
-      href="/m/carrito"
+      href="/carrito"
       aria-label={`Ver carrito, ${itemCount} ${itemCount === 1 ? 'producto' : 'productos'}`}
       className={cn(
         'fixed right-4 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground',

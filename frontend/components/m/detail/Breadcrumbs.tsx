@@ -37,7 +37,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
         {/* Inicio fijo al principio */}
         <li className="snap-start">
           <Link
-            href="/m"
+            href="/"
             aria-label="Inicio"
             className="tappable inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1.5 font-semibold text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
           >

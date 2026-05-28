@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { adminApi } from '@/lib/adminApi';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -107,13 +108,9 @@ export default function ImportPage() {
       );
       setReport(res.data.data);
       setPhase('done');
-    } catch (err: any) {
+    } catch (err) {
       setPhase('error');
-      setErrorMsg(
-        err?.response?.data?.error ||
-          err?.message ||
-          'Error al procesar el archivo'
-      );
+      setErrorMsg(getApiErrorMessage(err, 'Error al procesar el archivo'));
     }
   };
 

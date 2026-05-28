@@ -251,11 +251,6 @@ export function WhatsAppHelper({
     }
   };
 
-  const currentTemplate = messageTemplates.find((t) => t.id === selectedTemplate);
-  const categoryTemplates = messageTemplates.filter(
-    (t) => !currentTemplate || t.category === currentTemplate.category
-  );
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent fullScreenMobile className="sm:max-w-[700px] sm:max-h-[90vh] flex flex-col">

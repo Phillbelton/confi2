@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Plus, Trash2, Save, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,9 +118,11 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
           {items.map((it) => (
             <div key={it.productId} className="flex items-center gap-3 p-3 rounded-md border">
               {it.image ? (
-                <img
+                <Image
                   src={getImageUrl(it.image)}
                   alt={it.name}
+                  width={48}
+                  height={48}
                   className="h-12 w-12 rounded object-cover"
                 />
               ) : (

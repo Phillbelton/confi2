@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Info } from 'lucide-react';
@@ -61,17 +61,11 @@ export function BrandForm({
       active: brand?.active ?? true,
     },
   });
+  const watchedName = useWatch({ control: form.control, name: 'name' });
 
-  // Update form when brand changes
-  useEffect(() => {
-    if (brand) {
-      form.reset({
-        name: brand.name || '',
-        active: brand.active ?? true,
-      });
-      setLogoPreview(brand.logo || null);
-    }
-  }, [brand, form]);
+  // El parent re-monta el form via key={brand?._id ?? 'new'}, así que el
+  // state se inicializa lazy desde props (líneas 51-53 + defaultValues
+  // del useForm) — no necesitamos useEffect para resincronizar.
 
   const handleSubmit = (values: BrandFormValues) => {
     onSubmit(values);
@@ -117,7 +111,7 @@ export function BrandForm({
                 <AvatarImage src={logoPreview} alt={brand?.name} />
               ) : (
                 <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                  {form.watch('name')?.charAt(0).toUpperCase() || '?'}
+                  {watchedName?.charAt(0).toUpperCase() || '?'}
                 </AvatarFallback>
               )}
             </Avatar>

@@ -18,6 +18,7 @@ import {
   usePublicFormats, useFormatOps,
   usePublicFlavors, useFlavorOps,
 } from '@/hooks/admin/useFormatsFlavors';
+import type { Format, Flavor } from '@/types';
 import { cn } from '@/lib/utils';
 
 const UNITS = ['g', 'kg', 'ml', 'l', 'cc', 'oz'] as const;
@@ -46,7 +47,7 @@ export function FormatPicker({ value, onChange, disabled }: FormatPickerProps) {
     create.mutate(
       { value: newValue, unit: newUnit, active: true },
       {
-        onSuccess: (created: any) => {
+        onSuccess: (created: Format) => {
           onChange(created._id);
           setCreating(false);
           setNewValue(0);
@@ -92,7 +93,7 @@ export function FormatPicker({ value, onChange, disabled }: FormatPickerProps) {
                   onChange={(e) => setNewValue(parseFloat(e.target.value) || 0)}
                   autoFocus
                 />
-                <Select value={newUnit} onValueChange={(v) => setNewUnit(v as any)}>
+                <Select value={newUnit} onValueChange={(v) => setNewUnit(v as typeof UNITS[number])}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
@@ -182,7 +183,7 @@ export function FlavorPicker({ value, onChange, disabled }: FlavorPickerProps) {
     create.mutate(
       { name: newName.trim(), color: newColor || undefined, active: true },
       {
-        onSuccess: (created: any) => {
+        onSuccess: (created: Flavor) => {
           onChange(created._id);
           setCreating(false);
           setNewName('');

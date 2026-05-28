@@ -8,6 +8,7 @@ import type {
   EditOrderItemsData,
 } from '@/types/order';
 import type { AdminPaginationParams } from '@/types/admin';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 interface UseOrdersParams extends AdminPaginationParams, OrderFilters {}
 
@@ -31,8 +32,8 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['funcionario-stats'] });
       toast.success('Orden confirmada exitosamente');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al confirmar la orden');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al confirmar la orden'));
     },
   });
 
@@ -46,8 +47,8 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['funcionario-stats'] });
       toast.success('Estado de orden actualizado');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar el estado');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar el estado'));
     },
   });
 
@@ -60,8 +61,8 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['funcionario-order'] });
       toast.success('WhatsApp marcado como enviado');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al marcar WhatsApp');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al marcar WhatsApp'));
     },
   });
 
@@ -75,8 +76,8 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['funcionario-stats'] });
       toast.success('Orden cancelada');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al cancelar la orden');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al cancelar la orden'));
     },
   });
 
@@ -90,8 +91,8 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['funcionario-stats'] });
       toast.success('Orden actualizada exitosamente');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar la orden');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar la orden'));
     },
   });
 
@@ -105,8 +106,8 @@ export function useFuncionarioOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['funcionario-stats'] });
       toast.success('Costo de envío actualizado');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar el costo de envío');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar el costo de envío'));
     },
   });
 

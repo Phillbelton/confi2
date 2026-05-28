@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, ImagePlus, Trash2 } from 'lucide-react';
+import { Loader2, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -25,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { useCategoriesFlat } from '@/hooks/useCategories';
 import { api } from '@/lib/axios';
@@ -80,9 +78,25 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Forma del payload que emitimos hacia onSubmit (no es FormValues directo:
+// reagrupamos linkType + linkTarget en `link: { type, target }` antes
+// de salir; ver handleSubmit más abajo).
+export interface BannerFormSubmitData {
+  placement: BannerPlacement;
+  order: number;
+  size: BannerSize;
+  title?: string;
+  subtitle?: string;
+  ctaText?: string;
+  link: { type: BannerLinkType; target?: string };
+  active?: boolean;
+  startDate?: string;
+  endDate?: string;
+}
+
 interface BannerFormProps {
   banner?: Banner;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: BannerFormSubmitData) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
   onUploadImage?: (id: string, file: File, variant: 'main' | 'mobile') => void;
@@ -122,14 +136,9 @@ export function BannerForm({
     },
   });
 
-  useEffect(() => {
-    if (banner) {
-      setImagePreview(banner.image ? getSafeImageUrl(banner.image) : null);
-      setImageMobilePreview(
-        banner.imageMobile ? getSafeImageUrl(banner.imageMobile) : null
-      );
-    }
-  }, [banner]);
+  // Resync de previews desde props NO se necesita: el callsite (edit page)
+  // monta el form sólo cuando `banner` ya está cargado, y new-page monta sin
+  // banner. State inicializa lazy desde props arriba (líneas 101-106).
 
   const handleImageSelect =
     (variant: 'main' | 'mobile') => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +153,7 @@ export function BannerForm({
       onUploadImage(banner._id, file, variant);
     };
 
-  const watchedLinkType = form.watch('linkType') as BannerLinkType;
+  const watchedLinkType = useWatch({ control: form.control, name: 'linkType' }) as BannerLinkType;
 
   // Loaders para los pickers
   const { data: categoriesRaw } = useCategoriesFlat();
@@ -175,15 +184,17 @@ export function BannerForm({
   });
 
   const handleSubmit = (values: FormValues) => {
-    const payload = {
-      placement: values.placement,
+    // values.placement/size/linkType vienen del Select y zod los valida
+    // como string; en runtime sólo pueden ser los literales soportados.
+    const payload: BannerFormSubmitData = {
+      placement: values.placement as BannerPlacement,
       order: values.order,
-      size: values.size,
+      size: values.size as BannerSize,
       title: values.title || undefined,
       subtitle: values.subtitle || undefined,
       ctaText: values.ctaText || undefined,
       link: {
-        type: values.linkType,
+        type: values.linkType as BannerLinkType,
         target: values.linkTarget || undefined,
       },
       active: values.active ?? true,

@@ -29,7 +29,7 @@ clientApi.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle 401
+// Response interceptor - handle 401 (no auth) and 403 (rol incorrecto)
 clientApi.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -44,6 +44,18 @@ clientApi.interceptors.response.use(
         // Redirect to client login
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
+        }
+      }
+
+      // 403 desde un endpoint cliente típicamente significa que el JWT pertenece
+      // a un admin/funcionario que se coló por /login. La capa 2 (layout) ya lo
+      // detecta vía user.role, pero esto es backup por si un componente fetcheá
+      // antes de que el layout monte. Limpia y patea con flag para mostrar banner.
+      if (status === 403 && typeof window !== 'undefined') {
+        localStorage.removeItem('client-token');
+        localStorage.removeItem('client-storage');
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login?error=role';
         }
       }
 

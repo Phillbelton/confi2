@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -72,10 +73,11 @@ export default function RestablecerContrasenaPage() {
       setTimeout(() => {
         router.push('/login');
       }, 3000);
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        'El enlace es inválido o ha expirado. Solicita uno nuevo.';
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(
+        error,
+        'El enlace es inválido o ha expirado. Solicita uno nuevo.'
+      );
       setError(errorMessage);
       toast({
         title: 'Error',

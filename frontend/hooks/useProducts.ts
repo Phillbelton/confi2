@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { productService, type ProductQueryParams } from '@/services/products';
+import { productService, type ProductQueryParams, type FacetsQueryParams } from '@/services/products';
 
 export function useProducts(params?: ProductQueryParams) {
   return useQuery({
@@ -33,7 +33,7 @@ export function useProductBySlug(slug: string) {
   });
 }
 
-export function useFacets(params?: any) {
+export function useFacets(params?: FacetsQueryParams) {
   return useQuery({
     queryKey: ['facets', params],
     queryFn: () => productService.getFacets(params),

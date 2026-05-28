@@ -1,5 +1,11 @@
 import { Page } from '@playwright/test';
 
+// Nota: los tipos para APIs imperativas del navegador (LayoutShift,
+// performance.memory, window.__perf) se declaran INLINE dentro de los
+// callbacks de page.evaluate / page.addInitScript porque esos callbacks
+// corren en el contexto del browser, no en Node, y los tipos definidos
+// acá afuera no se pueden importar al closure serializado.
+
 /**
  * Web Vitals metrics collected via PerformanceObserver
  */
@@ -48,17 +54,18 @@ export async function collectWebVitals(
 ): Promise<WebVitals> {
   // Setup performance collection BEFORE navigation
   await page.addInitScript(() => {
-    (window as any).__perf = {
-      fcp: null,
-      lcp: null,
-      cls: 0,
-    };
+    // Declarar el buffer dentro del initScript (corre en browser, no en
+    // Node) — la inyección al window se hace con un cast localizado en
+    // vez del any global.
+    interface LayoutShiftLike { value: number; hadRecentInput: boolean }
+    const buffer = { fcp: null as number | null, lcp: null as number | null, cls: 0 };
+    (window as unknown as { __perf: typeof buffer }).__perf = buffer;
 
     // FCP
     const fcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const fcp = entries.find((e) => e.name === 'first-contentful-paint');
-      if (fcp) (window as any).__perf.fcp = fcp.startTime;
+      if (fcp) buffer.fcp = fcp.startTime;
     });
     fcpObserver.observe({ type: 'paint', buffered: true });
 
@@ -66,16 +73,16 @@ export async function collectWebVitals(
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       if (entries.length > 0) {
-        (window as any).__perf.lcp = entries[entries.length - 1].startTime;
+        buffer.lcp = entries[entries.length - 1].startTime;
       }
     });
     lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
 
-    // CLS
+    // CLS — LayoutShift no está en lib.dom de TS, narrows con type local.
     const clsObserver = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          (window as any).__perf.cls += (entry as any).value;
+      for (const entry of list.getEntries() as unknown as LayoutShiftLike[]) {
+        if (!entry.hadRecentInput) {
+          buffer.cls += entry.value;
         }
       }
     });
@@ -83,7 +90,7 @@ export async function collectWebVitals(
   });
 
   // Navigate
-  const response = await page.goto(url, { waitUntil: 'load' });
+  await page.goto(url, { waitUntil: 'load' });
 
   // Wait for specific content if needed
   if (options?.waitForSelector) {
@@ -95,8 +102,11 @@ export async function collectWebVitals(
 
   // Collect all metrics
   const metrics = await page.evaluate(() => {
-    const perf = (window as any).__perf;
+    interface PerfBuffer { fcp: number | null; lcp: number | null; cls: number }
+    interface MemoryInfo { usedJSHeapSize: number }
+    const perf = (window as unknown as { __perf: PerfBuffer }).__perf;
     const navEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    const memory = (performance as Performance & { memory?: MemoryInfo }).memory;
 
     return {
       fcp: perf.fcp,
@@ -106,8 +116,8 @@ export async function collectWebVitals(
       domContentLoaded: navEntry ? navEntry.domContentLoadedEventEnd - navEntry.startTime : 0,
       load: navEntry ? navEntry.loadEventEnd - navEntry.startTime : 0,
       domNodes: document.querySelectorAll('*').length,
-      jsHeapMB: (performance as any).memory
-        ? Math.round(((performance as any).memory.usedJSHeapSize / 1024 / 1024) * 10) / 10
+      jsHeapMB: memory
+        ? Math.round((memory.usedJSHeapSize / 1024 / 1024) * 10) / 10
         : null,
     };
   });

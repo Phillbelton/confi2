@@ -1,10 +1,23 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import dynamic from 'next/dynamic';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+
+// Devtools are dev-only AND client-only: dynamic with ssr:false avoids
+// shipping them in prod bundles and avoids hydration mismatch.
+const ReactQueryDevtools =
+  process.env.NODE_ENV === 'development'
+    ? dynamic(
+        () =>
+          import('@tanstack/react-query-devtools').then(
+            (m) => m.ReactQueryDevtools
+          ),
+        { ssr: false }
+      )
+    : null;
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -21,19 +34,12 @@ export function Providers({ children }: { children: ReactNode }) {
       })
   );
 
-  const [showDevtools, setShowDevtools] = useState(false);
-
-  useEffect(() => {
-    // Only show devtools after client-side hydration
-    setShowDevtools(process.env.NODE_ENV === 'development');
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         {children}
         <Toaster />
-        {showDevtools && <ReactQueryDevtools initialIsOpen={false} />}
+        {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} />}
       </ThemeProvider>
     </QueryClientProvider>
   );

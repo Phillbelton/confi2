@@ -12,7 +12,7 @@
 export function normalizeVariantValue(input: string): string {
   if (!input || typeof input !== 'string') return input;
 
-  let value = input.trim().toLowerCase();
+  const value = input.trim().toLowerCase();
 
   // Mapeo de unidades comunes a sus formas normalizadas
   const unitReplacements: Record<string, string> = {

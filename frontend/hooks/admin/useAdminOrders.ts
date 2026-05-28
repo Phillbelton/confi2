@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { adminOrdersService } from '@/services/admin/orders';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type {
   OrderFilters,
   UpdateOrderStatusData,
@@ -31,8 +32,8 @@ export function useAdminOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
       toast.success('Estado de orden actualizado');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar el estado');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar el estado'));
     },
   });
 
@@ -44,8 +45,8 @@ export function useAdminOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['admin-order'] });
       toast.success('WhatsApp marcado como enviado');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al marcar WhatsApp');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al marcar WhatsApp'));
     },
   });
 
@@ -59,8 +60,8 @@ export function useAdminOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
       toast.success('Orden cancelada');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al cancelar la orden');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al cancelar la orden'));
     },
   });
 
@@ -74,8 +75,8 @@ export function useAdminOrders(params: UseOrdersParams) {
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
       toast.success('Orden actualizada exitosamente');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar la orden');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar la orden'));
     },
   });
 
@@ -97,8 +98,6 @@ export function useAdminOrders(params: UseOrdersParams) {
 }
 
 export function useAdminOrder(id: string) {
-  const queryClient = useQueryClient();
-
   const orderQuery = useQuery({
     queryKey: ['admin-order', id],
     queryFn: () => adminOrdersService.getOrderById(id),

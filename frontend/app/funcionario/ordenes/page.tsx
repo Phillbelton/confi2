@@ -30,7 +30,7 @@ export default function OrdenesPage() {
 
   // Build params based on active tab and filters
   const getParams = () => {
-    const params: any = {
+    const params: Record<string, string | number | undefined> = {
       page,
       limit: 10,
     };
@@ -58,10 +58,10 @@ export default function OrdenesPage() {
     return params;
   };
 
-  const { orders, pagination, isLoading, markWhatsAppSent, isMarkingWhatsApp, refetch } =
+  const { orders, pagination, isLoading, markWhatsAppSent, refetch } =
     useFuncionarioOrders(getParams());
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1); // Reset to first page when filters change
   };

@@ -14,6 +14,7 @@ import {
 import { BrandsTable } from '@/components/admin/brands/BrandsTable';
 import { BrandForm } from '@/components/admin/brands/BrandForm';
 import { useAdminBrands, useBrandOperations } from '@/hooks/admin/useAdminBrands';
+import type { CreateBrandInput, UpdateBrandInput } from '@/services/admin/brands';
 import type { Brand } from '@/types';
 
 export default function MarcasPage() {
@@ -36,11 +37,11 @@ export default function MarcasPage() {
     setSelectedBrand(undefined);
   };
 
-  const handleSubmit = (formData: any) => {
+  const handleSubmit = (formData: CreateBrandInput) => {
     if (selectedBrand) {
       // Update existing brand
       update(
-        { id: selectedBrand._id, data: formData },
+        { id: selectedBrand._id, data: formData as UpdateBrandInput },
         {
           onSuccess: () => {
             handleCloseDialog();
@@ -127,14 +128,17 @@ export default function MarcasPage() {
                 : 'Completa los datos para crear una nueva marca'}
             </DialogDescription>
           </DialogHeader>
-          <BrandForm
-            brand={selectedBrand}
-            onSubmit={handleSubmit}
-            onUploadLogo={handleUploadLogo}
-            onCancel={handleCloseDialog}
-            isSubmitting={isCreating || isUpdating}
-            isUploadingLogo={isUploadingLogo}
-          />
+          {isDialogOpen && (
+            <BrandForm
+              key={selectedBrand?._id ?? 'new'}
+              brand={selectedBrand}
+              onSubmit={handleSubmit}
+              onUploadLogo={handleUploadLogo}
+              onCancel={handleCloseDialog}
+              isSubmitting={isCreating || isUpdating}
+              isUploadingLogo={isUploadingLogo}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

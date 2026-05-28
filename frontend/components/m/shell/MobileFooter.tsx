@@ -24,10 +24,10 @@ const TRUST_BADGES = [
 
 const LINKS = {
   comprar: [
-    { label: 'Catálogo completo', href: '/m/productos' },
-    { label: 'Ofertas', href: '/m/productos?onSale=true' },
-    { label: 'Destacados', href: '/m/productos?featured=true' },
-    { label: 'Novedades', href: '/m/productos?sort=newest' },
+    { label: 'Catálogo completo', href: '/productos' },
+    { label: 'Ofertas', href: '/productos?onSale=true' },
+    { label: 'Destacados', href: '/productos?featured=true' },
+    { label: 'Novedades', href: '/productos?sort=newest' },
   ],
   ayuda: [
     { label: 'Cómo comprar', href: '/ayuda/como-comprar' },

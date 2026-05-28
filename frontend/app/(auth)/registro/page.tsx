@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -83,8 +83,7 @@ function RegisterContent() {
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
+    control,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -97,8 +96,8 @@ function RegisterContent() {
     },
   });
 
-  const password = watch('password');
-  const confirmPassword = watch('confirmPassword');
+  const password = useWatch({ control, name: 'password' });
+  const confirmPassword = useWatch({ control, name: 'confirmPassword' });
   const passwordsMatch = password && confirmPassword && password === confirmPassword ? true : undefined;
 
   // Redirigir si ya está autenticado
@@ -109,8 +108,8 @@ function RegisterContent() {
   }, [_hasHydrated, isAuthenticated, router]);
 
   const onSubmit = async (data: RegisterFormData) => {
-    const { confirmPassword, ...registerData } = data;
-    // Prepend +56 and remove spaces from phone
+    // Excluir confirmPassword (Zod ya validó que coincide) y normalizar phone.
+    const { confirmPassword: _confirmPassword, ...registerData } = data;
     const phoneClean = registerData.phone.replace(/\s/g, '');
     registerMutation.mutate({
       ...registerData,

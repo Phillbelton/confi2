@@ -300,7 +300,11 @@ const orderSchema = new Schema<IOrder>(
 
 // Índices
 orderSchema.index({ 'customer.email': 1 });
-orderSchema.index({ 'customer.user': 1 });
+// `GET /api/orders/my-orders` filtra por customer.user y ordena por
+// createdAt DESC. Compuesto con el campo de sort al final → el explain()
+// elige IXSCAN puro sin etapa SORT. Reemplaza al simple {customer.user: 1}
+// que forzaba sort in-memory (33MB de límite, peligroso con power users).
+orderSchema.index({ 'customer.user': 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ 'customer.user': 1, status: 1 });

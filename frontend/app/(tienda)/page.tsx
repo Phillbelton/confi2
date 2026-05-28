@@ -8,7 +8,7 @@ import { ProductCardM } from '@/components/m/catalog/ProductCardM';
 import { useFeaturedProducts, useProducts } from '@/hooks/useProducts';
 import type { Product } from '@/types';
 
-export default function MHomePage() {
+export default function HomePage() {
   const { data: featuredData, isLoading: featuredLoading } = useFeaturedProducts();
   const featured: Product[] = (featuredData?.data as Product[] | undefined) || [];
 
@@ -38,7 +38,7 @@ export default function MHomePage() {
       <SectionHeader
         title="Destacados"
         emoji="⭐"
-        href="/m/productos?featured=true"
+        href="/productos?featured=true"
       />
       <ProductCarousel products={featured} isLoading={featuredLoading} />
 
@@ -47,7 +47,7 @@ export default function MHomePage() {
       <SectionHeader
         title="Ofertas"
         emoji="🔥"
-        href="/m/productos?onSale=true"
+        href="/productos?onSale=true"
       />
       <ProductCarousel products={onSale} isLoading={onSaleLoading} />
 
@@ -69,7 +69,7 @@ export default function MHomePage() {
         title="Novedades"
         subtitle="Recién llegados al catálogo"
         emoji="✨"
-        href="/m/productos?sort=newest"
+        href="/productos?sort=newest"
       />
       <ProductCarousel products={newest} isLoading={newestLoading} />
 
@@ -79,7 +79,7 @@ export default function MHomePage() {
       <SectionHeader
         title="Más vendidos"
         emoji="🏆"
-        href="/m/productos?sort=popular"
+        href="/productos?sort=popular"
       />
       <div className="grid grid-cols-2 gap-3 px-4 pb-6 lg:grid-cols-4 lg:gap-4 lg:px-8 lg:pb-12 xl:grid-cols-5">
         {bestLoading

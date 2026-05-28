@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useState, useMemo } from 'react';
 import {
   Plus, Search, Trash2, Loader2, Upload, Edit, Eye, EyeOff,
-  Grid3x3, List, ImageOff, Tag as TagIcon, Filter, X, Star,
+  Grid3x3, List, ImageOff, Filter, X, Star,
   AlertTriangle, ArrowUpDown, FolderTree, BadgeCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,12 @@ import type { ProductQueryParams } from '@/services/products';
 type StatusFilter = 'all' | 'active' | 'inactive' | 'featured' | 'no-image' | 'no-format';
 type View = 'list' | 'grid';
 type SortKey = NonNullable<ProductQueryParams['sort']>;
+
+// Identidades estables: previenen que useMemo se invalide cada render
+// cuando los queries aún no resolvieron (data?.data ?? []) crea una
+// referencia nueva cada vez.
+const EMPTY_PRODUCTS: Product[] = [];
+const EMPTY_CATEGORIES: Category[] = [];
 
 const SORTS: { value: SortKey; label: string }[] = [
   { value: 'newest', label: 'Recientes primero' },
@@ -82,17 +88,20 @@ export default function ProductsPage() {
   const { data: brandsData } = useAdminBrands();
   const { remove, isDeleting, update } = useProductOperations();
 
-  const categories: Category[] = categoriesData ?? [];
+  const categories: Category[] = categoriesData ?? EMPTY_CATEGORIES;
 
   const brands: Brand[] = useMemo(() => {
-    const raw: any = brandsData;
+    const raw: unknown = brandsData;
     if (Array.isArray(raw)) return raw;
-    if (Array.isArray(raw?.data)) return raw.data;
-    if (Array.isArray(raw?.brands)) return raw.brands;
+    if (raw && typeof raw === 'object') {
+      const obj = raw as { data?: unknown; brands?: unknown };
+      if (Array.isArray(obj.data)) return obj.data;
+      if (Array.isArray(obj.brands)) return obj.brands;
+    }
     return [];
   }, [brandsData]);
 
-  const allProducts: Product[] = data?.data || [];
+  const allProducts: Product[] = data?.data ?? EMPTY_PRODUCTS;
   const products = useMemo(() => {
     let r = allProducts;
     if (status === 'no-image') r = r.filter((p) => !p.images?.length);
@@ -334,7 +343,7 @@ export default function ProductsPage() {
               </TableHeader>
               <TableBody>
                 {products.map((p) => {
-                  const brandName = typeof p.brand === 'object' ? (p.brand as any)?.name : '';
+                  const brandName = typeof p.brand === 'object' && p.brand ? (p.brand as Brand).name : '';
                   const isPriceEditing = editingPrice?.id === p._id;
                   const issues = collectIssues(p);
                   return (
@@ -577,7 +586,7 @@ function collectIssues(p: Product): string[] {
   if (!p.images || p.images.length === 0) issues.push('Sin imagen');
   if (!p.brand) issues.push('Sin marca');
   if (!p.format) issues.push('Sin formato');
-  if (!p.categories || (p.categories as any[]).length === 0) issues.push('Sin categoría');
+  if (!p.categories || (p.categories as unknown[]).length === 0) issues.push('Sin categoría');
   return issues;
 }
 

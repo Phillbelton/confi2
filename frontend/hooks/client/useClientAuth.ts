@@ -4,8 +4,9 @@ import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useClientStore, type ClientUser } from '@/store/useClientStore';
+import { useClientStore } from '@/store/useClientStore';
 import { clientAuthService, type LoginCredentials, type RegisterData, type UpdateProfileData } from '@/services/client/auth';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 /**
  * Hook para verificar y obtener el perfil del cliente
@@ -47,14 +48,33 @@ export function useClientLogin(redirectTo?: string) {
       setLoading(true);
     },
     onSuccess: (data) => {
+      // Solo cuentas de rol 'cliente' pueden usar el storefront. Admin y
+      // funcionario tienen sus propios portales (/admin/login, /funcionario/login)
+      // y endpoints como /api/orders/my-orders les responden 403, llevando a
+      // pantallas rotas. Acá rechazamos el login y limpiamos el token que el
+      // service ya guardó en localStorage. Espejo de useAdminAuth.useAdminLogin.
+      if (data.user.role !== 'cliente') {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('client-token');
+        }
+        setLoading(false);
+        const msg =
+          data.user.role === 'admin'
+            ? 'Esta cuenta es de administrador. Ingresá por /admin/login.'
+            : data.user.role === 'funcionario'
+              ? 'Esta cuenta es de funcionario. Ingresá por /funcionario/login.'
+              : 'Esta cuenta no tiene acceso al portal de clientes.';
+        toast.error(msg);
+        return;
+      }
       setUser(data.user);
       queryClient.setQueryData(['client-profile'], data.user);
       toast.success('¡Bienvenido de vuelta!');
       router.push(redirectTo || '/perfil');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setLoading(false);
-      toast.error(error.message || 'Error al iniciar sesión');
+      toast.error(getApiErrorMessage(error, 'Error al iniciar sesión'));
     },
     onSettled: () => {
       setLoading(false);
@@ -82,9 +102,9 @@ export function useClientRegister(redirectTo?: string) {
       toast.success('¡Cuenta creada exitosamente!');
       router.push(redirectTo || '/perfil');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setLoading(false);
-      toast.error(error.message || 'Error al crear cuenta');
+      toast.error(getApiErrorMessage(error, 'Error al crear cuenta'));
     },
     onSettled: () => {
       setLoading(false);
@@ -138,8 +158,8 @@ export function useUpdateClientProfile() {
       queryClient.setQueryData(['client-profile'], updatedUser);
       toast.success('Perfil actualizado');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar perfil');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar perfil'));
     },
   });
 }
@@ -154,8 +174,8 @@ export function useChangePassword() {
     onSuccess: () => {
       toast.success('Contraseña actualizada');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al cambiar contraseña');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al cambiar contraseña'));
     },
   });
 }
@@ -170,9 +190,7 @@ export function useClientAuth() {
     isAuthenticated,
     isLoading,
     _hasHydrated,
-    setUser,
     setLoading,
-    logout: storeLogout,
   } = useClientStore();
 
   const { refetch: refetchProfile, isLoading: isProfileLoading } = useClientProfile();

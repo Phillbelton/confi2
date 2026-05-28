@@ -60,7 +60,7 @@ export default function BannersAdminPage() {
         <span className="text-sm font-medium">Filtrar:</span>
         <Select
           value={placementFilter}
-          onValueChange={(v) => setPlacementFilter(v as any)}
+          onValueChange={(v) => setPlacementFilter(v as BannerPlacement | 'all')}
         >
           <SelectTrigger className="w-[280px]">
             <SelectValue />

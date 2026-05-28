@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import NextImage from 'next/image';
 import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -149,10 +150,12 @@ export function ImageUploader({
                   key={imageUrl}
                   className="relative group aspect-square rounded-lg border overflow-hidden bg-muted"
                 >
-                  <img
+                  <NextImage
                     src={getImageUrl(imageUrl)}
                     alt={`Producto ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="object-cover"
                   />
 
                   {/* Primary Badge */}

@@ -231,8 +231,10 @@ function SortableTableRow({
     zIndex: isDragging ? 10 : 'auto',
   };
 
+  // El backend incluye un contador denormalizado opcional para evitar
+   // recorrer el array; si no llega, contamos los products embebidos.
   const productCount =
-    (c as any).productCount ??
+    (c as Collection & { productCount?: number }).productCount ??
     (Array.isArray(c.products) ? c.products.length : 0);
 
   return (
@@ -355,8 +357,10 @@ function SortableMobileCard({
     zIndex: isDragging ? 10 : 'auto',
   };
 
+  // El backend incluye un contador denormalizado opcional para evitar
+   // recorrer el array; si no llega, contamos los products embebidos.
   const productCount =
-    (c as any).productCount ??
+    (c as Collection & { productCount?: number }).productCount ??
     (Array.isArray(c.products) ? c.products.length : 0);
 
   return (

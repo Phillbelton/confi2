@@ -18,20 +18,25 @@ export interface CreateBannerInput {
 
 export type UpdateBannerInput = Partial<CreateBannerInput>;
 
+interface BannerImagePayload {
+  image?: string;
+  imageMobile?: string;
+}
+
 export const adminBannerService = {
-  async getAll(placement?: BannerPlacement) {
+  async getAll(placement?: BannerPlacement): Promise<Banner[]> {
     const { data } = await adminApi.get<ApiResponse<{ banners: Banner[] }>>(
       '/banners',
       { params: placement ? { placement } : {} }
     );
-    return (data.data as any)?.banners || [];
+    return data.data?.banners ?? [];
   },
 
   async getById(id: string): Promise<Banner> {
     const { data } = await adminApi.get<ApiResponse<{ banner: Banner }>>(
       `/banners/${id}`
     );
-    return (data.data as any).banner;
+    return data.data.banner;
   },
 
   async create(payload: CreateBannerInput): Promise<Banner> {
@@ -39,7 +44,7 @@ export const adminBannerService = {
       '/banners',
       payload
     );
-    return (data.data as any).banner;
+    return data.data.banner;
   },
 
   async update(id: string, payload: UpdateBannerInput): Promise<Banner> {
@@ -47,7 +52,7 @@ export const adminBannerService = {
       `/banners/${id}`,
       payload
     );
-    return (data.data as any).banner;
+    return data.data.banner;
   },
 
   async remove(id: string): Promise<void> {
@@ -63,15 +68,15 @@ export const adminBannerService = {
     id: string,
     file: File,
     variant: 'main' | 'mobile' = 'main'
-  ): Promise<{ image?: string; imageMobile?: string }> {
+  ): Promise<BannerImagePayload> {
     const fd = new FormData();
     fd.append('image', file);
-    const { data } = await adminApi.post<ApiResponse<any>>(
+    const { data } = await adminApi.post<ApiResponse<BannerImagePayload>>(
       `/banners/${id}/image?variant=${variant}`,
       fd,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
-    return (data.data as any) || {};
+    return data.data ?? {};
   },
 };
 

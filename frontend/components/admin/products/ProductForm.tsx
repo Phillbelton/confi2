@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useMemo } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Box, Loader2, Package, PackageOpen, Plus, Save, Trash2, Hash,
+  ArrowLeft, Box, Loader2, PackageOpen, Plus, Save, Trash2, Hash,
   Sparkles, TrendingDown, ScanLine,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -113,39 +114,40 @@ export function ProductForm({
     },
   });
 
-  const watch = form.watch();
+  // useWatch (compatible con React Compiler) en lugar de form.watch() que
+  // rompía la memoización. Sin `name`, devuelve el objeto completo de
+  // valores del form — drop-in replacement para `form.watch()`.
+  //
+  // Cast a ProductFormValues: el tipo de useWatch es DeepPartial<T> porque
+  // RHF no puede saber estáticamente si los defaults están seteados. En
+  // este form todos los defaultValues están definidos en useForm() arriba,
+  // así que en runtime todos los campos están presentes desde el primer
+  // render — el cast es seguro.
+  const watch = useWatch({ control: form.control }) as ProductFormValues;
   const selectedCategories = watch.categories || [];
 
-  // Cargar attributes efectivos cuando cambian las categorías seleccionadas
-  const [effectiveAttributes, setEffectiveAttributes] = useState<FacetableAttribute[]>([]);
-  useEffect(() => {
-    if (!selectedCategories || selectedCategories.length === 0) {
-      setEffectiveAttributes([]);
-      return;
-    }
-    let cancelled = false;
-    Promise.all(
-      selectedCategories.map((id) => categoryService.getFacetableAttributes(id))
-    )
-      .then((results) => {
-        if (cancelled) return;
-        const dedup = new Map<string, FacetableAttribute>();
-        for (const list of results) {
-          for (const attr of list) {
-            if (!dedup.has(attr.key)) dedup.set(attr.key, attr);
-          }
+  // Attributes efectivos según las categorías seleccionadas. useQuery
+  // reemplaza un useEffect + useState + cleanup manual: maneja
+  // cancelación, caché, dedup de requests en vuelo y errores sin tocar
+  // estado dentro del effect (lo que provocaba set-state-in-effect).
+  const selectedCategoriesKey = selectedCategories.join(',');
+  const { data: effectiveAttributes = [] } = useQuery<FacetableAttribute[]>({
+    queryKey: ['admin-facetable-attributes', selectedCategoriesKey],
+    queryFn: async () => {
+      if (selectedCategories.length === 0) return [];
+      const results = await Promise.all(
+        selectedCategories.map((id) => categoryService.getFacetableAttributes(id))
+      );
+      const dedup = new Map<string, FacetableAttribute>();
+      for (const list of results) {
+        for (const attr of list) {
+          if (!dedup.has(attr.key)) dedup.set(attr.key, attr);
         }
-        setEffectiveAttributes(
-          Array.from(dedup.values()).sort((a, b) => a.order - b.order)
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setEffectiveAttributes([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedCategories.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+      }
+      return Array.from(dedup.values()).sort((a, b) => a.order - b.order);
+    },
+    placeholderData: (prev) => prev,
+  });
   const tiers = watch.tiers || [];
 
   // Vista previa: construye datos para el LivePreview
@@ -167,8 +169,12 @@ export function ProductForm({
     form.setValue('tiers', [...tiers, next]);
   };
   const removeTier = (i: number) => form.setValue('tiers', tiers.filter((_, n) => n !== i));
-  const updateTier = (i: number, key: keyof typeof tiers[0], val: any) =>
-    form.setValue('tiers', tiers.map((t, n) => n === i ? { ...t, [key]: val } : t));
+  const updateTier = <K extends keyof typeof tiers[0]>(
+    i: number,
+    key: K,
+    val: (typeof tiers)[0][K]
+  ) =>
+    form.setValue('tiers', tiers.map((t, n) => (n === i ? { ...t, [key]: val } : t)));
 
   // Helper: discount % por tier
   const tierDiscountPercent = (ppu: number) =>
@@ -286,7 +292,7 @@ export function ProductForm({
               </CardHeader>
               <CardContent className="space-y-4">
                 <CategoryWithSubcategorySelector
-                  selectedIds={form.watch('categories') || []}
+                  selectedIds={watch.categories || []}
                   onChange={(ids) => form.setValue('categories', ids)}
                   disabled={isSubmitting}
                 />
@@ -294,18 +300,18 @@ export function ProductForm({
                   <p className="text-xs text-destructive">{form.formState.errors.categories.message}</p>
                 )}
                 <BrandSelector
-                  selectedId={form.watch('brand')}
+                  selectedId={watch.brand}
                   onChange={(id) => form.setValue('brand', id)}
                   disabled={isSubmitting}
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <FormatPicker
-                    value={form.watch('format')}
+                    value={watch.format}
                     onChange={(id) => form.setValue('format', id)}
                     disabled={isSubmitting}
                   />
                   <FlavorPicker
-                    value={form.watch('flavor')}
+                    value={watch.flavor}
                     onChange={(id) => form.setValue('flavor', id)}
                     disabled={isSubmitting}
                   />
@@ -563,14 +569,14 @@ export function ProductForm({
                     <Label className="font-semibold">Producto activo</Label>
                     <p className="text-xs text-muted-foreground">Visible en el catálogo público</p>
                   </div>
-                  <Switch checked={form.watch('active')} onCheckedChange={(c) => form.setValue('active', c)} />
+                  <Switch checked={!!watch.active} onCheckedChange={(c) => form.setValue('active', c)} />
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3">
                   <div>
                     <Label className="font-semibold">Destacado ⭐</Label>
                     <p className="text-xs text-muted-foreground">Aparece en sección destacados del home</p>
                   </div>
-                  <Switch checked={form.watch('featured')} onCheckedChange={(c) => form.setValue('featured', c)} />
+                  <Switch checked={!!watch.featured} onCheckedChange={(c) => form.setValue('featured', c)} />
                 </div>
               </CardContent>
             </Card>
@@ -586,7 +592,6 @@ export function ProductForm({
               imagePreview={previewImage}
               formatLabel={formatLabel}
               flavorName={flavorObj?.name}
-              flavorColor={flavorObj?.color}
             />
           </div>
         </div>

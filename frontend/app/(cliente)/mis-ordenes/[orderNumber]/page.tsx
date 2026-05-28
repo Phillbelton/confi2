@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { use } from 'react';
-import Link from 'next/link';
+import { use, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -16,7 +14,6 @@ import {
   MessageCircle,
   RefreshCw,
   CheckCircle,
-  Clock,
   ChefHat,
   Truck,
   XCircle,
@@ -28,10 +25,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useOrderDetail, getOrderStatusConfig, canCancelOrder, useCancelOrder } from '@/hooks/client/useClientOrders';
+import { useOrderDetail, getOrderStatusConfig } from '@/hooks/client/useClientOrders';
 
-import { useCartStoreM } from '@/store/m/useCartStoreM';
-import type { Order, OrderStatus, OrderItem } from '@/types/order';
+import type { OrderStatus, OrderItem } from '@/types/order';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -73,16 +69,16 @@ export default function OrderDetailPage({
 }) {
   const { orderNumber } = use(params);
   const router = useRouter();
-  const { data: order, isLoading, error, refetch } = useOrderDetail(orderNumber);
-  const addItem = useCartStoreM((state: any) => state.addItem);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [confettiShown, setConfettiShown] = useState(false);
-  const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
+  const { data: order, isLoading, error } = useOrderDetail(orderNumber);
+  // Flag para disparar la animación de confetti una sola vez. Un ref
+  // alcanza porque no necesitamos re-renderizar al marcarlo: el effect
+  // ya se re-ejecuta cuando cambia order?.status.
+  const confettiShown = useRef(false);
 
   // Trigger confetti when order is completed
   useEffect(() => {
-    if (order?.status === 'completed' && !confettiShown) {
-      setConfettiShown(true);
+    if (order?.status === 'completed' && !confettiShown.current) {
+      confettiShown.current = true;
 
       // Main confetti burst
       confetti({
@@ -113,7 +109,7 @@ export default function OrderDetailPage({
         });
       }, 400);
     }
-  }, [order?.status, confettiShown]);
+  }, [order?.status]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -146,8 +142,6 @@ export default function OrderDetailPage({
       }
     );
   };
-const handleCancelOrder = (reason: string) => {    if (!order) return;        cancelOrder(      { orderId: order._id, reason },      {        onSuccess: () => {          setCancelModalOpen(false);          router.push('/mis-ordenes');        },      }    );  };
-
   const handleContactWhatsApp = () => {
     const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '';
     const message = encodeURIComponent(
@@ -442,14 +436,10 @@ const handleCancelOrder = (reason: string) => {    if (!order) return;        ca
           </Button>
         )}
 
-        {canCancelOrder(order) && (
-          <Button variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={() => setCancelModalOpen(true)}>
-            Cancelar pedido
-          </Button>
-        )}
+        {/* Cancel order: la UI fue removida porque CancelOrderModal no
+            existe; cuando se rehaga, restaurar el botón + modal + handler
+            + el isPending de useCancelOrder. */}
       </motion.div>
-
-        {/* CancelOrderModal removed — re-implementar cuando sea necesario */}
     </motion.div>
   );
 }

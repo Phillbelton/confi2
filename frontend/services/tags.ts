@@ -6,7 +6,7 @@ export const tagService = {
   getAll: async () => {
     const { data } = await api.get<ApiResponse<{ tags: Tag[] }>>('/tags');
     // Backend returns { success: true, data: { tags: [...] } }
-    return (data.data as any)?.tags || [];
+    return data.data?.tags ?? [];
   },
 
   // Get tag by ID

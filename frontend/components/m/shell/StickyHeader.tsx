@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Sparkles, ShoppingBag, User } from 'lucide-react';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
@@ -15,9 +15,13 @@ export function StickyHeader() {
   const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [bump, setBump] = useState(false);
   const itemCount = useCartStoreM((s) => s.itemCount);
-  const prevCount = useRef(itemCount);
+  // Preserve original UX: badge ya cargado del carrito persistido no debe
+  // bumpear al primer paint; sí debe bumpear ante cambios reales.
+  // useState con lazy init captura el valor del primer render como una
+  // constante estable, sin necesidad de leer ref.current durante render.
+  const [initialItemCount] = useState(itemCount);
+  const shouldBump = itemCount !== initialItemCount;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -26,22 +30,11 @@ export function StickyHeader() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => {
-    if (itemCount !== prevCount.current) {
-      prevCount.current = itemCount;
-      if (itemCount > 0) {
-        setBump(true);
-        const t = setTimeout(() => setBump(false), 360);
-        return () => clearTimeout(t);
-      }
-    }
-  }, [itemCount]);
-
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const term = q.trim();
     router.push(
-      term ? `/m/productos?search=${encodeURIComponent(term)}` : '/m/productos'
+      term ? `/productos?search=${encodeURIComponent(term)}` : '/productos'
     );
   };
 
@@ -87,7 +80,7 @@ export function StickyHeader() {
             <MobileMenuDrawer />
 
             <Link
-              href="/m"
+              href="/"
               className="flex shrink-0 items-center"
               aria-label="Inicio Quelita"
             >
@@ -112,16 +105,17 @@ export function StickyHeader() {
               </Link>
 
               <Link
-                href="/m/carrito"
+                href="/carrito"
                 className="tappable relative grid h-10 w-10 place-items-center rounded-full text-white transition-colors hover:bg-white/15"
                 aria-label="Carrito"
               >
                 <ShoppingBag className="h-5 w-5" />
                 {itemCount > 0 && (
                   <span
+                    key={itemCount}
                     className={cn(
                       'absolute right-0.5 top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-accent px-1 text-[9px] font-bold leading-none text-accent-foreground',
-                      bump && 'stepper-bump'
+                      shouldBump && 'stepper-bump'
                     )}
                   >
                     {itemCount > 99 ? '99+' : itemCount}
@@ -145,7 +139,7 @@ export function StickyHeader() {
         <div className="hidden lg:block">
           <div className="relative z-10 mx-auto flex w-full max-w-[1440px] items-center gap-6 px-8 py-4">
             <Link
-              href="/m"
+              href="/"
               className="flex shrink-0 items-center gap-3"
               aria-label="Inicio Quelita"
             >
@@ -162,7 +156,7 @@ export function StickyHeader() {
             </Link>
 
             {/* Selector de categorías (dropdown con mega-panel hover) */}
-            <CategoriesDropdown basePath="/m/productos" useSlug />
+            <CategoriesDropdown basePath="/productos" useSlug />
 
             {/* Search expandido */}
             <form onSubmit={onSubmit} className="flex-1 max-w-2xl">
@@ -177,15 +171,15 @@ export function StickyHeader() {
             {/* CTAs derecha: Cuenta + Carrito */}
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <Link
-                href="/m/cuenta"
+                href="/perfil"
                 className="tappable inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/25"
-                aria-label="Cuenta"
+                aria-label="Perfil"
               >
                 <User className="h-4 w-4" />
-                <span>Cuenta</span>
+                <span>Perfil</span>
               </Link>
               <Link
-                href="/m/carrito"
+                href="/carrito"
                 className="tappable relative inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/25"
                 aria-label="Carrito"
               >
@@ -193,9 +187,10 @@ export function StickyHeader() {
                 <span>Carrito</span>
                 {itemCount > 0 && (
                   <span
+                    key={itemCount}
                     className={cn(
                       'ml-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-foreground',
-                      bump && 'stepper-bump'
+                      shouldBump && 'stepper-bump'
                     )}
                   >
                     {itemCount > 99 ? '99+' : itemCount}

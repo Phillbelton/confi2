@@ -19,7 +19,7 @@ interface OrderFiltersProps {
     paymentMethod?: 'cash' | 'transfer' | '';
     search?: string;
   };
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (key: string, value: string) => void;
   onClearFilters: () => void;
 }
 

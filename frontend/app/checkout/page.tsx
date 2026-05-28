@@ -18,6 +18,7 @@ import { useClientStore } from '@/store/useClientStore';
 import { orderService } from '@/services/orders';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { API_URL } from '@/lib/apiConfig';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { ShoppingCart, Truck, MapPin, CreditCard, AlertCircle, Loader2, User, LogIn, UserPlus, Info } from 'lucide-react';
 import type { DeliveryMethod, PaymentMethod } from '@/types';
 
@@ -31,7 +32,6 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [continueAsGuest, setContinueAsGuest] = useState(false);
   const [phoneRegistered, setPhoneRegistered] = useState(false);
-  const [checkingPhone, setCheckingPhone] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -48,22 +48,27 @@ export default function CheckoutPage() {
     customerNotes: '',
   });
 
-  // Pre-fill form if user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      // Quitar el prefijo +56 del teléfono si viene del usuario
-      let phone = user.phone || '';
-      if (phone.startsWith('+56')) {
-        phone = phone.slice(3);
-      }
-      setFormData((prev) => ({
-        ...prev,
-        name: user.name || prev.name,
-        email: user.email || prev.email,
-        phone: phone || prev.phone,
-      }));
-    }
-  }, [isAuthenticated, user]);
+  // Pre-fill form la primera vez que el user autenticado está disponible.
+  // El user llega async (post-hydration del store + fetch del perfil), por
+  // eso no podemos lazy-init formData. Patrón "store info from previous
+  // renders" de React (set state during render con guard) — evita el
+  // useEffect + setState que dispararía cascading renders.
+  // https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  //
+  // Comparamos contra `user.id` (no `_id`): el backend devuelve `id` en
+  // /auth/login y /auth/me. Usar `_id` rompía la condición pero igual
+  // disparaba el prefill por accidente; ahora es explícito y correcto.
+  const [prefilledForUserId, setPrefilledForUserId] = useState<string | null>(null);
+  if (isAuthenticated && user && user.id !== prefilledForUserId) {
+    setPrefilledForUserId(user.id);
+    const phone = (user.phone || '').replace(/^\+56/, '');
+    setFormData((prev) => ({
+      ...prev,
+      name: user.name || prev.name,
+      email: user.email || prev.email,
+      phone: phone || prev.phone,
+    }));
+  }
 
   // Redirect if cart is empty — pero NO después de colocar la orden
   // (al confirmar, vaciamos el carrito y redirigimos a la orden: este effect
@@ -94,7 +99,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    setCheckingPhone(true);
     try {
       const res = await fetch(`${API_URL}/auth/check-phone`, {
         method: 'POST',
@@ -106,8 +110,6 @@ export default function CheckoutPage() {
     } catch {
       // Silenciar error — no bloquear checkout
       setPhoneRegistered(false);
-    } finally {
-      setCheckingPhone(false);
     }
   };
 
@@ -182,13 +184,12 @@ export default function CheckoutPage() {
         }
         router.push(`/pedido/${orderNumber}`);
       }
-    } catch (err: any) {
-      console.error('Error creating order:', err?.response?.data || err?.message || err);
-      const message =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        err?.message ||
-        (typeof err === 'string' ? err : 'Error al crear el pedido. Por favor intenta nuevamente.');
+    } catch (err) {
+      console.error('Error creating order:', err);
+      const message = getApiErrorMessage(
+        err,
+        'Error al crear el pedido. Por favor intenta nuevamente.'
+      );
       setError(message);
       setIsSubmitting(false);
     }
@@ -201,11 +202,9 @@ export default function CheckoutPage() {
   // Auth Gate Component
   if (showAuthGate) {
     return (
-      <div className="min-h-screen flex flex-col">
-        
-        <main className="flex-1 theme-catalog bg-background">
-          <div className="container px-4 py-8 md:px-6">
-            <div className="max-w-md mx-auto">
+      <>
+        <div className="container px-4 py-8 md:px-6">
+          <div className="max-w-md mx-auto">
               <div className="text-center mb-8">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                   <User className="h-8 w-8 text-primary" />
@@ -287,19 +286,15 @@ export default function CheckoutPage() {
               </div>
             </div>
           </div>
-        </main>
         <Footer />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      
-
-      <main className="flex-1 theme-catalog bg-background">
-        <div className="container px-4 py-6 md:py-8 pb-28 lg:pb-8">
-          <div className="max-w-6xl mx-auto">
+    <>
+      <div className="container px-4 py-6 md:py-8 pb-28 lg:pb-8">
+        <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-6 md:mb-8">
               <h1 className="font-display text-xl md:text-3xl font-bold text-foreground mb-1">Finalizar Compra</h1>
@@ -712,7 +707,6 @@ export default function CheckoutPage() {
             </form>
           </div>
         </div>
-      </main>
 
       {/* Mobile Sticky CTA Bar */}
       <div className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -743,6 +737,6 @@ export default function CheckoutPage() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }

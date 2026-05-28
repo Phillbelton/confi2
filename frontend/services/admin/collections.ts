@@ -13,7 +13,7 @@ export interface CreateCollectionInput {
   order?: number;
 }
 
-export interface UpdateCollectionInput extends Partial<CreateCollectionInput> {}
+export type UpdateCollectionInput = Partial<CreateCollectionInput>;
 
 export const adminCollectionService = {
   async getAll(active: 'true' | 'false' | 'all' = 'all') {

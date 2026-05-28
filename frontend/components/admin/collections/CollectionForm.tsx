@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useMemo } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -124,22 +124,9 @@ export function CollectionForm({
     },
   });
 
-  useEffect(() => {
-    if (collection) {
-      form.reset({
-        name: collection.name || '',
-        description: collection.description || '',
-        image: collection.image || '',
-        emoji: collection.emoji || '',
-        gradient: collection.gradient || GRADIENT_PRESETS[0].value,
-        active: collection.active ?? true,
-        showOnHome: collection.showOnHome ?? true,
-        order: collection.order ?? 0,
-      });
-      setProductIds(initialProductIds);
-      setImagePreview(resolvePreview(collection.image));
-    }
-  }, [collection, initialProductIds, form]);
+  // No useEffect para resincronizar: el callsite monta CollectionForm con
+  // key={selected?._id ?? 'new'} → state y form se inicializan lazy desde
+  // props arriba en cada apertura.
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -184,8 +171,15 @@ export function CollectionForm({
     // el sentinel __REMOVE__ (clear). NO reenviar el valor original en cada
     // submit — eso pisaba la imagen recién subida con la URL vieja.
     const { image, ...rest } = values;
-    const payload: any = { ...rest, products: productIds };
-    if (image === '__REMOVE__') payload.image = '';
+    const payload: FormValues & { products: string[] } = {
+      ...rest,
+      products: productIds,
+    };
+    if (image === '__REMOVE__') {
+      payload.image = '';
+    } else if (image !== undefined) {
+      payload.image = image;
+    }
     onSubmit(payload);
   };
 
@@ -215,8 +209,9 @@ export function CollectionForm({
     });
   };
 
-  const watchedGradient = form.watch('gradient');
-  const watchedEmoji = form.watch('emoji');
+  const watchedGradient = useWatch({ control: form.control, name: 'gradient' });
+  const watchedEmoji = useWatch({ control: form.control, name: 'emoji' });
+  const watchedName = useWatch({ control: form.control, name: 'name' });
 
   return (
     <div className="space-y-6">
@@ -239,7 +234,7 @@ export function CollectionForm({
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-2 text-white">
             <p className="line-clamp-1 text-xs font-bold">
-              {form.watch('name') || 'Nombre de la colección'}
+              {watchedName || 'Nombre de la colección'}
             </p>
           </div>
         </div>

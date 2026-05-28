@@ -5,6 +5,7 @@ import {
   type CreateCategoryInput,
   type UpdateCategoryInput,
 } from '@/services/admin/categories';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 /**
  * Hook for fetching all categories
@@ -55,10 +56,8 @@ export function useCategoryOperations() {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['main-categories'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al crear categoría', {
-        description: error.response?.data?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al crear categoría', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -73,10 +72,8 @@ export function useCategoryOperations() {
       queryClient.invalidateQueries({ queryKey: ['main-categories'] });
       queryClient.invalidateQueries({ queryKey: ['subcategories'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al actualizar categoría', {
-        description: error.response?.data?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al actualizar categoría', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -88,9 +85,9 @@ export function useCategoryOperations() {
       queryClient.invalidateQueries({ queryKey: ['main-categories'] });
       queryClient.invalidateQueries({ queryKey: ['subcategories'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast.error('Error al eliminar categoría', {
-        description: error.response?.data?.message || 'Esta categoría tiene productos asociados',
+        description: getApiErrorMessage(error, 'Esta categoría tiene productos asociados'),
       });
     },
   });
@@ -98,15 +95,13 @@ export function useCategoryOperations() {
   const uploadImageMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
       adminCategoryService.uploadImage(id, file),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success('Imagen cargada correctamente');
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['main-categories'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al cargar imagen', {
-        description: error.response?.data?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al cargar imagen', { description: getApiErrorMessage(error) });
     },
   });
 

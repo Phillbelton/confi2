@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/card';
 import { useClientLogin } from '@/hooks/client/useClientAuth';
 import { useClientStore } from '@/store/useClientStore';
-import { cn } from '@/lib/utils';
 
 const loginSchema = z.object({
   email: z
@@ -60,6 +59,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/perfil';
+  const errorFlag = searchParams.get('error');
   const { isAuthenticated, user, _hasHydrated } = useClientStore();
   const loginMutation = useClientLogin(redirectTo);
 
@@ -150,6 +150,18 @@ function LoginContent() {
             </CardHeader>
 
             <CardContent className="pt-4">
+              {errorFlag === 'role' && (
+                <motion.div
+                  variants={itemVariants}
+                  className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-200"
+                  role="alert"
+                >
+                  Tu cuenta no tiene acceso al portal de clientes. Si sos
+                  administrador o funcionario, ingresá por tu portal
+                  correspondiente.
+                </motion.div>
+              )}
+
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <motion.div variants={itemVariants}>
                   <AnimatedInput

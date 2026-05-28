@@ -7,7 +7,7 @@ export const bannerService = {
     const { data } = await api.get<ApiResponse<{ banners: Banner[] }>>('/banners', {
       params: { placement, active: 'true' },
     });
-    return (data.data as any)?.banners || [];
+    return data.data?.banners ?? [];
   },
 };
 

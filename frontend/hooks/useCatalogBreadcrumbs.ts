@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
-import type { Category, Brand, Format, Flavor, Collection, Product, ApiResponse } from '@/types';
+import type { Category, Collection, Product, ApiResponse } from '@/types';
 import type { BreadcrumbItem } from '@/components/m/detail/Breadcrumbs';
 
 interface CatalogContext {
@@ -50,7 +50,7 @@ export function useCatalogBreadcrumbs(ctx: CatalogContext): BreadcrumbItem[] {
       items.push({
         label: collection.name,
         emoji: collection.emoji,
-        href: `/m/productos?coleccion=${collection.slug}`,
+        href: `/productos?coleccion=${collection.slug}`,
         current: !ctx.subcategorySlug && !ctx.categorySlug,
       });
       return items;
@@ -65,7 +65,7 @@ export function useCatalogBreadcrumbs(ctx: CatalogContext): BreadcrumbItem[] {
       path.forEach((c, i) => {
         items.push({
           label: c.name,
-          href: `/m/productos?categoria=${c.slug}`,
+          href: `/productos?categoria=${c.slug}`,
           current: i === path.length - 1,
         });
       });
@@ -150,7 +150,7 @@ export function useProductBreadcrumbs(
       path.forEach((c) => {
         items.push({
           label: c.name,
-          href: `/m/productos?categoria=${c.slug}`,
+          href: `/productos?categoria=${c.slug}`,
         });
       });
     }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -23,7 +23,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { InlineHelp } from '@/components/ui/inline-help';
 import type { Category, FacetableAttribute } from '@/types';
 
 const slugify = (s: string) =>
@@ -128,37 +127,16 @@ export function CategoryForm({
     },
   });
 
-  // Update form when category or defaultParentId changes
-  useEffect(() => {
-    if (category) {
-      form.reset({
-        name: category.name || '',
-        description: category.description || '',
-        parent: typeof category.parent === 'string'
-          ? category.parent
-          : category.parent?._id || '',
-        icon: category.icon || '',
-        color: category.color || '#F97316',
-        order: category.order || 0,
-        active: category.active ?? true,
-        facetableAttributes: category.facetableAttributes || [],
-      });
-      setImagePreview(category.image || null);
-    } else {
-      // Creating new — apply defaults including pre-selected parent if any
-      form.reset({
-        name: '',
-        description: '',
-        parent: defaultParentId || '',
-        icon: '',
-        color: '#F97316',
-        order: 0,
-        active: true,
-        facetableAttributes: [],
-      });
-      setImagePreview(null);
-    }
-  }, [category, defaultParentId, form]);
+  // Subscripciones aisladas para Preview del avatar y el editor de facetas.
+  const watchedColor = useWatch({ control: form.control, name: 'color' });
+  const watchedIcon = useWatch({ control: form.control, name: 'icon' });
+  const watchedName = useWatch({ control: form.control, name: 'name' });
+  const watchedFacets = useWatch({ control: form.control, name: 'facetableAttributes' });
+
+  // No useEffect para resincronizar form/preview desde props: el callsite
+  // monta CategoryForm con key={category?._id ?? `new:${defaultParentId}`},
+  // así que el componente se re-monta cuando cambia el target → state y
+  // defaultValues se inicializan lazy desde props arriba.
 
   const handleSubmit = (values: CategoryFormValues) => {
     // Clean up empty strings y limpieza defensiva de atributos vacíos
@@ -229,11 +207,11 @@ export function CategoryForm({
               ) : (
                 <AvatarFallback
                   style={{
-                    backgroundColor: form.watch('color') || '#F97316',
+                    backgroundColor: watchedColor || '#F97316',
                     color: '#fff',
                   }}
                 >
-                  {form.watch('icon') || form.watch('name')?.charAt(0).toUpperCase() || '?'}
+                  {watchedIcon || watchedName?.charAt(0).toUpperCase() || '?'}
                 </AvatarFallback>
               )}
             </Avatar>
@@ -464,7 +442,7 @@ export function CategoryForm({
 
           {/* Atributos facetables */}
           <FacetableAttributesEditor
-            attributes={form.watch('facetableAttributes') || []}
+            attributes={watchedFacets || []}
             onChange={(next) => form.setValue('facetableAttributes', next, { shouldDirty: true })}
             disabled={isSubmitting}
           />

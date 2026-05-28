@@ -3,15 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BannerForm } from '@/components/admin/banners/BannerForm';
+import { Card, CardContent } from '@/components/ui/card';
+import { BannerForm, type BannerFormSubmitData } from '@/components/admin/banners/BannerForm';
 import { useBannerOperations } from '@/hooks/admin/useAdminBanners';
 
 export default function NewBannerPage() {
   const router = useRouter();
   const { createAsync, isCreating } = useBannerOperations();
 
-  const handleSubmit = async (payload: any) => {
+  const handleSubmit = async (payload: BannerFormSubmitData) => {
     // image: '/placeholder-product.svg' inicial. El admin sube la real en la
     // página de edit donde el endpoint /banners/:id/image requiere id válido.
     const withPlaceholder = { ...payload, image: '/placeholder-product.svg' };

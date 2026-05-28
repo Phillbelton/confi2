@@ -20,7 +20,7 @@ interface AuditLogDetailModalProps {
 }
 
 export function AuditLogDetailModal({ log, open, onClose }: AuditLogDetailModalProps) {
-  const formatValue = (value: any): string => {
+  const formatValue = (value: unknown): string => {
     if (value === null || value === undefined) return 'null';
     if (typeof value === 'object') return JSON.stringify(value, null, 2);
     return String(value);

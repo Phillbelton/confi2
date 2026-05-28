@@ -1,8 +1,8 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -50,7 +50,6 @@ export default function AdminOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
-  const router = useRouter();
   const { order, isLoading, error, refetch } = useAdminOrder(resolvedParams.id);
   const { cancelOrder, isCancelling } = useAdminOrders({ page: 1, limit: 1 });
 
@@ -284,9 +283,11 @@ export default function AdminOrderDetailPage({
                     className="flex items-center gap-3 p-3 rounded-lg border"
                   >
                     {item.productSnapshot.image && (
-                      <img
+                      <Image
                         src={getImageUrl(item.productSnapshot.image)}
                         alt={item.productSnapshot.name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 rounded-md object-cover"
                       />
                     )}

@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import {
-  User,
   Package,
   MapPin,
   Lock,
@@ -15,6 +14,7 @@ import {
   Edit,
   Loader2,
   Calendar,
+  LogOut,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useClientStore } from '@/store/useClientStore';
 import { useClientAuth, useUpdateClientProfile } from '@/hooks/client/useClientAuth';
 import { useMyOrders } from '@/hooks/client/useClientOrders';
+import type { Order } from '@/types/order';
 import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
@@ -79,7 +80,7 @@ const quickActions = [
 
 export default function ProfilePage() {
   const { user } = useClientStore();
-  const { isLoading: authLoading } = useClientAuth();
+  const { isLoading: authLoading, logout, isLoggingOut } = useClientAuth();
   const updateProfileMutation = useUpdateClientProfile();
   const { data: ordersData, isLoading: ordersLoading } = useMyOrders();
 
@@ -143,15 +144,15 @@ export default function ProfilePage() {
   };
 
   // Stats calculados
-  const orders = ordersData?.data || [];
+  const orders: Order[] = ordersData?.data ?? [];
   const inProgressOrders = orders.filter(
-    (order: any) => !['completed', 'cancelled'].includes(order.status)
+    (order) => !['completed', 'cancelled'].includes(order.status)
   ).length;
   const completedOrders = orders.filter(
-    (order: any) => order.status === 'completed'
+    (order) => order.status === 'completed'
   ).length;
   const now = new Date();
-  const thisMonthOrders = orders.filter((order: any) => {
+  const thisMonthOrders = orders.filter((order) => {
     const d = new Date(order.createdAt);
     return (
       d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
@@ -269,6 +270,23 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Cerrar sesión */}
+      <motion.div variants={itemVariants}>
+        <Button
+          variant="outline"
+          className="w-full h-12"
+          onClick={() => logout()}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="mr-2 h-4 w-4" />
+          )}
+          Cerrar sesión
+        </Button>
       </motion.div>
 
       {/* Dialog Editar Perfil */}

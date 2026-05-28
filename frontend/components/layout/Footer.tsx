@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Facebook, Instagram, Mail, MapPin, Phone, Clock } from 'lucide-react';
+import { Facebook, Instagram, Phone, Clock } from 'lucide-react';
 
 const footerLinks = {
   shop: [

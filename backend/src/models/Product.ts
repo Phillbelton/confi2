@@ -192,7 +192,14 @@ const productSchema = new Schema<IProduct>(
 );
 
 // Índices
-productSchema.index({ categories: 1, active: 1 });
+// El listado del catálogo (`GET /api/products?categoria=X`) filtra por
+// categoría + active y ordena por createdAt DESC. Compuesto con el campo
+// de sort al final permite servir paginación con IXSCAN puro (sin SORT
+// in-memory). Verificado con explain() en Atlas: el optimizer elige este
+// índice y evita la etapa SORT que tenía el índice anterior {categories,
+// active}. Cuando el catálogo crece >5K productos y categorías hot pasan
+// los ~800 docs, esto evita latencia de 80-150ms.
+productSchema.index({ categories: 1, active: 1, createdAt: -1 });
 productSchema.index({ brand: 1, active: 1 });
 productSchema.index({ format: 1, active: 1 });
 productSchema.index({ flavor: 1, active: 1 });

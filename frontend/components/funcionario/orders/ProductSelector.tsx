@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Search, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -85,9 +86,11 @@ export function ProductSelector({
                 className="flex items-center gap-3 p-3 rounded-md border hover:bg-accent"
               >
                 {image ? (
-                  <img
+                  <Image
                     src={getImageUrl(image)}
                     alt={p.name}
+                    width={48}
+                    height={48}
                     className="h-12 w-12 rounded object-cover"
                   />
                 ) : (

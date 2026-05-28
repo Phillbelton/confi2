@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useFuncionarioOrders } from '@/hooks/funcionario/useFuncionarioOrders';
-import { Eye, MessageCircle, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Eye, MessageCircle, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';

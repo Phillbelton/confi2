@@ -153,7 +153,7 @@ test.describe('Checkout — Form Validation', () => {
     await page.waitForTimeout(500);
   });
 
-  test('submitting empty form shows validation errors', async ({ page, isMobile }) => {
+  test('submitting empty form shows validation errors', async ({ page }) => {
     // Try to submit without filling anything
     // Submit button says "Confirmar Pedido"
     const submitBtn = page.locator('button[type="submit"]').filter({ hasText: 'Confirmar' }).first();

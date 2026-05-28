@@ -16,13 +16,11 @@ import {
   getDisplayTiers,
   isPackagedSale,
   minQuantity,
-  presentationPrice,
   presentationPriceSuffix,
   quantityStep,
   getFixedDiscountBadge,
   hasActiveFixedDiscount,
 } from '@/lib/discountCalculator';
-import { cn } from '@/lib/utils';
 import type { Brand, Category, Format, Flavor } from '@/types';
 
 export default function ProductDetailPage() {
@@ -51,7 +49,6 @@ export default function ProductDetailPage() {
   const breadcrumbs = useProductBreadcrumbs(product, fromCtx);
 
   const addItem = useCartStoreM((s) => s.addItem);
-  const items = useCartStoreM((s) => s.items);
 
   const [quantity, setQuantity] = useState<number>(1);
 
@@ -60,7 +57,7 @@ export default function ProductDetailPage() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
         <h1 className="font-display text-xl font-bold">Producto no encontrado</h1>
         <Button asChild className="mt-4 rounded-full">
-          <Link href="/m/productos">
+          <Link href="/productos">
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver al catálogo
           </Link>

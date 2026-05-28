@@ -5,6 +5,6 @@ export const metadata = {
   description: 'Confitería Quelita — experiencia móvil',
 };
 
-export default function MLayout({ children }: { children: React.ReactNode }) {
+export default function TiendaLayout({ children }: { children: React.ReactNode }) {
   return <MobileShell>{children}</MobileShell>;
 }

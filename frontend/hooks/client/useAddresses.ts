@@ -2,7 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { addressService, type Address, type CreateAddressData, type UpdateAddressData } from '@/services/client/addresses';
+import { addressService, type CreateAddressData, type UpdateAddressData } from '@/services/client/addresses';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 /**
  * Hook para obtener todas las direcciones
@@ -27,8 +28,8 @@ export function useCreateAddress() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] });
       toast.success('Dirección agregada');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al agregar dirección');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al agregar dirección'));
     },
   });
 }
@@ -46,8 +47,8 @@ export function useUpdateAddress() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] });
       toast.success('Dirección actualizada');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar dirección');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar dirección'));
     },
   });
 }
@@ -64,8 +65,8 @@ export function useDeleteAddress() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] });
       toast.success('Dirección eliminada');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al eliminar dirección');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al eliminar dirección'));
     },
   });
 }
@@ -82,8 +83,8 @@ export function useSetDefaultAddress() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] });
       toast.success('Dirección predeterminada actualizada');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar dirección');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al actualizar dirección'));
     },
   });
 }

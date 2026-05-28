@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -41,6 +42,17 @@ function formatCLP(n: number) {
   return `$${Math.round(n).toLocaleString('es-CL')}`;
 }
 
+function itemsFromOrder(order: Order): EditableItem[] {
+  return order.items.map((item) => ({
+    productId: item.product,
+    name: item.productSnapshot.name,
+    barcode: item.productSnapshot.barcode,
+    image: item.productSnapshot.image,
+    unitPrice: item.pricePerUnit,
+    quantity: item.quantity,
+  }));
+}
+
 export function EditOrderItemsModal({
   open,
   onOpenChange,
@@ -48,26 +60,41 @@ export function EditOrderItemsModal({
   onSave,
   isSaving,
 }: EditOrderItemsModalProps) {
+  // Form se monta sólo mientras la modal está abierta y se re-monta cuando
+  // cambia la orden editada (key={order._id}). Esto reemplaza al useEffect
+  // que resincronizaba state con props al abrir, eliminando el setState
+  // dentro del effect. State del form se inicializa lazy desde props.
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Editar productos de la orden</DialogTitle>
+        </DialogHeader>
+        {open && (
+          <EditOrderItemsForm
+            key={order._id}
+            order={order}
+            onCancel={() => onOpenChange(false)}
+            onSave={onSave}
+            isSaving={isSaving}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface EditOrderItemsFormProps {
+  order: Order;
+  onCancel: () => void;
+  onSave: (data: { items: { productId: string; quantity: number }[]; adminNotes?: string }) => void;
+  isSaving?: boolean;
+}
+
+function EditOrderItemsForm({ order, onCancel, onSave, isSaving }: EditOrderItemsFormProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
-  const [items, setItems] = useState<EditableItem[]>([]);
-
-  // Reset state when modal opens with a new order
-  useEffect(() => {
-    if (open) {
-      setItems(
-        order.items.map((item) => ({
-          productId: item.product,
-          name: item.productSnapshot.name,
-          barcode: item.productSnapshot.barcode,
-          image: item.productSnapshot.image,
-          unitPrice: item.pricePerUnit,
-          quantity: item.quantity,
-        }))
-      );
-      setAdminNotes('');
-    }
-  }, [open, order]);
+  const [items, setItems] = useState<EditableItem[]>(() => itemsFromOrder(order));
 
   const handleAdd = (p: Product) => {
     setItems((prev) => {
@@ -117,104 +144,98 @@ export function EditOrderItemsModal({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Editar productos de la orden</DialogTitle>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-            {items.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                La orden no tiene productos. Agregá al menos uno para poder guardar.
-              </p>
-            )}
-            {items.map((it) => (
-              <div key={it.productId} className="flex items-center gap-3 p-3 rounded-md border">
-                {it.image ? (
-                  <img
-                    src={getImageUrl(it.image)}
-                    alt={it.name}
-                    className="h-12 w-12 rounded object-cover"
-                  />
-                ) : (
-                  <div className="h-12 w-12 rounded bg-muted" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{it.name}</p>
-                  {it.barcode && (
-                    <p className="text-xs text-muted-foreground font-mono truncate">
-                      {it.barcode}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    {formatCLP(previewPrice(it))} c/u
-                  </p>
-                </div>
-                <Input
-                  type="number"
-                  min={1}
-                  value={it.quantity}
-                  onChange={(e) =>
-                    handleQty(it.productId, parseInt(e.target.value || '1', 10))
-                  }
-                  className="w-20"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemove(it.productId)}
-                  aria-label="Quitar"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPickerOpen(true)}
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar producto
-            </Button>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Subtotal estimado ({items.length} ítem{items.length === 1 ? '' : 's'})
-              </span>
-              <span className="font-semibold">{formatCLP(subtotal)}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              El precio final lo recalcula el backend (incluye descuentos por volumen y ofertas vigentes).
-            </p>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Notas administrativas (opcional)</label>
-              <Textarea
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Motivo del cambio, observaciones, etc."
-                rows={2}
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+        {items.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            La orden no tiene productos. Agregá al menos uno para poder guardar.
+          </p>
+        )}
+        {items.map((it) => (
+          <div key={it.productId} className="flex items-center gap-3 p-3 rounded-md border">
+            {it.image ? (
+              <Image
+                src={getImageUrl(it.image)}
+                alt={it.name}
+                width={48}
+                height={48}
+                className="h-12 w-12 rounded object-cover"
               />
+            ) : (
+              <div className="h-12 w-12 rounded bg-muted" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate">{it.name}</p>
+              {it.barcode && (
+                <p className="text-xs text-muted-foreground font-mono truncate">
+                  {it.barcode}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground">
+                {formatCLP(previewPrice(it))} c/u
+              </p>
             </div>
+            <Input
+              type="number"
+              min={1}
+              value={it.quantity}
+              onChange={(e) =>
+                handleQty(it.productId, parseInt(e.target.value || '1', 10))
+              }
+              className="w-20"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleRemove(it.productId)}
+              aria-label="Quitar"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
+        ))}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || items.length === 0}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Guardar cambios
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setPickerOpen(true)}
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Agregar producto
+        </Button>
+
+        <Separator />
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            Subtotal estimado ({items.length} ítem{items.length === 1 ? '' : 's'})
+          </span>
+          <span className="font-semibold">{formatCLP(subtotal)}</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          El precio final lo recalcula el backend (incluye descuentos por volumen y ofertas vigentes).
+        </p>
+
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Notas administrativas (opcional)</label>
+          <Textarea
+            value={adminNotes}
+            onChange={(e) => setAdminNotes(e.target.value)}
+            placeholder="Motivo del cambio, observaciones, etc."
+            rows={2}
+          />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+          Cancelar
+        </Button>
+        <Button onClick={handleSave} disabled={isSaving || items.length === 0}>
+          {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Guardar cambios
+        </Button>
+      </DialogFooter>
 
       <ProductSelector
         open={pickerOpen}

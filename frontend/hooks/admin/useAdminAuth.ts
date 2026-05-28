@@ -5,12 +5,13 @@ import { toast } from 'sonner';
 import { adminAuthService } from '@/services/admin/auth';
 import { useAdminStore } from '@/store/useAdminStore';
 import type { AdminLoginCredentials } from '@/types/admin';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 export function useAdminAuth() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { setUser, logout: clearStore, setLoading } = useAdminStore();
+  const { setUser, logout: clearStore } = useAdminStore();
 
   // Don't fetch profile on login page to avoid unnecessary 401 errors
   const isLoginPage = pathname === '/admin/login';
@@ -87,8 +88,8 @@ export function useAdminAuth() {
         window.location.href = '/admin';
       }, 500);
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Error al iniciar sesión');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'Error al iniciar sesión'));
     },
   });
 
@@ -103,13 +104,13 @@ export function useAdminAuth() {
       toast.success('Sesión cerrada exitosamente');
       router.push('/admin/login');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       // Even if logout fails on server, clear client state
       localStorage.removeItem('admin-token');
       clearStore();
       queryClient.clear();
       router.push('/admin/login');
-      toast.error(error.message || 'Error al cerrar sesión');
+      toast.error(getApiErrorMessage(error, 'Error al cerrar sesión'));
     },
   });
 

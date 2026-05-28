@@ -7,25 +7,25 @@ import { cn } from '@/lib/utils';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 
 const TABS = [
-  { href: '/m', icon: Home, label: 'Inicio', match: (p: string) => p === '/m' },
+  { href: '/', icon: Home, label: 'Inicio', match: (p: string) => p === '/' },
   {
-    href: '/m/productos',
+    href: '/productos',
     icon: LayoutGrid,
     label: 'Catálogo',
-    match: (p: string) => p.startsWith('/m/productos'),
+    match: (p: string) => p.startsWith('/productos'),
   },
   {
-    href: '/m/carrito',
+    href: '/carrito',
     icon: ShoppingBag,
     label: 'Carrito',
-    match: (p: string) => p.startsWith('/m/carrito'),
+    match: (p: string) => p.startsWith('/carrito'),
     showBadge: true,
   },
   {
-    href: '/m/cuenta',
+    href: '/perfil',
     icon: User,
-    label: 'Cuenta',
-    match: (p: string) => p.startsWith('/m/cuenta'),
+    label: 'Perfil',
+    match: (p: string) => p.startsWith('/perfil'),
   },
 ];
 
