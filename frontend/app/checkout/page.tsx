@@ -18,6 +18,7 @@ import { useClientStore } from '@/store/useClientStore';
 import { orderService } from '@/services/orders';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { API_URL } from '@/lib/apiConfig';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { ShoppingCart, Truck, MapPin, CreditCard, AlertCircle, Loader2, User, LogIn, UserPlus, Info } from 'lucide-react';
 import type { DeliveryMethod, PaymentMethod } from '@/types';
 
@@ -179,13 +180,12 @@ export default function CheckoutPage() {
         }
         router.push(`/pedido/${orderNumber}`);
       }
-    } catch (err: any) {
-      console.error('Error creating order:', err?.response?.data || err?.message || err);
-      const message =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        err?.message ||
-        (typeof err === 'string' ? err : 'Error al crear el pedido. Por favor intenta nuevamente.');
+    } catch (err) {
+      console.error('Error creating order:', err);
+      const message = getApiErrorMessage(
+        err,
+        'Error al crear el pedido. Por favor intenta nuevamente.'
+      );
       setError(message);
       setIsSubmitting(false);
     }

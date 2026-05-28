@@ -38,6 +38,7 @@ import { EditShippingCost } from '@/components/funcionario/orders/EditShippingCo
 import { formatCurrency } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import type { OrderStatus, UpdateOrderStatusData, EditOrderItemsData } from '@/types/order';
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -115,7 +116,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   // Handle update status
-  const handleUpdateStatus = (data: { status: any; adminNotes?: string }) => {
+  const handleUpdateStatus = (data: UpdateOrderStatusData) => {
     updateStatus(
       { id: order._id, data },
       {
@@ -141,7 +142,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   // Handle edit order items
-  const handleEditOrderItems = (data: { items: any[]; adminNotes?: string }) => {
+  const handleEditOrderItems = (data: EditOrderItemsData) => {
     editOrderItems(
       { id: order._id, data },
       {
@@ -154,7 +155,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   // Quick status change
-  const handleQuickStatusChange = (newStatus: any) => {
+  const handleQuickStatusChange = (newStatus: OrderStatus) => {
     updateStatus(
       { id: order._id, data: { status: newStatus } },
       {

@@ -29,7 +29,7 @@ export interface UpdateUserData {
 export const userService = {
   // Obtener usuarios con filtros y paginación
   getUsers: async (filters?: UserFilters): Promise<AdminPaginatedResponse<AdminUser>> => {
-    const params: any = {};
+    const params: Record<string, string | number | boolean> = {};
     if (filters?.role) params.role = filters.role;
     if (filters?.active !== undefined) params.active = filters.active;
     if (filters?.search) params.search = filters.search;

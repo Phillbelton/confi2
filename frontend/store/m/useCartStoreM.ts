@@ -104,9 +104,15 @@ export const useCartStoreM = create<CartStoreM>()(
       partialize: (state) => ({ items: state.items }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        // Filtrar items malformados de versiones anteriores (sin product/productId)
-        state.items = (state.items || []).filter(
-          (it: any) => it && it.productId && it.product && typeof it.product.unitPrice === 'number'
+        // Filtrar items malformados de versiones anteriores (sin product/productId).
+        // El payload rehidratado puede tener cualquier shape — lo narrows runtime.
+        const persisted = (state.items ?? []) as Array<Partial<CartItem>>;
+        state.items = persisted.filter(
+          (it): it is CartItem =>
+            !!it &&
+            typeof it.productId === 'string' &&
+            !!it.product &&
+            typeof it.product.unitPrice === 'number'
         );
         if (state.items.length > 0) Object.assign(state, recalcItems(state.items));
         else Object.assign(state, { subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 });

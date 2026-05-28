@@ -80,7 +80,7 @@ export const clientAuthService = {
    */
   getProfile: async (): Promise<ClientUser> => {
     const { data } = await clientApi.get<ApiResponse<{ user: ClientUser }>>('/auth/me');
-    return (data.data as any)?.user;
+    return data.data.user;
   },
 
   /**
@@ -88,7 +88,7 @@ export const clientAuthService = {
    */
   updateProfile: async (profileData: UpdateProfileData): Promise<ClientUser> => {
     const { data } = await clientApi.put<ApiResponse<{ user: ClientUser }>>('/auth/me', profileData);
-    return (data.data as any)?.user;
+    return data.data.user;
   },
 
   /**

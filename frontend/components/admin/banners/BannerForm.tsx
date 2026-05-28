@@ -78,9 +78,25 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Forma del payload que emitimos hacia onSubmit (no es FormValues directo:
+// reagrupamos linkType + linkTarget en `link: { type, target }` antes
+// de salir; ver handleSubmit más abajo).
+export interface BannerFormSubmitData {
+  placement: BannerPlacement;
+  order: number;
+  size: BannerSize;
+  title?: string;
+  subtitle?: string;
+  ctaText?: string;
+  link: { type: BannerLinkType; target?: string };
+  active?: boolean;
+  startDate?: string;
+  endDate?: string;
+}
+
 interface BannerFormProps {
   banner?: Banner;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: BannerFormSubmitData) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
   onUploadImage?: (id: string, file: File, variant: 'main' | 'mobile') => void;
@@ -168,15 +184,17 @@ export function BannerForm({
   });
 
   const handleSubmit = (values: FormValues) => {
-    const payload = {
-      placement: values.placement,
+    // values.placement/size/linkType vienen del Select y zod los valida
+    // como string; en runtime sólo pueden ser los literales soportados.
+    const payload: BannerFormSubmitData = {
+      placement: values.placement as BannerPlacement,
       order: values.order,
-      size: values.size,
+      size: values.size as BannerSize,
       title: values.title || undefined,
       subtitle: values.subtitle || undefined,
       ctaText: values.ctaText || undefined,
       link: {
-        type: values.linkType,
+        type: values.linkType as BannerLinkType,
         target: values.linkTarget || undefined,
       },
       active: values.active ?? true,

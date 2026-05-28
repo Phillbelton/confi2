@@ -25,13 +25,13 @@ export const adminOrdersService = {
    * Get all orders with pagination and filters
    */
   getOrders: async (params: GetOrdersParams): Promise<AdminPaginatedResponse<Order>> => {
-    // Filter out empty string values
-    const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {
+    // Filter out empty string / null / undefined values
+    const cleanParams: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
       if (value !== '' && value !== null && value !== undefined) {
-        acc[key] = value;
+        cleanParams[key] = value;
       }
-      return acc;
-    }, {} as any);
+    }
 
     const { data } = await adminApi.get<ApiResponse<AdminPaginatedResponse<Order>>>('/orders', {
       params: cleanParams,

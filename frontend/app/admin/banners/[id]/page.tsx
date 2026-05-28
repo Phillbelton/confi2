@@ -4,7 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { BannerForm } from '@/components/admin/banners/BannerForm';
+import { BannerForm, type BannerFormSubmitData } from '@/components/admin/banners/BannerForm';
 import {
   useAdminBanner,
   useBannerOperations,
@@ -19,7 +19,7 @@ export default function EditBannerPage() {
   const { update, uploadImage, isUpdating, isUploadingImage } =
     useBannerOperations();
 
-  const handleSubmit = (payload: any) => {
+  const handleSubmit = (payload: BannerFormSubmitData) => {
     if (!id) return;
     update(
       { id, payload },

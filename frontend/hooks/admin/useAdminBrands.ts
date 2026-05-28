@@ -5,6 +5,7 @@ import {
   type CreateBrandInput,
   type UpdateBrandInput,
 } from '@/services/admin/brands';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 /**
  * Hook for fetching all brands
@@ -43,10 +44,8 @@ export function useBrandOperations() {
       });
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al crear marca', {
-        description: error.response?.data?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al crear marca', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -60,10 +59,8 @@ export function useBrandOperations() {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['admin-brand'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al actualizar marca', {
-        description: error.response?.data?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al actualizar marca', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -73,9 +70,9 @@ export function useBrandOperations() {
       toast.success('Marca eliminada correctamente');
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast.error('Error al eliminar marca', {
-        description: error.response?.data?.message || 'Esta marca tiene productos asociados',
+        description: getApiErrorMessage(error, 'Esta marca tiene productos asociados'),
       });
     },
   });
@@ -88,10 +85,8 @@ export function useBrandOperations() {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['admin-brand'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al cargar logo', {
-        description: error.response?.data?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al cargar logo', { description: getApiErrorMessage(error) });
     },
   });
 

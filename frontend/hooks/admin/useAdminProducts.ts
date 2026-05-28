@@ -6,6 +6,7 @@ import {
   type UpdateProductInput,
 } from '@/services/admin/products';
 import type { ProductQueryParams } from '@/services/products';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 export function useAdminProducts(params?: ProductQueryParams) {
   return useQuery({
@@ -47,7 +48,7 @@ export function useProductOperations() {
       toast.success('Producto creado');
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message || 'Error al crear producto'),
+    onError: (e) => toast.error(getApiErrorMessage(e, 'Error al crear producto')),
   });
 
   const updateMut = useMutation({
@@ -57,7 +58,7 @@ export function useProductOperations() {
       toast.success('Producto actualizado');
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message || 'Error al actualizar'),
+    onError: (e) => toast.error(getApiErrorMessage(e, 'Error al actualizar')),
   });
 
   const deleteMut = useMutation({
@@ -66,7 +67,7 @@ export function useProductOperations() {
       toast.success('Producto eliminado');
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message || 'Error al eliminar'),
+    onError: (e) => toast.error(getApiErrorMessage(e, 'Error al eliminar')),
   });
 
   const uploadImagesMut = useMutation({

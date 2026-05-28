@@ -69,10 +69,10 @@ export default function AuditoriaPage() {
           <AuditLogTable logs={logsData?.data || []} isLoading={logsLoading} />
 
           {/* Paginación */}
-          {logsData && logsData.pagination.totalPages > 1 && (
+          {logsData && (logsData.pagination.totalPages ?? 0) > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Mostrando {logsData.data.length} de {logsData.pagination.totalItems} registros
+                Mostrando {logsData.data.length} de {logsData.pagination.totalItems ?? 0} registros
               </p>
               <div className="flex items-center gap-2">
                 <Button

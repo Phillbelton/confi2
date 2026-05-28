@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AuditLogFilters } from '@/types/audit';
+import type { AuditLogFilters, AuditAction, AuditEntity } from '@/types/audit';
 import { AUDIT_ACTION_LABELS, AUDIT_ENTITY_LABELS } from '@/types/audit';
 
 interface AuditFiltersProps {
@@ -70,7 +70,7 @@ export function AuditFilters({ filters, onFiltersChange, onClear }: AuditFilters
                   onValueChange={(value) =>
                     onFiltersChange({
                       ...filters,
-                      action: value === 'all' ? undefined : (value as any),
+                      action: value === 'all' ? undefined : (value as AuditAction),
                       page: 1,
                     })
                   }
@@ -97,7 +97,7 @@ export function AuditFilters({ filters, onFiltersChange, onClear }: AuditFilters
                   onValueChange={(value) =>
                     onFiltersChange({
                       ...filters,
-                      entityType: value === 'all' ? undefined : (value as any),
+                      entityType: value === 'all' ? undefined : (value as AuditEntity),
                       page: 1,
                     })
                   }

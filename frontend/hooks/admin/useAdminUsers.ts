@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { userService, type UserFilters, type CreateUserData, type UpdateUserData } from '@/services/users';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 /**
  * Hook para obtener usuarios con filtros y paginación
@@ -51,10 +52,8 @@ export function useUserOperations() {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-funcionarios'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al crear usuario', {
-        description: error.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al crear usuario', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -69,10 +68,8 @@ export function useUserOperations() {
       queryClient.invalidateQueries({ queryKey: ['admin-user'] });
       queryClient.invalidateQueries({ queryKey: ['admin-funcionarios'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al actualizar usuario', {
-        description: error.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al actualizar usuario', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -82,10 +79,8 @@ export function useUserOperations() {
     onSuccess: () => {
       toast.success('Contraseña actualizada correctamente');
     },
-    onError: (error: any) => {
-      toast.error('Error al cambiar contraseña', {
-        description: error.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al cambiar contraseña', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -96,10 +91,8 @@ export function useUserOperations() {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-funcionarios'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al desactivar usuario', {
-        description: error.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al desactivar usuario', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -112,10 +105,8 @@ export function useUserOperations() {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-funcionarios'] });
     },
-    onError: (error: any) => {
-      toast.error('Error al activar usuario', {
-        description: error.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al activar usuario', { description: getApiErrorMessage(error) });
     },
   });
 

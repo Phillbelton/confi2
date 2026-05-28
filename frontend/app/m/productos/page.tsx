@@ -17,6 +17,20 @@ import {
 import { useProducts, useFacets } from '@/hooks/useProducts';
 import { useDebounce } from 'use-debounce';
 import { cn } from '@/lib/utils';
+import type { ProductQueryParams } from '@/services/products';
+
+// Valida que el sort venga de la URL en el conjunto soportado por la
+// API. Devuelve undefined si no coincide → la API usa el default.
+const VALID_SORTS = [
+  'price_asc', 'price_desc', 'name_asc', 'name_desc',
+  'newest', 'oldest', 'popular',
+] as const;
+type SortKey = (typeof VALID_SORTS)[number];
+function parseSort(raw: string | null): SortKey | undefined {
+  return raw && (VALID_SORTS as readonly string[]).includes(raw)
+    ? (raw as SortKey)
+    : undefined;
+}
 
 function CatalogContent() {
   const router = useRouter();
@@ -31,7 +45,7 @@ function CatalogContent() {
   const onSale = sp.get('onSale') === 'true';
   const featured = sp.get('featured') === 'true';
   const search = sp.get('search') || '';
-  const sort = sp.get('sort') || 'newest';
+  const sort: SortKey = parseSort(sp.get('sort')) ?? 'newest';
 
   // Filtros dinámicos `attr_<key>=v1,v2` en URL
   const activeAttrs: Record<string, string[]> = {};
@@ -60,7 +74,7 @@ function CatalogContent() {
     router.replace(`/m/productos?${params.toString()}`);
   };
 
-  const { data, isLoading } = useProducts({
+  const productQuery: ProductQueryParams = {
     category,
     subcategory,
     brands,
@@ -70,10 +84,13 @@ function CatalogContent() {
     onSale: onSale || undefined,
     featured: featured || undefined,
     search: debouncedSearch || undefined,
-    sort: sort as any,
+    sort,
     limit: 30,
-    ...attrQueryEntries,
-  } as any);
+    // Filtros dinámicos attr_<key> — el backend los acepta como query
+    // strings adicionales aunque no estén en el tipo formal.
+    ...(attrQueryEntries as Partial<ProductQueryParams>),
+  };
+  const { data, isLoading } = useProducts(productQuery);
 
   const products = data?.data || [];
   const total = data?.pagination?.total || 0;
@@ -83,12 +100,13 @@ function CatalogContent() {
     ...attrQueryEntries,
   });
 
-  const dynamicAttributes: Array<{
-    key: string;
-    label: string;
-    multiSelect: boolean;
-    options: Array<{ value: string; label: string; count: number }>;
-  }> = facets?.attributes || [];
+  // Derivar arrays de facets con identidades estables (no `undefined`)
+  // para usar directamente en condiciones y renders sin chaining repetido.
+  const facetSubcategories = facets?.subcategories ?? [];
+  const facetBrands = facets?.brands ?? [];
+  const facetFormats = facets?.formats ?? [];
+  const facetFlavors = facets?.flavors ?? [];
+  const dynamicAttributes = facets?.attributes ?? [];
 
   const toggleAttrValue = (key: string, value: string, multi: boolean) => {
     const cur = activeAttrs[key] || [];
@@ -105,7 +123,7 @@ function CatalogContent() {
   const activeChips: Array<{ label: string; onRemove: () => void }> = [];
   if (brands) {
     brands.split(',').forEach((b) => {
-      const match = facets?.brands?.find((x: any) => x.slug === b);
+      const match = facetBrands.find((x) => x.slug === b);
       activeChips.push({
         label: `Marca: ${match?.name || b}`,
         onRemove: () => {
@@ -116,21 +134,21 @@ function CatalogContent() {
     });
   }
   if (subcategory) {
-    const match = facets?.subcategories?.find((x: any) => x.slug === subcategory);
+    const match = facetSubcategories.find((x) => x.slug === subcategory);
     activeChips.push({
       label: `${match?.name || subcategory}`,
       onRemove: () => setParam({ subcategoria: undefined }),
     });
   }
   if (format) {
-    const match = facets?.formats?.find((x: any) => x.slug === format);
+    const match = facetFormats.find((x) => x.slug === format);
     activeChips.push({
       label: `${match?.label || format}`,
       onRemove: () => setParam({ formato: undefined }),
     });
   }
   if (flavor) {
-    const match = facets?.flavors?.find((x: any) => x.slug === flavor);
+    const match = facetFlavors.find((x) => x.slug === flavor);
     activeChips.push({
       label: `${match?.name || flavor}`,
       onRemove: () => setParam({ sabor: undefined }),
@@ -178,14 +196,14 @@ function CatalogContent() {
       )}
 
       {/* Subcategorías de la categoría actual */}
-      {category && facets?.subcategories?.length > 0 && (
+      {category && facetSubcategories.length > 0 && (
         <div className="scrollbar-none flex gap-2 overflow-x-auto border-b border-border/60 bg-background px-4 py-2.5 lg:px-8">
           <SubcategoryChip
             label="Todo"
             active={!subcategory}
             onClick={() => setParam({ subcategoria: undefined })}
           />
-          {facets.subcategories.map((s: any) => (
+          {facetSubcategories.map((s) => (
             <SubcategoryChip
               key={s._id}
               label={s.name}
@@ -284,10 +302,10 @@ function CatalogContent() {
               </SheetHeader>
 
               <div className="flex-1 space-y-6 overflow-y-auto px-4 py-5">
-                {facets?.brands?.length > 0 && (
+                {facetBrands.length > 0 && (
                   <FilterSection
                     title="Marcas"
-                    items={facets.brands}
+                    items={facetBrands}
                     selected={brands ? brands.split(',') : []}
                     onToggle={(slug) => {
                       const cur = brands ? brands.split(',') : [];
@@ -297,10 +315,10 @@ function CatalogContent() {
                   />
                 )}
 
-                {facets?.subcategories?.length > 0 && (
+                {facetSubcategories.length > 0 && (
                   <FilterSection
                     title="Subcategorías"
-                    items={facets.subcategories}
+                    items={facetSubcategories}
                     selected={subcategory ? [subcategory] : []}
                     onToggle={(slug) =>
                       setParam({ subcategoria: subcategory === slug ? undefined : slug })
@@ -308,10 +326,10 @@ function CatalogContent() {
                   />
                 )}
 
-                {facets?.formats?.length > 0 && (
+                {facetFormats.length > 0 && (
                   <FilterSection
                     title="Formato"
-                    items={facets.formats.map((f: any) => ({ ...f, name: f.label }))}
+                    items={facetFormats.map((f) => ({ ...f, name: f.label ?? f.name ?? f.slug }))}
                     selected={format ? [format] : []}
                     onToggle={(slug) =>
                       setParam({ formato: format === slug ? undefined : slug })
@@ -319,10 +337,10 @@ function CatalogContent() {
                   />
                 )}
 
-                {facets?.flavors?.length > 0 && (
+                {facetFlavors.length > 0 && (
                   <FilterSection
                     title="Sabor"
-                    items={facets.flavors}
+                    items={facetFlavors.map((f) => ({ ...f, name: f.name ?? f.label ?? f.slug }))}
                     selected={flavor ? [flavor] : []}
                     onToggle={(slug) =>
                       setParam({ sabor: flavor === slug ? undefined : slug })

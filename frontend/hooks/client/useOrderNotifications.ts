@@ -76,7 +76,7 @@ export function useOrderNotifications() {
         if (cached && cached.status !== order.status) {
           // Status has changed!
           const statusConfig = getOrderStatusConfig(order.status);
-          const oldStatusConfig = getOrderStatusConfig(cached.status as any);
+          const oldStatusConfig = getOrderStatusConfig(cached.status as Order['status']);
 
           toast({
             title: `Pedido #${order.orderNumber} actualizado`,

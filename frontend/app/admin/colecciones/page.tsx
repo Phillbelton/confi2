@@ -17,7 +17,13 @@ import {
   useAdminCollections,
   useCollectionOperations,
 } from '@/hooks/admin/useAdminCollections';
+import type {
+  CreateCollectionInput,
+  UpdateCollectionInput,
+} from '@/services/admin/collections';
 import type { Collection } from '@/types';
+
+type CollectionFormData = Partial<CreateCollectionInput>;
 
 export default function ColeccionesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -37,7 +43,7 @@ export default function ColeccionesPage() {
     isUploadingImage,
   } = useCollectionOperations();
 
-  const collections: Collection[] = (data?.data as any)?.collections || [];
+  const collections: Collection[] = data?.data?.collections ?? [];
 
   const handleOpenDialog = (collection?: Collection) => {
     setSelected(collection);
@@ -49,27 +55,29 @@ export default function ColeccionesPage() {
     setSelected(undefined);
   };
 
-  const handleSubmit = (formData: any) => {
+  const handleSubmit = (formData: CollectionFormData) => {
     // Limpiar undefineds. Mantener `image: ''` explícito (señal de "borrar imagen")
     // y string vacío en otros campos opcionales para no enviar basura.
-    const cleaned: any = {};
-    for (const [k, v] of Object.entries(formData)) {
+    const cleaned: CollectionFormData = {};
+    for (const [k, v] of Object.entries(formData) as Array<
+      [keyof CollectionFormData, CollectionFormData[keyof CollectionFormData]]
+    >) {
       if (v === undefined) continue;
       // image: '' es señal explícita de remover → conservar
       if (k === 'image') {
-        cleaned[k] = v;
+        (cleaned[k] as string | undefined) = v as string;
         continue;
       }
-      if (v !== '') cleaned[k] = v;
+      if (v !== '') (cleaned[k] as typeof v) = v;
     }
 
     if (selected) {
       update(
-        { id: selected._id, data: cleaned },
+        { id: selected._id, data: cleaned as UpdateCollectionInput },
         { onSuccess: handleCloseDialog }
       );
     } else {
-      create(cleaned, { onSuccess: handleCloseDialog });
+      create(cleaned as CreateCollectionInput, { onSuccess: handleCloseDialog });
     }
   };
 

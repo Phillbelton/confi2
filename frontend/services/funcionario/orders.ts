@@ -29,13 +29,13 @@ export const funcionarioOrdersService = {
    * Get all orders with pagination and filters
    */
   getOrders: async (params: GetOrdersParams): Promise<AdminPaginatedResponse<Order>> => {
-    // Filter out empty string values
-    const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {
+    // Filter out empty string / null / undefined values
+    const cleanParams: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
       if (value !== '' && value !== null && value !== undefined) {
-        acc[key] = value;
+        cleanParams[key] = value;
       }
-      return acc;
-    }, {} as any);
+    }
 
     const { data } = await funcionarioApi.get<ApiResponse<AdminPaginatedResponse<Order>>>('/orders', {
       params: cleanParams,
@@ -102,14 +102,21 @@ export const funcionarioOrdersService = {
   },
 
   /**
-   * Get stats for dashboard
+   * Get stats for dashboard. Backend devuelve un objeto de KPIs cuyo
+   * shape evoluciona — el consumidor narrows lo que necesita.
    */
-  getStats: async (startDate?: string, endDate?: string): Promise<any> => {
-    const params: any = {};
+  getStats: async (
+    startDate?: string,
+    endDate?: string
+  ): Promise<Record<string, unknown>> => {
+    const params: Record<string, string> = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    const { data } = await funcionarioApi.get<ApiResponse<any>>('/orders/stats', { params });
+    const { data } = await funcionarioApi.get<ApiResponse<Record<string, unknown>>>(
+      '/orders/stats',
+      { params }
+    );
     return data.data;
   },
 };

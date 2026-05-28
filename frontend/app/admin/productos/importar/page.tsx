@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/apiConfig';
 
@@ -80,11 +81,11 @@ export default function ImportarProductosPage() {
         title: 'Importación completada',
         description: `${json.data.productsCreated} creados · ${json.data.productsUpdated} actualizados`,
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error importing:', err);
       toast({
         title: 'Error',
-        description: err.message || 'No se pudo importar el archivo',
+        description: getApiErrorMessage(err, 'No se pudo importar el archivo'),
         variant: 'destructive',
       });
     } finally {

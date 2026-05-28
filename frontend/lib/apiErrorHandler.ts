@@ -12,11 +12,19 @@ export interface ApiErrorResponse {
 }
 
 /**
- * Extrae el mensaje de error de una respuesta del backend.
- * Soporta ambos campos: `error` (legacy) y `message` (estándar).
+ * Forma laxa del body de error que devuelve el backend. Acepta ambos
+ * campos por compatibilidad: `error` (legacy) y `message` (estándar).
  */
-function extractErrorMessage(data: any): string {
-  return data?.message || data?.error || 'An error occurred';
+type BackendErrorBody = { message?: unknown; error?: unknown; details?: unknown };
+
+/**
+ * Extrae el mensaje de error de una respuesta del backend.
+ */
+function extractErrorMessage(data: unknown): string {
+  const body = data as BackendErrorBody | null | undefined;
+  if (typeof body?.message === 'string' && body.message) return body.message;
+  if (typeof body?.error === 'string' && body.error) return body.error;
+  return 'An error occurred';
 }
 
 /**
@@ -40,7 +48,7 @@ export function setupErrorInterceptor(
     (error: AxiosError) => {
       if (error.response) {
         const status = error.response.status;
-        const data = error.response.data as any;
+        const data = error.response.data as BackendErrorBody | null | undefined;
         const message = extractErrorMessage(data);
 
         // Handle 401 — clear token and redirect
@@ -54,7 +62,7 @@ export function setupErrorInterceptor(
         const apiError: ApiErrorResponse = {
           status,
           message,
-          ...(data?.details && { details: data.details }),
+          ...(Array.isArray(data?.details) && { details: data.details as ApiErrorResponse['details'] }),
         };
 
         return Promise.reject(apiError);

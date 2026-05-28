@@ -33,6 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useClientStore } from '@/store/useClientStore';
 import { useClientAuth, useUpdateClientProfile } from '@/hooks/client/useClientAuth';
 import { useMyOrders } from '@/hooks/client/useClientOrders';
+import type { Order } from '@/types/order';
 import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
@@ -142,15 +143,15 @@ export default function ProfilePage() {
   };
 
   // Stats calculados
-  const orders = ordersData?.data || [];
+  const orders: Order[] = ordersData?.data ?? [];
   const inProgressOrders = orders.filter(
-    (order: any) => !['completed', 'cancelled'].includes(order.status)
+    (order) => !['completed', 'cancelled'].includes(order.status)
   ).length;
   const completedOrders = orders.filter(
-    (order: any) => order.status === 'completed'
+    (order) => order.status === 'completed'
   ).length;
   const now = new Date();
-  const thisMonthOrders = orders.filter((order: any) => {
+  const thisMonthOrders = orders.filter((order) => {
     const d = new Date(order.createdAt);
     return (
       d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()

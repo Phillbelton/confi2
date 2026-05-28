@@ -343,7 +343,7 @@ export default function ProductsPage() {
               </TableHeader>
               <TableBody>
                 {products.map((p) => {
-                  const brandName = typeof p.brand === 'object' ? (p.brand as any)?.name : '';
+                  const brandName = typeof p.brand === 'object' && p.brand ? (p.brand as Brand).name : '';
                   const isPriceEditing = editingPrice?.id === p._id;
                   const issues = collectIssues(p);
                   return (
@@ -586,7 +586,7 @@ function collectIssues(p: Product): string[] {
   if (!p.images || p.images.length === 0) issues.push('Sin imagen');
   if (!p.brand) issues.push('Sin marca');
   if (!p.format) issues.push('Sin formato');
-  if (!p.categories || (p.categories as any[]).length === 0) issues.push('Sin categoría');
+  if (!p.categories || (p.categories as unknown[]).length === 0) issues.push('Sin categoría');
   return issues;
 }
 

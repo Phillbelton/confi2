@@ -49,7 +49,7 @@ export function SalesChart({ data }: SalesChartProps) {
                     month: 'long',
                   });
                 }}
-                formatter={(value: any) => [
+                formatter={(value: number) => [
                   `$${value.toLocaleString()}`,
                   'Ventas',
                 ]}

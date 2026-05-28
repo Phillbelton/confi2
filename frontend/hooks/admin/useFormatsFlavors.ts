@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { formatService, type CreateFormatInput, type UpdateFormatInput } from '@/services/admin/formats';
 import { flavorService, type CreateFlavorInput, type UpdateFlavorInput } from '@/services/admin/flavors';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 // =================== FORMATS ===================
 export function useFormats() {
@@ -30,17 +31,17 @@ export function useFormatOps() {
     create: useMutation({
       mutationFn: (input: CreateFormatInput) => formatService.create(input),
       onSuccess: () => { toast.success('Formato creado'); inv(); },
-      onError: (e: any) => toast.error(e?.message || 'Error'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'Error')),
     }),
     update: useMutation({
       mutationFn: ({ id, data }: { id: string; data: UpdateFormatInput }) => formatService.update(id, data),
       onSuccess: () => { toast.success('Formato actualizado'); inv(); },
-      onError: (e: any) => toast.error(e?.message || 'Error'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'Error')),
     }),
     remove: useMutation({
       mutationFn: (id: string) => formatService.remove(id),
       onSuccess: () => { toast.success('Formato eliminado'); inv(); },
-      onError: (e: any) => toast.error(e?.message || 'Error'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'Error')),
     }),
   };
 }
@@ -72,17 +73,17 @@ export function useFlavorOps() {
     create: useMutation({
       mutationFn: (input: CreateFlavorInput) => flavorService.create(input),
       onSuccess: () => { toast.success('Sabor creado'); inv(); },
-      onError: (e: any) => toast.error(e?.message || 'Error'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'Error')),
     }),
     update: useMutation({
       mutationFn: ({ id, data }: { id: string; data: UpdateFlavorInput }) => flavorService.update(id, data),
       onSuccess: () => { toast.success('Sabor actualizado'); inv(); },
-      onError: (e: any) => toast.error(e?.message || 'Error'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'Error')),
     }),
     remove: useMutation({
       mutationFn: (id: string) => flavorService.remove(id),
       onSuccess: () => { toast.success('Sabor eliminado'); inv(); },
-      onError: (e: any) => toast.error(e?.message || 'Error'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'Error')),
     }),
   };
 }

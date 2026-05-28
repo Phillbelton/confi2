@@ -14,7 +14,12 @@ import {
 import { CategoriesTree } from '@/components/admin/categories/CategoriesTree';
 import { CategoryForm } from '@/components/admin/categories/CategoryForm';
 import { useAdminCategories, useCategoryOperations } from '@/hooks/admin/useAdminCategories';
+import type { CreateCategoryInput, UpdateCategoryInput } from '@/services/admin/categories';
 import type { Category } from '@/types';
+
+// Forma plana extendida que reconoce el campo `subcategories[]` embebido
+// por el backend (presente en la respuesta jerárquica).
+type CategoryWithChildren = Category & { subcategories?: CategoryWithChildren[] };
 
 export default function CategoriasPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -30,9 +35,9 @@ export default function CategoriasPage() {
   //  - `categories`  → lista plana deduplicada (para el select de padre)
   //  - `categoriesTree` → solo raíces, cada una con `subcategories` (para el árbol)
   const { categories, categoriesTree } = useMemo(() => {
-    const raw: any[] = data?.data?.categories || [];
+    const raw = (data?.data?.categories ?? []) as CategoryWithChildren[];
     const byId = new Map<string, Category>();
-    const visit = (c: any) => {
+    const visit = (c: CategoryWithChildren) => {
       if (c?._id && !byId.has(c._id)) byId.set(c._id, c);
       if (Array.isArray(c?.subcategories)) c.subcategories.forEach(visit);
     };
@@ -62,11 +67,11 @@ export default function CategoriasPage() {
     setDefaultParentId(undefined);
   };
 
-  const handleSubmit = (formData: any) => {
+  const handleSubmit = (formData: CreateCategoryInput) => {
     if (selectedCategory) {
       // Update existing category
       update(
-        { id: selectedCategory._id, data: formData },
+        { id: selectedCategory._id, data: formData as UpdateCategoryInput },
         {
           onSuccess: () => {
             handleCloseDialog();

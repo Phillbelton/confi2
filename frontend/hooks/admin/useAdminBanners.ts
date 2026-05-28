@@ -6,6 +6,7 @@ import {
   type UpdateBannerInput,
 } from '@/services/admin/banners';
 import type { BannerPlacement } from '@/types';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 export function useAdminBanners(placement?: BannerPlacement) {
   return useQuery({
@@ -36,7 +37,7 @@ export function useBannerOperations() {
       toast.success('Banner creado');
       invalidate();
     },
-    onError: (e: any) => toast.error('Error al crear', { description: e?.message }),
+    onError: (e) => toast.error('Error al crear', { description: getApiErrorMessage(e) }),
   });
 
   const update = useMutation({
@@ -46,7 +47,7 @@ export function useBannerOperations() {
       toast.success('Banner actualizado');
       invalidate();
     },
-    onError: (e: any) => toast.error('Error al actualizar', { description: e?.message }),
+    onError: (e) => toast.error('Error al actualizar', { description: getApiErrorMessage(e) }),
   });
 
   const remove = useMutation({
@@ -55,7 +56,7 @@ export function useBannerOperations() {
       toast.success('Banner eliminado');
       invalidate();
     },
-    onError: (e: any) => toast.error('Error al eliminar', { description: e?.message }),
+    onError: (e) => toast.error('Error al eliminar', { description: getApiErrorMessage(e) }),
   });
 
   const uploadImage = useMutation({
@@ -72,7 +73,7 @@ export function useBannerOperations() {
       toast.success('Imagen subida');
       invalidate();
     },
-    onError: (e: any) => toast.error('Error al subir imagen', { description: e?.message }),
+    onError: (e) => toast.error('Error al subir imagen', { description: getApiErrorMessage(e) }),
   });
 
   return {

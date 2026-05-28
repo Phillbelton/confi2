@@ -5,6 +5,7 @@ import {
   type CreateCollectionInput,
   type UpdateCollectionInput,
 } from '@/services/admin/collections';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 export function useAdminCollections(active: 'true' | 'false' | 'all' = 'all') {
   return useQuery({
@@ -45,14 +46,11 @@ export function useCollectionOperations() {
   const createMutation = useMutation({
     mutationFn: (data: CreateCollectionInput) => adminCollectionService.create(data),
     onSuccess: (response) => {
-      const name = (response.data as any)?.collection?.name;
-      toast.success('Colección creada', { description: name });
+      toast.success('Colección creada', { description: response.data?.collection?.name });
       invalidateAll();
     },
-    onError: (error: any) => {
-      toast.error('Error al crear colección', {
-        description: error?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al crear colección', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -60,14 +58,11 @@ export function useCollectionOperations() {
     mutationFn: ({ id, data }: { id: string; data: UpdateCollectionInput }) =>
       adminCollectionService.update(id, data),
     onSuccess: (response) => {
-      const name = (response.data as any)?.collection?.name;
-      toast.success('Colección actualizada', { description: name });
+      toast.success('Colección actualizada', { description: response.data?.collection?.name });
       invalidateAll();
     },
-    onError: (error: any) => {
-      toast.error('Error al actualizar colección', {
-        description: error?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al actualizar colección', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -77,10 +72,8 @@ export function useCollectionOperations() {
       toast.success('Colección eliminada');
       invalidateAll();
     },
-    onError: (error: any) => {
-      toast.error('Error al eliminar colección', {
-        description: error?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al eliminar colección', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -91,10 +84,8 @@ export function useCollectionOperations() {
       toast.success('Orden actualizado');
       invalidateAll();
     },
-    onError: (error: any) => {
-      toast.error('Error al reordenar', {
-        description: error?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al reordenar', { description: getApiErrorMessage(error) });
     },
   });
 
@@ -105,10 +96,8 @@ export function useCollectionOperations() {
       toast.success('Imagen subida correctamente');
       invalidateAll();
     },
-    onError: (error: any) => {
-      toast.error('Error al subir imagen', {
-        description: error?.message || 'Ocurrió un error inesperado',
-      });
+    onError: (error) => {
+      toast.error('Error al subir imagen', { description: getApiErrorMessage(error) });
     },
   });
 

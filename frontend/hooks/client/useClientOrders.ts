@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { orderService } from '@/services/orders';
 import { clientOrdersService } from '@/services/client/orders';
 import type { Order, OrderStatus } from '@/types/order';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 export interface OrderFilters {
   status?: OrderStatus | '';
@@ -50,8 +51,8 @@ export function useCancelOrder() {
       queryClient.invalidateQueries({ queryKey: ['order'] });
       toast.success('Pedido cancelado exitosamente');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'No se pudo cancelar el pedido');
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, 'No se pudo cancelar el pedido'));
     },
   });
 }

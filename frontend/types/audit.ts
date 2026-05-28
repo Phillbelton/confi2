@@ -16,9 +16,12 @@ export interface AuditLog {
   action: AuditAction;
   entity: AuditEntity;
   entityId: string;
+  // El backend serializa el snapshot de la entidad afectada (forma laxa
+   // porque distintas entidades tienen distinto shape). Consumidores
+   // narrows según context.
   changes: {
-    before: any;
-    after: any;
+    before: Record<string, unknown> | null;
+    after: Record<string, unknown> | null;
   };
   ipAddress: string;
   userAgent: string;

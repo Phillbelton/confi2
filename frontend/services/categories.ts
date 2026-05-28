@@ -10,9 +10,16 @@ import { buildCategoryTree } from '@/lib/categoryUtils';
  * otra dentro del padre). Cualquier consumidor que recorra ambos niveles
  * duplica entries. Estos helpers normalizan a una forma sin ambigüedad.
  */
-function dedupeById(raw: any[]): Category[] {
-  const byId = new Map<string, Category>();
-  const visit = (c: any) => {
+
+// Forma extendida (sólo a nivel de helper) que reconoce el campo opcional
+// `subcategories[]` embebido por el backend en la respuesta plana.
+type CategoryWithEmbeddedChildren = Category & {
+  subcategories?: CategoryWithEmbeddedChildren[];
+};
+
+function dedupeById(raw: CategoryWithEmbeddedChildren[]): CategoryWithEmbeddedChildren[] {
+  const byId = new Map<string, CategoryWithEmbeddedChildren>();
+  const visit = (c: CategoryWithEmbeddedChildren) => {
     if (c?._id && !byId.has(c._id)) byId.set(c._id, c);
     if (Array.isArray(c?.subcategories)) c.subcategories.forEach(visit);
   };
@@ -22,11 +29,9 @@ function dedupeById(raw: any[]): Category[] {
 
 export const categoryService = {
   // Get all categories (flat array for compatibility)
-  getAll: async () => {
+  getAll: async (): Promise<Category[]> => {
     const { data } = await api.get<ApiResponse<{ categories: Category[] }>>('/categories');
-    // Backend returns { success: true, data: { categories: [...] } }
-    // We need to unwrap to return just the categories array
-    return (data.data as any)?.categories || [];
+    return data.data?.categories ?? [];
   },
 
   /**
@@ -34,9 +39,9 @@ export const categoryService = {
    * Forma limpia para selects, filtros y cualquier consumo lineal.
    */
   getAllFlat: async (): Promise<Category[]> => {
-    const { data } = await api.get<ApiResponse<{ categories: Category[] }>>('/categories');
-    const raw = (data.data as any)?.categories || [];
-    return dedupeById(raw).map(({ subcategories: _subcategories, ...rest }: any) => rest as Category);
+    const { data } = await api.get<ApiResponse<{ categories: CategoryWithEmbeddedChildren[] }>>('/categories');
+    const raw = data.data?.categories ?? [];
+    return dedupeById(raw).map(({ subcategories: _subcategories, ...rest }) => rest as Category);
   },
 
   /**
@@ -44,10 +49,10 @@ export const categoryService = {
    * Forma correcta para vistas jerárquicas / agrupadas.
    */
   getAllTree: async (): Promise<CategoryWithSubcategories[]> => {
-    const { data } = await api.get<ApiResponse<{ categories: CategoryWithSubcategories[] }>>('/categories');
-    const raw = (data.data as any)?.categories || [];
+    const { data } = await api.get<ApiResponse<{ categories: CategoryWithEmbeddedChildren[] }>>('/categories');
+    const raw = data.data?.categories ?? [];
     const all = dedupeById(raw);
-    if (all.length > 0 && (all[0] as any).subcategories !== undefined) {
+    if (all.length > 0 && (all[0] as CategoryWithEmbeddedChildren).subcategories !== undefined) {
       return all.filter((c) => !c.parent) as CategoryWithSubcategories[];
     }
     return buildCategoryTree(all);
@@ -56,7 +61,7 @@ export const categoryService = {
   // Get all categories preserving hierarchy
   getAllHierarchical: async (): Promise<CategoryWithSubcategories[]> => {
     const { data } = await api.get<ApiResponse<{ categories: CategoryWithSubcategories[] }>>('/categories');
-    const categories = (data.data as any)?.categories || [];
+    const categories = data.data?.categories ?? [];
 
     // If backend already returns hierarchical data, use it
     if (categories.length > 0 && categories[0].subcategories !== undefined) {
@@ -68,10 +73,9 @@ export const categoryService = {
   },
 
   // Get main categories (no parent)
-  getMainCategories: async () => {
+  getMainCategories: async (): Promise<Category[]> => {
     const { data } = await api.get<ApiResponse<{ categories: Category[] }>>('/categories/main');
-    // Backend returns { success: true, data: { categories: [...] } }
-    return (data.data as any)?.categories || [];
+    return data.data?.categories ?? [];
   },
 
   // Get category by ID
@@ -89,12 +93,11 @@ export const categoryService = {
   },
 
   // Get subcategories
-  getSubcategories: async (parentId: string) => {
+  getSubcategories: async (parentId: string): Promise<Category[]> => {
     const { data } = await api.get<ApiResponse<{ subcategories: Category[] }>>(
       `/categories/${parentId}/subcategories`
     );
-    // Backend returns { success: true, data: { subcategories: [...] } }
-    return (data.data as any)?.subcategories || [];
+    return data.data?.subcategories ?? [];
   },
 
   // Get effective facetable attributes for a category (self + ancestors deduped)
@@ -102,7 +105,7 @@ export const categoryService = {
     const { data } = await api.get<ApiResponse<{ attributes: FacetableAttribute[] }>>(
       `/categories/${categoryId}/facetable-attributes`
     );
-    return (data.data as any)?.attributes || [];
+    return data.data?.attributes ?? [];
   },
 };
 

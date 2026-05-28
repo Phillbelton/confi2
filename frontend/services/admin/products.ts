@@ -1,5 +1,5 @@
 import { adminApi } from '@/lib/adminApi';
-import type { Product, ApiResponse, SaleUnit, ProductTier } from '@/types';
+import type { Product, ApiResponse, SaleUnit, ProductTier, PaginationMeta } from '@/types';
 import type { ProductQueryParams } from '@/services/products';
 
 export interface CreateProductInput {
@@ -24,7 +24,7 @@ export type UpdateProductInput = Partial<CreateProductInput>;
 
 export const adminProductService = {
   list: async (params?: ProductQueryParams) => {
-    const { data } = await adminApi.get<ApiResponse<{ data: Product[]; pagination: any }>>(
+    const { data } = await adminApi.get<ApiResponse<{ data: Product[]; pagination: PaginationMeta }>>(
       '/products',
       { params: { ...params, active: 'all' } }
     );

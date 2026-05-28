@@ -171,8 +171,15 @@ export function CollectionForm({
     // el sentinel __REMOVE__ (clear). NO reenviar el valor original en cada
     // submit — eso pisaba la imagen recién subida con la URL vieja.
     const { image, ...rest } = values;
-    const payload: any = { ...rest, products: productIds };
-    if (image === '__REMOVE__') payload.image = '';
+    const payload: FormValues & { products: string[] } = {
+      ...rest,
+      products: productIds,
+    };
+    if (image === '__REMOVE__') {
+      payload.image = '';
+    } else if (image !== undefined) {
+      payload.image = image;
+    }
     onSubmit(payload);
   };
 

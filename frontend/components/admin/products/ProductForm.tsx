@@ -169,8 +169,12 @@ export function ProductForm({
     form.setValue('tiers', [...tiers, next]);
   };
   const removeTier = (i: number) => form.setValue('tiers', tiers.filter((_, n) => n !== i));
-  const updateTier = (i: number, key: keyof typeof tiers[0], val: any) =>
-    form.setValue('tiers', tiers.map((t, n) => n === i ? { ...t, [key]: val } : t));
+  const updateTier = <K extends keyof typeof tiers[0]>(
+    i: number,
+    key: K,
+    val: (typeof tiers)[0][K]
+  ) =>
+    form.setValue('tiers', tiers.map((t, n) => (n === i ? { ...t, [key]: val } : t)));
 
   // Helper: discount % por tier
   const tierDiscountPercent = (ppu: number) =>

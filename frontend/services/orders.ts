@@ -75,7 +75,7 @@ export const orderService = {
   create: async (payload: CreateOrderPayload) => {
     const { data } = await clientApi.post<ApiResponse<{ order: Order; whatsappURL: string }>>('/orders', payload);
     // Backend returns { success: true, data: { order: {...}, whatsappURL: '...' } }
-    return data.data as any;
+    return data.data;
   },
 
   // Generate WhatsApp message
@@ -85,7 +85,7 @@ export const orderService = {
       { orderId }
     );
     // Backend returns { success: true, data: { message: '...', url: '...' } }
-    return data.data as any;
+    return data.data;
   },
 
   // Get order by order number (authenticated - admin/funcionario or owner client)

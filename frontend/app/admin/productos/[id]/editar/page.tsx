@@ -4,7 +4,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { ProductForm, type ProductFormValues } from '@/components/admin/products/ProductForm';
 import { useAdminProduct, useProductOperations } from '@/hooks/admin/useAdminProducts';
-import type { Product } from '@/types';
+import type { Product, Category, Brand, Format, Flavor } from '@/types';
+
+// Backend devuelve refs como string (id) o como objeto populado.
+// Helper genérico para resolver siempre al _id string.
+type RefOrPopulated = string | { _id: string } | null | undefined;
+const idOf = (v: RefOrPopulated): string | undefined =>
+  !v ? undefined : typeof v === 'string' ? v : v._id;
 
 export default function EditarProductoPage() {
   const router = useRouter();
@@ -32,19 +38,18 @@ export default function EditarProductoPage() {
 
   const product = data.product as Product;
 
-  const idOf = (v: any): string | undefined =>
-    !v ? undefined : typeof v === 'string' ? v : v._id;
+  const categoryIds: string[] = (product.categories as Array<string | Category>)
+    .map((c) => idOf(c))
+    .filter((x): x is string => Boolean(x));
 
   const defaultValues: Partial<ProductFormValues> = {
     sku: product.sku,
     name: product.name,
     description: product.description,
-    categories: (product.categories as any[])
-      .map((c) => idOf(c))
-      .filter((x): x is string => Boolean(x)),
-    brand: idOf(product.brand),
-    format: idOf(product.format),
-    flavor: idOf(product.flavor),
+    categories: categoryIds,
+    brand: idOf(product.brand as RefOrPopulated | Brand),
+    format: idOf(product.format as RefOrPopulated | Format),
+    flavor: idOf(product.flavor as RefOrPopulated | Flavor),
     barcode: product.barcode,
     unitPrice: product.unitPrice,
     saleUnit: product.saleUnit,
@@ -55,7 +60,7 @@ export default function EditarProductoPage() {
 
   const handleSubmit = async (values: ProductFormValues, images: File[]) => {
     update(
-      { id, data: values as any },
+      { id, data: values },
       {
         onSuccess: () => {
           if (images.length > 0) {

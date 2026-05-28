@@ -128,7 +128,10 @@ export default function UsuariosPage() {
     page,
     limit: 10,
     search: search || undefined,
-    role: roleFilter === 'staff' ? undefined : (roleFilter === 'all' ? undefined : roleFilter as any),
+    role:
+      roleFilter === 'staff' || roleFilter === 'all'
+        ? undefined
+        : (roleFilter as 'admin' | 'funcionario' | 'cliente'),
     active: activeFilter === 'all' ? undefined : activeFilter === 'active',
   };
 

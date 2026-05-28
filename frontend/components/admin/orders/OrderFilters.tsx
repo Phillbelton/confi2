@@ -10,7 +10,12 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Search, X } from 'lucide-react';
-import type { OrderFilters as Filters } from '@/types/order';
+import type {
+  OrderFilters as Filters,
+  OrderStatus,
+  DeliveryMethod,
+  PaymentMethod,
+} from '@/types/order';
 
 interface OrderFiltersProps {
   filters: Filters;
@@ -58,7 +63,7 @@ export function OrderFilters({ filters, onFiltersChange }: OrderFiltersProps) {
         <Select
           value={filters.status || 'all'}
           onValueChange={(value) =>
-            onFiltersChange({ ...filters, status: value === 'all' ? '' : value as any })
+            onFiltersChange({ ...filters, status: value === 'all' ? '' : (value as OrderStatus) })
           }
         >
           <SelectTrigger>
@@ -81,7 +86,7 @@ export function OrderFilters({ filters, onFiltersChange }: OrderFiltersProps) {
           onValueChange={(value) =>
             onFiltersChange({
               ...filters,
-              deliveryMethod: value === 'all' ? '' : value as any,
+              deliveryMethod: value === 'all' ? '' : (value as DeliveryMethod),
             })
           }
         >
@@ -101,7 +106,7 @@ export function OrderFilters({ filters, onFiltersChange }: OrderFiltersProps) {
           onValueChange={(value) =>
             onFiltersChange({
               ...filters,
-              paymentMethod: value === 'all' ? '' : value as any,
+              paymentMethod: value === 'all' ? '' : (value as PaymentMethod),
             })
           }
         >
