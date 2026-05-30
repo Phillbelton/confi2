@@ -8,6 +8,7 @@ import ProductImage from '../models/ProductImage';
 import { Format, FormatUnit } from '../models/Format';
 import { Flavor } from '../models/Flavor';
 import Collection from '../models/Collection';
+import { invalidateAllTaxonomyCaches } from './taxonomyCache';
 import logger from '../config/logger';
 
 /**
@@ -538,6 +539,10 @@ export async function runQuelitaProductImport(
       report.errors.push({ row: rowNumber, barcode, message: err?.message || 'error desconocido' });
     }
   }
+
+  // El importer auto-crea Brand/Category/Format/Flavor sobre la marcha;
+  // cualquier corrida cambia el contenido de las cuatro taxonomías.
+  invalidateAllTaxonomyCaches();
 
   report.durationMs = Date.now() - t0;
   return report;

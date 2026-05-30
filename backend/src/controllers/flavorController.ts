@@ -4,6 +4,7 @@ import { Flavor } from '../models/Flavor';
 import Product from '../models/Product';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { invalidateFlavorsCache } from '../services/taxonomyCache';
 
 export const listFlavors = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
@@ -40,6 +41,7 @@ export const createFlavor = asyncHandler(
       active: active !== false,
       createdBy: req.user?.id,
     });
+    invalidateFlavorsCache();
     res.status(201).json({ success: true, message: 'Sabor creado', data: { flavor } });
   }
 );
@@ -54,6 +56,7 @@ export const updateFlavor = asyncHandler(
     if (active !== undefined) f.active = active;
     if (req.user?.id) f.updatedBy = new mongoose.Types.ObjectId(req.user.id);
     await f.save();
+    invalidateFlavorsCache();
     res.status(200).json({ success: true, message: 'Sabor actualizado', data: { flavor: f } });
   }
 );
@@ -70,6 +73,7 @@ export const deleteFlavor = asyncHandler(
       );
     }
     await f.deleteOne();
+    invalidateFlavorsCache();
     res.status(200).json({ success: true, message: 'Sabor eliminado' });
   }
 );

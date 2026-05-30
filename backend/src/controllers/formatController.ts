@@ -4,6 +4,7 @@ import { Format } from '../models/Format';
 import Product from '../models/Product';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { invalidateFormatsCache } from '../services/taxonomyCache';
 
 export const listFormats = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
@@ -44,6 +45,7 @@ export const createFormat = asyncHandler(
       active: active !== false,
       createdBy: req.user?.id,
     });
+    invalidateFormatsCache();
     res.status(201).json({
       success: true,
       message: 'Formato creado',
@@ -63,6 +65,7 @@ export const updateFormat = asyncHandler(
     if (active !== undefined) f.active = active;
     if (req.user?.id) f.updatedBy = new mongoose.Types.ObjectId(req.user.id);
     await f.save();
+    invalidateFormatsCache();
     res.status(200).json({ success: true, message: 'Formato actualizado', data: { format: f } });
   }
 );
@@ -79,6 +82,7 @@ export const deleteFormat = asyncHandler(
       );
     }
     await f.deleteOne();
+    invalidateFormatsCache();
     res.status(200).json({ success: true, message: 'Formato eliminado' });
   }
 );

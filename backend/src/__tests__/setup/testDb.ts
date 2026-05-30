@@ -1,5 +1,6 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
+import { invalidateAllTaxonomyCaches } from '../../services/taxonomyCache';
 
 let mongoServer: MongoMemoryServer;
 
@@ -30,6 +31,11 @@ afterEach(async () => {
       await collections[key].deleteMany({});
     }
   }
+  // El cache in-memory de taxonomías persiste entre specs si no lo limpiamos:
+  // un spec que hace Brand.create(...) directo no pasa por el admin controller,
+  // así que el cache del spec anterior (posiblemente vacío) se le entrega como
+  // verdad y los populates virtuales devuelven null.
+  invalidateAllTaxonomyCaches();
 });
 
 /**

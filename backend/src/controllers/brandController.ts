@@ -3,6 +3,7 @@ import { Brand, IBrand } from '../models/Brand';
 import Product from "../models/Product";
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { invalidateBrandsCache } from '../services/taxonomyCache';
 
 /**
  * Controller para Brand
@@ -96,6 +97,8 @@ export const createBrand = asyncHandler(
       active: active !== undefined ? active : true,
     });
 
+    invalidateBrandsCache();
+
     res.status(201).json({
       success: true,
       message: 'Marca creada exitosamente',
@@ -122,6 +125,8 @@ export const updateBrand = asyncHandler(
     if (active !== undefined) brand.active = active;
 
     await brand.save();
+
+    invalidateBrandsCache();
 
     res.status(200).json({
       success: true,
@@ -153,6 +158,8 @@ export const deleteBrand = asyncHandler(
 
     brand.active = false;
     await brand.save();
+
+    invalidateBrandsCache();
 
     res.status(200).json({
       success: true,
