@@ -21,10 +21,32 @@ import type { AuthRequest } from '../../types';
  * de consultar la DB.
  */
 
-const flushAudit = () =>
-  new Promise<void>((resolve) => setImmediate(resolve)).then(
-    () => new Promise<void>((resolve) => setTimeout(resolve, 20))
-  );
+/**
+ * El middleware encola el insert con setImmediate. Bajo carga (suite
+ * completa), un solo tick + 20ms no alcanza porque mongo-memory-server
+ * compite con otros queries. Hacemos polling activo hasta ver el log
+ * (o timeout 500ms), en vez de adivinar un sleep arbitrario.
+ *
+ * `expectAtLeastOne` controla si el caller espera que SE registre o
+ * NO se registre el log. Para tests "no debe registrar" devolvemos
+ * inmediatamente tras un tick + 30ms (margen para que cualquier insert
+ * indeseado quede visible si llegara a suceder).
+ */
+const flushAudit = async (expectAtLeastOne = true): Promise<void> => {
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  if (!expectAtLeastOne) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 30));
+    return;
+  }
+  const deadline = Date.now() + 500;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const AuditLog = require('../../models/AuditLog').default;
+  while (Date.now() < deadline) {
+    const count = await AuditLog.countDocuments();
+    if (count > 0) return;
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+};
 
 const makeReq = (overrides: Partial<{
   userId: string;
@@ -136,7 +158,7 @@ describe('auditLog middleware', () => {
     auditLog('category', 'create')(req, res, next);
     res.json({ success: false, error: 'Algo falló' } as any);
 
-    await flushAudit();
+    await flushAudit(false);
     expect(await AuditLog.countDocuments()).toBe(0);
   });
 
@@ -148,7 +170,7 @@ describe('auditLog middleware', () => {
     auditLog('category', 'create')(req, res, next);
     res.json({ success: false, error: 'Operación no exitosa' } as any);
 
-    await flushAudit();
+    await flushAudit(false);
     expect(await AuditLog.countDocuments()).toBe(0);
   });
 
@@ -164,7 +186,7 @@ describe('auditLog middleware', () => {
       data: { category: { _id: new mongoose.Types.ObjectId() } },
     } as any);
 
-    await flushAudit();
+    await flushAudit(false);
     expect(await AuditLog.countDocuments()).toBe(0);
   });
 
@@ -179,7 +201,7 @@ describe('auditLog middleware', () => {
       data: { algo: 'pero sin _id ni id ni el field esperado' },
     } as any);
 
-    await flushAudit();
+    await flushAudit(false);
     expect(await AuditLog.countDocuments()).toBe(0);
   });
 

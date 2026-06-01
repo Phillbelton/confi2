@@ -7,8 +7,49 @@ import Collection from '../models/Collection';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { imageService } from '../services/imageService';
+import {
+  getBrandsMap,
+  getCategoriesMap,
+  getFormatsMap,
+  getFlavorsMap,
+  hydrateRef,
+  hydrateRefArray,
+  type CachedBrand,
+  type CachedCategory,
+  type CachedFormat,
+  type CachedFlavor,
+} from '../services/taxonomyCache';
 import fs from 'fs';
 import logger from '../config/logger';
+
+/**
+ * Hidrata in-place sobre cada producto lean las refs a taxonomías usando
+ * el cache en memoria. Reemplaza a 4 `.populate()` por request, eliminando
+ * round-trips redundantes a Mongo en el catálogo público.
+ */
+const hydrateProductsFromCache = async (
+  products: Array<Record<string, unknown>>,
+  fieldsByEntity: {
+    brand: ReadonlyArray<keyof CachedBrand>;
+    categories: ReadonlyArray<keyof CachedCategory>;
+    format: ReadonlyArray<keyof CachedFormat>;
+    flavor: ReadonlyArray<keyof CachedFlavor>;
+  }
+): Promise<void> => {
+  if (products.length === 0) return;
+  const [brands, categories, formats, flavors] = await Promise.all([
+    getBrandsMap(),
+    getCategoriesMap(),
+    getFormatsMap(),
+    getFlavorsMap(),
+  ]);
+  for (const p of products) {
+    hydrateRefArray(p, 'categories', categories, fieldsByEntity.categories);
+    hydrateRef(p, 'brand', brands, fieldsByEntity.brand);
+    hydrateRef(p, 'format', formats, fieldsByEntity.format);
+    hydrateRef(p, 'flavor', flavors, fieldsByEntity.flavor);
+  }
+};
 
 /**
  * Controllers para Product (modelo plano Quelita).
@@ -191,13 +232,16 @@ export const listProducts = asyncHandler(
         .sort(sortObj)
         .skip(skip)
         .limit(limitNum)
-        .populate('categories', 'name slug color icon')
-        .populate('brand', 'name slug')
-        .populate('format', 'label value unit slug')
-        .populate('flavor', 'name slug color')
         .lean(),
       Product.countDocuments(filter),
     ]);
+
+    await hydrateProductsFromCache(data as Array<Record<string, unknown>>, {
+      categories: ['name', 'slug', 'color', 'icon'],
+      brand: ['name', 'slug'],
+      format: ['label', 'value', 'unit', 'slug'],
+      flavor: ['name', 'slug', 'color'],
+    });
 
     const totalPages = Math.ceil(total / limitNum) || 1;
 
@@ -227,11 +271,15 @@ export const listFeaturedProducts = asyncHandler(
     const data = await Product.find({ featured: true, active: true })
       .sort({ createdAt: -1 })
       .limit(limit)
-      .populate('categories', 'name slug')
-      .populate('brand', 'name slug')
-      .populate('format', 'label value unit')
-      .populate('flavor', 'name')
       .lean();
+
+    await hydrateProductsFromCache(data as Array<Record<string, unknown>>, {
+      categories: ['name', 'slug'],
+      brand: ['name', 'slug'],
+      format: ['label', 'value', 'unit'],
+      flavor: ['name'],
+    });
+
     res.status(200).json({ success: true, data: { data: data as any } });
   }
 );
@@ -241,13 +289,19 @@ export const listFeaturedProducts = asyncHandler(
 // =====================================================
 export const getProductById = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse<{ product: IProduct }>>) => {
-    const product = await Product.findById(req.params.id)
-      .populate('categories', 'name slug color icon parent')
-      .populate('brand', 'name slug logo')
-      .populate('format', 'label value unit slug')
-      .populate('flavor', 'name slug color')
-      .lean();
+    const product = await Product.findById(req.params.id).lean();
     if (!product) throw new AppError(404, 'Producto no encontrado');
+
+    await hydrateProductsFromCache(
+      [product as unknown as Record<string, unknown>],
+      {
+        categories: ['name', 'slug', 'color', 'icon', 'parent'],
+        brand: ['name', 'slug', 'logo'],
+        format: ['label', 'value', 'unit', 'slug'],
+        flavor: ['name', 'slug', 'color'],
+      }
+    );
+
     res.status(200).json({ success: true, data: { product: product as any } });
   }
 );
@@ -257,13 +311,21 @@ export const getProductById = asyncHandler(
 // =====================================================
 export const getProductBySlug = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse<{ product: IProduct }>>) => {
-    const product = await Product.findOne({ slug: req.params.slug, active: true })
-      .populate('categories', 'name slug color icon parent')
-      .populate('brand', 'name slug logo')
-      .populate('format', 'label value unit slug')
-      .populate('flavor', 'name slug color')
-      .lean();
+    const product = await Product.findOne({
+      slug: req.params.slug,
+      active: true,
+    }).lean();
     if (!product) throw new AppError(404, 'Producto no encontrado');
+
+    await hydrateProductsFromCache(
+      [product as unknown as Record<string, unknown>],
+      {
+        categories: ['name', 'slug', 'color', 'icon', 'parent'],
+        brand: ['name', 'slug', 'logo'],
+        format: ['label', 'value', 'unit', 'slug'],
+        flavor: ['name', 'slug', 'color'],
+      }
+    );
 
     // Increment views fire-and-forget
     Product.findByIdAndUpdate(product._id, { $inc: { views: 1 } }).catch(() => {});

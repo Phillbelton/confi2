@@ -8,6 +8,7 @@ import { Format } from '../models/Format';
 import { Flavor } from '../models/Flavor';
 import { Tag } from '../models/Tag';
 import Collection from '../models/Collection';
+import { invalidateAllTaxonomyCaches } from './taxonomyCache';
 import logger from '../config/logger';
 
 /**
@@ -370,6 +371,10 @@ export async function runProductImport(
       report.errors.push({ row, barcode, message: err.message });
     }
   }
+
+  // Cualquier ruta de este import puede crear/borrar marcas, categorías,
+  // formatos y sabores; el cache pierde todo coherencia tras la pasada.
+  invalidateAllTaxonomyCaches();
 
   report.durationMs = Date.now() - t0;
   return report;

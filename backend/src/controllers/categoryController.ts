@@ -3,6 +3,7 @@ import { Category } from '../models/Category';
 import Product from "../models/Product";
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { invalidateCategoriesCache } from '../services/taxonomyCache';
 
 // @desc    Obtener todas las categorías activas
 // @route   GET /api/categories
@@ -219,6 +220,8 @@ export const createCategory = asyncHandler(
       facetableAttributes,
     });
 
+    invalidateCategoriesCache();
+
     res.status(201).json({
       success: true,
       message: 'Categoría creada exitosamente',
@@ -264,6 +267,8 @@ export const updateCategory = asyncHandler(
 
     await category.save();
 
+    invalidateCategoriesCache();
+
     res.status(200).json({
       success: true,
       message: 'Categoría actualizada exitosamente',
@@ -308,6 +313,8 @@ export const deleteCategory = asyncHandler(
     }
 
     await category.deleteOne();
+
+    invalidateCategoriesCache();
 
     res.status(200).json({
       success: true,
