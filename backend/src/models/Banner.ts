@@ -10,11 +10,18 @@ import mongoose, { Schema, Document } from 'mongoose';
  * Schedule: si `startDate`/`endDate` están seteados, el banner solo aparece
  * en su ventana de tiempo. Útil para campañas (Halloween, Black Friday).
  *
- * Tamaño visual: `size` afecta el span en el grid mosaic del frontend.
- *  - normal: 1 columna (caja estándar)
- *  - wide:   2 columnas en desktop (cubre 2 espacios horizontales)
- *  - tall:   2 filas en desktop (cubre 2 espacios verticales)
- *  - hero:   full-width único (placement=home_hero asume este)
+ * Tamaño visual (legacy): `size` afectaba el span en el grid mosaic. El layout
+ * de los placements de mosaico (home_promo, home_secondary) ahora se gobierna
+ * por franjas — ver `rowOrder` / `cols` / `mobileMode` abajo. `size` se conserva
+ * por compatibilidad pero ya no decide el layout (cada banner ocupa 1 celda).
+ *
+ * Franjas (rows): los banners de un placement de mosaico se agrupan en franjas
+ * horizontales. Cada franja muestra `cols` banners en línea en desktop (1–4) y,
+ * en mobile, los apila (`stack`) o los hace scroll horizontal (`scroll`).
+ *  - rowOrder:   a qué franja pertenece (posición vertical, 0-based).
+ *  - order:      posición del banner dentro de la franja.
+ *  - cols:       columnas de la franja en desktop (denormalizado por franja).
+ *  - mobileMode: layout mobile de la franja (denormalizado por franja).
  */
 
 export type BannerPlacement =
@@ -25,6 +32,10 @@ export type BannerPlacement =
   | 'collection_top';
 
 export type BannerSize = 'normal' | 'wide' | 'tall' | 'hero';
+
+export type BannerCols = 1 | 2 | 3 | 4;
+
+export type BannerMobileMode = 'stack' | 'scroll';
 
 export type BannerLinkType =
   | 'collection'
@@ -43,6 +54,10 @@ export interface IBanner extends Document {
   placement: BannerPlacement;
   order: number;
   size: BannerSize;
+
+  rowOrder: number;
+  cols: BannerCols;
+  mobileMode: BannerMobileMode;
 
   image: string;
   imageMobile?: string;
@@ -91,6 +106,14 @@ const bannerSchema = new Schema<IBanner>(
       default: 'normal',
     },
 
+    rowOrder: { type: Number, default: 0 },
+    cols: { type: Number, enum: [1, 2, 3, 4], default: 1 },
+    mobileMode: {
+      type: String,
+      enum: ['stack', 'scroll'],
+      default: 'stack',
+    },
+
     image: { type: String, required: true, trim: true },
     imageMobile: { type: String, trim: true },
 
@@ -110,7 +133,7 @@ const bannerSchema = new Schema<IBanner>(
   { timestamps: true }
 );
 
-bannerSchema.index({ placement: 1, order: 1 });
+bannerSchema.index({ placement: 1, rowOrder: 1, order: 1 });
 bannerSchema.index({ placement: 1, active: 1 });
 
 export const Banner = mongoose.model<IBanner>('Banner', bannerSchema);

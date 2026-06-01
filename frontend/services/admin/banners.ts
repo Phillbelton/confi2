@@ -1,10 +1,21 @@
 import { adminApi } from '@/lib/adminApi';
-import type { Banner, BannerPlacement, BannerSize, BannerLink, ApiResponse } from '@/types';
+import type {
+  Banner,
+  BannerPlacement,
+  BannerSize,
+  BannerCols,
+  BannerMobileMode,
+  BannerLink,
+  ApiResponse,
+} from '@/types';
 
 export interface CreateBannerInput {
   placement: BannerPlacement;
   order?: number;
   size?: BannerSize;
+  rowOrder?: number;
+  cols?: BannerCols;
+  mobileMode?: BannerMobileMode;
   image: string;
   imageMobile?: string;
   title?: string;
@@ -17,6 +28,15 @@ export interface CreateBannerInput {
 }
 
 export type UpdateBannerInput = Partial<CreateBannerInput>;
+
+/** Un item del bulk de layout: sólo viajan los campos a actualizar. */
+export interface LayoutItem {
+  id: string;
+  order?: number;
+  rowOrder?: number;
+  cols?: BannerCols;
+  mobileMode?: BannerMobileMode;
+}
 
 interface BannerImagePayload {
   image?: string;
@@ -59,7 +79,11 @@ export const adminBannerService = {
     await adminApi.delete(`/banners/${id}`);
   },
 
-  async reorder(items: { id: string; order: number }[]): Promise<void> {
+  /**
+   * Guarda el layout completo (orden + franjas) en una sola llamada.
+   * Acepta items parciales: sólo se persisten los campos presentes.
+   */
+  async saveLayout(items: LayoutItem[]): Promise<void> {
     await adminApi.patch('/banners/reorder', { items });
   },
 

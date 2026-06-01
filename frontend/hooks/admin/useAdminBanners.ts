@@ -4,6 +4,7 @@ import {
   adminBannerService,
   type CreateBannerInput,
   type UpdateBannerInput,
+  type LayoutItem,
 } from '@/services/admin/banners';
 import type { BannerPlacement } from '@/types';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -59,6 +60,15 @@ export function useBannerOperations() {
     onError: (e) => toast.error('Error al eliminar', { description: getApiErrorMessage(e) }),
   });
 
+  const saveLayout = useMutation({
+    mutationFn: (items: LayoutItem[]) => adminBannerService.saveLayout(items),
+    onSuccess: () => {
+      toast.success('Layout guardado');
+      invalidate();
+    },
+    onError: (e) => toast.error('Error al guardar layout', { description: getApiErrorMessage(e) }),
+  });
+
   const uploadImage = useMutation({
     mutationFn: ({
       id,
@@ -84,6 +94,9 @@ export function useBannerOperations() {
     isUpdating: update.isPending,
     remove: remove.mutate,
     isRemoving: remove.isPending,
+    saveLayout: saveLayout.mutate,
+    saveLayoutAsync: saveLayout.mutateAsync,
+    isSavingLayout: saveLayout.isPending,
     uploadImage: uploadImage.mutate,
     isUploadingImage: uploadImage.isPending,
   };

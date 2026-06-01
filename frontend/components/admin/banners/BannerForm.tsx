@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { getSafeImageUrl } from '@/lib/image-utils';
+import { DimensionHint, specForPlacement } from '@/components/admin/banners/DimensionHint';
 import { useCategoriesFlat } from '@/hooks/useCategories';
 import { api } from '@/lib/axios';
 import { useQuery } from '@tanstack/react-query';
@@ -45,13 +46,6 @@ const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
   { value: 'home_secondary', label: 'Home — Secundario' },
   { value: 'category_top', label: 'Top de categoría' },
   { value: 'collection_top', label: 'Top de colección' },
-];
-
-const SIZES: { value: BannerSize; label: string; hint: string }[] = [
-  { value: 'normal', label: 'Normal', hint: '1×1 — caja estándar' },
-  { value: 'wide', label: 'Ancho', hint: '2×1 — ocupa 2 columnas' },
-  { value: 'tall', label: 'Alto', hint: '1×2 — ocupa 2 filas' },
-  { value: 'hero', label: 'Hero', hint: '4×2 — full width destacado' },
 ];
 
 const LINK_TYPES: { value: BannerLinkType; label: string }[] = [
@@ -96,6 +90,10 @@ export interface BannerFormSubmitData {
 
 interface BannerFormProps {
   banner?: Banner;
+  /** Placement inicial al crear (preseleccionado desde el editor de franjas). */
+  defaultPlacement?: BannerPlacement;
+  /** Columnas de la franja (para el tamaño ideal en home_promo/secondary). */
+  cols?: number;
   onSubmit: (data: BannerFormSubmitData) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
@@ -105,6 +103,8 @@ interface BannerFormProps {
 
 export function BannerForm({
   banner,
+  defaultPlacement,
+  cols,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -122,7 +122,7 @@ export function BannerForm({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      placement: banner?.placement || 'home_promo',
+      placement: banner?.placement || defaultPlacement || 'home_promo',
       order: banner?.order ?? 0,
       size: banner?.size || 'normal',
       title: banner?.title || '',
@@ -154,6 +154,10 @@ export function BannerForm({
     };
 
   const watchedLinkType = useWatch({ control: form.control, name: 'linkType' }) as BannerLinkType;
+  const watchedPlacement = useWatch({ control: form.control, name: 'placement' }) as BannerPlacement;
+
+  // Tamaño ideal de la imagen según el placement (y columnas si es franja).
+  const imageSpec = specForPlacement(watchedPlacement, cols ?? banner?.cols);
 
   // Loaders para los pickers
   const { data: categoriesRaw } = useCategoriesFlat();
@@ -213,7 +217,10 @@ export function BannerForm({
         {/* IMAGEN */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
-            <p className="mb-2 text-sm font-semibold">Imagen principal (1920×720 recomendado)</p>
+            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="text-sm font-semibold">Imagen principal</p>
+              <DimensionHint spec={imageSpec} />
+            </div>
             <div className="flex items-start gap-3">
               <div className="relative h-32 w-56 shrink-0 overflow-hidden rounded-lg border bg-muted">
                 {imagePreview ? (
@@ -302,8 +309,8 @@ export function BannerForm({
           </div>
         </div>
 
-        {/* PLACEMENT + SIZE + ORDER */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* PLACEMENT */}
+        <div className="grid grid-cols-1 gap-4">
           <FormField
             control={form.control}
             name="placement"
@@ -324,52 +331,10 @@ export function BannerForm({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Dónde se muestra el banner</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="size"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tamaño en grid</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {SIZES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label} — {s.hint}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Cuánto espacio ocupa en desktop</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="order"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Orden</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormDescription>Menor número aparece primero</FormDescription>
+                <FormDescription>
+                  Dónde se muestra. El tamaño y la posición de los banners de
+                  Promociones/Secundario se ajustan en la pestaña “Plantilla de home”.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

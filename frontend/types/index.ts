@@ -390,6 +390,10 @@ export type BannerPlacement =
 
 export type BannerSize = 'normal' | 'wide' | 'tall' | 'hero';
 
+export type BannerCols = 1 | 2 | 3 | 4;
+
+export type BannerMobileMode = 'stack' | 'scroll';
+
 export type BannerLinkType =
   | 'collection'
   | 'product'
@@ -407,6 +411,9 @@ export interface Banner {
   placement: BannerPlacement;
   order: number;
   size: BannerSize;
+  rowOrder: number;
+  cols: BannerCols;
+  mobileMode: BannerMobileMode;
   image: string;
   imageMobile?: string;
   title?: string;
