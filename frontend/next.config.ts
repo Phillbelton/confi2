@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Genera un servidor minimo autocontenido para Docker (imagen liviana)
+  output: 'standalone',
   images: {
     remotePatterns: [
       {

@@ -1,0 +1,24 @@
+# Caddyfile para la VM local (HTTP en :80).
+# Responde a cualquier IP/hostname, ideal para entrar por http://IP-de-la-VM
+# Cuando pasemos al VPS real, esto cambia a "tudominio.cl { ... }" y Caddy
+# saca el certificado HTTPS de Let's Encrypt automaticamente.
+
+:80 {
+	encode gzip
+
+	# 1) Imagenes subidas -> servidas directo desde el volumen (rapido)
+	handle_path /uploads/* {
+		root * /srv/uploads
+		file_server
+	}
+
+	# 2) API -> backend Express (mantiene el prefijo /api)
+	handle /api/* {
+		reverse_proxy backend:5000
+	}
+
+	# 3) Todo lo demas -> frontend Next.js
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
