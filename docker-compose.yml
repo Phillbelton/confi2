@@ -58,6 +58,18 @@ services:
     depends_on: [ frontend, backend ]
     networks: [ internal ]
 
+  # ---------- Túnel público de DEMO (opcional) ----------
+  # Quick Tunnel de Cloudflare: URL publica gratis, sin cuenta, detras de CGNAT/Starlink.
+  # NO arranca por defecto. Solo con:  docker compose --profile demo up -d cloudflared
+  # La URL (https://xxxx.trycloudflare.com) aparece en:  docker compose logs cloudflared
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://caddy:80
+    depends_on: [ caddy ]
+    networks: [ internal ]
+    profiles: [ demo ]
+
 networks:
   internal:
 

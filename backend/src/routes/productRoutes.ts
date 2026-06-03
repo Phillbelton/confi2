@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as productController from '../controllers/productController';
 import * as productFacetsController from '../controllers/productFacetsController';
 import * as productImportController from '../controllers/productImportController';
+import * as uploadController from '../controllers/uploadController';
 import { authenticate, authorize } from '../middleware/auth';
 import { uploadMultiple, handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
@@ -79,6 +80,23 @@ router.delete(
   validate(deleteProductSchema),
   auditLog('product', 'delete'),
   productController.deleteProduct
+);
+
+// Image upload routes for Product (mismo patrón que category/brand/collection)
+router.post(
+  '/:id/images',
+  authenticate,
+  authorize('admin'),
+  uploadMultiple,
+  handleMulterError,
+  uploadController.uploadProductImages
+);
+
+router.delete(
+  '/:id/images/:filename',
+  authenticate,
+  authorize('admin'),
+  uploadController.deleteProductImage
 );
 
 export default router;
