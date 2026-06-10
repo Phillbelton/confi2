@@ -5,7 +5,7 @@ import { Facebook, Instagram, Phone, Clock } from 'lucide-react';
 const footerLinks = {
   shop: [
     { name: 'Todos los productos', href: '/productos' },
-    { name: 'Ofertas', href: '/ofertas' },
+    { name: 'Ofertas', href: '/productos?onSale=true' },
     { name: 'Novedades', href: '/productos?featured=true' },
     { name: 'Categorías', href: '/productos' },
   ],
@@ -143,10 +143,6 @@ export function Footer() {
           <div className="w-full px-4 sm:px-6 lg:px-8 py-4 md:py-5">
             <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-3 md:gap-4 text-[11px] md:text-xs text-white/40 text-center md:text-left">
               <p>© {new Date().getFullYear()} Confitería Quelita. Todos los derechos reservados.</p>
-              <div className="flex gap-5 md:gap-6">
-                <Link href="/terminos" className="hover:text-primary transition-colors">Términos</Link>
-                <Link href="/privacidad" className="hover:text-primary transition-colors">Privacidad</Link>
-              </div>
             </div>
           </div>
         </div>

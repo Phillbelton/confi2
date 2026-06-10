@@ -242,15 +242,6 @@ export function MobileFooter() {
               <span className="text-white/30">·</span>
               © {new Date().getFullYear()} Confitería Quelita
             </p>
-            <div className="flex justify-center gap-4 text-[11px]">
-              <Link href="/terminos" className="text-white/60 hover:text-white">
-                Términos
-              </Link>
-              <span className="text-white/30">·</span>
-              <Link href="/privacidad" className="text-white/60 hover:text-white">
-                Privacidad
-              </Link>
-            </div>
           </div>
         </div>
       </div>
