@@ -18,6 +18,7 @@ export interface CreateProductInput {
   images?: string[];
   featured?: boolean;
   active?: boolean;
+  attributes?: Record<string, string[]>;
 }
 
 export type UpdateProductInput = Partial<CreateProductInput>;
@@ -61,6 +62,12 @@ export const adminProductService = {
       `/products/${id}/images`,
       fd,
       { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return data.data;
+  },
+  deleteImage: async (id: string, filename: string) => {
+    const { data } = await adminApi.delete<ApiResponse<{ images: string[] }>>(
+      `/products/${id}/images/${encodeURIComponent(filename)}`
     );
     return data.data;
   },

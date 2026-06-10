@@ -7,9 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Box, Loader2, PackageOpen, Plus, Save, Trash2, Hash,
-  Sparkles, TrendingDown, ScanLine,
+  ArrowLeft, Box, Eye, Loader2, PackageOpen, Plus, Save, Trash2, Hash,
+  Sparkles, TrendingDown, ScanLine, X,
 } from 'lucide-react';
+import { getImageUrl } from '@/lib/images';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import {
+  Sheet, SheetContent, SheetTitle, SheetTrigger,
+} from '@/components/ui/sheet';
 import { CategoryWithSubcategorySelector } from './CategoryWithSubcategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
@@ -66,6 +70,9 @@ interface ProductFormProps {
   defaultValues?: Partial<ProductFormValues>;
   defaultImages?: string[];
   isEditing?: boolean;
+  /** Borra una imagen ya guardada del producto (solo edición). Recibe el
+   *  filename (no la URL completa). Debe resolver cuando el backend confirmó. */
+  onDeleteImage?: (filename: string) => Promise<unknown>;
 }
 
 const SALE_UNIT_LABELS: Record<SaleUnitType, string> = {
@@ -90,10 +97,29 @@ const SALE_UNIT_ICON: Record<SaleUnitType, React.ComponentType<{ className?: str
 };
 
 export function ProductForm({
-  onSubmit, isSubmitting, defaultValues, defaultImages = [], isEditing,
+  onSubmit, isSubmitting, defaultValues, defaultImages = [], isEditing, onDeleteImage,
 }: ProductFormProps) {
   const router = useRouter();
   const [images, setImages] = useState<ImageFile[]>([]);
+  // Imágenes YA guardadas del producto (URLs /uploads). Copia local para poder
+  // removerlas de la UI al borrarlas sin esperar un refetch completo.
+  const [existingImages, setExistingImages] = useState<string[]>(defaultImages);
+  const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
+
+  const handleDeleteExisting = async (url: string) => {
+    if (!onDeleteImage) return;
+    const filename = url.split('/').pop();
+    if (!filename) return;
+    setDeletingUrl(url);
+    try {
+      await onDeleteImage(filename);
+      setExistingImages((prev) => prev.filter((u) => u !== url));
+    } catch {
+      /* el hook ya muestra el toast de error */
+    } finally {
+      setDeletingUrl(null);
+    }
+  };
   const { data: formats } = usePublicFormats();
   const { data: flavors } = usePublicFlavors();
 
@@ -159,7 +185,7 @@ export function ProductForm({
     () => flavors?.find((f) => f._id === watch.flavor),
     [flavors, watch.flavor]
   );
-  const previewImage = images[0]?.preview || defaultImages[0];
+  const previewImage = images[0]?.preview || existingImages[0];
 
   // Operaciones de tiers
   const addTier = () => {
@@ -548,11 +574,61 @@ export function ProductForm({
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">📸 Imágenes</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Imágenes ya guardadas del producto (solo en edición). */}
+                {existingImages.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Imágenes actuales
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        La primera es la principal
+                      </span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+                      {existingImages.map((url, index) => (
+                        <div
+                          key={url}
+                          className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={getImageUrl(url)}
+                            alt={`Imagen ${index + 1}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          {index === 0 && (
+                            <span className="absolute left-1.5 top-1.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                              Principal
+                            </span>
+                          )}
+                          {onDeleteImage && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteExisting(url)}
+                              disabled={isSubmitting || deletingUrl === url}
+                              aria-label="Eliminar imagen"
+                              className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-red-600 text-white opacity-0 shadow transition-opacity hover:bg-red-700 group-hover:opacity-100 disabled:opacity-60"
+                            >
+                              {deletingUrl === url ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <X className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Subir imágenes nuevas (se aplican al guardar). */}
                 <ImageUploaderWithPreview
                   images={images}
                   onChange={setImages}
-                  maxImages={5}
+                  maxImages={Math.max(0, 5 - existingImages.length)}
                   disabled={isSubmitting}
                 />
               </CardContent>
@@ -582,8 +658,8 @@ export function ProductForm({
             </Card>
           </div>
 
-          {/* COL DERECHA — PREVIEW */}
-          <div>
+          {/* COL DERECHA — PREVIEW (solo desktop; en móvil va en el sheet) */}
+          <div className="hidden lg:block">
             <ProductLivePreview
               name={watch.name}
               unitPrice={watch.unitPrice}
@@ -594,6 +670,37 @@ export function ProductForm({
               flavorName={flavorObj?.name}
             />
           </div>
+        </div>
+
+        {/* PREVIEW MÓVIL — botón flotante sobre la barra de guardar que abre
+            un sheet inferior. En pantallas chicas la columna derecha quedaba
+            al fondo de la página y dejaba de servir como vista "en vivo". */}
+        <div className="lg:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="fixed bottom-20 right-4 z-30 rounded-full border border-border shadow-lg"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Vista previa
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto p-4 pt-10">
+              <SheetTitle className="sr-only">Vista previa del cliente</SheetTitle>
+              <ProductLivePreview
+                name={watch.name}
+                unitPrice={watch.unitPrice}
+                saleUnit={watch.saleUnit}
+                tiers={tiers}
+                imagePreview={previewImage}
+                formatLabel={formatLabel}
+                flavorName={flavorObj?.name}
+              />
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* STICKY SAVE BAR */}
