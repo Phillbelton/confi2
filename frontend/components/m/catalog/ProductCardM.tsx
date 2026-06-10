@@ -93,7 +93,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   return (
     <div
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
+        'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
         horizontal && 'w-44 shrink-0 snap-start',
         className
       )}
@@ -124,7 +124,9 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
 
       <div className="flex flex-1 flex-col gap-1.5 p-3">
         <Link href={productHref} className="block">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">
+          {/* min-h reserva 2 líneas siempre → el nombre ocupa el mismo alto
+              tenga 1 o 2 líneas, manteniendo el layout idéntico entre cards. */}
+          <h3 className="line-clamp-2 min-h-[2.25rem] text-sm font-semibold leading-tight text-foreground">
             {product.name}
           </h3>
         </Link>
@@ -146,17 +148,24 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
             )}
           </div>
 
-          {isPackaged && (
-            <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
-              {presentationPriceSuffix(product)} · ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
-            </p>
-          )}
+          {/* Detalle opcional (precio/u de paquete + tier mayorista). Altura
+              reservada fija (min-h) para que el precio y el botón "Agregar"
+              queden alineados en TODAS las cards, tengan 0, 1 o 2 de estas
+              líneas. Las líneas se anclan abajo (justify-end) para quedar
+              pegadas al botón. */}
+          <div className="mt-0.5 flex min-h-[2.1rem] flex-col justify-end gap-0.5">
+            {isPackaged && (
+              <p className="line-clamp-1 text-[10px] text-muted-foreground">
+                {presentationPriceSuffix(product)} · ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
+              </p>
+            )}
 
-          {showFromHint && firstTier && (
-            <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold text-primary">
-              🎉 {tierShownQty}+ {tierUnitLabel} a ${Math.round(tierShownPrice).toLocaleString('es-CL')} c/u
-            </p>
-          )}
+            {showFromHint && firstTier && (
+              <p className="line-clamp-1 text-[10px] font-semibold text-primary">
+                🎉 {tierShownQty}+ {tierUnitLabel} a ${Math.round(tierShownPrice).toLocaleString('es-CL')} c/u
+              </p>
+            )}
+          </div>
 
           {inCart === 0 ? (
             <button

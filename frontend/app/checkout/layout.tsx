@@ -6,9 +6,6 @@ import { MobileShell } from '@/components/m/shell/MobileShell';
  * perfil) y pueda seguir agregando productos sin abandonar la cocina.
  *
  * Banderas:
- *  - hideTabBar: la BottomTabBar mobile chocaría con la sticky CTA "Confirmar
- *    Pedido" del checkout. Sin ella, la navegación mobile se hace desde el
- *    StickyHeader (logo + cart + login).
  *  - hideFab:    el CartFab no aporta acá — el carrito ya es parte del flow.
  *  - hideFooter: el checkout tiene su propio <Footer /> (variante completa
  *    del storefront) renderizado dentro de la página.
@@ -19,7 +16,7 @@ export default function CheckoutLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MobileShell hideTabBar hideFab hideFooter>
+    <MobileShell hideFab hideFooter>
       {children}
     </MobileShell>
   );
