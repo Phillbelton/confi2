@@ -395,24 +395,40 @@ export type BannerCols = 1 | 2 | 3 | 4;
 export type BannerMobileMode = 'stack' | 'scroll';
 
 // ============================================================================
-// HOME LAYOUT (orden + visibilidad de las secciones de la home)
+// HOME LAYOUT (orden + visibilidad + config de las secciones de la home)
 // ============================================================================
 
-/** Claves canónicas — espejo de HOME_SECTION_KEYS del backend. */
-export type HomeSectionKey =
+/** Tipos de sección — espejo de HOME_SECTION_TYPES del backend. */
+export type HomeSectionType =
   | 'hero'
-  | 'offers'
-  | 'secondary_banners'
-  | 'featured'
+  | 'banner_zone'
   | 'collections'
-  | 'wholesale_cta'
-  | 'newest'
-  | 'promo_banners'
-  | 'best_sellers';
+  | 'static_cta'
+  | 'product_carousel'
+  | 'product_grid';
 
-export interface HomeLayoutSection {
-  key: HomeSectionKey;
+/** De dónde salen los productos de un carrusel/grilla configurable. */
+export type HomeProductSource =
+  | 'featured'
+  | 'on_sale'
+  | 'newest'
+  | 'popular'
+  | 'collection';
+
+export interface HomeSectionConfig {
+  placement?: 'home_secondary' | 'home_promo';
+  title?: string;
+  emoji?: string;
+  source?: HomeProductSource;
+  collectionSlug?: string;
+  limit?: number;
+}
+
+export interface HomeSection {
+  id: string;
+  type: HomeSectionType;
   active: boolean;
+  config?: HomeSectionConfig;
 }
 
 export type BannerLinkType =

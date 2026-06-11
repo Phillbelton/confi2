@@ -16,6 +16,21 @@ export function useHomeCollections() {
   });
 }
 
+/** Todas las colecciones activas — para selectores del admin. */
+export function useActiveCollections() {
+  return useQuery({
+    queryKey: ['collections', 'active'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<{ collections: Collection[] }>>(
+        '/collections',
+        { params: { active: 'true' } }
+      );
+      return data.data?.collections || [];
+    },
+    staleTime: 60_000,
+  });
+}
+
 export function useCollection(slugOrId: string, by: 'slug' | 'id' = 'slug') {
   return useQuery({
     queryKey: ['collections', by, slugOrId],

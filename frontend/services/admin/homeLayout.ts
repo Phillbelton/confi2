@@ -1,16 +1,16 @@
 import { adminApi } from '@/lib/adminApi';
-import type { ApiResponse, HomeLayoutSection } from '@/types';
+import type { ApiResponse, HomeSection } from '@/types';
 
 export const adminHomeLayoutService = {
-  async get(): Promise<HomeLayoutSection[]> {
-    const { data } = await adminApi.get<ApiResponse<{ sections: HomeLayoutSection[] }>>(
+  async get(): Promise<HomeSection[]> {
+    const { data } = await adminApi.get<ApiResponse<{ sections: HomeSection[] }>>(
       '/home-layout'
     );
     return data.data?.sections ?? [];
   },
 
-  /** Reemplaza el layout completo (debe traer las 9 secciones). */
-  async save(sections: HomeLayoutSection[]): Promise<void> {
+  /** Reemplaza el layout completo (estructura validada por el backend). */
+  async save(sections: HomeSection[]): Promise<void> {
     await adminApi.put('/home-layout', { sections });
   },
 };

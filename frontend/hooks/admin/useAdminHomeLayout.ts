@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { adminHomeLayoutService } from '@/services/admin/homeLayout';
-import type { HomeLayoutSection } from '@/types';
+import type { HomeSection } from '@/types';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 export function useAdminHomeLayout() {
@@ -16,7 +16,7 @@ export function useHomeLayoutOperations() {
   const qc = useQueryClient();
 
   const save = useMutation({
-    mutationFn: (sections: HomeLayoutSection[]) =>
+    mutationFn: (sections: HomeSection[]) =>
       adminHomeLayoutService.save(sections),
     onSuccess: () => {
       toast.success('Orden de la home guardado');

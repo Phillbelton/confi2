@@ -50,7 +50,7 @@ import {
   useAdminHomeLayout,
   useHomeLayoutOperations,
 } from '@/hooks/admin/useAdminHomeLayout';
-import { useHomeCollections } from '@/hooks/useCollections';
+import { useActiveCollections, useHomeCollections } from '@/hooks/useCollections';
 import { FranjaZoneEditor } from '@/components/admin/banners/FranjaZoneEditor';
 import {
   DimensionHint,
@@ -58,7 +58,12 @@ import {
   COLLECTION_SPEC,
 } from '@/components/admin/banners/DimensionHint';
 import { BannerStatusBadge } from '@/components/admin/banners/bannerStatus';
-import type { Banner, Collection, HomeLayoutSection, HomeSectionKey } from '@/types';
+import type {
+  Banner,
+  Collection,
+  HomeSection,
+  HomeSectionConfig,
+} from '@/types';
 
 /**
  * Wireframe de la home completa: todos los bloques en el orden real de la
@@ -66,71 +71,81 @@ import type { Banner, Collection, HomeLayoutSection, HomeSectionKey } from '@/ty
  * vive en Mongo (GET/PUT /api/home-layout) — la tienda lo lee en runtime,
  * así que reordenar acá NO requiere deploy.
  *
- * Las secciones de productos se llenan solas desde el catálogo; las de
- * imágenes se editan inline (hero, franjas, colecciones).
+ * Fase 2: los carruseles/grillas de producto son instancias configurables
+ * (título, emoji, fuente, cantidad) y se pueden agregar o quitar — ej. un
+ * carrusel "Especial Navidad 🎄" apuntando a una colección.
  */
 
-/** Qué renderiza cada sección dentro del wireframe. */
-const SECTION_CONTENT: Record<HomeSectionKey, () => React.ReactNode> = {
-  hero: () => (
-    <SectionBlock
-      icon={<GalleryHorizontalEnd className="h-4 w-4" />}
-      title="Hero — carrusel principal"
-      typeLabel="Imágenes"
-    >
-      <HeroBlock />
-    </SectionBlock>
-  ),
-  offers: () => <ProductPlaceholder title="Ofertas" emoji="🔥" />,
-  secondary_banners: () => (
-    <SectionBlock
-      icon={<Images className="h-4 w-4" />}
-      title="Huinchas / banners secundarios"
-      typeLabel="Imágenes · franjas"
-    >
-      <FranjaZoneEditor placement="home_secondary" />
-    </SectionBlock>
-  ),
-  featured: () => <ProductPlaceholder title="Destacados" emoji="⭐" />,
-  collections: () => (
-    <SectionBlock
-      icon={<LayoutGrid className="h-4 w-4" />}
-      title="Colecciones"
-      typeLabel="Imágenes"
-    >
-      <CollectionsBlock />
-    </SectionBlock>
-  ),
-  wholesale_cta: () => (
-    <StaticBlock
-      title="Comprá por mayor"
-      description="Banner promocional fijo (definido en el código, no editable acá)."
-    />
-  ),
-  newest: () => <ProductPlaceholder title="Novedades" emoji="✨" />,
-  promo_banners: () => (
-    <SectionBlock
-      icon={<Gift className="h-4 w-4" />}
-      title="Promociones"
-      typeLabel="Imágenes · franjas"
-    >
-      <FranjaZoneEditor placement="home_promo" />
-    </SectionBlock>
-  ),
-  best_sellers: () => <ProductPlaceholder title="Más vendidos" emoji="🏆" />,
-};
+/** Render del contenido de una sección según su tipo. */
+function SectionContent({
+  section,
+  onConfigChange,
+}: {
+  section: HomeSection;
+  onConfigChange: (patch: Partial<HomeSectionConfig>) => void;
+}) {
+  const config = section.config ?? {};
+  switch (section.type) {
+    case 'hero':
+      return (
+        <SectionBlock
+          icon={<GalleryHorizontalEnd className="h-4 w-4" />}
+          title="Hero — carrusel principal"
+          typeLabel="Imágenes"
+        >
+          <HeroBlock />
+        </SectionBlock>
+      );
+    case 'banner_zone':
+      return (
+        <SectionBlock
+          icon={config.placement === 'home_promo' ? <Gift className="h-4 w-4" /> : <Images className="h-4 w-4" />}
+          title={
+            config.placement === 'home_promo'
+              ? 'Promociones'
+              : 'Huinchas / banners secundarios'
+          }
+          typeLabel="Imágenes · franjas"
+        >
+          {config.placement && <FranjaZoneEditor placement={config.placement} />}
+        </SectionBlock>
+      );
+    case 'collections':
+      return (
+        <SectionBlock
+          icon={<LayoutGrid className="h-4 w-4" />}
+          title="Colecciones"
+          typeLabel="Imágenes"
+        >
+          <CollectionsBlock />
+        </SectionBlock>
+      );
+    case 'static_cta':
+      return (
+        <StaticBlock
+          title="Comprá por mayor"
+          description="Banner promocional fijo (definido en el código, no editable acá)."
+        />
+      );
+    case 'product_carousel':
+    case 'product_grid':
+      return (
+        <ProductSectionEditor section={section} onConfigChange={onConfigChange} />
+      );
+    default:
+      return null;
+  }
+}
 
 export function HomeWireframe() {
   const { data: serverSections, isLoading } = useAdminHomeLayout();
   const { save, isSaving } = useHomeLayoutOperations();
 
-  const [sections, setSections] = useState<HomeLayoutSection[]>([]);
+  const [sections, setSections] = useState<HomeSection[]>([]);
   const [dirty, setDirty] = useState(false);
 
   // Resync desde el server; no pisa ediciones locales sin guardar.
-  const serverKey = (serverSections ?? [])
-    .map((s) => `${s.key}:${s.active}`)
-    .join('|');
+  const serverKey = JSON.stringify(serverSections ?? []);
   useEffect(() => {
     if (!dirty && serverSections) setSections(serverSections);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,17 +159,45 @@ export function HomeWireframe() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const from = sections.findIndex((s) => s.key === active.id);
-    const to = sections.findIndex((s) => s.key === over.id);
+    const from = sections.findIndex((s) => s.id === active.id);
+    const to = sections.findIndex((s) => s.id === over.id);
     if (from === -1 || to === -1) return;
     setSections(arrayMove(sections, from, to));
     setDirty(true);
   };
 
-  const toggleActive = (key: HomeSectionKey) => {
+  const toggleActive = (id: string) => {
     setSections((prev) =>
-      prev.map((s) => (s.key === key ? { ...s, active: !s.active } : s))
+      prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
     );
+    setDirty(true);
+  };
+
+  const updateConfig = (id: string, patch: Partial<HomeSectionConfig>) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, config: { ...s.config, ...patch } } : s
+      )
+    );
+    setDirty(true);
+  };
+
+  const removeSection = (id: string) => {
+    if (!confirm('¿Quitar esta sección de la home? (Podés volver a agregar otra cuando quieras)')) return;
+    setSections((prev) => prev.filter((s) => s.id !== id));
+    setDirty(true);
+  };
+
+  const addCarousel = () => {
+    setSections((prev) => [
+      ...prev,
+      {
+        id: `carousel-${Date.now()}`,
+        type: 'product_carousel',
+        active: true,
+        config: { title: 'Nuevo carrusel', emoji: '✨', source: 'newest', limit: 8 },
+      },
+    ]);
     setDirty(true);
   };
 
@@ -170,7 +213,7 @@ export function HomeWireframe() {
     );
   }
 
-  const heroNotFirst = sections.length > 0 && sections[0].key !== 'hero';
+  const heroNotFirst = sections.length > 0 && sections[0].type !== 'hero';
 
   return (
     <div className="space-y-1">
@@ -209,22 +252,37 @@ export function HomeWireframe() {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={sections.map((s) => s.key)}
+          items={sections.map((s) => s.id)}
           strategy={verticalListSortingStrategy}
         >
           {sections.map((section, i) => (
-            <Fragment key={section.key}>
+            <Fragment key={section.id}>
               {i > 0 && <Connector />}
               <SortableSection
                 section={section}
-                onToggle={() => toggleActive(section.key)}
+                onToggle={() => toggleActive(section.id)}
+                onRemove={
+                  section.type === 'product_carousel' || section.type === 'product_grid'
+                    ? () => removeSection(section.id)
+                    : undefined
+                }
               >
-                {SECTION_CONTENT[section.key]?.()}
+                <SectionContent
+                  section={section}
+                  onConfigChange={(patch) => updateConfig(section.id, patch)}
+                />
               </SortableSection>
             </Fragment>
           ))}
         </SortableContext>
       </DndContext>
+
+      <div className="flex justify-center pt-3">
+        <Button variant="outline" size="sm" onClick={addCarousel}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          Agregar carrusel de productos
+        </Button>
+      </div>
     </div>
   );
 }
@@ -237,14 +295,17 @@ export function HomeWireframe() {
 function SortableSection({
   section,
   onToggle,
+  onRemove,
   children,
 }: {
-  section: HomeLayoutSection;
+  section: HomeSection;
   onToggle: () => void;
+  /** Solo las secciones de producto agregables se pueden quitar. */
+  onRemove?: () => void;
   children: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: section.key });
+    useSortable({ id: section.id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -282,6 +343,17 @@ function SortableSection({
         >
           {section.active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="grid h-7 w-7 place-items-center rounded-md border bg-background text-muted-foreground shadow-sm transition hover:text-destructive"
+            aria-label="Quitar sección"
+            title="Quitar sección de la home"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Contenido de la sección */}
@@ -341,16 +413,103 @@ function SectionBlock({ icon, title, typeLabel, action, children }: SectionBlock
   );
 }
 
-/** Placeholder inerte: sección de productos automática. */
-function ProductPlaceholder({ title, emoji }: { title: string; emoji: string }) {
+/** Fuentes de producto disponibles para carruseles/grillas. */
+const SOURCE_OPTIONS: { value: NonNullable<HomeSectionConfig['source']>; label: string }[] = [
+  { value: 'on_sale', label: '🔥 En oferta' },
+  { value: 'featured', label: '⭐ Destacados' },
+  { value: 'newest', label: '✨ Más nuevos' },
+  { value: 'popular', label: '🏆 Más vendidos' },
+  { value: 'collection', label: '🎀 Una colección…' },
+];
+
+/**
+ * Editor inline de una sección de productos: título, emoji, fuente, cantidad.
+ * Los productos se completan solos desde el catálogo según la fuente.
+ */
+function ProductSectionEditor({
+  section,
+  onConfigChange,
+}: {
+  section: HomeSection;
+  onConfigChange: (patch: Partial<HomeSectionConfig>) => void;
+}) {
+  const config = section.config ?? {};
+  const { data: collections = [] } = useActiveCollections();
+
   return (
     <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-3">
-      <div className="mb-2 flex items-center gap-2">
-        <span aria-hidden>{emoji}</span>
-        <span className="text-sm font-medium text-muted-foreground">{title}</span>
-        <Badge variant="secondary" className="gap-1 text-[10px] font-normal">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={config.emoji ?? ''}
+          onChange={(e) => onConfigChange({ emoji: e.target.value })}
+          placeholder="✨"
+          aria-label="Emoji de la sección"
+          className="h-8 w-12 rounded-md border bg-background px-1 text-center text-sm"
+        />
+        <input
+          type="text"
+          value={config.title ?? ''}
+          onChange={(e) => onConfigChange({ title: e.target.value })}
+          placeholder="Título de la sección"
+          aria-label="Título de la sección"
+          maxLength={40}
+          className="h-8 w-44 rounded-md border bg-background px-2 text-sm font-medium"
+        />
+        <select
+          value={config.source ?? 'newest'}
+          onChange={(e) =>
+            onConfigChange({
+              source: e.target.value as HomeSectionConfig['source'],
+              // Al salir de 'collection' se limpia el slug
+              ...(e.target.value !== 'collection' && { collectionSlug: undefined }),
+            })
+          }
+          aria-label="Fuente de productos"
+          className="h-8 rounded-md border bg-background px-2 text-sm"
+        >
+          {SOURCE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        {config.source === 'collection' && (
+          <select
+            value={config.collectionSlug ?? ''}
+            onChange={(e) => onConfigChange({ collectionSlug: e.target.value })}
+            aria-label="Colección"
+            className="h-8 rounded-md border bg-background px-2 text-sm"
+          >
+            <option value="" disabled>
+              Elegí una colección…
+            </option>
+            {collections.map((c) => (
+              <option key={c._id} value={c.slug}>
+                {c.emoji ? `${c.emoji} ` : ''}
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <label className="flex items-center gap-1 text-xs text-muted-foreground">
+          Cant.
+          <input
+            type="number"
+            min={2}
+            max={20}
+            value={config.limit ?? 8}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n)) onConfigChange({ limit: n });
+            }}
+            aria-label="Cantidad de productos"
+            className="h-8 w-14 rounded-md border bg-background px-2 text-sm"
+          />
+        </label>
+        <Badge variant="secondary" className="ml-auto gap-1 text-[10px] font-normal">
           <Package className="h-3 w-3" />
-          Productos · automático
+          {section.type === 'product_grid' ? 'Grilla' : 'Carrusel'} · automático
         </Badge>
       </div>
       <div className="flex gap-2 overflow-hidden">
@@ -362,6 +521,11 @@ function ProductPlaceholder({ title, emoji }: { title: string; emoji: string }) 
           />
         ))}
       </div>
+      {config.source === 'collection' && !config.collectionSlug && (
+        <p className="mt-2 text-xs text-amber-600">
+          Elegí la colección — sin eso no se puede guardar.
+        </p>
+      )}
     </div>
   );
 }
