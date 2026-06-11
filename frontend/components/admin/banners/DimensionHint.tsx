@@ -22,7 +22,9 @@ export interface ImageSpec {
 export function recommendedForCols(cols: number): ImageSpec {
   switch (cols) {
     case 1:
-      return { ratioLabel: '16:5', px: '1600 × 500', w: 16, h: 5 };
+      // "Huincha" estilo Jumbo: cinta ultra-panorámica entre vitrinas.
+      // En mobile se recorta a ~5.3:1 (centrar el contenido importante).
+      return { ratioLabel: '10.7:1', px: '2752 × 256 (huincha)', w: 1376, h: 128 };
     case 2:
       return { ratioLabel: '2:1', px: '1200 × 600', w: 2, h: 1 };
     case 3:
@@ -33,8 +35,14 @@ export function recommendedForCols(cols: number): ImageSpec {
   }
 }
 
-/** Hero — carrusel full-width (lg:aspect-[16/6]). */
-export const HERO_SPEC: ImageSpec = { ratioLabel: '16:6', px: '1920 × 720', w: 16, h: 6 };
+/** Hero — carrusel full-width panorámico estilo Jumbo (lg:aspect-[1920/364]).
+ *  La variante mobile (campo "imagen mobile") usa 700 × 330 (~2.1:1). */
+export const HERO_SPEC: ImageSpec = {
+  ratioLabel: '5.3:1',
+  px: '1920 × 364 · móvil: 700 × 330',
+  w: 1920,
+  h: 364,
+};
 
 /** Colecciones — card landscape (aspect-[5/3]). */
 export const COLLECTION_SPEC: ImageSpec = { ratioLabel: '5:3', px: '1000 × 600', w: 5, h: 3 };

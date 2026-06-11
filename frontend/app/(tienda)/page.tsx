@@ -30,10 +30,23 @@ export default function HomePage() {
   });
   const bestSellers: Product[] = bestSellersData?.data || [];
 
+  // Orden de bloques estilo Jumbo: hero panorámico → ofertas → huinchas
+  // intercaladas entre vitrinas de productos → grilla de cierre.
   return (
     <>
       {/* Banner hero principal — gestionable desde /admin/banners (placement=home_hero) */}
       <PromoGrid placement="home_hero" className="px-4 pt-3 lg:px-0 lg:pt-4" />
+
+      <SectionHeader
+        title="Ofertas"
+        emoji="🔥"
+        href="/productos?onSale=true"
+      />
+      <ProductCarousel products={onSale} isLoading={onSaleLoading} />
+
+      {/* Huinchas / banners secundarios — gestionables desde /admin/banners
+          (placement=home_secondary). Franja de 1 col = cinta panorámica. */}
+      <PromoGrid placement="home_secondary" />
 
       <SectionHeader
         title="Destacados"
@@ -43,13 +56,6 @@ export default function HomePage() {
       <ProductCarousel products={featured} isLoading={featuredLoading} />
 
       <CollectionsGrid variant="carousel" />
-
-      <SectionHeader
-        title="Ofertas"
-        emoji="🔥"
-        href="/productos?onSale=true"
-      />
-      <ProductCarousel products={onSale} isLoading={onSaleLoading} />
 
       <section className="px-4 py-3 lg:px-8 lg:py-6">
         <div className="rounded-3xl bg-gradient-to-r from-accent/15 via-accent/10 to-primary/10 p-4 text-center lg:p-8">
@@ -73,8 +79,9 @@ export default function HomePage() {
       />
       <ProductCarousel products={newest} isLoading={newestLoading} />
 
-      {/* Banners secundarios — gestionables desde /admin/banners (placement=home_secondary) */}
-      <PromoGrid placement="home_secondary" />
+      {/* Promociones — banners sin encabezado, hablan por sí mismos (estilo
+          Jumbo). Gestionables desde /admin/banners (placement=home_promo). */}
+      <PromoGrid placement="home_promo" />
 
       <SectionHeader
         title="Más vendidos"
@@ -92,9 +99,6 @@ export default function HomePage() {
                 <ProductCardM key={p._id} product={p} />
               ))}
       </div>
-
-      <SectionHeader title="Promociones" emoji="🎁" />
-      <PromoGrid placement="home_promo" />
     </>
   );
 }

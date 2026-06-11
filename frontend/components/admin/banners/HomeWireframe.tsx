@@ -77,6 +77,18 @@ export function HomeWireframe() {
       </SectionBlock>
 
       <Connector />
+      <ProductPlaceholder title="Ofertas" emoji="🔥" />
+
+      <Connector />
+      <SectionBlock
+        icon={<Images className="h-4 w-4" />}
+        title="Huinchas / banners secundarios"
+        typeLabel="Imágenes · franjas"
+      >
+        <FranjaZoneEditor placement="home_secondary" />
+      </SectionBlock>
+
+      <Connector />
       <ProductPlaceholder title="Destacados" emoji="⭐" />
 
       <Connector />
@@ -89,9 +101,6 @@ export function HomeWireframe() {
       </SectionBlock>
 
       <Connector />
-      <ProductPlaceholder title="Ofertas" emoji="🔥" />
-
-      <Connector />
       <StaticBlock
         title="Comprá por mayor"
         description="Banner promocional fijo (definido en el código, no editable acá)."
@@ -102,24 +111,15 @@ export function HomeWireframe() {
 
       <Connector />
       <SectionBlock
-        icon={<Images className="h-4 w-4" />}
-        title="Banners secundarios"
-        typeLabel="Imágenes · franjas"
-      >
-        <FranjaZoneEditor placement="home_secondary" />
-      </SectionBlock>
-
-      <Connector />
-      <ProductPlaceholder title="Más vendidos" emoji="🏆" />
-
-      <Connector />
-      <SectionBlock
         icon={<Gift className="h-4 w-4" />}
         title="Promociones"
         typeLabel="Imágenes · franjas"
       >
         <FranjaZoneEditor placement="home_promo" />
       </SectionBlock>
+
+      <Connector />
+      <ProductPlaceholder title="Más vendidos" emoji="🏆" />
     </div>
   );
 }
@@ -276,7 +276,7 @@ function HeroBlock() {
             <button
               type="button"
               onClick={() => router.push('/admin/banners/new?placement=home_hero')}
-              className="grid aspect-[16/6] w-[20rem] shrink-0 place-items-center rounded-xl border-2 border-dashed text-sm text-muted-foreground transition hover:border-primary hover:text-primary"
+              className="grid aspect-[1920/364] w-[20rem] shrink-0 place-items-center rounded-xl border-2 border-dashed text-sm text-muted-foreground transition hover:border-primary hover:text-primary"
             >
               <span className="flex flex-col items-center gap-1">
                 <Plus className="h-5 w-5" />
@@ -324,7 +324,7 @@ function HeroSlide({
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative aspect-[16/6] w-[20rem] shrink-0 overflow-hidden rounded-xl border bg-muted shadow-sm"
+      className="group relative aspect-[1920/364] w-[20rem] shrink-0 overflow-hidden rounded-xl border bg-muted shadow-sm"
     >
       {hasImage ? (
         /* eslint-disable-next-line @next/next/no-img-element */

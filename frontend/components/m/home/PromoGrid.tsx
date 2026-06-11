@@ -71,11 +71,23 @@ const COLS_LG: Record<number, string> = {
 
 // Aspect ratio del tile en desktop según cuántas columnas tenga la franja:
 // menos columnas → tiles más anchos/panorámicos.
+// 1 col = "huincha" estilo Jumbo: cinta ultra-panorámica entre vitrinas
+// (1376×128 desktop — 1376px es exactamente el ancho útil del contenedor
+// max-w-[1440px] con px-8).
 const ASPECT_LG: Record<number, string> = {
-  1: 'lg:aspect-[16/5]',
+  1: 'lg:aspect-[1376/128]',
   2: 'lg:aspect-[2/1]',
   3: 'lg:aspect-[16/9]',
   4: 'lg:aspect-[5/3]',
+};
+
+// Aspect en mobile: la huincha (1 col) usa la proporción mobile de Jumbo
+// (327×62 ≈ 5.3:1); los tiles de mosaico mantienen 5:3.
+const ASPECT_MOBILE: Record<number, string> = {
+  1: 'aspect-[327/62]',
+  2: 'aspect-[5/3]',
+  3: 'aspect-[5/3]',
+  4: 'aspect-[5/3]',
 };
 
 interface BannerTileProps {
@@ -236,7 +248,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 
   if (total === 1) {
     return (
-      <div className="aspect-[16/9] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0">
+      <div className="aspect-[700/330] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 lg:aspect-[1920/364] lg:rounded-none lg:shadow-none lg:ring-0">
         <BannerTile banner={banners[0]} priority sizes="100vw" rounded={false} />
       </div>
     );
@@ -298,7 +310,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
     >
       <div
         ref={viewportRef}
-        className="relative aspect-[16/9] cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 active:cursor-grabbing lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0"
+        className="relative aspect-[700/330] cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 active:cursor-grabbing lg:aspect-[1920/364] lg:rounded-none lg:shadow-none lg:ring-0"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
@@ -384,7 +396,7 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
     return (
       <section className={className}>
         {isLoading ? (
-          <div className="aspect-[16/9] animate-pulse rounded-2xl bg-muted lg:aspect-[16/6] lg:rounded-none" />
+          <div className="aspect-[700/330] animate-pulse rounded-2xl bg-muted lg:aspect-[1920/364] lg:rounded-none" />
         ) : (
           <HeroCarousel banners={banners || []} />
         )}
@@ -426,6 +438,7 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
 function PromoRow({ row }: { row: Row }) {
   const cols = (COLS_LG[row.cols] ? row.cols : 1) as 1 | 2 | 3 | 4;
   const aspectLg = ASPECT_LG[cols];
+  const aspectMobile = ASPECT_MOBILE[cols];
 
   if (row.mobileMode === 'scroll') {
     return (
@@ -443,7 +456,8 @@ function PromoRow({ row }: { row: Row }) {
             key={b._id}
             banner={b}
             className={cn(
-              'aspect-[5/3] w-[78%] shrink-0 snap-start lg:w-auto',
+              'w-[78%] shrink-0 snap-start lg:w-auto',
+              aspectMobile,
               aspectLg
             )}
           />
@@ -459,7 +473,7 @@ function PromoRow({ row }: { row: Row }) {
         <BannerTile
           key={b._id}
           banner={b}
-          className={cn('aspect-[5/3]', aspectLg)}
+          className={cn(aspectMobile, aspectLg)}
         />
       ))}
     </div>
