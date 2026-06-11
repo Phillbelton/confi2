@@ -384,9 +384,15 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 }
 
 export function PromoGrid({ placement = 'home_promo', className }: PromoGridProps) {
-  const { data: banners, isLoading } = useBanners(placement);
+  const { data, isLoading } = useBanners(placement);
 
-  if (!isLoading && (!banners || banners.length === 0)) {
+  // Defensa: un banner a medio crear queda con imagen placeholder — jamás
+  // mostrarlo al público (el alta del admin además lo crea inactivo).
+  const banners = (data || []).filter(
+    (b) => b.image && !b.image.includes('placeholder')
+  );
+
+  if (!isLoading && banners.length === 0) {
     return null;
   }
 

@@ -25,7 +25,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { getSafeImageUrl } from '@/lib/image-utils';
-import { DimensionHint, specForPlacement } from '@/components/admin/banners/DimensionHint';
+import {
+  DimensionHint,
+  specForPlacement,
+  mobileSpecForPlacement,
+} from '@/components/admin/banners/DimensionHint';
+import { BannerLivePreview } from '@/components/admin/banners/BannerLivePreview';
 import { useCategoriesFlat } from '@/hooks/useCategories';
 import { api } from '@/lib/axios';
 import { useQuery } from '@tanstack/react-query';
@@ -41,9 +46,9 @@ import type {
 } from '@/types';
 
 const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
-  { value: 'home_hero', label: 'Home — Hero (banner principal)' },
-  { value: 'home_promo', label: 'Home — Promociones (sección final)' },
-  { value: 'home_secondary', label: 'Home — Secundario' },
+  { value: 'home_hero', label: 'Home — Hero (carrusel principal)' },
+  { value: 'home_promo', label: 'Home — Promociones' },
+  { value: 'home_secondary', label: 'Home — Huinchas / secundario' },
   { value: 'category_top', label: 'Top de categoría' },
   { value: 'collection_top', label: 'Top de colección' },
 ];
@@ -88,13 +93,19 @@ export interface BannerFormSubmitData {
   endDate?: string;
 }
 
+/** Archivos elegidos durante el ALTA (se suben después de crear el banner). */
+export interface BannerPendingImages {
+  main?: File;
+  mobile?: File;
+}
+
 interface BannerFormProps {
   banner?: Banner;
   /** Placement inicial al crear (preseleccionado desde el editor de franjas). */
   defaultPlacement?: BannerPlacement;
   /** Columnas de la franja (para el tamaño ideal en home_promo/secondary). */
   cols?: number;
-  onSubmit: (data: BannerFormSubmitData) => void;
+  onSubmit: (data: BannerFormSubmitData, images: BannerPendingImages) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
   onUploadImage?: (id: string, file: File, variant: 'main' | 'mobile') => void;
@@ -113,11 +124,16 @@ export function BannerForm({
 }: BannerFormProps) {
   const isEditing = !!banner;
   const [imagePreview, setImagePreview] = useState<string | null>(
-    banner?.image ? getSafeImageUrl(banner.image) : null
+    banner?.image && !banner.image.includes('placeholder')
+      ? getSafeImageUrl(banner.image)
+      : null
   );
   const [imageMobilePreview, setImageMobilePreview] = useState<string | null>(
     banner?.imageMobile ? getSafeImageUrl(banner.imageMobile) : null
   );
+  // En el ALTA la subida se difiere: los archivos quedan acá y el caller los
+  // sube después de crear el banner (el endpoint de imagen exige un id).
+  const [pendingImages, setPendingImages] = useState<BannerPendingImages>({});
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -143,21 +159,33 @@ export function BannerForm({
   const handleImageSelect =
     (variant: 'main' | 'mobile') => (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (!file || !banner || !onUploadImage) return;
+      if (!file) return;
       const reader = new FileReader();
       reader.onloadend = () => {
         if (variant === 'main') setImagePreview(reader.result as string);
         else setImageMobilePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      onUploadImage(banner._id, file, variant);
+
+      if (isEditing && banner && onUploadImage) {
+        // Edición: el endpoint existe, se sube al instante.
+        onUploadImage(banner._id, file, variant);
+      } else {
+        // Alta: se difiere hasta después del create.
+        setPendingImages((prev) => ({ ...prev, [variant]: file }));
+      }
     };
 
   const watchedLinkType = useWatch({ control: form.control, name: 'linkType' }) as BannerLinkType;
   const watchedPlacement = useWatch({ control: form.control, name: 'placement' }) as BannerPlacement;
+  const watchedTitle = useWatch({ control: form.control, name: 'title' });
+  const watchedSubtitle = useWatch({ control: form.control, name: 'subtitle' });
+  const watchedCta = useWatch({ control: form.control, name: 'ctaText' });
 
   // Tamaño ideal de la imagen según el placement (y columnas si es franja).
-  const imageSpec = specForPlacement(watchedPlacement, cols ?? banner?.cols);
+  const effectiveCols = cols ?? banner?.cols;
+  const imageSpec = specForPlacement(watchedPlacement, effectiveCols);
+  const mobileSpec = mobileSpecForPlacement(watchedPlacement, effectiveCols);
 
   // Loaders para los pickers
   const { data: categoriesRaw } = useCategoriesFlat();
@@ -205,7 +233,7 @@ export function BannerForm({
       startDate: values.startDate || undefined,
       endDate: values.endDate || undefined,
     };
-    onSubmit(payload);
+    onSubmit(payload, pendingImages);
   };
 
   return (
@@ -254,12 +282,13 @@ export function BannerForm({
                     accept="image/*"
                     onChange={handleImageSelect('main')}
                     className="hidden"
-                    disabled={!isEditing || isUploadingImage}
+                    disabled={isUploadingImage}
                   />
                 </label>
-                {!isEditing && (
-                  <p className="text-xs text-muted-foreground">
-                    Guardá primero el banner para subir imagen.
+                {!isEditing && !pendingImages.main && (
+                  <p className="text-xs text-amber-600">
+                    Sin imagen el banner se crea inactivo (no se muestra en la
+                    tienda hasta que subas una).
                   </p>
                 )}
               </div>
@@ -267,9 +296,10 @@ export function BannerForm({
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-semibold">
-              Imagen mobile (opcional, override)
-            </p>
+            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="text-sm font-semibold">Imagen mobile (opcional)</p>
+              <DimensionHint spec={mobileSpec} />
+            </div>
             <div className="flex items-start gap-3">
               <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border bg-muted">
                 {imageMobilePreview ? (
@@ -298,16 +328,28 @@ export function BannerForm({
                     accept="image/*"
                     onChange={handleImageSelect('mobile')}
                     className="hidden"
-                    disabled={!isEditing || isUploadingImage}
+                    disabled={isUploadingImage}
                   />
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  Si el banner ancho no se ve bien en mobile portrait, subí una versión adaptada (ej. 800×600).
+                  Si el recorte mobile de la imagen principal corta lo
+                  importante, subí una versión pensada para celular.
                 </p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* VISTA PREVIA EN VIVO — recorte real desktop/mobile + overlay de textos */}
+        <BannerLivePreview
+          placement={watchedPlacement}
+          cols={effectiveCols}
+          title={watchedTitle || undefined}
+          subtitle={watchedSubtitle || undefined}
+          ctaText={watchedCta || undefined}
+          imageUrl={imagePreview}
+          imageMobileUrl={imageMobilePreview}
+        />
 
         {/* PLACEMENT */}
         <div className="grid grid-cols-1 gap-4">

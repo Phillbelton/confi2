@@ -98,6 +98,7 @@ export function useBannerOperations() {
     saveLayoutAsync: saveLayout.mutateAsync,
     isSavingLayout: saveLayout.isPending,
     uploadImage: uploadImage.mutate,
+    uploadImageAsync: uploadImage.mutateAsync,
     isUploadingImage: uploadImage.isPending,
   };
 }

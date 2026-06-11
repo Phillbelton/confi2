@@ -49,6 +49,7 @@ import {
   HERO_SPEC,
   COLLECTION_SPEC,
 } from '@/components/admin/banners/DimensionHint';
+import { BannerStatusBadge } from '@/components/admin/banners/bannerStatus';
 import type { Banner, Collection } from '@/types';
 
 /**
@@ -341,6 +342,8 @@ function HeroSlide({
           <ImageOff className="h-5 w-5" />
         </div>
       )}
+
+      <BannerStatusBadge banner={banner} />
 
       <button
         type="button"

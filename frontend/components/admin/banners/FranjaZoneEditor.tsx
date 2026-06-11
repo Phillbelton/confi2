@@ -39,6 +39,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { DimensionHint, recommendedForCols } from '@/components/admin/banners/DimensionHint';
+import { BannerStatusBadge } from '@/components/admin/banners/bannerStatus';
 import { cn } from '@/lib/utils';
 import { useAdminBanners, useBannerOperations } from '@/hooks/admin/useAdminBanners';
 import type { LayoutItem } from '@/services/admin/banners';
@@ -512,6 +513,8 @@ function SortableBannerTile({
             </div>
           </div>
         )}
+
+        <BannerStatusBadge banner={banner} />
 
         {/* Handle de arrastre */}
         <button

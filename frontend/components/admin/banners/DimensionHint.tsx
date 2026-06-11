@@ -71,6 +71,30 @@ export function specForPlacement(
   }
 }
 
+/**
+ * Recorte/tamaño con que se ve el banner en CELULAR, según placement y
+ * columnas. Espeja los aspect mobile del render público (PromoGrid):
+ * hero 700×330, huincha 327×62, tiles de mosaico 5:3.
+ */
+export function mobileSpecForPlacement(
+  placement: BannerPlacement,
+  cols?: number
+): ImageSpec {
+  switch (placement) {
+    case 'home_hero':
+      return { ratioLabel: '2.1:1', px: '700 × 330', w: 700, h: 330 };
+    case 'home_promo':
+    case 'home_secondary':
+      return (cols ?? 1) === 1
+        ? { ratioLabel: '5.3:1', px: '654 × 124 (huincha)', w: 327, h: 62 }
+        : { ratioLabel: '5:3', px: '800 × 480', w: 5, h: 3 };
+    case 'category_top':
+    case 'collection_top':
+    default:
+      return WIDE_TOP_SPEC;
+  }
+}
+
 const BOX_W = 46;
 
 /**
