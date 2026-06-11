@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   GalleryHorizontalEnd,
@@ -14,10 +14,13 @@ import {
   GripVertical,
   ChevronDown,
   ExternalLink,
+  Eye,
+  EyeOff,
   Ruler,
   Loader2,
   ImageOff,
   Package,
+  Save,
 } from 'lucide-react';
 import {
   DndContext,
@@ -31,6 +34,7 @@ import {
 import {
   SortableContext,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
   arrayMove,
   sortableKeyboardCoordinates,
@@ -42,6 +46,10 @@ import { Badge } from '@/components/ui/badge';
 import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import { cn } from '@/lib/utils';
 import { useAdminBanners, useBannerOperations } from '@/hooks/admin/useAdminBanners';
+import {
+  useAdminHomeLayout,
+  useHomeLayoutOperations,
+} from '@/hooks/admin/useAdminHomeLayout';
 import { useHomeCollections } from '@/hooks/useCollections';
 import { FranjaZoneEditor } from '@/components/admin/banners/FranjaZoneEditor';
 import {
@@ -50,77 +58,244 @@ import {
   COLLECTION_SPEC,
 } from '@/components/admin/banners/DimensionHint';
 import { BannerStatusBadge } from '@/components/admin/banners/bannerStatus';
-import type { Banner, Collection } from '@/types';
+import type { Banner, Collection, HomeLayoutSection, HomeSectionKey } from '@/types';
 
 /**
- * Wireframe de la home completa: muestra todos los bloques de imágenes en el
- * orden real de la página (hero, colecciones, banners secundarios, promociones)
- * como un mapa editable. Las secciones de productos aparecen como placeholders
- * inertes para dar contexto — se llenan solas desde el catálogo.
+ * Wireframe de la home completa: todos los bloques en el orden real de la
+ * página, ARRASTRABLES para reordenar y con toggle de visibilidad. El orden
+ * vive en Mongo (GET/PUT /api/home-layout) — la tienda lo lee en runtime,
+ * así que reordenar acá NO requiere deploy.
  *
- * El orden acá refleja el de la home pública (app/(tienda)/page.tsx).
+ * Las secciones de productos se llenan solas desde el catálogo; las de
+ * imágenes se editan inline (hero, franjas, colecciones).
  */
+
+/** Qué renderiza cada sección dentro del wireframe. */
+const SECTION_CONTENT: Record<HomeSectionKey, () => React.ReactNode> = {
+  hero: () => (
+    <SectionBlock
+      icon={<GalleryHorizontalEnd className="h-4 w-4" />}
+      title="Hero — carrusel principal"
+      typeLabel="Imágenes"
+    >
+      <HeroBlock />
+    </SectionBlock>
+  ),
+  offers: () => <ProductPlaceholder title="Ofertas" emoji="🔥" />,
+  secondary_banners: () => (
+    <SectionBlock
+      icon={<Images className="h-4 w-4" />}
+      title="Huinchas / banners secundarios"
+      typeLabel="Imágenes · franjas"
+    >
+      <FranjaZoneEditor placement="home_secondary" />
+    </SectionBlock>
+  ),
+  featured: () => <ProductPlaceholder title="Destacados" emoji="⭐" />,
+  collections: () => (
+    <SectionBlock
+      icon={<LayoutGrid className="h-4 w-4" />}
+      title="Colecciones"
+      typeLabel="Imágenes"
+    >
+      <CollectionsBlock />
+    </SectionBlock>
+  ),
+  wholesale_cta: () => (
+    <StaticBlock
+      title="Comprá por mayor"
+      description="Banner promocional fijo (definido en el código, no editable acá)."
+    />
+  ),
+  newest: () => <ProductPlaceholder title="Novedades" emoji="✨" />,
+  promo_banners: () => (
+    <SectionBlock
+      icon={<Gift className="h-4 w-4" />}
+      title="Promociones"
+      typeLabel="Imágenes · franjas"
+    >
+      <FranjaZoneEditor placement="home_promo" />
+    </SectionBlock>
+  ),
+  best_sellers: () => <ProductPlaceholder title="Más vendidos" emoji="🏆" />,
+};
+
 export function HomeWireframe() {
+  const { data: serverSections, isLoading } = useAdminHomeLayout();
+  const { save, isSaving } = useHomeLayoutOperations();
+
+  const [sections, setSections] = useState<HomeLayoutSection[]>([]);
+  const [dirty, setDirty] = useState(false);
+
+  // Resync desde el server; no pisa ediciones locales sin guardar.
+  const serverKey = (serverSections ?? [])
+    .map((s) => `${s.key}:${s.active}`)
+    .join('|');
+  useEffect(() => {
+    if (!dirty && serverSections) setSections(serverSections);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = sections.findIndex((s) => s.key === active.id);
+    const to = sections.findIndex((s) => s.key === over.id);
+    if (from === -1 || to === -1) return;
+    setSections(arrayMove(sections, from, to));
+    setDirty(true);
+  };
+
+  const toggleActive = (key: HomeSectionKey) => {
+    setSections((prev) =>
+      prev.map((s) => (s.key === key ? { ...s, active: !s.active } : s))
+    );
+    setDirty(true);
+  };
+
+  const handleSave = () => {
+    save(sections, { onSuccess: () => setDirty(false) });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const heroNotFirst = sections.length > 0 && sections[0].key !== 'hero';
+
   return (
     <div className="space-y-1">
-      <p className="mb-3 text-sm text-muted-foreground">
-        Así se arma la home, de arriba hacia abajo. Editá los bloques de
-        imágenes; las secciones de productos se completan automáticamente desde
-        el catálogo.
-      </p>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Así se arma la home, de arriba hacia abajo. Arrastrá las secciones
+          desde el mango para reordenarlas, o apagalas con el ojito.
+        </p>
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <span className="text-xs font-medium text-amber-600">
+              Cambios sin guardar
+            </span>
+          )}
+          <Button size="sm" onClick={handleSave} disabled={!dirty || isSaving}>
+            {isSaving ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1.5 h-4 w-4" />
+            )}
+            Guardar orden
+          </Button>
+        </div>
+      </div>
 
-      <SectionBlock
-        icon={<GalleryHorizontalEnd className="h-4 w-4" />}
-        title="Hero — carrusel principal"
-        typeLabel="Imágenes"
+      {heroNotFirst && (
+        <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          💡 Sugerencia: el hero primero hace que la página se sienta más
+          rápida (es la imagen grande que el navegador prioriza).
+        </p>
+      )}
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        <HeroBlock />
-      </SectionBlock>
+        <SortableContext
+          items={sections.map((s) => s.key)}
+          strategy={verticalListSortingStrategy}
+        >
+          {sections.map((section, i) => (
+            <Fragment key={section.key}>
+              {i > 0 && <Connector />}
+              <SortableSection
+                section={section}
+                onToggle={() => toggleActive(section.key)}
+              >
+                {SECTION_CONTENT[section.key]?.()}
+              </SortableSection>
+            </Fragment>
+          ))}
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+}
 
-      <Connector />
-      <ProductPlaceholder title="Ofertas" emoji="🔥" />
+/**
+ * Shell arrastrable de una sección: mango a la izquierda + toggle de
+ * visibilidad. El contenido interno (con sus propios drag&drop de slides y
+ * banners) sigue funcionando — el arrastre externo solo arranca del mango.
+ */
+function SortableSection({
+  section,
+  onToggle,
+  children,
+}: {
+  section: HomeLayoutSection;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: section.key });
 
-      <Connector />
-      <SectionBlock
-        icon={<Images className="h-4 w-4" />}
-        title="Huinchas / banners secundarios"
-        typeLabel="Imágenes · franjas"
-      >
-        <FranjaZoneEditor placement="home_secondary" />
-      </SectionBlock>
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 20 : 'auto',
+    position: 'relative',
+  };
 
-      <Connector />
-      <ProductPlaceholder title="Destacados" emoji="⭐" />
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-stretch gap-1.5">
+      {/* Rail izquierdo: mango + ojito */}
+      <div className="flex shrink-0 flex-col items-center gap-1 pt-2">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="grid h-7 w-7 cursor-grab touch-none place-items-center rounded-md border bg-background text-muted-foreground shadow-sm transition hover:text-foreground active:cursor-grabbing"
+          aria-label={`Arrastrar sección`}
+          title="Arrastrar para reordenar"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className={cn(
+            'grid h-7 w-7 place-items-center rounded-md border bg-background shadow-sm transition',
+            section.active
+              ? 'text-muted-foreground hover:text-foreground'
+              : 'text-destructive'
+          )}
+          aria-label={section.active ? 'Ocultar sección' : 'Mostrar sección'}
+          title={section.active ? 'Ocultar en la tienda' : 'Oculta — click para mostrar'}
+        >
+          {section.active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
+      </div>
 
-      <Connector />
-      <SectionBlock
-        icon={<LayoutGrid className="h-4 w-4" />}
-        title="Colecciones"
-        typeLabel="Imágenes"
-      >
-        <CollectionsBlock />
-      </SectionBlock>
-
-      <Connector />
-      <StaticBlock
-        title="Comprá por mayor"
-        description="Banner promocional fijo (definido en el código, no editable acá)."
-      />
-
-      <Connector />
-      <ProductPlaceholder title="Novedades" emoji="✨" />
-
-      <Connector />
-      <SectionBlock
-        icon={<Gift className="h-4 w-4" />}
-        title="Promociones"
-        typeLabel="Imágenes · franjas"
-      >
-        <FranjaZoneEditor placement="home_promo" />
-      </SectionBlock>
-
-      <Connector />
-      <ProductPlaceholder title="Más vendidos" emoji="🏆" />
+      {/* Contenido de la sección */}
+      <div className={cn('min-w-0 flex-1', !section.active && 'opacity-45')}>
+        {!section.active && (
+          <Badge
+            variant="secondary"
+            className="mb-1 bg-gray-200 text-[10px] text-gray-600"
+          >
+            Oculta — no se muestra en la tienda
+          </Badge>
+        )}
+        {children}
+      </div>
     </div>
   );
 }

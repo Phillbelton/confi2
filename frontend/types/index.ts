@@ -394,6 +394,27 @@ export type BannerCols = 1 | 2 | 3 | 4;
 
 export type BannerMobileMode = 'stack' | 'scroll';
 
+// ============================================================================
+// HOME LAYOUT (orden + visibilidad de las secciones de la home)
+// ============================================================================
+
+/** Claves canónicas — espejo de HOME_SECTION_KEYS del backend. */
+export type HomeSectionKey =
+  | 'hero'
+  | 'offers'
+  | 'secondary_banners'
+  | 'featured'
+  | 'collections'
+  | 'wholesale_cta'
+  | 'newest'
+  | 'promo_banners'
+  | 'best_sellers';
+
+export interface HomeLayoutSection {
+  key: HomeSectionKey;
+  active: boolean;
+}
+
 export type BannerLinkType =
   | 'collection'
   | 'product'

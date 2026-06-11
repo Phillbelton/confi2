@@ -11,8 +11,10 @@ for (const [name, opts] of [
 ]) {
   const ctx = await browser.newContext(opts);
   const page = await ctx.newPage();
-  await page.goto(BASE, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2500);
+  // 'load' + espera fija: networkidle puede no llegar nunca (carruseles,
+  // imágenes lazy que entran al hacer layout, etc.).
+  await page.goto(BASE, { waitUntil: 'load', timeout: 60000 });
+  await page.waitForTimeout(4000);
   await page.screenshot({ path: `screenshot-home-${name}.png`, fullPage: true });
   console.log(`screenshot-home-${name}.png listo`);
   await ctx.close();
