@@ -19,6 +19,7 @@ import {
   Ruler,
   Loader2,
   ImageOff,
+  MapPin,
   Package,
   Save,
 } from 'lucide-react';
@@ -63,6 +64,7 @@ import type {
   Collection,
   HomeSection,
   HomeSectionConfig,
+  StoreLocation,
 } from '@/types';
 
 /**
@@ -131,6 +133,10 @@ function SectionContent({
     case 'product_grid':
       return (
         <ProductSectionEditor section={section} onConfigChange={onConfigChange} />
+      );
+    case 'location_map':
+      return (
+        <StoreMapEditor section={section} onConfigChange={onConfigChange} />
       );
     default:
       return null;
@@ -201,6 +207,23 @@ export function HomeWireframe() {
     setDirty(true);
   };
 
+  const addStoreMap = () => {
+    setSections((prev) => [
+      ...prev,
+      {
+        id: `map-${Date.now()}`,
+        type: 'location_map',
+        active: true,
+        config: {
+          title: 'Visita nuestras tiendas',
+          emoji: '📍',
+          stores: [{ name: '', address: '', mapQuery: '', hours: '' }],
+        },
+      },
+    ]);
+    setDirty(true);
+  };
+
   const handleSave = () => {
     save(sections, { onSuccess: () => setDirty(false) });
   };
@@ -262,7 +285,9 @@ export function HomeWireframe() {
                 section={section}
                 onToggle={() => toggleActive(section.id)}
                 onRemove={
-                  section.type === 'product_carousel' || section.type === 'product_grid'
+                  section.type === 'product_carousel' ||
+                  section.type === 'product_grid' ||
+                  section.type === 'location_map'
                     ? () => removeSection(section.id)
                     : undefined
                 }
@@ -277,11 +302,17 @@ export function HomeWireframe() {
         </SortableContext>
       </DndContext>
 
-      <div className="flex justify-center pt-3">
+      <div className="flex flex-wrap justify-center gap-2 pt-3">
         <Button variant="outline" size="sm" onClick={addCarousel}>
           <Plus className="mr-1.5 h-4 w-4" />
           Agregar carrusel de productos
         </Button>
+        {!sections.some((s) => s.type === 'location_map') && (
+          <Button variant="outline" size="sm" onClick={addStoreMap}>
+            <MapPin className="mr-1.5 h-4 w-4" />
+            Agregar mapa de tiendas
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -525,6 +556,135 @@ function ProductSectionEditor({
         <p className="mt-2 text-xs text-amber-600">
           Elegí la colección — sin eso no se puede guardar.
         </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Editor del mapa de tiendas: título de la sección + hasta 4 locales con
+ * nombre, dirección, query de Google Maps y horario. La query trae mini
+ * preview del embed real para validar que el pin caiga donde corresponde.
+ */
+function StoreMapEditor({
+  section,
+  onConfigChange,
+}: {
+  section: HomeSection;
+  onConfigChange: (patch: Partial<HomeSectionConfig>) => void;
+}) {
+  const config = section.config ?? {};
+  const stores: StoreLocation[] = config.stores ?? [];
+
+  const updateStore = (i: number, patch: Partial<StoreLocation>) => {
+    onConfigChange({
+      stores: stores.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
+    });
+  };
+
+  const addStore = () =>
+    onConfigChange({
+      stores: [...stores, { name: '', address: '', mapQuery: '', hours: '' }],
+    });
+
+  const removeStore = (i: number) =>
+    onConfigChange({ stores: stores.filter((_, idx) => idx !== i) });
+
+  return (
+    <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={config.emoji ?? ''}
+          onChange={(e) => onConfigChange({ emoji: e.target.value })}
+          placeholder="📍"
+          aria-label="Emoji de la sección"
+          className="h-8 w-12 rounded-md border bg-background px-1 text-center text-sm"
+        />
+        <input
+          type="text"
+          value={config.title ?? ''}
+          onChange={(e) => onConfigChange({ title: e.target.value })}
+          placeholder="Visita nuestras tiendas"
+          aria-label="Título de la sección"
+          maxLength={40}
+          className="h-8 w-56 rounded-md border bg-background px-2 text-sm font-medium"
+        />
+        <Badge variant="secondary" className="ml-auto gap-1 text-[10px] font-normal">
+          <MapPin className="h-3 w-3" />
+          Mapa de tiendas · Google Maps
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {stores.map((store, i) => (
+          <div key={i} className="space-y-1.5 rounded-lg border bg-background p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-muted-foreground">
+                Local {i + 1}
+              </span>
+              <button
+                type="button"
+                onClick={() => removeStore(i)}
+                disabled={stores.length <= 1}
+                aria-label="Quitar local"
+                title={stores.length <= 1 ? 'Tiene que quedar al menos un local' : 'Quitar local'}
+                className="text-muted-foreground transition hover:text-destructive disabled:opacity-30"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={store.name}
+              onChange={(e) => updateStore(i, { name: e.target.value })}
+              placeholder="Nombre (ej. Confitería Quelita — Macul)"
+              className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+            />
+            <input
+              type="text"
+              value={store.address}
+              onChange={(e) => updateStore(i, { address: e.target.value })}
+              placeholder="Dirección visible (ej. San Luis de Macúl 5304)"
+              className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+            />
+            <input
+              type="text"
+              value={store.mapQuery}
+              onChange={(e) => updateStore(i, { mapQuery: e.target.value })}
+              placeholder='Búsqueda en Google Maps ("Negocio, dirección, comuna")'
+              className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+            />
+            <input
+              type="text"
+              value={store.hours ?? ''}
+              onChange={(e) => updateStore(i, { hours: e.target.value })}
+              placeholder="Horario (ej. Lun a Sáb 8:30–20:30)"
+              className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+            />
+            {store.mapQuery ? (
+              <div className="relative aspect-[16/7] overflow-hidden rounded-md border">
+                <iframe
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(store.mapQuery)}&output=embed&hl=es`}
+                  title={`Preview mapa local ${i + 1}`}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full border-0"
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-amber-600">
+                Completá la búsqueda de Google Maps — sin eso no se puede guardar.
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {stores.length < 4 && (
+        <Button variant="ghost" size="sm" className="mt-2" onClick={addStore}>
+          <Plus className="mr-1 h-4 w-4" />
+          Agregar local
+        </Button>
       )}
     </div>
   );

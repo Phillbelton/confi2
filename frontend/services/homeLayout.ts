@@ -45,6 +45,29 @@ export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
     active: true,
     config: { title: 'Más vendidos', emoji: '🏆', source: 'popular', limit: 5 },
   },
+  {
+    id: 'store_locations',
+    type: 'location_map',
+    active: true,
+    config: {
+      title: 'Visita nuestras tiendas',
+      emoji: '📍',
+      stores: [
+        {
+          name: 'Confitería Quelita — Macul',
+          address: 'San Luis de Macúl 5304, Macul',
+          mapQuery: 'Confiteria Quelita, San Luis de Macúl 5304, Macul',
+          hours: 'Lun a Sáb 8:30–20:30 · Dom 10:00–16:00',
+        },
+        {
+          name: 'Confitería Quelita — Peñalolén',
+          address: 'Av. Grecia 6740, Peñalolén',
+          mapQuery: 'Confiteria Quelita, Av. Grecia 6740, Peñalolén',
+          hours: 'Lun a Vie 10:30–19:30 · Sáb 10:30–18:00 · Dom cerrado',
+        },
+      ],
+    },
+  },
 ];
 
 export const homeLayoutService = {

@@ -7,6 +7,7 @@ import {
   ProductCarouselSection,
   ProductGridSection,
 } from '@/components/m/home/ProductSection';
+import { StoreLocationsSection } from '@/components/m/home/StoreLocations';
 import { useHomeLayout } from '@/hooks/useHomeLayout';
 import type { HomeSection } from '@/types';
 
@@ -48,6 +49,8 @@ function renderSection(section: HomeSection): React.ReactNode {
       return <ProductCarouselSection config={config} />;
     case 'product_grid':
       return <ProductGridSection config={config} />;
+    case 'location_map':
+      return <StoreLocationsSection config={config} />;
     default:
       return null;
   }

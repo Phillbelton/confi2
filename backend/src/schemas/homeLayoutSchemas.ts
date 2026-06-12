@@ -18,6 +18,15 @@ import {
  *  - ids únicos, máximo 20 secciones en total.
  */
 
+const storeSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    address: z.string().trim().min(1).max(160),
+    mapQuery: z.string().trim().min(1).max(220),
+    hours: z.string().trim().max(160).optional(),
+  })
+  .strict();
+
 const configSchema = z
   .object({
     placement: z.enum(BANNER_ZONE_PLACEMENTS).optional(),
@@ -26,6 +35,7 @@ const configSchema = z
     source: z.enum(PRODUCT_SOURCES).optional(),
     collectionSlug: z.string().trim().min(1).max(120).optional(),
     limit: z.number().int().min(2).max(20).optional(),
+    stores: z.array(storeSchema).min(1).max(4).optional(),
   })
   .strict();
 
@@ -42,6 +52,12 @@ const sectionSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'banner_zone requiere config.placement',
+      });
+    }
+    if (section.type === 'location_map' && !section.config?.stores?.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'location_map requiere config.stores con al menos un local',
       });
     }
     if (section.type === 'product_carousel' || section.type === 'product_grid') {
@@ -91,6 +107,14 @@ export const updateHomeLayoutSchema = z.object({
               message: `Debe haber exactamente una sección '${type}' (hay ${count})`,
             });
           }
+        }
+        // mapa de tiendas: a lo sumo una
+        const maps = sections.filter((s) => s.type === 'location_map').length;
+        if (maps > 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `A lo sumo una sección 'location_map' (hay ${maps})`,
+          });
         }
         // banner zones: una por placement
         for (const placement of BANNER_ZONE_PLACEMENTS) {

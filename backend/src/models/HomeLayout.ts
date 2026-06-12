@@ -21,6 +21,7 @@ export const HOME_SECTION_TYPES = [
   'static_cta',
   'product_carousel',
   'product_grid',
+  'location_map',
 ] as const;
 
 export type HomeSectionType = (typeof HOME_SECTION_TYPES)[number];
@@ -40,16 +41,28 @@ export type ProductSource = (typeof PRODUCT_SOURCES)[number];
 
 export const BANNER_ZONE_PLACEMENTS = ['home_secondary', 'home_promo'] as const;
 
+/** Un local físico para la sección location_map (Google Maps embebido). */
+export interface StoreLocation {
+  name: string;
+  address: string;
+  /** Query del embed/directions — idealmente "Nombre negocio, dirección"
+   *  para que Google muestre la ficha de Business con rating. */
+  mapQuery: string;
+  hours?: string;
+}
+
 export interface HomeSectionConfig {
   /** banner_zone: qué zona de banners renderiza. */
   placement?: (typeof BANNER_ZONE_PLACEMENTS)[number];
-  /** product_carousel / product_grid */
+  /** product_carousel / product_grid / location_map (título de la sección) */
   title?: string;
   emoji?: string;
   source?: ProductSource;
   /** Requerido cuando source='collection'. */
   collectionSlug?: string;
   limit?: number;
+  /** location_map: los locales a mostrar (1..4). */
+  stores?: StoreLocation[];
 }
 
 export interface HomeSection {
@@ -100,6 +113,29 @@ export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
     type: 'product_grid',
     active: true,
     config: { title: 'Más vendidos', emoji: '🏆', source: 'popular', limit: 5 },
+  },
+  {
+    id: 'store_locations',
+    type: 'location_map',
+    active: true,
+    config: {
+      title: 'Visita nuestras tiendas',
+      emoji: '📍',
+      stores: [
+        {
+          name: 'Confitería Quelita — Macul',
+          address: 'San Luis de Macúl 5304, Macul',
+          mapQuery: 'Confiteria Quelita, San Luis de Macúl 5304, Macul',
+          hours: 'Lun a Sáb 8:30–20:30 · Dom 10:00–16:00',
+        },
+        {
+          name: 'Confitería Quelita — Peñalolén',
+          address: 'Av. Grecia 6740, Peñalolén',
+          mapQuery: 'Confiteria Quelita, Av. Grecia 6740, Peñalolén',
+          hours: 'Lun a Vie 10:30–19:30 · Sáb 10:30–18:00 · Dom cerrado',
+        },
+      ],
+    },
   },
 ];
 
@@ -153,6 +189,18 @@ const homeLayoutSchema = new Schema<IHomeLayout>(
             source: { type: String, enum: PRODUCT_SOURCES },
             collectionSlug: String,
             limit: Number,
+            stores: {
+              type: [
+                {
+                  _id: false,
+                  name: String,
+                  address: String,
+                  mapQuery: String,
+                  hours: String,
+                },
+              ],
+              default: undefined,
+            },
           },
           default: undefined,
           _id: false,

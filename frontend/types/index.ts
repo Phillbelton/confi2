@@ -405,7 +405,17 @@ export type HomeSectionType =
   | 'collections'
   | 'static_cta'
   | 'product_carousel'
-  | 'product_grid';
+  | 'product_grid'
+  | 'location_map';
+
+/** Un local físico para la sección location_map. */
+export interface StoreLocation {
+  name: string;
+  address: string;
+  /** Query del embed/directions de Google Maps ("Negocio, dirección"). */
+  mapQuery: string;
+  hours?: string;
+}
 
 /** De dónde salen los productos de un carrusel/grilla configurable. */
 export type HomeProductSource =
@@ -422,6 +432,8 @@ export interface HomeSectionConfig {
   source?: HomeProductSource;
   collectionSlug?: string;
   limit?: number;
+  /** location_map: los locales a mostrar (1..4). */
+  stores?: StoreLocation[];
 }
 
 export interface HomeSection {

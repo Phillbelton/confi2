@@ -152,6 +152,13 @@ describe('PUT /api/home-layout', () => {
     expect(res.status).toBe(200);
   });
 
+  it('permite un layout sin location_map (es opcional, máximo una)', async () => {
+    const { token } = await createUserAndToken('admin');
+    const sections = clone().filter((s) => s.type !== 'location_map');
+    const res = await putAs(token, sections);
+    expect(res.status).toBe(200);
+  });
+
   describe('validación (400)', () => {
     let token: string;
     beforeEach(async () => {
@@ -211,6 +218,35 @@ describe('PUT /api/home-layout', () => {
     it('tipo desconocido', async () => {
       const bad = clone() as unknown as Array<Record<string, unknown>>;
       bad[0].type = 'malware_widget';
+      expect((await putAs(token, bad)).status).toBe(400);
+    });
+
+    it('dos secciones location_map', async () => {
+      const bad = clone();
+      bad.push({
+        id: 'mapa-2',
+        type: 'location_map',
+        active: true,
+        config: {
+          title: 'Otra',
+          stores: [{ name: 'X', address: 'Y', mapQuery: 'Z' }],
+        },
+      });
+      expect((await putAs(token, bad)).status).toBe(400);
+    });
+
+    it('location_map sin stores', async () => {
+      const bad = clone();
+      const map = bad.find((s) => s.type === 'location_map')!;
+      delete map.config!.stores;
+      expect((await putAs(token, bad)).status).toBe(400);
+    });
+
+    it('store sin mapQuery', async () => {
+      const bad = clone();
+      const map = bad.find((s) => s.type === 'location_map')!;
+      const store = map.config!.stores![0] as unknown as Record<string, unknown>;
+      delete store.mapQuery;
       expect((await putAs(token, bad)).status).toBe(400);
     });
 
