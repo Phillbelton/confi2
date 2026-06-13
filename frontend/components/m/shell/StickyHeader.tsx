@@ -273,7 +273,7 @@ function SearchField({ q, setQ, focused, setFocused }: SearchFieldProps) {
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="¿Qué dulce buscás hoy?"
+        placeholder="¿Qué dulce buscas hoy?"
         className={cn(
           'w-full bg-transparent py-3 pl-11 pr-24 text-sm text-foreground',
           'placeholder:text-muted-foreground focus:outline-none'

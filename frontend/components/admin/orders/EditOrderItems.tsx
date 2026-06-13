@@ -112,7 +112,7 @@ export function EditOrderItems({ order, onSuccess, onCancel }: EditOrderItemsPro
         <CardContent className="space-y-3">
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              La orden no tiene productos. Agregá al menos uno para poder guardar.
+              La orden no tiene productos. Agrega al menos uno para poder guardar.
             </p>
           )}
           {items.map((it) => (

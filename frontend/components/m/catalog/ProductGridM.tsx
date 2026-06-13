@@ -32,7 +32,7 @@ export function ProductGridM({ products, isLoading, className }: ProductGridMPro
       <EmptyState
         emoji="🍭"
         title="No encontramos productos"
-        description="Probá quitando algún filtro o cambiando lo que buscás. ¡Seguro tenemos algo dulce para vos!"
+        description="Prueba quitando algún filtro o cambiando lo que buscas. ¡Seguro tenemos algo dulce para ti!"
         action={{ label: 'Ver todo el catálogo', href: '/productos' }}
       />
     );

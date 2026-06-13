@@ -221,7 +221,7 @@ export function FranjaZoneEditor({ placement }: { placement: MosaicPlacement }) 
 
       {rows.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed py-8 text-center text-sm text-muted-foreground">
-          Sin franjas todavía. Agregá una franja y después un banner.
+          Sin franjas todavía. Agrega una franja y después un banner.
         </div>
       ) : (
         <div className="space-y-3">

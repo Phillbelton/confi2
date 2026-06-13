@@ -474,7 +474,7 @@ export function BannerForm({
                   <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Elegí una colección" />
+                        <SelectValue placeholder="Elige una colección" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -501,7 +501,7 @@ export function BannerForm({
                   <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Elegí una categoría" />
+                        <SelectValue placeholder="Elige una categoría" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

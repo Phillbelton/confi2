@@ -513,7 +513,7 @@ function ProductSectionEditor({
             className="h-8 rounded-md border bg-background px-2 text-sm"
           >
             <option value="" disabled>
-              Elegí una colección…
+              Elige una colección…
             </option>
             {collections.map((c) => (
               <option key={c._id} value={c.slug}>
@@ -554,7 +554,7 @@ function ProductSectionEditor({
       </div>
       {config.source === 'collection' && !config.collectionSlug && (
         <p className="mt-2 text-xs text-amber-600">
-          Elegí la colección — sin eso no se puede guardar.
+          Elige la colección — sin eso no se puede guardar.
         </p>
       )}
     </div>

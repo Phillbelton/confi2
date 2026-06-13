@@ -21,8 +21,8 @@ export default function MCartPage() {
       <EmptyState
         emoji="🛒"
         title="Tu carrito está vacío"
-        description="Agregá productos desde el catálogo para empezar tu pedido y aprovechar los descuentos por mayor."
-        action={{ label: 'Explorar productos', href: '/productos' }}
+        description="Agrega productos desde el catálogo para empezar tu pedido y aprovechar los descuentos por mayor."
+        action={{ label: 'Explorar el catálogo', href: '/productos' }}
         secondaryAction={{ label: 'Ver ofertas', href: '/productos?onSale=true' }}
       />
     );
