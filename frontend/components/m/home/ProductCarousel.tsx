@@ -68,10 +68,10 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
   if (isLoading) {
     return (
       <div className="flex gap-3 overflow-hidden px-4 pb-4 lg:px-8 lg:gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}
-            className="h-[268px] w-44 shrink-0 animate-pulse rounded-2xl bg-muted lg:h-[340px] lg:w-56"
+            className="h-[248px] w-40 shrink-0 animate-pulse rounded-2xl bg-muted lg:h-[300px] lg:w-48"
           />
         ))}
       </div>
@@ -93,7 +93,7 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
         className="snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:gap-4 lg:px-8 lg:pb-6"
       >
         {products.map((p) => (
-          <div key={p._id} className="shrink-0 w-44 snap-start lg:w-56">
+          <div key={p._id} className="shrink-0 w-40 snap-start lg:w-48">
             <ProductCardM product={p} />
           </div>
         ))}

@@ -43,7 +43,7 @@ export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
     id: 'best_sellers',
     type: 'product_grid',
     active: true,
-    config: { title: 'Más vendidos', emoji: '🏆', source: 'popular', limit: 5 },
+    config: { title: 'Más vendidos', emoji: '🏆', source: 'popular', limit: 6 },
   },
   {
     id: 'store_locations',
