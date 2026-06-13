@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X, SlidersHorizontal } from 'lucide-react';
 import { ProductGridM } from '@/components/m/catalog/ProductGridM';
@@ -14,10 +14,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { useProducts, useFacets } from '@/hooks/useProducts';
+import { useInfiniteProducts, useFacets } from '@/hooks/useProducts';
 import { useDebounce } from 'use-debounce';
 import { cn } from '@/lib/utils';
 import type { ProductQueryParams } from '@/services/products';
+import type { FacetLabeledEntry } from '@/types';
 
 // Valida que el sort venga de la URL en el conjunto soportado por la
 // API. Devuelve undefined si no coincide → la API usa el default.
@@ -31,6 +32,24 @@ function parseSort(raw: string | null): SortKey | undefined {
     ? (raw as SortKey)
     : undefined;
 }
+
+// El facet de formatos viene ordenado por conteo, lo que mezcla 350ml,
+// 3L, 40g… Orden legible: sólidos (g/kg) primero, líquidos (ml/L)
+// después, cada grupo de menor a mayor tamaño.
+const UNIT_FACTOR: Record<string, number> = { g: 1, kg: 1000, ml: 1, l: 1000 };
+function sortFormatsBySize(items: FacetLabeledEntry[]): FacetLabeledEntry[] {
+  return [...items].sort((a, b) => {
+    const liquidA = a.unit === 'ml' || a.unit === 'l' ? 1 : 0;
+    const liquidB = b.unit === 'ml' || b.unit === 'l' ? 1 : 0;
+    if (liquidA !== liquidB) return liquidA - liquidB;
+    const sizeA = (a.value ?? 0) * (UNIT_FACTOR[a.unit ?? ''] ?? 1);
+    const sizeB = (b.value ?? 0) * (UNIT_FACTOR[b.unit ?? ''] ?? 1);
+    return sizeA - sizeB;
+  });
+}
+
+// Cuántos chips muestra cada sección de filtros antes del "Ver más".
+const FACET_VISIBLE_LIMIT = 10;
 
 function CatalogContent() {
   const router = useRouter();
@@ -90,10 +109,32 @@ function CatalogContent() {
     // strings adicionales aunque no estén en el tipo formal.
     ...(attrQueryEntries as Partial<ProductQueryParams>),
   };
-  const { data, isLoading } = useProducts(productQuery);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteProducts(productQuery);
 
-  const products = data?.data || [];
-  const total = data?.pagination?.total || 0;
+  const products = data?.pages.flatMap((p) => p.data) ?? [];
+  const total = data?.pages[0]?.pagination?.total ?? 0;
+
+  // Infinite scroll: el centinela al pie de la grilla dispara la página
+  // siguiente; el botón "Cargar más" queda como respaldo accesible.
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasNextPage) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isFetchingNextPage) fetchNextPage();
+      },
+      { rootMargin: '400px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const { data: facets } = useFacets({
     category, search: debouncedSearch, collection,
@@ -104,7 +145,10 @@ function CatalogContent() {
   // para usar directamente en condiciones y renders sin chaining repetido.
   const facetSubcategories = facets?.subcategories ?? [];
   const facetBrands = facets?.brands ?? [];
-  const facetFormats = facets?.formats ?? [];
+  const facetFormats = useMemo(
+    () => sortFormatsBySize(facets?.formats ?? []),
+    [facets?.formats]
+  );
   const facetFlavors = facets?.flavors ?? [];
   const dynamicAttributes = facets?.attributes ?? [];
 
@@ -164,9 +208,20 @@ function CatalogContent() {
       });
     }
   }
+  if (onSale) {
+    activeChips.push({
+      label: 'En oferta',
+      onRemove: () => setParam({ onSale: undefined }),
+    });
+  }
+  if (featured) {
+    activeChips.push({
+      label: 'Destacados',
+      onRemove: () => setParam({ featured: undefined }),
+    });
+  }
 
-  const activeFilterCount =
-    activeChips.length + (onSale ? 1 : 0) + (featured ? 1 : 0);
+  const activeFilterCount = activeChips.length;
 
   const clearFilters = () => {
     const updates: Record<string, string | undefined> = {
@@ -218,6 +273,13 @@ function CatalogContent() {
           ))}
         </div>
       )}
+
+      {/* Título de página */}
+      <div className="px-4 pt-4 lg:px-8">
+        <h1 className="text-xl font-extrabold tracking-tight lg:text-2xl">
+          Catálogo
+        </h1>
+      </div>
 
       {/* Buscador */}
       <div className="px-4 pt-3 lg:px-8">
@@ -315,7 +377,9 @@ function CatalogContent() {
                   />
                 )}
 
-                {facetSubcategories.length > 0 && (
+                {/* Solo con una categoría activa: en la raíz del catálogo
+                    este facet trae huérfanos sueltos y es puro ruido. */}
+                {category && facetSubcategories.length > 0 && (
                   <FilterSection
                     title="Subcategorías"
                     items={facetSubcategories}
@@ -349,24 +413,14 @@ function CatalogContent() {
                 )}
 
                 {dynamicAttributes.map((attr) => (
-                  <div key={attr.key}>
-                    <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {attr.label}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {attr.options.map((opt) => {
-                        const sel = (activeAttrs[attr.key] || []).includes(opt.value);
-                        return (
-                          <FilterChip
-                            key={opt.value}
-                            label={`${opt.label} · ${opt.count}`}
-                            selected={sel}
-                            onClick={() => toggleAttrValue(attr.key, opt.value, attr.multiSelect)}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <AttributeFilterSection
+                    key={attr.key}
+                    attr={attr}
+                    selectedValues={activeAttrs[attr.key] || []}
+                    onToggle={(value) =>
+                      toggleAttrValue(attr.key, value, attr.multiSelect)
+                    }
+                  />
                 ))}
 
                 <div>
@@ -424,8 +478,67 @@ function CatalogContent() {
         </div>
       )}
 
-      <ProductGridM products={products} isLoading={isLoading} className="pb-12" />
+      <ProductGridM
+        products={products}
+        isLoading={isLoading}
+        className={hasNextPage ? undefined : 'pb-12'}
+      />
+
+      {hasNextPage && (
+        <div
+          ref={loadMoreRef}
+          className="flex flex-col items-center gap-2 px-4 py-6 pb-12"
+        >
+          <p className="text-xs text-muted-foreground">
+            Mostrando {products.length} de {total} productos
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="h-11 rounded-full px-8 text-sm font-bold"
+          >
+            {isFetchingNextPage ? 'Cargando…' : 'Cargar más productos'}
+          </Button>
+        </div>
+      )}
     </>
+  );
+}
+
+/**
+ * Colapsa una lista de chips a FACET_VISIBLE_LIMIT visibles. Los
+ * seleccionados más allá del límite se muestran igual para que nunca
+ * quede un filtro activo oculto.
+ */
+function useChipCollapse<T>(items: T[], isSelected: (item: T) => boolean) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded
+    ? items
+    : [
+        ...items.slice(0, FACET_VISIBLE_LIMIT),
+        ...items.slice(FACET_VISIBLE_LIMIT).filter(isSelected),
+      ];
+  return {
+    visible,
+    expanded,
+    toggle: () => setExpanded((e) => !e),
+    collapsible: items.length > FACET_VISIBLE_LIMIT,
+    moreCount: items.length - visible.length,
+  };
+}
+
+function ShowMoreButton({
+  expanded, moreCount, onClick,
+}: { expanded: boolean; moreCount: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-2 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+    >
+      {expanded ? 'Ver menos' : `Ver más (${moreCount})`}
+    </button>
   );
 }
 
@@ -440,11 +553,15 @@ function FilterSection({
   selected: string[];
   onToggle: (slug: string) => void;
 }) {
+  const { visible, expanded, toggle, collapsible, moreCount } = useChipCollapse(
+    items,
+    (it) => selected.includes(it.slug)
+  );
   return (
     <div>
       <h3 className="text-sm font-bold uppercase tracking-wide mb-2">{title}</h3>
       <div className="flex flex-wrap gap-2">
-        {items.map((it) => (
+        {visible.map((it) => (
           <FilterChip
             key={it._id}
             label={`${it.name || it.label} · ${it.count}`}
@@ -453,6 +570,44 @@ function FilterSection({
           />
         ))}
       </div>
+      {collapsible && (
+        <ShowMoreButton expanded={expanded} moreCount={moreCount} onClick={toggle} />
+      )}
+    </div>
+  );
+}
+
+function AttributeFilterSection({
+  attr,
+  selectedValues,
+  onToggle,
+}: {
+  attr: { key: string; label: string; multiSelect: boolean; options: Array<{ value: string; label: string; count: number }> };
+  selectedValues: string[];
+  onToggle: (value: string) => void;
+}) {
+  const { visible, expanded, toggle, collapsible, moreCount } = useChipCollapse(
+    attr.options,
+    (opt) => selectedValues.includes(opt.value)
+  );
+  return (
+    <div>
+      <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        {attr.label}
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {visible.map((opt) => (
+          <FilterChip
+            key={opt.value}
+            label={`${opt.label} · ${opt.count}`}
+            selected={selectedValues.includes(opt.value)}
+            onClick={() => onToggle(opt.value)}
+          />
+        ))}
+      </div>
+      {collapsible && (
+        <ShowMoreButton expanded={expanded} moreCount={moreCount} onClick={toggle} />
+      )}
     </div>
   );
 }

@@ -315,6 +315,8 @@ export interface PaginationMeta {
   limit?: number;
   hasNextPage?: boolean;
   hasPrevPage?: boolean;
+  hasNext?: boolean;
+  hasPrev?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -496,6 +498,10 @@ export interface FacetLabeledEntry {
   name?: string;
   slug: string;
   count: number;
+  // Presentes en el facet de formatos: magnitud y unidad ('g'|'kg'|'ml'|'l')
+  // para poder ordenarlos por tamaño en vez de por conteo.
+  value?: number;
+  unit?: string;
 }
 
 export interface DynamicFacetAttribute {
