@@ -51,6 +51,17 @@ function sortFormatsBySize(items: FacetLabeledEntry[]): FacetLabeledEntry[] {
 // Cuántos chips muestra cada sección de filtros antes del "Ver más".
 const FACET_VISIBLE_LIMIT = 10;
 
+// Rangos de precio fijos en CLP. El catálogo va de ~$10 a $20.000, con la
+// mayoría entre $1.000 y $5.000, así que estos tramos cubren bien sin
+// depender de mín/máx dinámicos del backend.
+type PriceRange = { label: string; min?: number; max?: number };
+const PRICE_RANGES: PriceRange[] = [
+  { label: 'Hasta $1.000', max: 1000 },
+  { label: '$1.000 – $3.000', min: 1000, max: 3000 },
+  { label: '$3.000 – $5.000', min: 3000, max: 5000 },
+  { label: 'Más de $5.000', min: 5000 },
+];
+
 function CatalogContent() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -63,6 +74,8 @@ function CatalogContent() {
   const collection = sp.get('coleccion') || undefined;
   const onSale = sp.get('onSale') === 'true';
   const featured = sp.get('featured') === 'true';
+  const minPrice = sp.get('minPrice') || undefined;
+  const maxPrice = sp.get('maxPrice') || undefined;
   const search = sp.get('search') || '';
   const sort: SortKey = parseSort(sp.get('sort')) ?? 'newest';
 
@@ -93,6 +106,15 @@ function CatalogContent() {
     router.replace(`/productos?${params.toString()}`);
   };
 
+  // La query/facets ya usan `debouncedSearch`; la URL también se escribe
+  // recién con el valor estable para no hacer router.replace por tecla.
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      setParam({ search: debouncedSearch || undefined });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
   const productQuery: ProductQueryParams = {
     category,
     subcategory,
@@ -102,7 +124,11 @@ function CatalogContent() {
     collection,
     onSale: onSale || undefined,
     featured: featured || undefined,
-    search: debouncedSearch || undefined,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    // La URL es la fuente de verdad de la búsqueda: el input in-page la
+    // escribe con debounce y el buscador del header la setea directo.
+    search: search || undefined,
     sort,
     limit: 30,
     // Filtros dinámicos attr_<key> — el backend los acepta como query
@@ -163,6 +189,18 @@ function CatalogContent() {
     setParam({ [`attr_${key}`]: next.length ? next.join(',') : undefined });
   };
 
+  // Rango de precio activo (single-select): comparamos min/max de la URL
+  // con cada tramo. Re-clic sobre el activo lo limpia.
+  const isPriceRangeActive = (r: PriceRange) =>
+    (r.min?.toString() ?? '') === (minPrice ?? '') &&
+    (r.max?.toString() ?? '') === (maxPrice ?? '');
+  const togglePriceRange = (r: PriceRange) =>
+    setParam(
+      isPriceRangeActive(r)
+        ? { minPrice: undefined, maxPrice: undefined }
+        : { minPrice: r.min?.toString(), maxPrice: r.max?.toString() }
+    );
+
   // Chips activos visibles bajo el breadcrumb
   const activeChips: Array<{ label: string; onRemove: () => void }> = [];
   if (brands) {
@@ -220,6 +258,13 @@ function CatalogContent() {
       onRemove: () => setParam({ featured: undefined }),
     });
   }
+  if (minPrice || maxPrice) {
+    const activeRange = PRICE_RANGES.find(isPriceRangeActive);
+    activeChips.push({
+      label: `Precio: ${activeRange?.label ?? `$${minPrice ?? '0'}–$${maxPrice ?? '∞'}`}`,
+      onRemove: () => setParam({ minPrice: undefined, maxPrice: undefined }),
+    });
+  }
 
   const activeFilterCount = activeChips.length;
 
@@ -231,6 +276,8 @@ function CatalogContent() {
       sabor: undefined,
       onSale: undefined,
       featured: undefined,
+      minPrice: undefined,
+      maxPrice: undefined,
     };
     for (const k of Object.keys(activeAttrs)) {
       updates[`attr_${k}`] = undefined;
@@ -281,23 +328,21 @@ function CatalogContent() {
         </h1>
       </div>
 
-      {/* Buscador */}
-      <div className="px-4 pt-3 lg:px-8">
+      {/* Buscador — en desktop ya existe el buscador prominente del header,
+          así que acá se muestra solo en mobile/tablet para no duplicarlo. */}
+      <div className="px-4 pt-3 lg:hidden">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar productos…"
             value={searchInput}
-            onChange={(e) => {
-              setSearchInput(e.target.value);
-              setParam({ search: e.target.value || undefined });
-            }}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="h-11 rounded-full pl-9 pr-9"
           />
           {searchInput && (
             <button
               type="button"
-              onClick={() => { setSearchInput(''); setParam({ search: undefined }); }}
+              onClick={() => setSearchInput('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               aria-label="Limpiar búsqueda"
             >
@@ -422,6 +467,22 @@ function CatalogContent() {
                     }
                   />
                 ))}
+
+                <div>
+                  <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    Precio
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {PRICE_RANGES.map((r) => (
+                      <FilterChip
+                        key={r.label}
+                        label={r.label}
+                        selected={isPriceRangeActive(r)}
+                        onClick={() => togglePriceRange(r)}
+                      />
+                    ))}
+                  </div>
+                </div>
 
                 <div>
                   <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">

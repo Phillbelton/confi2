@@ -48,6 +48,16 @@ export function StickyHeader() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const term = q.trim();
+    // Si ya estamos en el catálogo, preservar los filtros activos de la URL
+    // y solo actualizar `search`; desde cualquier otra página, ir limpio.
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/productos')) {
+      const params = new URLSearchParams(window.location.search);
+      if (term) params.set('search', term);
+      else params.delete('search');
+      const qs = params.toString();
+      router.push(qs ? `/productos?${qs}` : '/productos');
+      return;
+    }
     router.push(
       term ? `/productos?search=${encodeURIComponent(term)}` : '/productos'
     );
