@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import { Check, Search, X, SlidersHorizontal } from 'lucide-react';
 import { ProductGridM } from '@/components/m/catalog/ProductGridM';
 import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
 import { useCatalogBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
@@ -18,7 +18,6 @@ import { useInfiniteProducts, useFacets } from '@/hooks/useProducts';
 import { useDebounce } from 'use-debounce';
 import { cn } from '@/lib/utils';
 import type { ProductQueryParams } from '@/services/products';
-import type { FacetLabeledEntry } from '@/types';
 
 // Valida que el sort venga de la URL en el conjunto soportado por la
 // API. Devuelve undefined si no coincide → la API usa el default.
@@ -33,22 +32,7 @@ function parseSort(raw: string | null): SortKey | undefined {
     : undefined;
 }
 
-// El facet de formatos viene ordenado por conteo, lo que mezcla 350ml,
-// 3L, 40g… Orden legible: sólidos (g/kg) primero, líquidos (ml/L)
-// después, cada grupo de menor a mayor tamaño.
-const UNIT_FACTOR: Record<string, number> = { g: 1, kg: 1000, ml: 1, l: 1000 };
-function sortFormatsBySize(items: FacetLabeledEntry[]): FacetLabeledEntry[] {
-  return [...items].sort((a, b) => {
-    const liquidA = a.unit === 'ml' || a.unit === 'l' ? 1 : 0;
-    const liquidB = b.unit === 'ml' || b.unit === 'l' ? 1 : 0;
-    if (liquidA !== liquidB) return liquidA - liquidB;
-    const sizeA = (a.value ?? 0) * (UNIT_FACTOR[a.unit ?? ''] ?? 1);
-    const sizeB = (b.value ?? 0) * (UNIT_FACTOR[b.unit ?? ''] ?? 1);
-    return sizeA - sizeB;
-  });
-}
-
-// Cuántos chips muestra cada sección de filtros antes del "Ver más".
+// Cuántas opciones muestra cada sección de filtros antes del "Ver más".
 const FACET_VISIBLE_LIMIT = 10;
 
 // Rangos de precio fijos en CLP. El catálogo va de ~$10 a $20.000, con la
@@ -171,10 +155,9 @@ function CatalogContent() {
   // para usar directamente en condiciones y renders sin chaining repetido.
   const facetSubcategories = facets?.subcategories ?? [];
   const facetBrands = facets?.brands ?? [];
-  const facetFormats = useMemo(
-    () => sortFormatsBySize(facets?.formats ?? []),
-    [facets?.formats]
-  );
+  // El backend ya devuelve los formatos por conteo (más productos primero),
+  // que es el orden más útil para el top visible antes del "Ver más".
+  const facetFormats = facets?.formats ?? [];
   const facetFlavors = facets?.flavors ?? [];
   const dynamicAttributes = facets?.attributes ?? [];
 
@@ -292,14 +275,46 @@ function CatalogContent() {
   });
 
   // Secciones de filtros compartidas entre el sheet (mobile) y el sidebar
-  // sticky (desktop). Misma UI, dos contenedores; nunca visibles a la vez.
+  // sticky (desktop). Misma UI (listas verticales), dos contenedores; nunca
+  // visibles a la vez. Orden por utilidad: contexto, precio, luego facets.
+  const promoOptions = [
+    { value: 'onSale', label: 'En oferta', count: facets?.promos?.onSale ?? 0 },
+    { value: 'featured', label: 'Destacados', count: facets?.promos?.featured ?? 0 },
+  ].filter((o) => o.count > 0 || (o.value === 'onSale' ? onSale : featured));
+
   const renderFilters = () => (
     <>
+      {/* Subcategorías: solo con una categoría activa (en la raíz son ruido). */}
+      {category && facetSubcategories.length > 0 && (
+        <FilterList
+          title="Subcategorías"
+          options={facetSubcategories.map((s) => ({ value: s.slug, label: s.name, count: s.count }))}
+          selected={subcategory ? [subcategory] : []}
+          multi={false}
+          onToggle={(slug) =>
+            setParam({ subcategoria: subcategory === slug ? undefined : slug })
+          }
+        />
+      )}
+
+      <FilterList
+        title="Precio"
+        options={PRICE_RANGES.map((r) => ({ value: r.label, label: r.label }))}
+        selected={PRICE_RANGES.filter(isPriceRangeActive).map((r) => r.label)}
+        multi={false}
+        onToggle={(label) => {
+          const r = PRICE_RANGES.find((x) => x.label === label);
+          if (r) togglePriceRange(r);
+        }}
+      />
+
       {facetBrands.length > 0 && (
-        <FilterSection
+        <FilterList
           title="Marcas"
-          items={facetBrands}
+          options={facetBrands.map((b) => ({ value: b.slug, label: b.name, count: b.count }))}
           selected={brands ? brands.split(',') : []}
+          multi
+          searchable
           onToggle={(slug) => {
             const cur = brands ? brands.split(',') : [];
             const next = cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug];
@@ -308,24 +323,13 @@ function CatalogContent() {
         />
       )}
 
-      {/* Solo con una categoría activa: en la raíz del catálogo
-          este facet trae huérfanos sueltos y es puro ruido. */}
-      {category && facetSubcategories.length > 0 && (
-        <FilterSection
-          title="Subcategorías"
-          items={facetSubcategories}
-          selected={subcategory ? [subcategory] : []}
-          onToggle={(slug) =>
-            setParam({ subcategoria: subcategory === slug ? undefined : slug })
-          }
-        />
-      )}
-
       {facetFormats.length > 0 && (
-        <FilterSection
+        <FilterList
           title="Formato"
-          items={facetFormats.map((f) => ({ ...f, name: f.label ?? f.name ?? f.slug }))}
+          options={facetFormats.map((f) => ({ value: f.slug, label: f.label ?? f.name ?? f.slug, count: f.count }))}
           selected={format ? [format] : []}
+          multi={false}
+          searchable
           onToggle={(slug) =>
             setParam({ formato: format === slug ? undefined : slug })
           }
@@ -333,10 +337,12 @@ function CatalogContent() {
       )}
 
       {facetFlavors.length > 0 && (
-        <FilterSection
+        <FilterList
           title="Sabor"
-          items={facetFlavors.map((f) => ({ ...f, name: f.name ?? f.label ?? f.slug }))}
+          options={facetFlavors.map((f) => ({ value: f.slug, label: f.name ?? f.label ?? f.slug, count: f.count }))}
           selected={flavor ? [flavor] : []}
+          multi={false}
+          searchable
           onToggle={(slug) =>
             setParam({ sabor: flavor === slug ? undefined : slug })
           }
@@ -344,49 +350,28 @@ function CatalogContent() {
       )}
 
       {dynamicAttributes.map((attr) => (
-        <AttributeFilterSection
+        <FilterList
           key={attr.key}
-          attr={attr}
-          selectedValues={activeAttrs[attr.key] || []}
-          onToggle={(value) =>
-            toggleAttrValue(attr.key, value, attr.multiSelect)
-          }
+          title={attr.label}
+          options={attr.options.map((o) => ({ value: o.value, label: o.label, count: o.count }))}
+          selected={activeAttrs[attr.key] || []}
+          multi={attr.multiSelect}
+          onToggle={(value) => toggleAttrValue(attr.key, value, attr.multiSelect)}
         />
       ))}
 
-      <div>
-        <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          Precio
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {PRICE_RANGES.map((r) => (
-            <FilterChip
-              key={r.label}
-              label={r.label}
-              selected={isPriceRangeActive(r)}
-              onClick={() => togglePriceRange(r)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          Promociones
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          <FilterChip
-            label={`En oferta (${facets?.promos?.onSale || 0})`}
-            selected={onSale}
-            onClick={() => setParam({ onSale: onSale ? undefined : 'true' })}
-          />
-          <FilterChip
-            label={`Destacados (${facets?.promos?.featured || 0})`}
-            selected={featured}
-            onClick={() => setParam({ featured: featured ? undefined : 'true' })}
-          />
-        </div>
-      </div>
+      {promoOptions.length > 0 && (
+        <FilterList
+          title="Promociones"
+          options={promoOptions}
+          selected={[...(onSale ? ['onSale'] : []), ...(featured ? ['featured'] : [])]}
+          multi
+          onToggle={(value) => {
+            if (value === 'onSale') setParam({ onSale: onSale ? undefined : 'true' });
+            else setParam({ featured: featured ? undefined : 'true' });
+          }}
+        />
+      )}
     </>
   );
 
@@ -396,9 +381,10 @@ function CatalogContent() {
         <Breadcrumbs items={breadcrumbs} className="border-b border-border/60 bg-muted/30 lg:px-4" />
       )}
 
-      {/* Subcategorías de la categoría actual */}
+      {/* Subcategorías de la categoría actual — fila horizontal solo en
+          mobile/tablet; en desktop viven en el sidebar de filtros. */}
       {category && facetSubcategories.length > 0 && (
-        <div className="scrollbar-none flex gap-2 overflow-x-auto border-b border-border/60 bg-background px-4 py-2.5 lg:px-8">
+        <div className="scrollbar-none flex gap-2 overflow-x-auto border-b border-border/60 bg-background px-4 py-2.5 lg:hidden">
           <SubcategoryChip
             label="Todo"
             active={!subcategory}
@@ -425,7 +411,7 @@ function CatalogContent() {
       <div className="lg:flex lg:gap-6 lg:px-8 lg:pt-4">
         {/* Sidebar de filtros — solo desktop */}
         <aside className="hidden lg:sticky lg:top-4 lg:block lg:max-h-[calc(100vh-2rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="sticky top-0 z-10 mb-1 flex items-center justify-between border-b border-border/60 bg-background py-2">
             <h2 className="text-sm font-bold uppercase tracking-wide">Filtros</h2>
             {activeFilterCount > 0 && (
               <button
@@ -437,7 +423,7 @@ function CatalogContent() {
               </button>
             )}
           </div>
-          <div className="space-y-6 pb-8">{renderFilters()}</div>
+          <div className="pb-8 pt-1">{renderFilters()}</div>
         </aside>
 
         {/* Columna de resultados */}
@@ -529,7 +515,7 @@ function CatalogContent() {
                 </SheetClose>
               </SheetHeader>
 
-              <div className="flex-1 space-y-6 overflow-y-auto px-4 py-5">
+              <div className="flex-1 overflow-y-auto px-4 py-4">
                 {renderFilters()}
               </div>
 
@@ -635,92 +621,122 @@ function ShowMoreButton({
   );
 }
 
-function FilterSection({
-  title,
-  items,
-  selected,
-  onToggle,
-}: {
-  title: string;
-  items: Array<{ _id: string; name?: string; label?: string; slug: string; count: number }>;
-  selected: string[];
-  onToggle: (slug: string) => void;
-}) {
-  const { visible, expanded, toggle, collapsible, moreCount } = useChipCollapse(
-    items,
-    (it) => selected.includes(it.slug)
-  );
+/** Encabezado de sección unificado + divisor + badge de seleccionados. */
+function FilterGroup({
+  title, selectedCount, children,
+}: { title: string; selectedCount: number; children: ReactNode }) {
   return (
-    <div>
-      <h3 className="text-sm font-bold uppercase tracking-wide mb-2">{title}</h3>
-      <div className="flex flex-wrap gap-2">
-        {visible.map((it) => (
-          <FilterChip
-            key={it._id}
-            label={`${it.name || it.label} · ${it.count}`}
-            selected={selected.includes(it.slug)}
-            onClick={() => onToggle(it.slug)}
-          />
-        ))}
-      </div>
-      {collapsible && (
-        <ShowMoreButton expanded={expanded} moreCount={moreCount} onClick={toggle} />
-      )}
-    </div>
-  );
-}
-
-function AttributeFilterSection({
-  attr,
-  selectedValues,
-  onToggle,
-}: {
-  attr: { key: string; label: string; multiSelect: boolean; options: Array<{ value: string; label: string; count: number }> };
-  selectedValues: string[];
-  onToggle: (value: string) => void;
-}) {
-  const { visible, expanded, toggle, collapsible, moreCount } = useChipCollapse(
-    attr.options,
-    (opt) => selectedValues.includes(opt.value)
-  );
-  return (
-    <div>
-      <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-        {attr.label}
+    <div className="border-t border-border/60 pt-4 first:border-t-0 first:pt-0">
+      <h3 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        <span>{title}</span>
+        {selectedCount > 0 && (
+          <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+            {selectedCount}
+          </span>
+        )}
       </h3>
-      <div className="flex flex-wrap gap-2">
-        {visible.map((opt) => (
-          <FilterChip
-            key={opt.value}
-            label={`${opt.label} · ${opt.count}`}
-            selected={selectedValues.includes(opt.value)}
-            onClick={() => onToggle(opt.value)}
-          />
-        ))}
-      </div>
-      {collapsible && (
-        <ShowMoreButton expanded={expanded} moreCount={moreCount} onClick={toggle} />
-      )}
+      {children}
     </div>
   );
 }
 
-function FilterChip({
-  label, selected, onClick,
-}: { label: string; selected: boolean; onClick: () => void }) {
+/** Una fila de opción: checkbox (multi) o radio (single) + label + conteo. */
+function FilterOption({
+  label, count, selected, multi, onToggle,
+}: { label: string; count?: number; selected: boolean; multi: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-all',
-        selected
-          ? 'border-primary bg-primary text-primary-foreground'
-          : 'border-border bg-card hover:border-primary/40'
-      )}
+      role={multi ? 'checkbox' : 'radio'}
+      aria-checked={selected}
+      onClick={onToggle}
+      className="flex w-full items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/60"
     >
-      {label}
+      <span
+        className={cn(
+          'grid h-[18px] w-[18px] shrink-0 place-items-center border-2 transition-colors',
+          multi ? 'rounded' : 'rounded-full',
+          selected
+            ? 'border-primary bg-primary text-primary-foreground'
+            : 'border-muted-foreground/35'
+        )}
+      >
+        {selected &&
+          (multi ? (
+            <Check className="h-3 w-3" strokeWidth={3} />
+          ) : (
+            <span className="h-2 w-2 rounded-full bg-current" />
+          ))}
+      </span>
+      <span className={cn('min-w-0 flex-1 truncate', selected && 'font-semibold')}>
+        {label}
+      </span>
+      {typeof count === 'number' && (
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
+      )}
     </button>
+  );
+}
+
+/**
+ * Lista de opciones de un filtro como columna vertical (checkbox/radio).
+ * Colapsa a FACET_VISIBLE_LIMIT con "Ver más" y, si `searchable`, ofrece un
+ * buscador interno cuando hay muchas opciones.
+ */
+function FilterList({
+  title, options, selected, multi, onToggle, searchable,
+}: {
+  title: string;
+  options: Array<{ value: string; label: string; count?: number }>;
+  selected: string[];
+  multi: boolean;
+  onToggle: (value: string) => void;
+  searchable?: boolean;
+}) {
+  const [query, setQuery] = useState('');
+  const showSearch = !!searchable && options.length > 12;
+  const filtered = query
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+  const collapse = useChipCollapse(filtered, (o) => selected.includes(o.value));
+  const visible = query ? filtered : collapse.visible;
+
+  return (
+    <FilterGroup title={title} selectedCount={selected.length}>
+      {showSearch && (
+        <div className="relative mb-2">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Buscar ${title.toLowerCase()}…`}
+            className="h-8 w-full rounded-md border border-border bg-background pl-8 pr-2 text-xs outline-none transition-colors focus:border-primary/50"
+          />
+        </div>
+      )}
+      <div className="space-y-0.5">
+        {visible.map((o) => (
+          <FilterOption
+            key={o.value}
+            label={o.label}
+            count={o.count}
+            selected={selected.includes(o.value)}
+            multi={multi}
+            onToggle={() => onToggle(o.value)}
+          />
+        ))}
+        {visible.length === 0 && (
+          <p className="px-1.5 py-1 text-xs text-muted-foreground">Sin resultados</p>
+        )}
+      </div>
+      {!query && collapse.collapsible && (
+        <ShowMoreButton
+          expanded={collapse.expanded}
+          moreCount={collapse.moreCount}
+          onClick={collapse.toggle}
+        />
+      )}
+    </FilterGroup>
   );
 }
 
