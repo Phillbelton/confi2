@@ -291,6 +291,105 @@ function CatalogContent() {
     collectionSlug: collection,
   });
 
+  // Secciones de filtros compartidas entre el sheet (mobile) y el sidebar
+  // sticky (desktop). Misma UI, dos contenedores; nunca visibles a la vez.
+  const renderFilters = () => (
+    <>
+      {facetBrands.length > 0 && (
+        <FilterSection
+          title="Marcas"
+          items={facetBrands}
+          selected={brands ? brands.split(',') : []}
+          onToggle={(slug) => {
+            const cur = brands ? brands.split(',') : [];
+            const next = cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug];
+            setParam({ brands: next.length ? next.join(',') : undefined });
+          }}
+        />
+      )}
+
+      {/* Solo con una categoría activa: en la raíz del catálogo
+          este facet trae huérfanos sueltos y es puro ruido. */}
+      {category && facetSubcategories.length > 0 && (
+        <FilterSection
+          title="Subcategorías"
+          items={facetSubcategories}
+          selected={subcategory ? [subcategory] : []}
+          onToggle={(slug) =>
+            setParam({ subcategoria: subcategory === slug ? undefined : slug })
+          }
+        />
+      )}
+
+      {facetFormats.length > 0 && (
+        <FilterSection
+          title="Formato"
+          items={facetFormats.map((f) => ({ ...f, name: f.label ?? f.name ?? f.slug }))}
+          selected={format ? [format] : []}
+          onToggle={(slug) =>
+            setParam({ formato: format === slug ? undefined : slug })
+          }
+        />
+      )}
+
+      {facetFlavors.length > 0 && (
+        <FilterSection
+          title="Sabor"
+          items={facetFlavors.map((f) => ({ ...f, name: f.name ?? f.label ?? f.slug }))}
+          selected={flavor ? [flavor] : []}
+          onToggle={(slug) =>
+            setParam({ sabor: flavor === slug ? undefined : slug })
+          }
+        />
+      )}
+
+      {dynamicAttributes.map((attr) => (
+        <AttributeFilterSection
+          key={attr.key}
+          attr={attr}
+          selectedValues={activeAttrs[attr.key] || []}
+          onToggle={(value) =>
+            toggleAttrValue(attr.key, value, attr.multiSelect)
+          }
+        />
+      ))}
+
+      <div>
+        <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          Precio
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {PRICE_RANGES.map((r) => (
+            <FilterChip
+              key={r.label}
+              label={r.label}
+              selected={isPriceRangeActive(r)}
+              onClick={() => togglePriceRange(r)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          Promociones
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          <FilterChip
+            label={`En oferta (${facets?.promos?.onSale || 0})`}
+            selected={onSale}
+            onClick={() => setParam({ onSale: onSale ? undefined : 'true' })}
+          />
+          <FilterChip
+            label={`Destacados (${facets?.promos?.featured || 0})`}
+            selected={featured}
+            onClick={() => setParam({ featured: featured ? undefined : 'true' })}
+          />
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <>
       {breadcrumbs.length > 0 && (
@@ -321,8 +420,30 @@ function CatalogContent() {
         </div>
       )}
 
+      {/* Layout: en desktop, sidebar de filtros sticky + columna de resultados;
+          en mobile, todo apilado y los filtros viven en el sheet. */}
+      <div className="lg:flex lg:gap-6 lg:px-8 lg:pt-4">
+        {/* Sidebar de filtros — solo desktop */}
+        <aside className="hidden lg:sticky lg:top-4 lg:block lg:max-h-[calc(100vh-2rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-bold uppercase tracking-wide">Filtros</h2>
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                Limpiar todo
+              </button>
+            )}
+          </div>
+          <div className="space-y-6 pb-8">{renderFilters()}</div>
+        </aside>
+
+        {/* Columna de resultados */}
+        <div className="min-w-0 lg:flex-1">
       {/* Título de página */}
-      <div className="px-4 pt-4 lg:px-8">
+      <div className="px-4 pt-4 lg:px-0 lg:pt-0">
         <h1 className="text-xl font-extrabold tracking-tight lg:text-2xl">
           Catálogo
         </h1>
@@ -353,7 +474,7 @@ function CatalogContent() {
       </div>
 
       {/* Controles: resultados · orden · filtros */}
-      <div className="flex items-center gap-2 px-4 py-3 lg:px-8">
+      <div className="flex items-center gap-2 px-4 py-3 lg:px-0">
         <p className="text-xs font-medium text-muted-foreground">
           {isLoading ? 'Cargando…' : `${total} producto${total === 1 ? '' : 's'}`}
         </p>
@@ -374,7 +495,7 @@ function CatalogContent() {
 
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" className="h-9 gap-1.5 rounded-full px-3.5">
+              <Button variant="outline" className="h-9 gap-1.5 rounded-full px-3.5 lg:hidden">
                 <SlidersHorizontal className="h-4 w-4" />
                 <span className="text-xs font-semibold">Filtros</span>
                 {activeFilterCount > 0 && (
@@ -409,98 +530,7 @@ function CatalogContent() {
               </SheetHeader>
 
               <div className="flex-1 space-y-6 overflow-y-auto px-4 py-5">
-                {facetBrands.length > 0 && (
-                  <FilterSection
-                    title="Marcas"
-                    items={facetBrands}
-                    selected={brands ? brands.split(',') : []}
-                    onToggle={(slug) => {
-                      const cur = brands ? brands.split(',') : [];
-                      const next = cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug];
-                      setParam({ brands: next.length ? next.join(',') : undefined });
-                    }}
-                  />
-                )}
-
-                {/* Solo con una categoría activa: en la raíz del catálogo
-                    este facet trae huérfanos sueltos y es puro ruido. */}
-                {category && facetSubcategories.length > 0 && (
-                  <FilterSection
-                    title="Subcategorías"
-                    items={facetSubcategories}
-                    selected={subcategory ? [subcategory] : []}
-                    onToggle={(slug) =>
-                      setParam({ subcategoria: subcategory === slug ? undefined : slug })
-                    }
-                  />
-                )}
-
-                {facetFormats.length > 0 && (
-                  <FilterSection
-                    title="Formato"
-                    items={facetFormats.map((f) => ({ ...f, name: f.label ?? f.name ?? f.slug }))}
-                    selected={format ? [format] : []}
-                    onToggle={(slug) =>
-                      setParam({ formato: format === slug ? undefined : slug })
-                    }
-                  />
-                )}
-
-                {facetFlavors.length > 0 && (
-                  <FilterSection
-                    title="Sabor"
-                    items={facetFlavors.map((f) => ({ ...f, name: f.name ?? f.label ?? f.slug }))}
-                    selected={flavor ? [flavor] : []}
-                    onToggle={(slug) =>
-                      setParam({ sabor: flavor === slug ? undefined : slug })
-                    }
-                  />
-                )}
-
-                {dynamicAttributes.map((attr) => (
-                  <AttributeFilterSection
-                    key={attr.key}
-                    attr={attr}
-                    selectedValues={activeAttrs[attr.key] || []}
-                    onToggle={(value) =>
-                      toggleAttrValue(attr.key, value, attr.multiSelect)
-                    }
-                  />
-                ))}
-
-                <div>
-                  <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    Precio
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {PRICE_RANGES.map((r) => (
-                      <FilterChip
-                        key={r.label}
-                        label={r.label}
-                        selected={isPriceRangeActive(r)}
-                        onClick={() => togglePriceRange(r)}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    Promociones
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    <FilterChip
-                      label={`En oferta (${facets?.promos?.onSale || 0})`}
-                      selected={onSale}
-                      onClick={() => setParam({ onSale: onSale ? undefined : 'true' })}
-                    />
-                    <FilterChip
-                      label={`Destacados (${facets?.promos?.featured || 0})`}
-                      selected={featured}
-                      onClick={() => setParam({ featured: featured ? undefined : 'true' })}
-                    />
-                  </div>
-                </div>
+                {renderFilters()}
               </div>
 
               <div className="border-t bg-background p-3">
@@ -517,7 +547,7 @@ function CatalogContent() {
 
       {/* Filtros activos */}
       {activeChips.length > 0 && (
-        <div className="scrollbar-none flex items-center gap-1.5 overflow-x-auto px-4 pb-3 lg:px-8">
+        <div className="scrollbar-none flex items-center gap-1.5 overflow-x-auto px-4 pb-3 lg:px-0">
           {activeChips.map((chip, i) => (
             <button
               key={i}
@@ -542,7 +572,7 @@ function CatalogContent() {
       <ProductGridM
         products={products}
         isLoading={isLoading}
-        className={hasNextPage ? undefined : 'pb-12'}
+        className={cn('lg:px-0', !hasNextPage && 'pb-12')}
       />
 
       {hasNextPage && (
@@ -563,6 +593,8 @@ function CatalogContent() {
           </Button>
         </div>
       )}
+        </div>
+      </div>
     </>
   );
 }
