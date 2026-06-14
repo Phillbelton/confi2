@@ -104,7 +104,7 @@ describe('GET /api/home-layout', () => {
     const sections = res.body.data.sections as HomeSection[];
     expect(sections.map((s) => s.id)).toEqual(['best_sellers', 'offers', 'hero']);
     // Derivó tipo y config del default canónico, preservando active
-    expect(sections[0].type).toBe('product_grid');
+    expect(sections[0].type).toBe('product_carousel');
     expect(sections[0].config?.title).toBe('Más vendidos');
     expect(sections[1].active).toBe(false);
     expect(sections[1].config?.source).toBe('on_sale');

@@ -110,9 +110,9 @@ export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
   },
   {
     id: 'best_sellers',
-    type: 'product_grid',
+    type: 'product_carousel',
     active: true,
-    config: { title: 'Más vendidos', emoji: '🏆', source: 'popular', limit: 6 },
+    config: { title: 'Más vendidos', emoji: '🏆', source: 'popular', limit: 8 },
   },
   {
     id: 'store_locations',

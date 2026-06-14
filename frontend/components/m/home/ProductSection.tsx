@@ -82,8 +82,6 @@ export function ProductGridSection({ config }: ProductSectionProps) {
         emoji={config.emoji}
         href={href}
       />
-      {/* Misma escala de columnas que el catálogo (ProductGridM) para que
-          las cards midan igual en toda la tienda. */}
       <div className="grid grid-cols-2 gap-3 px-4 pb-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 lg:px-8 lg:pb-12 xl:grid-cols-6">
         {isLoading
           ? Array.from({ length: Math.min(limit, 6) }).map((_, i) => (
