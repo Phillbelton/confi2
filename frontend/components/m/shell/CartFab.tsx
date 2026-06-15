@@ -19,7 +19,7 @@ export function CartFab() {
         'fixed right-4 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground',
         'px-4 py-3 text-sm font-bold shadow-xl shadow-primary/30 transition-all',
         'hover:scale-105 active:scale-95',
-        'bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-6'
+        'bottom-[calc(16px+env(safe-area-inset-bottom))] lg:bottom-6'
       )}
     >
       <span className="relative">

@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+logs
+uploads
+.git
+.env
+.env.*
+npm-debug.log*
+**/*.test.ts
+tests
+*.md

@@ -51,6 +51,7 @@ export default function ProductDetailPage() {
   const addItem = useCartStoreM((s) => s.addItem);
 
   const [quantity, setQuantity] = useState<number>(1);
+  const [selectedImage, setSelectedImage] = useState<number>(0);
 
   if (error) {
     return (
@@ -112,8 +113,8 @@ export default function ProductDetailPage() {
         {/* Galería */}
         <div className="lg:sticky lg:top-32 lg:self-start">
           <div className="relative aspect-square overflow-hidden bg-muted lg:rounded-2xl">
-            {product.images?.[0] ? (() => {
-              const attrs = buildSrcSet(product.images[0], SIZESET.card);
+            {product.images?.[selectedImage] ? (() => {
+              const attrs = buildSrcSet(product.images[selectedImage], SIZESET.card);
               return (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -136,6 +137,39 @@ export default function ProductDetailPage() {
             )}
             <SaleUnitBadge saleUnit={product.saleUnit} className="bottom-3" />
           </div>
+
+          {/* Miniaturas — solo si hay más de una imagen */}
+          {product.images && product.images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto px-4 py-3 lg:px-0">
+              {product.images.map((img, i) => {
+                const thumb = buildSrcSet(img, SIZESET.thumb);
+                const isActive = i === selectedImage;
+                return (
+                  <button
+                    key={img}
+                    type="button"
+                    onClick={() => setSelectedImage(i)}
+                    aria-label={`Ver imagen ${i + 1}`}
+                    aria-current={isActive}
+                    className={`relative aspect-square h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
+                      isActive ? 'border-primary' : 'border-transparent hover:border-border'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={thumb.src}
+                      srcSet={thumb.srcSet}
+                      alt={`${product.name} ${i + 1}`}
+                      sizes="64px"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Info */}

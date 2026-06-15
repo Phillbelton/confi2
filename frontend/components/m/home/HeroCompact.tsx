@@ -32,13 +32,13 @@ export function HeroCompact() {
                 Confitería Quelita
               </p>
               <h1 className="font-display text-2xl font-bold leading-tight lg:text-5xl">
-                Endulzá tu día
+                Endulza tu día
               </h1>
             </div>
           </div>
 
           <p className="mt-3 text-sm opacity-90 lg:mt-5 lg:text-lg lg:max-w-xl">
-            Descubrí caramelos, chocolates y bebidas con descuentos por mayor.
+            Descubre caramelos, chocolates y bebidas con descuentos por mayor.
           </p>
 
           <Link

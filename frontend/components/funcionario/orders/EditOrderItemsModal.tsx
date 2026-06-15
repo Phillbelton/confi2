@@ -147,7 +147,7 @@ function EditOrderItemsForm({ order, onCancel, onSave, isSaving }: EditOrderItem
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {items.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            La orden no tiene productos. Agregá al menos uno para poder guardar.
+            La orden no tiene productos. Agrega al menos uno para poder guardar.
           </p>
         )}
         {items.map((it) => (

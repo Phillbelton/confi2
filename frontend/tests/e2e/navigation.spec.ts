@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Navigation — Header', () => {
   test.skip('header is visible on all pages', async ({ page }) => {
-    for (const path of ['/', '/productos', '/ofertas']) {
+    for (const path of ['/', '/productos']) {
       await page.goto(path);
       await page.waitForLoadState('domcontentloaded');
       await expect(page.locator('header')).toBeVisible();
@@ -139,14 +139,6 @@ test.describe('Navigation — Page Transitions', () => {
     }
   });
 
-  test.skip('offers page loads correctly', async ({ page }) => {
-    await page.goto('/ofertas');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
-
-    expect(page.url()).toContain('/ofertas');
-    await expect(page.locator('header')).toBeVisible();
-  });
 });
 
 // ============================================================================

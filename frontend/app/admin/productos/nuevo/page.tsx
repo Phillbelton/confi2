@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { ProductForm, type ProductFormValues } from '@/components/admin/products/ProductForm';
 import { useProductOperations } from '@/hooks/admin/useAdminProducts';
 import type { CreateProductInput } from '@/services/admin/products';
@@ -25,6 +26,7 @@ export default function NuevoProductoPage() {
       tiers: data.tiers,
       featured: data.featured,
       active: data.active,
+      attributes: data.attributes,
     };
     create(payload, {
       onSuccess: (result: { product: Product }) => {
@@ -32,7 +34,16 @@ export default function NuevoProductoPage() {
         if (id && images.length > 0) {
           uploadImages(
             { id, files: images },
-            { onSettled: () => router.push('/admin/productos') }
+            {
+              onSuccess: () => router.push('/admin/productos'),
+              // El producto ya existe pero quedó sin fotos: en vez de volver a la
+              // lista (donde el fallo pasa desapercibido) vamos a su edición
+              // para que el admin reintente la subida desde ahí.
+              onError: () => {
+                toast.warning('El producto se creó, pero falló la subida de imágenes. Reintentá desde acá.');
+                router.push(`/admin/productos/${id}/editar`);
+              },
+            }
           );
         } else {
           router.push('/admin/productos');

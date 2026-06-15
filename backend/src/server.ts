@@ -16,6 +16,12 @@ import { startOrderExpirationScheduler } from './services/orderExpirationService
 // Crear app Express
 const app = express();
 
+// Detrás de Caddy (Docker) hay exactamente 1 proxy: sin esto, req.ip es la IP
+// del contenedor proxy para TODOS los visitantes y el rate limiting por IP
+// colapsa en un único bucket global (300 req/15min compartidos por todo el
+// sitio). "1" confía solo en el primer salto de X-Forwarded-For.
+app.set('trust proxy', 1);
+
 // Validar variables de entorno
 validateEnv();
 

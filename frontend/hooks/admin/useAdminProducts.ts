@@ -77,6 +77,17 @@ export function useProductOperations() {
       toast.success('Imágenes subidas');
       invalidate();
     },
+    onError: (e) => toast.error(getApiErrorMessage(e, 'Error al subir las imágenes')),
+  });
+
+  const deleteImageMut = useMutation({
+    mutationFn: ({ id, filename }: { id: string; filename: string }) =>
+      adminProductService.deleteImage(id, filename),
+    onSuccess: () => {
+      toast.success('Imagen eliminada');
+      invalidate();
+    },
+    onError: (e) => toast.error(getApiErrorMessage(e, 'Error al eliminar imagen')),
   });
 
   return {
@@ -88,5 +99,7 @@ export function useProductOperations() {
     isDeleting: deleteMut.isPending,
     uploadImages: uploadImagesMut.mutate,
     isUploading: uploadImagesMut.isPending,
+    deleteImage: deleteImageMut.mutateAsync,
+    isDeletingImage: deleteImageMut.isPending,
   };
 }

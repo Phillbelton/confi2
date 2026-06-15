@@ -1,10 +1,29 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { productService, type ProductQueryParams, type FacetsQueryParams } from '@/services/products';
 
 export function useProducts(params?: ProductQueryParams) {
   return useQuery({
     queryKey: ['products', params],
     queryFn: () => productService.getProducts(params),
+    staleTime: 30_000,
+  });
+}
+
+// Catálogo paginado por acumulación ("Cargar más"). El backend pagina con
+// `page`; expone hasNext/hasPrev (algunos endpoints legacy usan hasNextPage).
+export function useInfiniteProducts(params?: Omit<ProductQueryParams, 'page'>) {
+  return useInfiniteQuery({
+    queryKey: ['products', 'infinite', params],
+    queryFn: ({ pageParam }) =>
+      productService.getProducts({ ...params, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => {
+      const p = last.pagination;
+      const page = p?.page ?? p?.currentPage ?? 1;
+      const hasNext =
+        p?.hasNext ?? p?.hasNextPage ?? (p?.totalPages ? page < p.totalPages : false);
+      return hasNext ? page + 1 : undefined;
+    },
     staleTime: 30_000,
   });
 }

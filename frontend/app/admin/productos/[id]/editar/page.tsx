@@ -18,7 +18,7 @@ export default function EditarProductoPage() {
   const id = params.id as string;
 
   const { data, isLoading, error } = useAdminProduct(id);
-  const { update, isUpdating, uploadImages } = useProductOperations();
+  const { update, isUpdating, uploadImages, deleteImage } = useProductOperations();
 
   if (isLoading) {
     return (
@@ -56,6 +56,8 @@ export default function EditarProductoPage() {
     tiers: product.tiers || [],
     featured: product.featured,
     active: product.active,
+    // Sin esto el form arranca con attributes: {} y el submit los borra del producto.
+    attributes: product.attributes || {},
   };
 
   const handleSubmit = async (values: ProductFormValues, images: File[]) => {
@@ -64,8 +66,10 @@ export default function EditarProductoPage() {
       {
         onSuccess: () => {
           if (images.length > 0) {
+            // Si el upload falla nos quedamos en la página: las imágenes siguen
+            // seleccionadas en el form y el admin puede reintentar guardando de nuevo.
             uploadImages({ id, files: images }, {
-              onSettled: () => router.push('/admin/productos'),
+              onSuccess: () => router.push('/admin/productos'),
             });
           } else {
             router.push('/admin/productos');
@@ -82,6 +86,7 @@ export default function EditarProductoPage() {
       isEditing
       defaultValues={defaultValues}
       defaultImages={product.images || []}
+      onDeleteImage={(filename) => deleteImage({ id, filename })}
     />
   );
 }

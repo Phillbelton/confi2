@@ -3,12 +3,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Sparkles, ShoppingBag, User } from 'lucide-react';
+import { Clock, Search, Sparkles, ShoppingBag, Tag, User } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
+import { useClientStore } from '@/store/useClientStore';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
+
+const QUICK_LINKS = [
+  { label: 'Ofertas', href: '/productos?onSale=true', icon: Tag },
+  { label: 'Destacados', href: '/productos?featured=true', icon: Sparkles },
+  { label: 'Novedades', href: '/productos?sort=newest', icon: Clock },
+];
 
 export function StickyHeader() {
   const router = useRouter();
@@ -16,6 +23,14 @@ export function StickyHeader() {
   const [focused, setFocused] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const itemCount = useCartStoreM((s) => s.itemCount);
+
+  // Enlace de cuenta consciente de sesión. Se gatea con _hasHydrated para
+  // que SSR y primer paint cliente coincidan (evita hydration mismatch).
+  const isAuthenticated = useClientStore((s) => s.isAuthenticated);
+  const hydrated = useClientStore((s) => s._hasHydrated);
+  const loggedIn = hydrated && isAuthenticated;
+  const accountHref = loggedIn ? '/perfil' : '/login';
+  const accountLabel = loggedIn ? 'Mi cuenta' : 'Iniciar sesión';
   // Preserve original UX: badge ya cargado del carrito persistido no debe
   // bumpear al primer paint; sí debe bumpear ante cambios reales.
   // useState con lazy init captura el valor del primer render como una
@@ -33,6 +48,16 @@ export function StickyHeader() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const term = q.trim();
+    // Si ya estamos en el catálogo, preservar los filtros activos de la URL
+    // y solo actualizar `search`; desde cualquier otra página, ir limpio.
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/productos')) {
+      const params = new URLSearchParams(window.location.search);
+      if (term) params.set('search', term);
+      else params.delete('search');
+      const qs = params.toString();
+      router.push(qs ? `/productos?${qs}` : '/productos');
+      return;
+    }
     router.push(
       term ? `/productos?search=${encodeURIComponent(term)}` : '/productos'
     );
@@ -60,7 +85,7 @@ export function StickyHeader() {
       {/* ============================ Bloque principal ============================ */}
       <div
         className={cn(
-          'relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground transition-shadow duration-300',
+          'relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary candy-bg text-primary-foreground transition-shadow duration-300',
           scrolled ? 'shadow-2xl' : 'shadow-md'
         )}
       >
@@ -96,12 +121,12 @@ export function StickyHeader() {
 
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
               <Link
-                href="/login"
+                href={accountHref}
                 className="tappable inline-flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-white/15"
-                aria-label="Iniciar sesión"
+                aria-label={accountLabel}
               >
                 <User className="h-5 w-5" />
-                <span>Iniciar sesión</span>
+                <span>{accountLabel}</span>
               </Link>
 
               <Link
@@ -171,12 +196,12 @@ export function StickyHeader() {
             {/* CTAs derecha: Cuenta + Carrito */}
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <Link
-                href="/perfil"
+                href={accountHref}
                 className="tappable inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/25"
-                aria-label="Perfil"
+                aria-label={accountLabel}
               >
                 <User className="h-4 w-4" />
-                <span>Perfil</span>
+                <span>{accountLabel}</span>
               </Link>
               <Link
                 href="/carrito"
@@ -200,17 +225,36 @@ export function StickyHeader() {
             </div>
           </div>
 
+          {/* Fila de accesos rápidos — mismo set que el drawer mobile */}
+          <nav
+            aria-label="Accesos rápidos"
+            className="relative z-10 border-t border-white/10"
+          >
+            <div className="mx-auto flex w-full max-w-[1440px] items-center gap-1 px-8 py-1.5">
+              {QUICK_LINKS.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
         </div>
 
-        {/* Curva inferior decorativa */}
-        <svg
-          className="absolute -bottom-px left-0 right-0 w-full text-background"
-          viewBox="0 0 1200 24"
-          preserveAspectRatio="none"
+        {/* Remate inferior: hilo candy que ancla el header al fondo crema de
+            la página (reemplaza la onda que dejaba una franja clara flotando
+            sobre el contenido al scrollear). */}
+        <div
+          className="relative z-10 h-[3px] bg-gradient-to-r from-accent via-secondary to-accent"
           aria-hidden
-        >
-          <path d="M0 24 Q 300 0 600 12 T 1200 8 V 24 Z" fill="currentColor" />
-        </svg>
+        />
       </div>
     </header>
   );
@@ -239,7 +283,7 @@ function SearchField({ q, setQ, focused, setFocused }: SearchFieldProps) {
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="¿Qué dulce buscás hoy?"
+        placeholder="¿Qué dulce buscas hoy?"
         className={cn(
           'w-full bg-transparent py-3 pl-11 pr-24 text-sm text-foreground',
           'placeholder:text-muted-foreground focus:outline-none'

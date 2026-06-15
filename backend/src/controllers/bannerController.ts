@@ -32,7 +32,9 @@ export const getBanners = asyncHandler(
       ];
     }
 
-    const banners = await Banner.find(filter).sort({ placement: 1, order: 1, createdAt: -1 }).lean();
+    const banners = await Banner.find(filter)
+      .sort({ placement: 1, rowOrder: 1, order: 1, createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -61,6 +63,9 @@ export const createBanner = asyncHandler(
       placement,
       order,
       size,
+      rowOrder,
+      cols,
+      mobileMode,
       image,
       imageMobile,
       title,
@@ -79,6 +84,9 @@ export const createBanner = asyncHandler(
       placement,
       order: order ?? 0,
       size: size || 'normal',
+      rowOrder: rowOrder ?? 0,
+      cols: cols ?? 1,
+      mobileMode: mobileMode || 'stack',
       image,
       imageMobile,
       title,
@@ -111,6 +119,9 @@ export const updateBanner = asyncHandler(
       placement,
       order,
       size,
+      rowOrder,
+      cols,
+      mobileMode,
       image,
       imageMobile,
       title,
@@ -138,6 +149,9 @@ export const updateBanner = asyncHandler(
     if (placement !== undefined) banner.placement = placement;
     if (order !== undefined) banner.order = order;
     if (size !== undefined) banner.size = size;
+    if (rowOrder !== undefined) banner.rowOrder = rowOrder;
+    if (cols !== undefined) banner.cols = cols;
+    if (mobileMode !== undefined) banner.mobileMode = mobileMode;
     if (title !== undefined) banner.title = title;
     if (subtitle !== undefined) banner.subtitle = subtitle;
     if (ctaText !== undefined) banner.ctaText = ctaText;
@@ -182,20 +196,38 @@ export const deleteBanner = asyncHandler(
   }
 );
 
-// @desc    Reorder banners
+// @desc    Guardar layout (bulk): orden + franjas (rowOrder/cols/mobileMode)
 // @route   PATCH /api/banners/reorder
 // @access  Admin, Funcionario
+//
+// Acepta el shape legacy `{ id, order }` y el extendido
+// `{ id, order, rowOrder, cols, mobileMode }`. Sólo escribe los campos presentes
+// en cada item, por lo que un reorder simple sigue funcionando sin tocar franjas.
 export const reorderBanners = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
-    const { items } = req.body as { items: { id: string; order: number }[] };
+    const { items } = req.body as {
+      items: {
+        id: string;
+        order?: number;
+        rowOrder?: number;
+        cols?: 1 | 2 | 3 | 4;
+        mobileMode?: 'stack' | 'scroll';
+      }[];
+    };
     if (!Array.isArray(items)) throw new AppError(400, 'items requerido');
 
     await Promise.all(
-      items.map((it) =>
-        Banner.updateOne({ _id: it.id }, { $set: { order: it.order } })
-      )
+      items.map((it) => {
+        const set: Record<string, unknown> = {};
+        if (it.order !== undefined) set.order = it.order;
+        if (it.rowOrder !== undefined) set.rowOrder = it.rowOrder;
+        if (it.cols !== undefined) set.cols = it.cols;
+        if (it.mobileMode !== undefined) set.mobileMode = it.mobileMode;
+        if (Object.keys(set).length === 0) return Promise.resolve();
+        return Banner.updateOne({ _id: it.id }, { $set: set });
+      })
     );
 
-    res.status(200).json({ success: true, message: 'Orden actualizado' });
+    res.status(200).json({ success: true, message: 'Layout actualizado' });
   }
 );

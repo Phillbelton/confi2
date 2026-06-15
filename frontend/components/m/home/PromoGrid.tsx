@@ -34,21 +34,61 @@ function resolveBannerHref(banner: Banner): string {
 }
 
 /**
- * Span CSS para cada tamaño de banner en el grid mosaico (placement != home_hero).
+ * Franjas (rows): los banners de un placement de mosaico se agrupan por
+ * `rowOrder`. Cada franja muestra `cols` banners en línea en desktop, y en mobile
+ * los apila (stack) o los hace scroll horizontal (scroll).
  */
-function sizeClasses(size: Banner['size']): string {
-  switch (size) {
-    case 'wide':
-      return 'aspect-[5/3] lg:aspect-auto lg:col-span-2 lg:row-span-1';
-    case 'tall':
-      return 'aspect-[5/3] lg:aspect-auto lg:col-span-1 lg:row-span-2';
-    case 'hero':
-      return 'aspect-[5/3] lg:aspect-auto lg:col-span-4 lg:row-span-2';
-    case 'normal':
-    default:
-      return 'aspect-[5/3] lg:aspect-auto lg:col-span-1 lg:row-span-1';
+type Row = { cols: number; mobileMode: Banner['mobileMode']; banners: Banner[] };
+
+function groupIntoRows(banners: Banner[]): Row[] {
+  const map = new Map<number, Banner[]>();
+  for (const b of banners) {
+    const key = b.rowOrder ?? 0;
+    const arr = map.get(key);
+    if (arr) arr.push(b);
+    else map.set(key, [b]);
   }
+  return [...map.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, arr]) => {
+      const sorted = [...arr].sort((x, y) => (x.order ?? 0) - (y.order ?? 0));
+      const first = sorted[0];
+      return {
+        cols: first?.cols ?? 1,
+        mobileMode: first?.mobileMode ?? 'stack',
+        banners: sorted,
+      };
+    });
 }
+
+// Clases estáticas (Tailwind no purga clases construidas en runtime).
+const COLS_LG: Record<number, string> = {
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+};
+
+// Aspect ratio del tile en desktop según cuántas columnas tenga la franja:
+// menos columnas → tiles más anchos/panorámicos.
+// 1 col = "huincha" estilo Jumbo: cinta ultra-panorámica entre vitrinas
+// (1376×128 desktop — 1376px es exactamente el ancho útil del contenedor
+// max-w-[1440px] con px-8).
+const ASPECT_LG: Record<number, string> = {
+  1: 'lg:aspect-[1376/128]',
+  2: 'lg:aspect-[2/1]',
+  3: 'lg:aspect-[16/9]',
+  4: 'lg:aspect-[5/3]',
+};
+
+// Aspect en mobile: la huincha (1 col) usa la proporción mobile de Jumbo
+// (327×62 ≈ 5.3:1); los tiles de mosaico mantienen 5:3.
+const ASPECT_MOBILE: Record<number, string> = {
+  1: 'aspect-[327/62]',
+  2: 'aspect-[5/3]',
+  3: 'aspect-[5/3]',
+  4: 'aspect-[5/3]',
+};
 
 interface BannerTileProps {
   banner: Banner;
@@ -208,7 +248,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 
   if (total === 1) {
     return (
-      <div className="aspect-[16/9] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0">
+      <div className="aspect-[700/330] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 lg:aspect-[1920/364] lg:rounded-none lg:shadow-none lg:ring-0">
         <BannerTile banner={banners[0]} priority sizes="100vw" rounded={false} />
       </div>
     );
@@ -270,7 +310,7 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
     >
       <div
         ref={viewportRef}
-        className="relative aspect-[16/9] cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 active:cursor-grabbing lg:aspect-[16/6] lg:rounded-none lg:shadow-none lg:ring-0"
+        className="relative aspect-[700/330] cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl shadow-md ring-1 ring-border/40 active:cursor-grabbing lg:aspect-[1920/364] lg:rounded-none lg:shadow-none lg:ring-0"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
@@ -344,9 +384,15 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
 }
 
 export function PromoGrid({ placement = 'home_promo', className }: PromoGridProps) {
-  const { data: banners, isLoading } = useBanners(placement);
+  const { data, isLoading } = useBanners(placement);
 
-  if (!isLoading && (!banners || banners.length === 0)) {
+  // Defensa: un banner a medio crear queda con imagen placeholder — jamás
+  // mostrarlo al público (el alta del admin además lo crea inactivo).
+  const banners = (data || []).filter(
+    (b) => b.image && !b.image.includes('placeholder')
+  );
+
+  if (!isLoading && banners.length === 0) {
     return null;
   }
 
@@ -356,7 +402,7 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
     return (
       <section className={className}>
         {isLoading ? (
-          <div className="aspect-[16/9] animate-pulse rounded-2xl bg-muted lg:aspect-[16/6] lg:rounded-none" />
+          <div className="aspect-[700/330] animate-pulse rounded-2xl bg-muted lg:aspect-[1920/364] lg:rounded-none" />
         ) : (
           <HeroCarousel banners={banners || []} />
         )}
@@ -364,35 +410,78 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
     );
   }
 
-  // Mosaic grid para los demás placements
+  // Mosaic por franjas para los demás placements
+  if (isLoading) {
+    return (
+      <section className={cn('px-4 pb-8 lg:px-8', className)}>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-4 lg:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-[5/3] animate-pulse rounded-2xl bg-muted"
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  const rows = groupIntoRows(banners || []);
+
   return (
-    <section className={cn('px-4 pb-8 lg:px-8', className)}>
+    <section className={cn('space-y-3 px-4 pb-8 lg:space-y-4 lg:px-8', className)}>
+      {rows.map((row, i) => (
+        <PromoRow key={i} row={row} />
+      ))}
+    </section>
+  );
+}
+
+/**
+ * Una franja: `cols` banners en línea en desktop. En mobile, los apila
+ * (mobileMode=stack) o los muestra en scroll horizontal (mobileMode=scroll).
+ */
+function PromoRow({ row }: { row: Row }) {
+  const cols = (COLS_LG[row.cols] ? row.cols : 1) as 1 | 2 | 3 | 4;
+  const aspectLg = ASPECT_LG[cols];
+  const aspectMobile = ASPECT_MOBILE[cols];
+
+  if (row.mobileMode === 'scroll') {
+    return (
       <div
         className={cn(
-          'grid grid-cols-1 gap-3',
-          'lg:grid-cols-4 lg:auto-rows-[220px] lg:gap-4'
+          // mobile: scroll horizontal con snap, sangrado al borde
+          '-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1',
+          // desktop: grid normal de `cols` columnas
+          'lg:mx-0 lg:grid lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0',
+          COLS_LG[cols]
         )}
       >
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'animate-pulse rounded-2xl bg-muted',
-                  i === 0
-                    ? 'aspect-[5/3] lg:col-span-2 lg:row-span-2 lg:aspect-auto'
-                    : 'aspect-[5/3] lg:col-span-1 lg:row-span-1 lg:aspect-auto'
-                )}
-              />
-            ))
-          : (banners || []).map((b) => (
-              <BannerTile
-                key={b._id}
-                banner={b}
-                className={sizeClasses(b.size)}
-              />
-            ))}
+        {row.banners.map((b) => (
+          <BannerTile
+            key={b._id}
+            banner={b}
+            className={cn(
+              'w-[78%] shrink-0 snap-start lg:w-auto',
+              aspectMobile,
+              aspectLg
+            )}
+          />
+        ))}
       </div>
-    </section>
+    );
+  }
+
+  // stack: 1 columna en mobile, grid de `cols` en desktop
+  return (
+    <div className={cn('grid grid-cols-1 gap-3 lg:gap-4', COLS_LG[cols])}>
+      {row.banners.map((b) => (
+        <BannerTile
+          key={b._id}
+          banner={b}
+          className={cn(aspectMobile, aspectLg)}
+        />
+      ))}
+    </div>
   );
 }

@@ -60,6 +60,7 @@ export default function EditBannerPage() {
           <CardContent className="pt-6">
             <BannerForm
               banner={banner}
+              cols={banner.cols}
               onSubmit={handleSubmit}
               onCancel={() => router.push('/admin/banners')}
               isSubmitting={isUpdating}

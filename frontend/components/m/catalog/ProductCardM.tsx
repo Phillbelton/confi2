@@ -93,8 +93,8 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   return (
     <div
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
-        horizontal && 'w-44 shrink-0 snap-start',
+        'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
+        horizontal && 'w-40 shrink-0 snap-start',
         className
       )}
     >
@@ -122,21 +122,23 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
         <SaleUnitBadge saleUnit={product.saleUnit} />
       </Link>
 
-      <div className="flex flex-1 flex-col gap-1.5 p-3">
+      <div className="flex flex-1 flex-col gap-1 p-2.5">
         <Link href={productHref} className="block">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">
+          {/* min-h reserva 2 líneas siempre → el nombre ocupa el mismo alto
+              tenga 1 o 2 líneas, manteniendo el layout idéntico entre cards. */}
+          <h3 className="line-clamp-2 min-h-[2rem] text-[13px] font-semibold leading-tight text-foreground">
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-auto pt-1">
+        <div className="mt-auto pt-0.5">
           <div className="flex items-baseline gap-1.5">
             {showFromHint && (
               <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                 desde
               </span>
             )}
-            <span className="text-base font-bold tabular-nums text-foreground">
+            <span className="text-[15px] font-bold tabular-nums text-foreground">
               ${Math.round(shownPrice).toLocaleString('es-CL')}
             </span>
             {shownPrice < compareAtPrice && (
@@ -146,24 +148,31 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
             )}
           </div>
 
-          {isPackaged && (
-            <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
-              {presentationPriceSuffix(product)} · ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
-            </p>
-          )}
+          {/* Detalle opcional (precio/u de paquete + tier mayorista). Altura
+              reservada fija (min-h) para que el precio y el botón "Agregar"
+              queden alineados en TODAS las cards, tengan 0, 1 o 2 de estas
+              líneas. Las líneas se anclan abajo (justify-end) para quedar
+              pegadas al botón. */}
+          <div className="mt-0.5 flex min-h-[1.85rem] flex-col justify-end gap-0.5">
+            {isPackaged && (
+              <p className="line-clamp-1 text-[10px] text-muted-foreground">
+                {presentationPriceSuffix(product)} · ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
+              </p>
+            )}
 
-          {showFromHint && firstTier && (
-            <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold text-primary">
-              🎉 {tierShownQty}+ {tierUnitLabel} a ${Math.round(tierShownPrice).toLocaleString('es-CL')} c/u
-            </p>
-          )}
+            {showFromHint && firstTier && (
+              <p className="line-clamp-1 text-[10px] font-semibold text-primary">
+                🎉 {tierShownQty}+ {tierUnitLabel} a ${Math.round(tierShownPrice).toLocaleString('es-CL')} c/u
+              </p>
+            )}
+          </div>
 
           {inCart === 0 ? (
             <button
               type="button"
               onClick={handleAdd}
               disabled={isAdding}
-              className="tappable mt-2 w-full rounded-full bg-primary py-2 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 disabled:opacity-60"
+              className="tappable mt-1.5 w-full rounded-full bg-primary py-1.5 text-[13px] font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 disabled:opacity-60 lg:!min-h-9"
             >
               <span className="inline-flex items-center justify-center gap-1.5">
                 <Plus className="h-4 w-4" />
@@ -171,7 +180,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
               </span>
             </button>
           ) : (
-            <div className="mt-2 flex items-center justify-between rounded-full bg-primary/10 p-1">
+            <div className="mt-1.5 flex items-center justify-between rounded-full bg-primary/10 p-1">
               <button
                 type="button"
                 onClick={() => updateQuantity(product._id, Math.max(minQ - step, inCart - step) === 0 ? 0 : inCart - step)}

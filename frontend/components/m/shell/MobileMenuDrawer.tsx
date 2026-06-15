@@ -117,7 +117,7 @@ export function MobileMenuDrawer() {
                   <Package className="h-5 w-5" />
                 </span>
                 <span className="text-sm font-bold text-primary">
-                  Ver todos los productos
+                  Ver catálogo completo
                 </span>
               </Link>
             </SheetClose>

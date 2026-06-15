@@ -315,6 +315,8 @@ export interface PaginationMeta {
   limit?: number;
   hasNextPage?: boolean;
   hasPrevPage?: boolean;
+  hasNext?: boolean;
+  hasPrev?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -390,6 +392,59 @@ export type BannerPlacement =
 
 export type BannerSize = 'normal' | 'wide' | 'tall' | 'hero';
 
+export type BannerCols = 1 | 2 | 3 | 4;
+
+export type BannerMobileMode = 'stack' | 'scroll';
+
+// ============================================================================
+// HOME LAYOUT (orden + visibilidad + config de las secciones de la home)
+// ============================================================================
+
+/** Tipos de sección — espejo de HOME_SECTION_TYPES del backend. */
+export type HomeSectionType =
+  | 'hero'
+  | 'banner_zone'
+  | 'collections'
+  | 'static_cta'
+  | 'product_carousel'
+  | 'product_grid'
+  | 'location_map';
+
+/** Un local físico para la sección location_map. */
+export interface StoreLocation {
+  name: string;
+  address: string;
+  /** Query del embed/directions de Google Maps ("Negocio, dirección"). */
+  mapQuery: string;
+  hours?: string;
+}
+
+/** De dónde salen los productos de un carrusel/grilla configurable. */
+export type HomeProductSource =
+  | 'featured'
+  | 'on_sale'
+  | 'newest'
+  | 'popular'
+  | 'collection';
+
+export interface HomeSectionConfig {
+  placement?: 'home_secondary' | 'home_promo';
+  title?: string;
+  emoji?: string;
+  source?: HomeProductSource;
+  collectionSlug?: string;
+  limit?: number;
+  /** location_map: los locales a mostrar (1..4). */
+  stores?: StoreLocation[];
+}
+
+export interface HomeSection {
+  id: string;
+  type: HomeSectionType;
+  active: boolean;
+  config?: HomeSectionConfig;
+}
+
 export type BannerLinkType =
   | 'collection'
   | 'product'
@@ -407,6 +462,9 @@ export interface Banner {
   placement: BannerPlacement;
   order: number;
   size: BannerSize;
+  rowOrder: number;
+  cols: BannerCols;
+  mobileMode: BannerMobileMode;
   image: string;
   imageMobile?: string;
   title?: string;
@@ -440,6 +498,10 @@ export interface FacetLabeledEntry {
   name?: string;
   slug: string;
   count: number;
+  // Presentes en el facet de formatos: magnitud y unidad ('g'|'kg'|'ml'|'l')
+  // para poder ordenarlos por tamaño en vez de por conteo.
+  value?: number;
+  unit?: string;
 }
 
 export interface DynamicFacetAttribute {
