@@ -21,6 +21,10 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copiamos el JavaScript ya compilado de la etapa 1
 COPY --from=build /app/dist ./dist
 
+# Assets de marca usados por los seeds (ej. imágenes de packs de colección).
+# Sin esto, seedCollectionPacks no encontraría los PNG dentro del contenedor.
+COPY --from=build /app/seed-assets ./seed-assets
+
 # Carpetas para el volumen de uploads y los logs de winston
 RUN mkdir -p /app/uploads /app/logs
 
