@@ -198,13 +198,6 @@ function CatalogContent() {
       });
     });
   }
-  if (subcategory) {
-    const match = facetSubcategories.find((x) => x.slug === subcategory);
-    activeChips.push({
-      label: `${match?.name || subcategory}`,
-      onRemove: () => setParam({ subcategoria: undefined }),
-    });
-  }
   if (format) {
     const match = facetFormats.find((x) => x.slug === format);
     activeChips.push({
@@ -254,7 +247,6 @@ function CatalogContent() {
   const clearFilters = () => {
     const updates: Record<string, string | undefined> = {
       brands: undefined,
-      subcategoria: undefined,
       formato: undefined,
       sabor: undefined,
       onSale: undefined,
@@ -284,19 +276,6 @@ function CatalogContent() {
 
   const renderFilters = () => (
     <>
-      {/* Subcategorías: solo con una categoría activa (en la raíz son ruido). */}
-      {category && facetSubcategories.length > 0 && (
-        <FilterList
-          title="Subcategorías"
-          options={facetSubcategories.map((s) => ({ value: s.slug, label: s.name, count: s.count }))}
-          selected={subcategory ? [subcategory] : []}
-          multi={false}
-          onToggle={(slug) =>
-            setParam({ subcategoria: subcategory === slug ? undefined : slug })
-          }
-        />
-      )}
-
       <FilterList
         title="Precio"
         options={PRICE_RANGES.map((r) => ({ value: r.label, label: r.label }))}
@@ -377,32 +356,35 @@ function CatalogContent() {
 
   return (
     <>
+      {/* Breadcrumb + subcategorías (pills). En desktop van en una sola fila
+          (breadcrumb a la izquierda, chips scrolleables a la derecha); en
+          mobile se apilan. Estos chips reemplazan el filtro del sidebar. */}
       {breadcrumbs.length > 0 && (
-        <Breadcrumbs items={breadcrumbs} className="border-b border-border/60 bg-muted/30 lg:px-4" />
-      )}
+        <div className="border-b border-border/60 bg-muted/30 lg:flex lg:items-center lg:gap-2 lg:px-4">
+          <Breadcrumbs items={breadcrumbs} className="shrink-0" />
 
-      {/* Subcategorías de la categoría actual — fila horizontal solo en
-          mobile/tablet; en desktop viven en el sidebar de filtros. */}
-      {category && facetSubcategories.length > 0 && (
-        <div className="scrollbar-none flex gap-2 overflow-x-auto border-b border-border/60 bg-background px-4 py-2.5 lg:hidden">
-          <SubcategoryChip
-            label="Todo"
-            active={!subcategory}
-            onClick={() => setParam({ subcategoria: undefined })}
-          />
-          {facetSubcategories.map((s) => (
-            <SubcategoryChip
-              key={s._id}
-              label={s.name}
-              count={s.count}
-              active={subcategory === s.slug}
-              onClick={() =>
-                setParam({
-                  subcategoria: subcategory === s.slug ? undefined : s.slug,
-                })
-              }
-            />
-          ))}
+          {category && facetSubcategories.length > 0 && (
+            <div className="scrollbar-none flex items-center gap-2 overflow-x-auto border-t border-border/60 bg-background px-4 py-2.5 lg:flex-1 lg:border-t-0 lg:bg-transparent lg:px-0 lg:py-0">
+              <SubcategoryChip
+                label="Todo"
+                active={!subcategory}
+                onClick={() => setParam({ subcategoria: undefined })}
+              />
+              {facetSubcategories.map((s) => (
+                <SubcategoryChip
+                  key={s._id}
+                  label={s.name}
+                  count={s.count}
+                  active={subcategory === s.slug}
+                  onClick={() =>
+                    setParam({
+                      subcategoria: subcategory === s.slug ? undefined : s.slug,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
