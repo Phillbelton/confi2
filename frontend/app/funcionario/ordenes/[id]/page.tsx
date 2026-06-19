@@ -33,9 +33,10 @@ import { ConfirmOrderModal } from '@/components/funcionario/orders/ConfirmOrderM
 import { UpdateStatusModal } from '@/components/funcionario/orders/UpdateStatusModal';
 import { CancelOrderModal } from '@/components/funcionario/orders/CancelOrderModal';
 import { EditOrderItemsModal } from '@/components/funcionario/orders/EditOrderItemsModal';
-import { WhatsAppHelper } from '@/components/funcionario/orders/WhatsAppHelper';
+import { WhatsAppHelper } from '@/components/orders/WhatsAppHelper';
 import { EditShippingCost } from '@/components/funcionario/orders/EditShippingCost';
 import { formatCurrency } from '@/lib/utils';
+import { isOrderUrgent } from '@/lib/orders';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { OrderStatus, UpdateOrderStatusData, EditOrderItemsData } from '@/types/order';
@@ -51,6 +52,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     isConfirming,
     updateStatus,
     isUpdatingStatus,
+    markWhatsAppSent,
     cancelOrder,
     isCancelling,
     editOrderItems,
@@ -103,13 +105,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const canChangeStatus = !['completed', 'cancelled'].includes(order.status);
 
   // Handle confirm order
-  const handleConfirmOrder = (data: { shippingCost: number; adminNotes?: string }) => {
+  const handleConfirmOrder = (
+    data: { shippingCost: number; adminNotes?: string },
+    options: { sendWhatsApp: boolean }
+  ) => {
     confirmOrder(
       { id: order._id, data },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           setConfirmModalOpen(false);
-          refetch();
+          await refetch();
+          // Si el funcionario eligió avisar al cliente, abrimos el helper ya con
+          // la plantilla de confirmación (el pedido quedó en 'confirmed').
+          if (options.sendWhatsApp) {
+            setWhatsappHelperOpen(true);
+          }
         },
       }
     );
@@ -209,6 +219,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           Actualizar
         </Button>
       </div>
+
+      {/* Urgent banner */}
+      {isOrderUrgent(order) && (
+        <div className="flex items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-300">
+          <span aria-hidden>⚠️</span>
+          Pendiente de contacto hace más de 2 horas — conviene escribirle al cliente.
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -617,9 +635,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         open={whatsappHelperOpen}
         onOpenChange={setWhatsappHelperOpen}
         order={order}
-        onSend={(message) => {
-          // Optional: Log sent message or mark as sent in backend
-          console.log('WhatsApp message sent:', message);
+        onSend={() => {
+          // Marcar el pedido como contactado por WhatsApp (solo la primera vez,
+          // para no pisar el timestamp del primer contacto).
+          if (!order.whatsappSent) {
+            markWhatsAppSent({ id: order._id });
+          }
         }}
       />
     </div>

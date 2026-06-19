@@ -7,13 +7,13 @@ import { CheckCircle2, MessageCircle, ShoppingBag, MapPin, CreditCard, Truck } f
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getSafeImageUrl } from '@/lib/image-utils';
+import { businessWhatsappHref } from '@/lib/whatsapp';
 import type { Order } from '@/types/order';
 
 interface StoredOrder {
   orderNumber: string;
   createdAt: string;
   order: Order;
-  whatsappURL?: string | null;
 }
 
 const STORAGE_KEY = 'confi2:last-order';
@@ -53,15 +53,13 @@ export default function PedidoConfirmacionPage({
     }
   }, [orderNumber]);
 
-  const businessPhone = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '').replace(/\D/g, '');
-  const fallbackWhatsappHref = businessPhone
-    ? `https://wa.me/${businessPhone}?text=${encodeURIComponent(
-        `Hola, realicé el pedido ${orderNumber} y quiero consultar su estado.`
-      )}`
-    : null;
+  // El link de WhatsApp se arma con el helper (fuente única que lee
+  // NEXT_PUBLIC_WHATSAPP_NUMBER). Mismo patrón que app/(cliente)/mis-ordenes/[orderNumber].
+  const whatsappHref = businessWhatsappHref(
+    `Hola, realicé el pedido ${orderNumber} y quiero consultar su estado.`
+  );
 
   const order = stored?.order ?? null;
-  const whatsappHref = stored?.whatsappURL || fallbackWhatsappHref;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-10">
@@ -232,14 +230,12 @@ export default function PedidoConfirmacionPage({
 
             {/* CTAs */}
             <div className="flex flex-col gap-2">
-              {whatsappHref && (
-                <Button asChild className="w-full">
-                  <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Contactar al negocio
-                  </a>
-                </Button>
-              )}
+              <Button asChild className="w-full">
+                <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Contactar al negocio
+                </a>
+              </Button>
               <Button asChild variant="outline" className="w-full">
                 <Link href="/productos">
                   <ShoppingBag className="mr-2 h-4 w-4" />

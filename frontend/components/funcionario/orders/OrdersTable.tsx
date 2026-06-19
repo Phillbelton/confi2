@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { WhatsAppHelper } from '@/components/orders/WhatsAppHelper';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +18,7 @@ import type { Order } from '@/types/order';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn, formatCurrency } from '@/lib/utils';
+import { isOrderUrgent } from '@/lib/orders';
 
 interface OrdersTableProps {
   orders: Order[];
@@ -42,6 +45,8 @@ const statusLabels = {
 };
 
 export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTableProps) {
+  const [whatsappOrder, setWhatsappOrder] = useState<Order | null>(null);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -67,9 +72,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
       {/* Mobile Card View */}
       <div className="md:hidden space-y-3">
         {orders.map((order) => {
-          const isUrgent =
-            order.status === 'pending_whatsapp' &&
-            new Date().getTime() - new Date(order.createdAt).getTime() > 2 * 60 * 60 * 1000;
+          const isUrgent = isOrderUrgent(order);
 
           return (
             <div
@@ -148,15 +151,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                     variant="outline"
                     size="sm"
                     className="flex-1 min-h-[44px] gap-2 border-green-700 text-green-400 hover:bg-green-950 hover:text-green-300"
-                    onClick={() => {
-                      window.open(
-                        `https://wa.me/${order.customer.phone.replace(/\D/g, '')}`,
-                        '_blank'
-                      );
-                      if (onMarkWhatsApp && !order.whatsappSent) {
-                        onMarkWhatsApp(order._id);
-                      }
-                    }}
+                    onClick={() => setWhatsappOrder(order)}
                   >
                     <MessageCircle className="h-4 w-4" />
                     WhatsApp
@@ -195,9 +190,7 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
           </TableHeader>
           <TableBody>
             {orders.map((order) => {
-              const isUrgent =
-                order.status === 'pending_whatsapp' &&
-                new Date().getTime() - new Date(order.createdAt).getTime() > 2 * 60 * 60 * 1000;
+              const isUrgent = isOrderUrgent(order);
 
               return (
                 <TableRow
@@ -263,17 +256,9 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Abrir WhatsApp"
+                          title="Enviar WhatsApp"
                           className="hover:bg-slate-700"
-                          onClick={() => {
-                            window.open(
-                              `https://wa.me/${order.customer.phone.replace(/\D/g, '')}`,
-                              '_blank'
-                            );
-                            if (onMarkWhatsApp && !order.whatsappSent) {
-                              onMarkWhatsApp(order._id);
-                            }
-                          }}
+                          onClick={() => setWhatsappOrder(order)}
                         >
                           <MessageCircle className={cn(
                             'h-4 w-4',
@@ -315,6 +300,21 @@ export function OrdersTable({ orders, isLoading, onMarkWhatsApp }: OrdersTablePr
           </TableBody>
         </Table>
       </div>
+
+      {whatsappOrder && (
+        <WhatsAppHelper
+          open
+          onOpenChange={(open) => {
+            if (!open) setWhatsappOrder(null);
+          }}
+          order={whatsappOrder}
+          onSend={() => {
+            if (onMarkWhatsApp && !whatsappOrder.whatsappSent) {
+              onMarkWhatsApp(whatsappOrder._id);
+            }
+          }}
+        />
+      )}
     </>
   );
 }

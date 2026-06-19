@@ -15,6 +15,7 @@ import {
   Truck,
   Wallet,
 } from 'lucide-react';
+import { businessWhatsappHref, formatBusinessWhatsapp } from '@/lib/whatsapp';
 
 const TRUST_BADGES = [
   { icon: Truck, label: 'Envío rápido', sub: 'Todo Chile' },
@@ -38,21 +39,10 @@ const LINKS = {
 };
 
 export function MobileFooter() {
+  const whatsappHref = businessWhatsappHref();
+  const whatsappDisplay = formatBusinessWhatsapp();
   return (
-    <footer className="relative mt-6 overflow-hidden">
-      {/* Wave divider */}
-      <svg
-        className="block w-full text-secondary"
-        viewBox="0 0 1200 40"
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <path
-          d="M0 20 Q 150 0 300 18 T 600 14 T 900 20 T 1200 12 V 40 H 0 Z"
-          fill="currentColor"
-        />
-      </svg>
-
+    <footer className="relative overflow-hidden">
       <div className="relative bg-gradient-to-b from-secondary via-secondary to-secondary/95 candy-bg text-white">
         {/* Blobs decorativos */}
         <div className="pointer-events-none absolute -right-12 top-12 h-48 w-48 rounded-full bg-primary/30 blur-3xl" aria-hidden />
@@ -79,7 +69,7 @@ export function MobileFooter() {
                   </div>
                 </div>
                 <Link
-                  href="https://wa.me/56964269246"
+                  href={whatsappHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="tappable mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white py-2.5 text-sm font-bold text-secondary shadow-md hover:scale-[1.02] active:scale-95 transition-transform"
@@ -217,8 +207,8 @@ export function MobileFooter() {
               <ul className="mt-2 space-y-2 text-sm text-white/80">
                 <li className="flex items-center gap-2">
                   <Phone className="h-4 w-4 shrink-0 text-primary-foreground/90" />
-                  <a href="https://wa.me/56964269246" className="hover:text-white">
-                    +56 9 6426 9246
+                  <a href={whatsappHref} className="hover:text-white">
+                    {whatsappDisplay}
                   </a>
                 </li>
                 <li className="flex items-center gap-2">
