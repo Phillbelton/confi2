@@ -23,7 +23,7 @@ function renderSection(section: HomeSection): React.ReactNode {
   switch (section.type) {
     case 'hero':
       return (
-        <PromoGrid placement="home_hero" className="px-4 pt-3 lg:px-0 lg:pt-4" />
+        <PromoGrid placement="home_hero" className="px-4 pt-3 lg:px-0 lg:pt-0" />
       );
     case 'banner_zone':
       return config.placement ? <PromoGrid placement={config.placement} /> : null;

@@ -73,7 +73,7 @@ export function StoreLocationsSection({ config }: { config: HomeSectionConfig })
   if (stores.length === 0) return null;
 
   return (
-    <section className="relative isolate mt-4 overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary">
+    <section className="full-bleed relative isolate mt-4 overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary">
       {/* Marca de agua: logo tintado al fondo (solo tablet/desktop). Doble
           capa: una grande centrada y sutil + soft-light para que tiña el
           turquesa sin gritar, igual que un muro pintado. */}
@@ -103,7 +103,7 @@ export function StoreLocationsSection({ config }: { config: HomeSectionConfig })
         </h2>
 
         <div
-          className={`mx-auto grid max-w-5xl grid-cols-1 gap-4 lg:gap-6 ${
+          className={`mx-auto grid max-w-6xl grid-cols-1 gap-4 lg:gap-6 ${
             stores.length === 1 ? 'md:max-w-2xl' : 'md:grid-cols-2'
           }`}
         >
