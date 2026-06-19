@@ -49,7 +49,6 @@ export default function OrdenesPage() {
     pagination,
     isLoading,
     markWhatsAppSent,
-    isMarkingWhatsApp,
     refetch,
   } = useAdminOrders({
     page,
@@ -100,7 +99,6 @@ export default function OrdenesPage() {
         <OrdersTable
           orders={orders}
           onWhatsAppClick={markWhatsAppSent}
-          isMarkingWhatsApp={isMarkingWhatsApp}
         />
       )}
 

@@ -6,6 +6,7 @@ import { Category } from '../../models/Category';
 import { User, IUser } from '../../models/User';
 import { Order } from '../../models/Order';
 import { signTokenFor } from '../setup/authTestHelpers';
+import { emailService } from '../../services/emailService';
 import type { UserRole } from '../../types';
 
 /**
@@ -219,6 +220,33 @@ describe('POST /api/orders', () => {
         items: [{ productId: inactive._id.toString(), quantity: 1 }],
       });
     expect(res.status).toBe(404);
+  });
+
+  it('envía el email de "pedido recibido" cuando el cliente dejó email', async () => {
+    const sendReceived = emailService.sendOrderReceivedEmail as jest.Mock;
+    const res = await request(app).post('/api/orders').send(baseOrderBody(productId));
+
+    expect(res.status).toBe(201);
+    expect(sendReceived).toHaveBeenCalledTimes(1);
+    // firma: (order, userEmail, userName)
+    const [, toEmail, toName] = sendReceived.mock.calls[0];
+    expect(toEmail).toBe('juana@test.com');
+    expect(toName).toBe('Juana Pérez');
+  });
+
+  it('NO intenta enviar email si el cliente no dejó email', async () => {
+    const sendReceived = emailService.sendOrderReceivedEmail as jest.Mock;
+    const res = await request(app)
+      .post('/api/orders')
+      .send({
+        customer: { name: 'Sin Email', phone: '+56912345678' },
+        items: [{ productId, quantity: 1 }],
+        deliveryMethod: 'pickup',
+        paymentMethod: 'cash',
+      });
+
+    expect(res.status).toBe(201);
+    expect(sendReceived).not.toHaveBeenCalled();
   });
 });
 

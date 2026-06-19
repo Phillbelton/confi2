@@ -38,7 +38,7 @@ services:
         # Se hornean en el build (vienen del .env de la raíz)
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
-        NEXT_PUBLIC_WHATSAPP_PHONE: ${NEXT_PUBLIC_WHATSAPP_PHONE}
+        NEXT_PUBLIC_WHATSAPP_NUMBER: ${NEXT_PUBLIC_WHATSAPP_NUMBER}
     restart: unless-stopped
     depends_on: [ backend ]
     networks: [ internal ]

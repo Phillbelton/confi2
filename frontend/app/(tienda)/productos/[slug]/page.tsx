@@ -13,6 +13,7 @@ import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
 import { useProductBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
 import {
   effectiveUnitPrice,
+  discountedUnitPrice,
   getDisplayTiers,
   isPackagedSale,
   minQuantity,
@@ -84,6 +85,9 @@ export default function ProductDetailPage() {
   const ppu = effectiveUnitPrice(product, realQty);
   const total = ppu * realQty;
   const tiers = getDisplayTiers(product);
+  // Precio base por unidad (con la oferta fija ya aplicada). Es el precio del
+  // tramo "1 a N-1" en la tabla de tramos.
+  const basePrice = discountedUnitPrice(product);
   const showFixedBadge = hasActiveFixedDiscount(product);
   const fixedBadgeText = showFixedBadge ? getFixedDiscountBadge(product) : '';
   const isPackaged = isPackagedSale(product);
@@ -218,7 +222,7 @@ export default function ProductDetailPage() {
                 <li className="flex justify-between">
                   <span>1 a {tiers[0].minQuantity - 1} unidades</span>
                   <span className="font-bold tabular-nums">
-                    ${Math.round(product.unitPrice).toLocaleString('es-CL')}/u
+                    ${Math.round(basePrice).toLocaleString('es-CL')}/u
                   </span>
                 </li>
                 {tiers.map((t, i) => (

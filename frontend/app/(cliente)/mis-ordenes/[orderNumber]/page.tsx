@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrderDetail, getOrderStatusConfig } from '@/hooks/client/useClientOrders';
+import { businessWhatsappHref } from '@/lib/whatsapp';
 
 import type { OrderStatus, OrderItem } from '@/types/order';
 import { cn } from '@/lib/utils';
@@ -143,11 +144,10 @@ export default function OrderDetailPage({
     );
   };
   const handleContactWhatsApp = () => {
-    const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '';
-    const message = encodeURIComponent(
+    const url = businessWhatsappHref(
       `Hola, tengo una consulta sobre mi pedido #${orderNumber}`
     );
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    window.open(url, '_blank');
   };
 
   if (isLoading) {

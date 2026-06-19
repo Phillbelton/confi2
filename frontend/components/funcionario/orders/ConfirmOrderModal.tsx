@@ -22,7 +22,10 @@ interface ConfirmOrderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: Order;
-  onConfirm: (data: { shippingCost: number; adminNotes?: string }) => void;
+  onConfirm: (
+    data: { shippingCost: number; adminNotes?: string },
+    options: { sendWhatsApp: boolean }
+  ) => void;
   isConfirming: boolean;
 }
 
@@ -40,28 +43,24 @@ export function ConfirmOrderModal({
   const newTotal = order.subtotal + parseInt(shippingCost || '0');
 
   const handleConfirm = () => {
-    onConfirm({
-      shippingCost: parseInt(shippingCost),
-      adminNotes: adminNotes.trim() || undefined,
-    });
-
-    // If sendWhatsApp is checked, open WhatsApp after confirming
-    if (sendWhatsApp && order.customer.phone) {
-      setTimeout(() => {
-        window.open(
-          `https://wa.me/${order.customer.phone.replace(/\D/g, '')}`,
-          '_blank'
-        );
-      }, 500);
-    }
+    // El envío del WhatsApp lo maneja el padre: tras confirmar abre el modal
+    // rico (WhatsAppHelper) ya con la plantilla de confirmación, en vez de un
+    // chat en blanco. Acá solo señalamos la intención.
+    onConfirm(
+      {
+        shippingCost: parseInt(shippingCost),
+        adminNotes: adminNotes.trim() || undefined,
+      },
+      { sendWhatsApp: sendWhatsApp && !!order.customer.phone }
+    );
   };
 
   const quickAmounts = [
     { label: 'Gratis', value: 0 },
-    { label: '10.000 Gs', value: 10000 },
-    { label: '15.000 Gs', value: 15000 },
-    { label: '20.000 Gs', value: 20000 },
-    { label: '25.000 Gs', value: 25000 },
+    { label: '$10.000', value: 10000 },
+    { label: '$15.000', value: 15000 },
+    { label: '$20.000', value: 20000 },
+    { label: '$25.000', value: 25000 },
   ];
 
   return (

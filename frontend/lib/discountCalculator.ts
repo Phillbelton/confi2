@@ -20,15 +20,43 @@ import type { Product, ProductTier } from '@/types';
  */
 
 /**
+ * Precio base por presentación tras aplicar la oferta fija vigente.
+ *
+ * `fixedDiscount` anuncia un cambio de precio real: el valor con descuento es
+ * el nuevo precio efectivo para cantidades por debajo de cualquier tramo. Los
+ * `tiers` (precio por volumen) aplican aparte. Mantener en sync con el backend
+ * (`orderController.discountedUnitPrice` / `effectiveUnitPrice`).
+ */
+export function discountedUnitPrice(product: Product): number {
+  const base = product?.unitPrice ?? 0;
+  if (!hasActiveFixedDiscount(product)) return base;
+  const fd = product.fixedDiscount!;
+  const next = fd.type === 'percentage' ? base * (1 - fd.value / 100) : base - fd.value;
+  // CLP no tiene decimales: redondeamos para que el precio cobrado coincida
+  // exactamente con el mostrado.
+  return Math.max(0, Math.round(next));
+}
+
+/**
  * Precio efectivo por presentación dada una cantidad de presentaciones.
- * El tier con mayor minQuantity ≤ quantity gana.
+ *
+ *   1. Parte del precio base (`unitPrice` con la oferta fija ya aplicada).
+ *   2. Si la cantidad alcanza un tramo, usa ese precio por volumen. Con oferta
+ *      fija vigente que bajó el precio, nunca por encima del precio anunciado
+ *      (`Math.min`); sin oferta, el tramo es autoritativo.
  */
 export function effectiveUnitPrice(product: Product, quantity: number): number {
   if (!product) return 0;
+  const base = discountedUnitPrice(product);
+  const fixedLoweredPrice = base < (product.unitPrice ?? 0);
   const tiers = product.tiers || [];
   const sorted = [...tiers].sort((a, b) => b.minQuantity - a.minQuantity);
-  for (const t of sorted) if (quantity >= t.minQuantity) return t.pricePerUnit;
-  return product.unitPrice ?? 0;
+  for (const t of sorted) {
+    if (quantity >= t.minQuantity) {
+      return fixedLoweredPrice ? Math.min(t.pricePerUnit, base) : t.pricePerUnit;
+    }
+  }
+  return base;
 }
 
 /**

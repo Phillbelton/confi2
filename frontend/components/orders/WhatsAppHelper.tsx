@@ -21,13 +21,15 @@ import {
 } from '@/components/ui/select';
 import { MessageCircle, Copy, ExternalLink, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import type { Order } from '@/types/order';
+import type { Order, OrderStatus } from '@/types/order';
 import { formatCurrency } from '@/lib/utils';
+import { businessHours, businessPickupAddress } from '@/lib/whatsapp';
 
 interface WhatsAppHelperProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: Order;
+  /** Se llama al abrir WhatsApp (no al copiar). Úsalo para marcar el pedido como contactado. */
   onSend?: (message: string) => void;
 }
 
@@ -119,15 +121,15 @@ Recibirás tu pedido pronto. Cualquier duda, contáctanos 📞
     category: 'entrega',
     message: `Hola {cliente} ✅
 
-Tu orden {numeroOrden} está *lista para retiro* en nuestra tienda.
+Tu orden {numeroOrden} está *lista para retiro*.
 
 📦 *Productos:*
 {productos}
 
-📍 *Dirección de retiro:*
-[Dirección de tu tienda]
+📍 *Retiro:*
+{direccionRetiro}
 
-🕒 *Horario:* Lunes a Viernes 9:00-18:00, Sábados 9:00-13:00
+🕒 *Horario:* {horarioTienda}
 
 💰 *Total a pagar:* {totalConEnvio}
 
@@ -203,13 +205,32 @@ Para confirmar tu orden {numeroOrden}, necesitamos verificar tu dirección de en
   },
 ];
 
+/**
+ * Plantilla sugerida según el estado actual del pedido. Así el funcionario/admin
+ * abre el modal con el mensaje correcto ya seleccionado (sin buscarlo en la lista).
+ * Igual puede cambiarlo manualmente.
+ */
+function getDefaultTemplateForStatus(status: OrderStatus): string {
+  const byStatus: Record<OrderStatus, string> = {
+    pending_whatsapp: 'confirm_order',
+    confirmed: 'order_confirmed',
+    preparing: 'order_preparing',
+    shipped: 'order_shipped',
+    completed: 'order_completed',
+    cancelled: 'order_cancelled',
+  };
+  return byStatus[status] ?? 'confirm_order';
+}
+
 export function WhatsAppHelper({
   open,
   onOpenChange,
   order,
   onSend,
 }: WhatsAppHelperProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('confirm_order');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(() =>
+    getDefaultTemplateForStatus(order.status)
+  );
   const [message, setMessage] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -222,10 +243,12 @@ export function WhatsAppHelper({
     }
   };
 
-  // Initialize on open
+  // Al abrir, preseleccionar la plantilla según el estado de la orden. El modal
+  // puede reutilizarse para distintas órdenes (ej. desde una tabla), por eso
+  // recalculamos en cada apertura en función del pedido actual.
   useEffect(() => {
     if (open) {
-      handleTemplateChange(selectedTemplate);
+      handleTemplateChange(getDefaultTemplateForStatus(order.status));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -334,6 +357,8 @@ export function WhatsAppHelper({
               <Badge variant="outline" className="font-mono">{'{costoEnvio}'}</Badge>
               <Badge variant="outline" className="font-mono">{'{totalConEnvio}'}</Badge>
               <Badge variant="outline" className="font-mono">{'{direccion}'}</Badge>
+              <Badge variant="outline" className="font-mono">{'{direccionRetiro}'}</Badge>
+              <Badge variant="outline" className="font-mono">{'{horarioTienda}'}</Badge>
               <Badge variant="outline" className="font-mono">{'{motivoCancelacion}'}</Badge>
             </div>
           </div>
@@ -377,9 +402,11 @@ function replaceTemplateVariables(template: string, order: Order): string {
     '{numeroOrden}': order.orderNumber || '',
     '{productos}': formatProducts(order.items),
     '{total}': formatCurrency(order.subtotal),
-    '{costoEnvio}': formatCurrency(order.shippingCost),
+    '{costoEnvio}': formatShippingCost(order),
     '{totalConEnvio}': formatCurrency(order.total),
     '{direccion}': formatAddress(order),
+    '{direccionRetiro}': businessPickupAddress || 'Coordinamos el punto de retiro por este chat.',
+    '{horarioTienda}': businessHours,
     '{motivoCancelacion}': order.cancellationReason || 'No especificado',
   };
 
@@ -389,6 +416,15 @@ function replaceTemplateVariables(template: string, order: Order): string {
   });
 
   return result;
+}
+
+/**
+ * Costo de envío legible para el mensaje: en retiro no aplica, y en delivery
+ * sin cotizar todavía mostramos "A coordinar" en vez de un "$0" confuso.
+ */
+function formatShippingCost(order: Order): string {
+  if (order.deliveryMethod === 'pickup') return 'Retiro en tienda (sin envío)';
+  return order.shippingCost > 0 ? formatCurrency(order.shippingCost) : 'A coordinar';
 }
 
 function formatProducts(items: Order['items']): string {

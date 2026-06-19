@@ -94,7 +94,7 @@ export function ImageUploader({
         <CardHeader>
           <CardTitle>Imágenes del Producto</CardTitle>
           <CardDescription>
-            Sube hasta {maxImages} imágenes. La primera imagen será la principal.
+            Sube hasta {maxImages} imágenes (la primera será la principal). Formatos: JPG, PNG o WebP · Recomendado: cuadrada 1200×1200 px (mín. 800×800) · Máx. 5MB.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

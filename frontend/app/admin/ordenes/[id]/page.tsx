@@ -40,9 +40,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { OrderStatusBadge } from '@/components/admin/orders/OrderStatusBadge';
 import { UpdateOrderStatus } from '@/components/admin/orders/UpdateOrderStatus';
 import { EditOrderItems } from '@/components/admin/orders/EditOrderItems';
+import { WhatsAppHelper } from '@/components/orders/WhatsAppHelper';
 import { useAdminOrder, useAdminOrders } from '@/hooks/admin/useAdminOrders';
 import { formatCurrency } from '@/lib/utils';
 import { getImageUrl } from '@/lib/images';
+import { isOrderUrgent } from '@/lib/orders';
 
 export default function AdminOrderDetailPage({
   params,
@@ -51,11 +53,12 @@ export default function AdminOrderDetailPage({
 }) {
   const resolvedParams = use(params);
   const { order, isLoading, error, refetch } = useAdminOrder(resolvedParams.id);
-  const { cancelOrder, isCancelling } = useAdminOrders({ page: 1, limit: 1 });
+  const { cancelOrder, isCancelling, markWhatsAppSent } = useAdminOrders({ page: 1, limit: 1 });
 
   const [isEditing, setIsEditing] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [whatsappHelperOpen, setWhatsappHelperOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -142,17 +145,23 @@ export default function AdminOrderDetailPage({
         </Button>
       </div>
 
+      {/* Urgent banner */}
+      {isOrderUrgent(order) && (
+        <div className="flex items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-300">
+          <span aria-hidden>⚠️</span>
+          Pendiente de contacto hace más de 2 horas — conviene escribirle al cliente.
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2">
         {customerPhone && (
           <Button
             className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-            onClick={() =>
-              window.open(`https://wa.me/${customerPhone}`, '_blank')
-            }
+            onClick={() => setWhatsappHelperOpen(true)}
           >
             <MessageCircle className="h-4 w-4" />
-            Abrir WhatsApp
+            Enviar WhatsApp
           </Button>
         )}
 
@@ -515,6 +524,19 @@ export default function AdminOrderDetailPage({
           )}
         </div>
       </div>
+
+      {/* WhatsApp Helper */}
+      <WhatsAppHelper
+        open={whatsappHelperOpen}
+        onOpenChange={setWhatsappHelperOpen}
+        order={order}
+        onSend={() => {
+          // Marcar como contactado solo la primera vez (no pisar el timestamp).
+          if (!order.whatsappSent) {
+            markWhatsAppSent(order._id);
+          }
+        }}
+      />
 
       {/* Cancel Order Dialog */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>

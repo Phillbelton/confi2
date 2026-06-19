@@ -1,4 +1,3 @@
-import { api } from '@/lib/axios';
 import { clientApi } from '@/lib/clientApi';
 import type { Order, ApiResponse } from '@/types';
 
@@ -24,67 +23,18 @@ export interface CreateOrderPayload {
   customerNotes?: string;
 }
 
-export interface WhatsAppMessagePayload {
-  orderId: string;
-}
-
-export interface ValidateCartPayload {
-  items: {
-    productId: string;
-    quantity: number;
-    finalPrice: number;
-    subtotal: number;
-  }[];
-}
-
-export interface ValidateCartResponse {
-  valid: boolean;
-  discrepancies?: Array<{
-    productId: string;
-    frontend: { finalPrice: number; subtotal: number };
-    server: { finalPrice: number; subtotal: number };
-  }>;
-  serverPrices?: Array<{
-    productId: string;
-    quantity: number;
-    originalPrice: number;
-    finalPricePerUnit: number;
-    totalDiscount: number;
-    subtotal: number;
-  }>;
-  items?: Array<{
-    productId: string;
-    quantity: number;
-    originalPrice: number;
-    finalPricePerUnit: number;
-    totalDiscount: number;
-    subtotal: number;
-  }>;
-}
-
 export const orderService = {
-  // Validate cart prices with server (anti-fraud)
-  validateCart: async (payload: ValidateCartPayload) => {
-    const { data } = await api.post<ApiResponse<ValidateCartResponse>>('/orders/validate-cart', payload);
-    // Backend returns { success: true, data: { valid: true, items: [...] } }
-    // or { success: false, data: { valid: false, discrepancies: [...], serverPrices: [...] } }
-    return data.data as ValidateCartResponse;
-  },
-
-  // Create order (uses clientApi to send auth token if user is logged in)
+  // Crea la orden (usa clientApi para mandar el token si el usuario está logueado).
+  //
+  // El backend (`createOrder`) responde { success, data: { order } } y NO
+  // incluye `whatsappURL`: el link de WhatsApp se arma siempre en el cliente
+  // con NEXT_PUBLIC_WHATSAPP_NUMBER (ver app/pedido/[orderNumber] y
+  // app/(cliente)/mis-ordenes/[orderNumber]). Decisión 2026-06-16: no
+  // tipamos un `whatsappURL` que el backend nunca manda. El generador rico de
+  // mensajes (backend/src/services/whatsappService.ts) queda disponible para
+  // un futuro flujo deliberado de "enviar el pedido completo al negocio".
   create: async (payload: CreateOrderPayload) => {
-    const { data } = await clientApi.post<ApiResponse<{ order: Order; whatsappURL: string }>>('/orders', payload);
-    // Backend returns { success: true, data: { order: {...}, whatsappURL: '...' } }
-    return data.data;
-  },
-
-  // Generate WhatsApp message
-  generateWhatsAppMessage: async (orderId: string) => {
-    const { data } = await api.post<ApiResponse<{ message: string; url: string }>>(
-      '/orders/whatsapp',
-      { orderId }
-    );
-    // Backend returns { success: true, data: { message: '...', url: '...' } }
+    const { data } = await clientApi.post<ApiResponse<{ order: Order }>>('/orders', payload);
     return data.data;
   },
 

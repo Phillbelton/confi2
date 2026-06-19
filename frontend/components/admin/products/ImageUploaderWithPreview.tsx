@@ -146,7 +146,7 @@ export function ImageUploaderWithPreview({
               Arrastra imágenes aquí o haz clic para seleccionar
             </p>
             <p className="text-xs text-muted-foreground">
-              JPG, PNG o WebP • Máximo 5MB • {images.length}/{maxImages} imágenes
+              JPG, PNG o WebP • Recomendado: cuadrada 1200×1200 px (mín. 800×800) • Máx. 5MB • {images.length}/{maxImages} imágenes
             </p>
           </div>
           <input

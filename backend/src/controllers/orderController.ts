@@ -1,9 +1,11 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { Order } from '../models/Order';
-import Product, { ITier } from '../models/Product';
+import Product, { ITier, IFixedDiscount } from '../models/Product';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { emailService } from '../services/emailService';
+import logger from '../config/logger';
 
 export interface CartItemInput {
   productId: string;
@@ -18,30 +20,100 @@ export interface CartItemInput {
 export interface PriceableProduct {
   unitPrice: number;
   tiers?: Pick<ITier, 'minQuantity' | 'pricePerUnit'>[];
+  fixedDiscount?: Partial<
+    Pick<IFixedDiscount, 'enabled' | 'type' | 'value' | 'startDate' | 'endDate'>
+  > | null;
 }
 
 /**
- * Calcula el precio efectivo por unidad para un producto y una cantidad
- * dada. Si la cantidad alcanza un tier (`quantity >= tier.minQuantity`),
- * se aplica el tier de mayor `minQuantity` que cumpla. Si ningún tier
- * aplica (o no hay tiers), se retorna `unitPrice`.
+ * ¿La oferta fija (`fixedDiscount`) está vigente en `now`? Requiere
+ * `enabled`, un `type` válido y `value` numérico, y que `now` caiga dentro
+ * del rango [startDate, endDate] cuando esos límites estén definidos.
  *
- * Exportado para permitir tests unitarios sobre la matemática del tier.
+ * Se evalúa acá (y no vía el virtual `hasActiveDiscount` del modelo) porque
+ * `buildOrderItems` lee con `.lean()`, que no incluye virtuals.
+ */
+function isFixedDiscountActive(
+  fd: PriceableProduct['fixedDiscount'],
+  now: Date
+): fd is NonNullable<PriceableProduct['fixedDiscount']> & {
+  type: 'percentage' | 'amount';
+  value: number;
+} {
+  if (
+    !fd?.enabled ||
+    (fd.type !== 'percentage' && fd.type !== 'amount') ||
+    typeof fd.value !== 'number'
+  ) {
+    return false;
+  }
+  const t = now.getTime();
+  const start = fd.startDate ? new Date(fd.startDate).getTime() : null;
+  const end = fd.endDate ? new Date(fd.endDate).getTime() : null;
+  if (start !== null && t < start) return false;
+  if (end !== null && t > end) return false;
+  return true;
+}
+
+/**
+ * Precio base por presentación tras aplicar la oferta fija vigente.
+ *
+ * SEMÁNTICA (decisión de negocio 2026-06-16): `fixedDiscount` NO es solo un
+ * badge — anuncia un *cambio de precio real*. El valor con descuento pasa a
+ * ser el nuevo precio efectivo para cantidades por debajo de cualquier tramo.
+ * Los `tiers` (precio por volumen) siguen aplicando aparte al alcanzar su
+ * `minQuantity`. Mantener en sync con `frontend/lib/discountCalculator.ts`.
+ */
+export function discountedUnitPrice(
+  product: PriceableProduct,
+  now: Date = new Date()
+): number {
+  const base = product.unitPrice;
+  const fd = product.fixedDiscount;
+  if (!isFixedDiscountActive(fd, now)) return base;
+  const next =
+    fd.type === 'percentage' ? base * (1 - fd.value / 100) : base - fd.value;
+  // CLP no tiene decimales: redondeamos para que el precio cobrado coincida
+  // exactamente con el mostrado (el front también redondea).
+  return Math.max(0, Math.round(next));
+}
+
+/**
+ * Precio efectivo por unidad para una cantidad dada.
+ *
+ *   1. Parte del precio base (`unitPrice` con la oferta fija ya aplicada).
+ *   2. Si la cantidad alcanza un tramo, usa ese precio mayorista. Cuando hay
+ *      una oferta fija vigente que bajó el precio, el cliente nunca paga más
+ *      que ese precio anunciado (`Math.min`). Sin oferta, el tramo es
+ *      autoritativo aunque haya quedado por encima de `unitPrice` por una mala
+ *      configuración (comportamiento histórico, no lo cambiamos acá).
+ *
+ * Exportado para permitir tests unitarios sobre la matemática del precio.
  */
 export function effectiveUnitPrice(
   product: PriceableProduct,
-  quantity: number
+  quantity: number,
+  now: Date = new Date()
 ): number {
+  const base = discountedUnitPrice(product, now);
+  const fixedLoweredPrice = base < product.unitPrice;
   const tiers = product.tiers || [];
   const sorted = [...tiers].sort((a, b) => b.minQuantity - a.minQuantity);
-  for (const t of sorted) if (quantity >= t.minQuantity) return t.pricePerUnit;
-  return product.unitPrice;
+  for (const t of sorted) {
+    if (quantity >= t.minQuantity) {
+      return fixedLoweredPrice ? Math.min(t.pricePerUnit, base) : t.pricePerUnit;
+    }
+  }
+  return base;
 }
 
 export async function buildOrderItems(items: CartItemInput[]) {
   const orderItems: any[] = [];
   let subtotal = 0;
   let totalDiscount = 0;
+  // Un único `now` para toda la orden: que la vigencia de la oferta fija no
+  // varíe entre items por el paso del tiempo dentro del mismo cálculo.
+  const now = new Date();
   for (const it of items) {
     if (!mongoose.Types.ObjectId.isValid(it.productId)) {
       throw new AppError(400, `productId inválido: ${it.productId}`);
@@ -50,7 +122,7 @@ export async function buildOrderItems(items: CartItemInput[]) {
     if (!product || !product.active) {
       throw new AppError(404, `Producto ${it.productId} no disponible`);
     }
-    const ppu = effectiveUnitPrice(product, it.quantity);
+    const ppu = effectiveUnitPrice(product, it.quantity, now);
     const lineSubtotal = ppu * it.quantity;
     const discount = Math.max(0, (product.unitPrice - ppu) * it.quantity);
     orderItems.push({
@@ -127,6 +199,21 @@ export const createOrder = asyncHandler(
       deliveryNotes,
       createdBy: req.user?.id,
     });
+
+    // Email de "pedido recibido" (fire-and-forget). Solo si el cliente dejó
+    // email — es opcional en el checkout. No bloquea ni hace fallar la creación
+    // de la orden si el envío falla (o si SMTP no está configurado).
+    if (order.customer.email) {
+      emailService
+        .sendOrderReceivedEmail(order, order.customer.email, order.customer.name)
+        .catch((err) =>
+          logger.error('No se pudo enviar el email de pedido recibido', {
+            err,
+            orderNumber: order.orderNumber,
+          })
+        );
+    }
+
     res.status(201).json({ success: true, message: 'Orden creada', data: { order } });
   }
 );

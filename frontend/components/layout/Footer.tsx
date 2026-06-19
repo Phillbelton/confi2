@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Facebook, Instagram, Phone, Clock } from 'lucide-react';
+import { businessWhatsappHref, formatBusinessWhatsapp } from '@/lib/whatsapp';
 
 const footerLinks = {
   shop: [
@@ -23,6 +24,8 @@ const footerLinks = {
 };
 
 export function Footer() {
+  const whatsappHref = businessWhatsappHref();
+  const whatsappDisplay = formatBusinessWhatsapp();
   return (
     <footer className="relative overflow-hidden">
       {/* Main Footer */}
@@ -117,12 +120,12 @@ export function Footer() {
                 <li className="flex items-center gap-2 min-w-0">
                   <Phone className="h-4 w-4 flex-shrink-0 text-green-400" />
                   <a
-                    href="https://wa.me/56964269246"
+                    href={whatsappHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-primary transition-colors truncate"
                   >
-                    +56 9 6426 9246
+                    {whatsappDisplay}
                   </a>
                 </li>
                 <li className="flex items-center gap-2 min-w-0">
