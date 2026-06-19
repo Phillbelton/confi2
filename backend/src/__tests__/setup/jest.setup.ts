@@ -18,6 +18,7 @@ if (ENV.NODE_ENV !== 'test') {
 jest.mock('../../services/emailService', () => ({
   emailService: {
     sendWelcomeEmail: jest.fn().mockResolvedValue(true),
+    sendOrderReceivedEmail: jest.fn().mockResolvedValue(true),
     sendOrderConfirmationEmail: jest.fn().mockResolvedValue(true),
     sendOrderStatusUpdateEmail: jest.fn().mockResolvedValue(true),
     sendOrderCancellationEmail: jest.fn().mockResolvedValue(true),

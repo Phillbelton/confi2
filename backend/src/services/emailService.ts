@@ -209,7 +209,12 @@ class EmailService {
    * por lo que el total puede no incluir todavía el envío.
    */
   async sendOrderReceivedEmail(order: IOrder, userEmail: string, userName: string): Promise<boolean> {
-    const orderUrl = `${ENV.FRONTEND_URL}/mis-ordenes/${order.orderNumber}`;
+    // Clientes registrados ven su pedido en /mis-ordenes (requiere login); los
+    // invitados no tienen esa vista, así que el CTA los lleva al catálogo.
+    const isRegistered = !!order.customer.user;
+    const orderUrl = isRegistered
+      ? `${ENV.FRONTEND_URL}/mis-ordenes/${order.orderNumber}`
+      : `${ENV.FRONTEND_URL}/productos`;
     const whatsappNumber = ENV.WHATSAPP_BUSINESS_NUMBER;
 
     const itemsHtml = order.items
@@ -275,13 +280,14 @@ class EmailService {
         <tbody>${itemsHtml}</tbody>
         <tfoot>
           <tr><td colspan="3" style="padding:10px; text-align:right;">Subtotal:</td><td style="padding:10px; text-align:right;">$${order.subtotal.toLocaleString('es-CL')}</td></tr>
+          ${order.totalDiscount > 0 ? `<tr><td colspan="3" style="padding:10px; text-align:right; color:#2e7d32;">Descuento:</td><td style="padding:10px; text-align:right; color:#2e7d32;">−$${order.totalDiscount.toLocaleString('es-CL')}</td></tr>` : ''}
           <tr><td colspan="3" style="padding:10px; text-align:right; color:#666;">Envío:</td><td style="padding:10px; text-align:right; color:#666;">Por confirmar</td></tr>
           <tr class="total-row"><td colspan="3" style="padding:15px; text-align:right;">Total estimado:</td><td style="padding:15px; text-align:right;">$${order.total.toLocaleString('es-CL')}</td></tr>
         </tfoot>
       </table>
 
       <p style="text-align:center;">
-        <a href="${orderUrl}" style="display:inline-block; background:#e91e63; color:white; padding:12px 28px; border-radius:5px; text-decoration:none; font-weight:bold;">Ver mi pedido</a>
+        <a href="${orderUrl}" style="display:inline-block; background:#e91e63; color:white; padding:12px 28px; border-radius:5px; text-decoration:none; font-weight:bold;">${isRegistered ? 'Ver mi pedido' : 'Seguir comprando'}</a>
       </p>
     </div>
     <div class="footer">

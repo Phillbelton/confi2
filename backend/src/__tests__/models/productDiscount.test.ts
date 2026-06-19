@@ -11,13 +11,13 @@ import {
  *   - `hasActiveDiscount` evalúa fixedDiscount.enabled + rango de fechas.
  *   - `hasActiveTieredDiscount` es la presencia de tiers no-vacíos.
  *
- * También fija como contrato (con un spec de regresión) que
- * `fixedDiscount` NO se aplica al precio en `effectiveUnitPrice` ni en
- * `buildOrderItems` — solo `tiers` mueve dinero. El frontend
- * (`discountCalculator.ts`) tiene el mismo comportamiento: `fixedDiscount`
- * es solo para el badge visual ("20% OFF"). Esto es decisión de diseño,
- * no bug; el test sirve para detectar si alguien lo cambia sin querer
- * (lo cual desbalancearía precios mostrados vs cobrados).
+ * También fija como contrato (con specs de regresión) que `fixedDiscount`
+ * SÍ cambia el precio real en `effectiveUnitPrice` y `buildOrderItems`: el
+ * valor con descuento pasa a ser el nuevo precio efectivo, y los `tiers`
+ * (precio por volumen) aplican aparte al alcanzar su `minQuantity`. El
+ * frontend (`discountCalculator.ts`) replica esta semántica, de modo que el
+ * precio mostrado y el cobrado coinciden. Si alguien rompe la paridad
+ * front/back, estos specs disparan.
  */
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -187,31 +187,45 @@ describe('virtual: hasActiveTieredDiscount', () => {
   });
 });
 
-describe('contrato de pricing: fixedDiscount NO se aplica al precio', () => {
+describe('contrato de pricing: fixedDiscount SÍ cambia el precio', () => {
   /**
-   * Tanto effectiveUnitPrice como buildOrderItems IGNORAN fixedDiscount.
-   * El frontend (lib/discountCalculator.ts) tiene la misma semántica: el
-   * descuento fijo es solo para el badge visual. Si alguien cambia esto
-   * sin querer (ej. agrega aplicación de fixedDiscount al precio), estos
-   * specs se rompen y obligan a revisar la consistencia front/back.
-   *
-   * NOTA: Si en el futuro se decide que fixedDiscount SÍ debe aplicar al
-   * precio, hay que cambiar:
-   *   - backend/src/controllers/orderController.ts → effectiveUnitPrice
-   *   - frontend/lib/discountCalculator.ts → effectiveUnitPrice
-   * y reemplazar estos tests por los nuevos casos esperados.
+   * fixedDiscount anuncia un cambio de precio real: el valor con descuento
+   * pasa a ser el nuevo precio efectivo. effectiveUnitPrice y buildOrderItems
+   * lo aplican; los tiers (precio por volumen) aplican aparte. El frontend
+   * (lib/discountCalculator.ts) replica esta lógica para que lo mostrado y
+   * lo cobrado coincidan.
    */
 
-  it('effectiveUnitPrice retorna unitPrice aunque haya fixedDiscount activo', () => {
+  it('effectiveUnitPrice aplica el descuento porcentual como nuevo precio base', () => {
     const product = {
       unitPrice: 1000,
       fixedDiscount: { enabled: true, type: 'percentage', value: 50 },
     } as any;
-    // Si fixedDiscount aplicara, el precio sería 500.
+    expect(effectiveUnitPrice(product, 1)).toBe(500);
+  });
+
+  it('effectiveUnitPrice aplica el descuento por monto fijo (type "amount")', () => {
+    const product = {
+      unitPrice: 1000,
+      fixedDiscount: { enabled: true, type: 'amount', value: 300 },
+    } as any;
+    expect(effectiveUnitPrice(product, 1)).toBe(700);
+  });
+
+  it('NO aplica una oferta vencida (endDate pasada) → precio de lista', () => {
+    const product = {
+      unitPrice: 1000,
+      fixedDiscount: {
+        enabled: true,
+        type: 'percentage',
+        value: 50,
+        endDate: new Date(Date.now() - DAY_MS),
+      },
+    } as any;
     expect(effectiveUnitPrice(product, 1)).toBe(1000);
   });
 
-  it('buildOrderItems no descuenta fixedDiscount: subtotal y total ignoran el badge', async () => {
+  it('buildOrderItems cobra el precio con oferta y registra el descuento', async () => {
     const product = await buildProduct({
       unitPrice: 1000,
       fixedDiscount: {
@@ -224,25 +238,41 @@ describe('contrato de pricing: fixedDiscount NO se aplica al precio', () => {
     const result = await buildOrderItems([
       { productId: product._id.toString(), quantity: 2 },
     ]);
-    // Si fixedDiscount aplicara, subtotal sería 1400 y discount 600.
-    // Como NO aplica, subtotal es 2000 y discount 0.
+    // 1000 con 30% OFF → 700 c/u. Subtotal bruto 2000, descuento 600, neto 1400.
     expect(result.subtotal).toBe(2000);
-    expect(result.totalDiscount).toBe(0);
-    expect(result.orderItems[0].pricePerUnit).toBe(1000);
-    expect(result.orderItems[0].discount).toBe(0);
+    expect(result.totalDiscount).toBe(600);
+    expect(result.orderItems[0].pricePerUnit).toBe(700);
+    expect(result.orderItems[0].discount).toBe(600);
+    expect(result.orderItems[0].subtotal).toBe(1400);
   });
 
-  it('cuando hay tiers Y fixedDiscount, solo tiers afecta el precio', async () => {
+  it('tiers y fixedDiscount conviven: bajo el tramo manda la oferta, en volumen manda el tramo', async () => {
     const product = await buildProduct({
       unitPrice: 1000,
-      tiers: [{ minQuantity: 6, pricePerUnit: 900 }],
-      fixedDiscount: { enabled: true, type: 'percentage', value: 50 },
+      tiers: [{ minQuantity: 6, pricePerUnit: 700 }],
+      fixedDiscount: { enabled: true, type: 'percentage', value: 20 }, // base 800
     });
-    const result = await buildOrderItems([
+    // qty 3 (bajo el tramo) → 800 (precio con oferta)
+    const below = await buildOrderItems([
+      { productId: product._id.toString(), quantity: 3 },
+    ]);
+    expect(below.orderItems[0].pricePerUnit).toBe(800);
+    // qty 6 (alcanza el tramo) → 700 (precio por volumen, mejor que la oferta)
+    const at = await buildOrderItems([
       { productId: product._id.toString(), quantity: 6 },
     ]);
-    // El tier baja a 900; fixedDiscount NO entra en el cálculo.
-    expect(result.orderItems[0].pricePerUnit).toBe(900);
-    expect(result.totalDiscount).toBe((1000 - 900) * 6); // 600, no más
+    expect(at.orderItems[0].pricePerUnit).toBe(700);
+  });
+
+  it('nunca cobra más que el precio anunciado: si el tramo quedó por encima de la oferta, manda la oferta', async () => {
+    const product = await buildProduct({
+      unitPrice: 1000,
+      tiers: [{ minQuantity: 6, pricePerUnit: 700 }],
+      fixedDiscount: { enabled: true, type: 'percentage', value: 50 }, // base 500 < 700
+    });
+    const at = await buildOrderItems([
+      { productId: product._id.toString(), quantity: 6 },
+    ]);
+    expect(at.orderItems[0].pricePerUnit).toBe(500);
   });
 });

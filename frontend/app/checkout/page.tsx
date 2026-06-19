@@ -176,7 +176,6 @@ export default function CheckoutPage() {
               orderNumber,
               createdAt: new Date().toISOString(),
               order: response.order,
-              whatsappURL: response.whatsappURL,
             })
           );
         } catch {
