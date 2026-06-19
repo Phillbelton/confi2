@@ -210,12 +210,18 @@ class LocalImageService implements IImageService {
 
       const rawBasename = path.basename(filePath, path.extname(filePath));
 
+      // Procesar DESDE un buffer en memoria, no desde la ruta. En Windows,
+      // sharp/libvips deja el archivo de entrada lockeado si se procesa por
+      // ruta y luego falla EBUSY al borrarlo. Leyéndolo una sola vez a memoria,
+      // el handle se cierra (y se reusa el buffer para todas las variantes).
+      const inputBuffer = await fs.readFile(filePath);
+
       let storedFilename: string;
 
       if (options.responsiveWidths && options.responsiveWidths.length > 0) {
         // Modo multi-size: genera 3+ variantes -w400, -w800, -w1200 para `<img srcset>`.
         const result = await processImageMultiSize(
-          filePath,
+          inputBuffer,
           targetDir,
           rawBasename,
           options.responsiveWidths,
@@ -227,7 +233,7 @@ class LocalImageService implements IImageService {
         const ext = options.format || 'webp';
         storedFilename = `${rawBasename}-processed.${ext}`;
         const processedPath = path.join(targetDir, storedFilename);
-        await processImage(filePath, processedPath, {
+        await processImage(inputBuffer, processedPath, {
           width: options.width || 1200,
           height: options.height || 1200,
           quality: options.quality || 85,
@@ -236,8 +242,16 @@ class LocalImageService implements IImageService {
         });
       }
 
-      // Borrar el archivo original (estaba en temp/)
-      await deleteFile(filePath);
+      // Borrar el archivo original. Si el SO lo tiene tomado un instante
+      // (Windows), no es crítico: las variantes ya quedaron escritas OK.
+      try {
+        await deleteFile(filePath);
+      } catch (cleanupErr: any) {
+        logger.warn('⚠️  No se pudo borrar el archivo original (no crítico)', {
+          filePath,
+          error: cleanupErr.message,
+        });
+      }
 
       // URL relativa portable: /uploads/<folder>/<filename>
       const imageUrl = getFileUrl(storedFilename, options.folder);

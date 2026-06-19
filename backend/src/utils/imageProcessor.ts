@@ -3,6 +3,11 @@ import path from 'path';
 import fs from 'fs';
 import logger from '../config/logger';
 
+// Windows/libvips: el caché de operaciones deja el archivo de entrada mapeado
+// en memoria, lo que provoca EBUSY al intentar borrarlo tras procesar.
+// Desactivarlo evita el lock (y procesamos desde Buffer en imageService).
+sharp.cache(false);
+
 export interface ImageProcessOptions {
   width?: number;
   height?: number;
@@ -19,7 +24,7 @@ export interface ImageProcessOptions {
  * @param options - Opciones de procesamiento
  */
 export async function processImage(
-  inputPath: string,
+  inputPath: string | Buffer,
   outputPath: string,
   options: ImageProcessOptions = {}
 ): Promise<void> {
@@ -74,7 +79,7 @@ export async function processImage(
  * @returns          baseFilename (la variante intermedia, ej. 'abc-w800.webp') y todas las rutas
  */
 export async function processImageMultiSize(
-  inputPath: string,
+  inputPath: string | Buffer,
   outputDir: string,
   baseName: string,
   widths: number[] = [400, 800, 1200],
