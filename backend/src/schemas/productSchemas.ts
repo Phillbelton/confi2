@@ -30,6 +30,18 @@ const fixedDiscountSchema = z.object({
   badge: z.string().optional(),
 });
 
+const presentacionSchema = z.object({
+  _id: z.string().optional(),
+  type: z.enum(['unidad', 'cantidadMinima', 'display', 'embalaje']),
+  quantity: z.number().int().min(1),
+  unitPrice: z.number().min(0),
+  tiers: z.array(tierSchema).optional(),
+  fixedDiscount: fixedDiscountSchema.optional(),
+  label: z.string().max(40).optional(),
+  barcode: z.string().max(32).optional(),
+  principal: z.boolean().optional(),
+});
+
 // ============================================================
 // Product
 // ============================================================
@@ -50,6 +62,7 @@ export const createProductSchema = z.object({
     saleUnit: saleUnitSchema,
     tiers: z.array(tierSchema).optional(),
     fixedDiscount: fixedDiscountSchema.optional(),
+    presentaciones: z.array(presentacionSchema).min(1).optional(),
 
     images: z.array(z.string()).max(5).optional(),
     featured: z.boolean().optional(),
@@ -73,6 +86,7 @@ export const updateProductSchema = z.object({
     saleUnit: saleUnitSchema.optional(),
     tiers: z.array(tierSchema).optional(),
     fixedDiscount: fixedDiscountSchema.optional(),
+    presentaciones: z.array(presentacionSchema).min(1).optional(),
 
     images: z.array(z.string()).max(5).optional(),
     featured: z.boolean().optional(),
