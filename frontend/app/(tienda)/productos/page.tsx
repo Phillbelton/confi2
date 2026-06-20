@@ -302,18 +302,10 @@ function CatalogContent() {
         />
       )}
 
-      {facetFormats.length > 0 && (
-        <FilterList
-          title="Formato"
-          options={facetFormats.map((f) => ({ value: f.slug, label: f.label ?? f.name ?? f.slug, count: f.count }))}
-          selected={format ? [format] : []}
-          multi={false}
-          searchable
-          onToggle={(slug) =>
-            setParam({ formato: format === slug ? undefined : slug })
-          }
-        />
-      )}
+      {/* Filtro "Formato" deshabilitado a propósito: son ~116 gramajes exactos
+          (40g, 350ml, 2L…), una lista inusable como filtro. Se reemplazará por
+          "Presentación" en el rediseño multi-presentación (ver decisión post-MVP).
+          El gramaje sigue como dato del producto; el deep-link ?formato= aún funciona. */}
 
       {facetFlavors.length > 0 && (
         <FilterList
