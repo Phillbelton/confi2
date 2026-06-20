@@ -84,6 +84,7 @@ export const listProducts = asyncHandler(
       brands,
       format,
       flavor,
+      presentacion,
       minPrice,
       maxPrice,
       active = 'true',
@@ -166,6 +167,9 @@ export const listProducts = asyncHandler(
         if (f) filter.flavor = f._id;
       }
     }
+
+    // Presentación — productos que se venden en este tipo de presentación.
+    if (presentacion) filter['presentaciones.type'] = presentacion;
 
     if (featured === 'true') filter.featured = true;
 

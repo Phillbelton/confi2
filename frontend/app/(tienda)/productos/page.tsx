@@ -55,6 +55,7 @@ function CatalogContent() {
   const brands = sp.get('brands') || undefined;
   const format = sp.get('formato') || undefined;
   const flavor = sp.get('sabor') || undefined;
+  const presentacion = sp.get('presentacion') || undefined;
   const collection = sp.get('coleccion') || undefined;
   const onSale = sp.get('onSale') === 'true';
   const featured = sp.get('featured') === 'true';
@@ -105,6 +106,7 @@ function CatalogContent() {
     brands,
     format,
     flavor,
+    presentacion,
     collection,
     onSale: onSale || undefined,
     featured: featured || undefined,
@@ -159,6 +161,7 @@ function CatalogContent() {
   // que es el orden más útil para el top visible antes del "Ver más".
   const facetFormats = facets?.formats ?? [];
   const facetFlavors = facets?.flavors ?? [];
+  const facetPresentaciones = facets?.presentaciones ?? [];
   const dynamicAttributes = facets?.attributes ?? [];
 
   const toggleAttrValue = (key: string, value: string, multi: boolean) => {
@@ -212,6 +215,13 @@ function CatalogContent() {
       onRemove: () => setParam({ sabor: undefined }),
     });
   }
+  if (presentacion) {
+    const match = facetPresentaciones.find((x) => x.type === presentacion);
+    activeChips.push({
+      label: match?.label || presentacion,
+      onRemove: () => setParam({ presentacion: undefined }),
+    });
+  }
   for (const [key, values] of Object.entries(activeAttrs)) {
     const attrDef = dynamicAttributes.find((a) => a.key === key);
     for (const v of values) {
@@ -249,6 +259,7 @@ function CatalogContent() {
       brands: undefined,
       formato: undefined,
       sabor: undefined,
+      presentacion: undefined,
       onSale: undefined,
       featured: undefined,
       minPrice: undefined,
@@ -302,10 +313,19 @@ function CatalogContent() {
         />
       )}
 
-      {/* Filtro "Formato" deshabilitado a propósito: son ~116 gramajes exactos
-          (40g, 350ml, 2L…), una lista inusable como filtro. Se reemplazará por
-          "Presentación" en el rediseño multi-presentación (ver decisión post-MVP).
-          El gramaje sigue como dato del producto; el deep-link ?formato= aún funciona. */}
+      {/* "Formato" (116 gramajes) queda como dato del producto, no como filtro.
+          En su lugar: "Presentación" (cómo se vende: por unidad / display / caja). */}
+      {facetPresentaciones.length > 1 && (
+        <FilterList
+          title="Presentación"
+          options={facetPresentaciones.map((p) => ({ value: p.type, label: p.label, count: p.count }))}
+          selected={presentacion ? [presentacion] : []}
+          multi={false}
+          onToggle={(type) =>
+            setParam({ presentacion: presentacion === type ? undefined : type })
+          }
+        />
+      )}
 
       {facetFlavors.length > 0 && (
         <FilterList

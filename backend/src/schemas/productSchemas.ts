@@ -118,6 +118,7 @@ export const getProductsQuerySchema = z.object({
     brands: z.string().optional(),
     format: z.string().optional(),
     flavor: z.string().optional(),
+    presentacion: z.string().optional(),
     minPrice: z.string().regex(/^\d+(\.\d+)?$/).optional(),
     maxPrice: z.string().regex(/^\d+(\.\d+)?$/).optional(),
     active: z.enum(['true', 'false', 'all']).optional(),

@@ -538,6 +538,7 @@ export interface ProductFacets {
   flavors?: FacetLabeledEntry[];
   attributes?: DynamicFacetAttribute[];
   promos?: { onSale: number; featured: number };
+  presentaciones?: Array<{ type: SaleUnitType; label: string; count: number }>;
 }
 
 export interface ProductSort {

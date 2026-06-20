@@ -100,6 +100,11 @@ export const getProductFacets = asyncHandler(
             { $group: { _id: '$flavor', count: { $sum: 1 } } },
             { $sort: { count: -1 } },
           ],
+          presentacionesAgg: [
+            { $unwind: '$presentaciones' },
+            { $group: { _id: '$presentaciones.type', ids: { $addToSet: '$_id' } } },
+            { $project: { count: { $size: '$ids' } } },
+          ],
           featuredAgg: [{ $match: { featured: true } }, { $count: 'count' }],
           onSaleAgg: [
             {
@@ -201,6 +206,20 @@ export const getProductFacets = asyncHandler(
       })
       .filter(Boolean);
 
+    // Presentaciones — tipos disponibles (Unidad/Display/Caja master) con
+    // cuántos productos se venden en cada uno. Reemplaza al filtro de "Formato".
+    const PRES_LABELS: Record<string, string> = {
+      unidad: 'Por unidad',
+      cantidadMinima: 'Cantidad mínima',
+      display: 'Display / caja',
+      embalaje: 'Caja master (mayor)',
+    };
+    const PRES_ORDER: Record<string, number> = { unidad: 0, cantidadMinima: 1, display: 2, embalaje: 3 };
+    const presentaciones = (result.presentacionesAgg || [])
+      .filter((p: any) => p._id)
+      .map((p: any) => ({ type: p._id, label: PRES_LABELS[p._id] || p._id, count: p.count }))
+      .sort((a: any, b: any) => (PRES_ORDER[a.type] ?? 9) - (PRES_ORDER[b.type] ?? 9));
+
     // Collections
     const allIdSet = new Set(allIds.map((id) => id.toString()));
     const allCollections = await Collection.find({ active: true, showOnHome: true })
@@ -275,6 +294,7 @@ export const getProductFacets = asyncHandler(
         brands,
         formats,
         flavors,
+        presentaciones,
         collections,
         attributes,
         promos: { onSale: onSaleCount, featured: featuredCount },
