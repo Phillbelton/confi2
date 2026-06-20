@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Facebook, Instagram, Phone, Clock } from 'lucide-react';
+import { Phone, Clock } from 'lucide-react';
 import { businessWhatsappHref, formatBusinessWhatsapp } from '@/lib/whatsapp';
+import { SocialLinks } from '@/components/layout/SocialLinks';
 
 const footerLinks = {
   shop: [
@@ -18,8 +19,7 @@ const footerLinks = {
   help: [
     { name: 'Cómo comprar', href: '/ayuda/como-comprar' },
     { name: 'Formas de pago', href: '/ayuda/formas-de-pago' },
-    { name: 'Envíos', href: '/ayuda/envios' },
-    { name: 'Preguntas frecuentes', href: '/ayuda/faq' },
+    { name: 'Envíos y retiros', href: '/ayuda/envios-y-retiros' },
   ],
 };
 
@@ -49,26 +49,10 @@ export function Footer() {
               <p className="text-sm text-white/50 max-w-xs">
                 Confitería mayorista y detalle. 31 años endulzando con cariño.
               </p>
-              <div className="flex gap-2.5">
-                <Link
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center text-white/50 hover:bg-primary hover:text-white transition-all"
-                  aria-label="Facebook"
-                >
-                  <Facebook className="h-4 w-4 md:h-5 md:w-5" />
-                </Link>
-                <Link
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center text-white/50 hover:bg-accent hover:text-white transition-all"
-                  aria-label="Instagram"
-                >
-                  <Instagram className="h-4 w-4 md:h-5 md:w-5" />
-                </Link>
-              </div>
+              <SocialLinks
+                itemClassName="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 text-white/50 hover:text-white"
+                iconClassName="h-4 w-4 md:h-5 md:w-5"
+              />
             </div>
 
             {/* Shop */}
