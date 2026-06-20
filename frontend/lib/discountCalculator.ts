@@ -1,4 +1,15 @@
-import type { Product, ProductTier } from '@/types';
+import type { Product, ProductTier, Presentation, FixedDiscount } from '@/types';
+
+/**
+ * Shape mínimo para calcular precio: lo cumplen tanto `Product` (vía la
+ * presentación principal denormalizada en `unitPrice/tiers/fixedDiscount`) como
+ * una `Presentation`. Permite reusar toda la matemática para ambos.
+ */
+export interface Priceable {
+  unitPrice: number;
+  tiers?: ProductTier[];
+  fixedDiscount?: FixedDiscount;
+}
 
 /**
  * SEMÁNTICA DE PRECIOS (refactor 2026-05-14):
@@ -27,7 +38,7 @@ import type { Product, ProductTier } from '@/types';
  * `tiers` (precio por volumen) aplican aparte. Mantener en sync con el backend
  * (`orderController.discountedUnitPrice` / `effectiveUnitPrice`).
  */
-export function discountedUnitPrice(product: Product): number {
+export function discountedUnitPrice(product: Priceable): number {
   const base = product?.unitPrice ?? 0;
   if (!hasActiveFixedDiscount(product)) return base;
   const fd = product.fixedDiscount!;
@@ -45,7 +56,7 @@ export function discountedUnitPrice(product: Product): number {
  *      fija vigente que bajó el precio, nunca por encima del precio anunciado
  *      (`Math.min`); sin oferta, el tramo es autoritativo.
  */
-export function effectiveUnitPrice(product: Product, quantity: number): number {
+export function effectiveUnitPrice(product: Priceable, quantity: number): number {
   if (!product) return 0;
   const base = discountedUnitPrice(product);
   const fixedLoweredPrice = base < (product.unitPrice ?? 0);
@@ -95,7 +106,7 @@ export function getBestDiscountPercent(product: Product): number {
  * NO incluye tiers de descuento por volumen — esos son precios mayoristas,
  * no "ofertas". Valida rango de fechas si está definido.
  */
-export function hasActiveFixedDiscount(product: Product): boolean {
+export function hasActiveFixedDiscount(product: Priceable): boolean {
   const fd = product.fixedDiscount;
   if (!fd?.enabled) return false;
   const now = Date.now();
@@ -188,4 +199,30 @@ export function presentationPriceSuffix(product: Product): string {
   if (t === 'display') return `display ${qty} u.`;
   if (t === 'embalaje') return `embalaje ${qty} u.`;
   return 'por unidad';
+}
+
+// ============================ Multi-presentación ============================
+
+/** Presentación principal del producto (o la primera, o undefined). */
+export function getPrincipal(product: Product): Presentation | undefined {
+  const list = product.presentaciones ?? [];
+  return list.find((p) => p.principal) ?? list[0];
+}
+
+/**
+ * Resuelve la presentación a usar para precios: la de `presentationId`, o la
+ * principal, o —productos sin `presentaciones`— el propio producto, que es
+ * `Priceable` por sus campos legacy denormalizados.
+ */
+export function getPresentation(product: Product, presentationId?: string): Priceable {
+  const list = product.presentaciones ?? [];
+  const found = presentationId ? list.find((p) => p._id === presentationId) : undefined;
+  return found ?? getPrincipal(product) ?? product;
+}
+
+/** Precio "desde": el menor entre las presentaciones (para la card del catálogo). */
+export function priceFrom(product: Product): number {
+  const list = product.presentaciones ?? [];
+  if (list.length === 0) return product.unitPrice;
+  return Math.min(...list.map((p) => p.unitPrice));
 }

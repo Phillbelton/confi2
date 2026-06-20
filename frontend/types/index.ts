@@ -69,6 +69,20 @@ export interface ProductTier {
   label?: string;
 }
 
+/** Presentación de venta (unidad/display/caja). Cada una con su precio y tramos. */
+export interface Presentation {
+  _id: string;
+  type: SaleUnitType;
+  /** Factor: unidades base contenidas. */
+  quantity: number;
+  unitPrice: number;
+  tiers: ProductTier[];
+  fixedDiscount?: FixedDiscount;
+  label?: string;
+  barcode?: string;
+  principal: boolean;
+}
+
 export interface Format {
   _id: string;
   label: string;
@@ -109,6 +123,8 @@ export interface Product {
   saleUnit: SaleUnit;
   tiers: ProductTier[];
   fixedDiscount?: FixedDiscount;
+  /** Presentaciones de venta (1..N). La principal alimenta los campos de arriba. */
+  presentaciones?: Presentation[];
 
   images: string[];
   featured: boolean;

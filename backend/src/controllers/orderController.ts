@@ -9,6 +9,8 @@ import logger from '../config/logger';
 
 export interface CartItemInput {
   productId: string;
+  /** Presentación elegida (subdoc `_id`). Si falta, se usa la principal. */
+  presentationId?: string;
   quantity: number;
 }
 
@@ -107,6 +109,32 @@ export function effectiveUnitPrice(
   return base;
 }
 
+/**
+ * Resuelve la presentación efectiva de un producto para una línea de carrito:
+ * la elegida (por `_id`), o la principal, o —productos aún sin migrar— un
+ * fallback armado desde los campos legacy. El resultado siempre tiene
+ * `{ unitPrice, tiers, fixedDiscount }` (es un `PriceableProduct`) más
+ * `{ type, quantity }` para el snapshot.
+ */
+function resolvePresentation(
+  product: any,
+  presentationId?: string
+): PriceableProduct & { type?: string; quantity?: number } {
+  const list: any[] = Array.isArray(product.presentaciones) ? product.presentaciones : [];
+  const pres =
+    (presentationId && list.find((p) => p?._id?.toString() === presentationId)) ||
+    list.find((p) => p?.principal) ||
+    list[0];
+  if (pres) return pres;
+  return {
+    unitPrice: product.unitPrice,
+    tiers: product.tiers,
+    fixedDiscount: product.fixedDiscount,
+    type: product.saleUnit?.type,
+    quantity: product.saleUnit?.quantity,
+  };
+}
+
 export async function buildOrderItems(items: CartItemInput[]) {
   const orderItems: any[] = [];
   let subtotal = 0;
@@ -122,17 +150,18 @@ export async function buildOrderItems(items: CartItemInput[]) {
     if (!product || !product.active) {
       throw new AppError(404, `Producto ${it.productId} no disponible`);
     }
-    const ppu = effectiveUnitPrice(product, it.quantity, now);
+    const pres = resolvePresentation(product, it.presentationId);
+    const ppu = effectiveUnitPrice(pres, it.quantity, now);
     const lineSubtotal = ppu * it.quantity;
-    const discount = Math.max(0, (product.unitPrice - ppu) * it.quantity);
+    const discount = Math.max(0, (pres.unitPrice - ppu) * it.quantity);
     orderItems.push({
       product: product._id,
       productSnapshot: {
         name: product.name,
         slug: product.slug,
         barcode: product.barcode,
-        unitPrice: product.unitPrice,
-        saleUnit: product.saleUnit,
+        unitPrice: pres.unitPrice,
+        saleUnit: { type: pres.type, quantity: pres.quantity },
         image: product.images?.[0] || '',
       },
       quantity: it.quantity,
@@ -140,7 +169,7 @@ export async function buildOrderItems(items: CartItemInput[]) {
       discount,
       subtotal: lineSubtotal,
     });
-    subtotal += product.unitPrice * it.quantity;
+    subtotal += pres.unitPrice * it.quantity;
     totalDiscount += discount;
   }
   return { orderItems, subtotal, totalDiscount };

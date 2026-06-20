@@ -140,6 +140,7 @@ export default function CheckoutPage() {
       // Prepare items
       const orderItems = items.map((item) => ({
         productId: item.productId,
+        presentationId: item.presentationId,
         quantity: item.quantity,
       }));
 
