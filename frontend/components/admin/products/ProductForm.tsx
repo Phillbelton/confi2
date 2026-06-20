@@ -29,6 +29,7 @@ import { BrandSelector } from './BrandSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
 import { FormatPicker, FlavorPicker } from './QuickFormatFlavorPicker';
 import { ProductLivePreview } from './ProductLivePreview';
+import { ExtraPresentationsEditor, type ExtraPresentation } from './ExtraPresentationsEditor';
 import { usePublicFormats, usePublicFlavors } from '@/hooks/admin/useFormatsFlavors';
 import { categoryService } from '@/services/categories';
 import type { SaleUnitType, FacetableAttribute } from '@/types';
@@ -55,6 +56,20 @@ const productSchema = z.object({
     quantity: z.number().int().min(1),
   }),
   tiers: z.array(tierSchema).optional(),
+  // Presentaciones completas (se arman al guardar: principal + adicionales).
+  presentaciones: z
+    .array(
+      z.object({
+        _id: z.string().optional(),
+        type: z.enum(['unidad', 'cantidadMinima', 'display', 'embalaje']),
+        quantity: z.number().int().min(1),
+        unitPrice: z.number().min(0),
+        tiers: z.array(tierSchema).optional(),
+        label: z.string().max(40).optional(),
+        principal: z.boolean().optional(),
+      })
+    )
+    .optional(),
   featured: z.boolean().optional(),
   active: z.boolean().optional(),
   attributes: z.record(z.string(), z.array(z.string())).optional(),
@@ -105,6 +120,18 @@ export function ProductForm({
   // removerlas de la UI al borrarlas sin esperar un refetch completo.
   const [existingImages, setExistingImages] = useState<string[]>(defaultImages);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
+  // Presentaciones adicionales (la principal vive en el bloque "Venta y precios").
+  const [extraPres, setExtraPres] = useState<ExtraPresentation[]>(() =>
+    (defaultValues?.presentaciones ?? [])
+      .filter((p) => !p.principal)
+      .map((p) => ({
+        type: p.type,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        tiers: p.tiers ?? [],
+        label: p.label,
+      }))
+  );
 
   const handleDeleteExisting = async (url: string) => {
     if (!onDeleteImage) return;
@@ -207,7 +234,21 @@ export function ProductForm({
     watch.unitPrice > 0 ? Math.round((1 - ppu / watch.unitPrice) * 100) : 0;
 
   const handle = async (values: ProductFormValues) => {
-    await onSubmit(values, images.map((i) => i.file));
+    // Armamos presentaciones[]: la principal (bloque "Venta y precios") + las
+    // adicionales del repetidor. Se mandan junto a los campos legacy (que el
+    // backend sigue aceptando) y el modelo denormaliza desde la principal.
+    const principal = {
+      type: values.saleUnit.type,
+      quantity: values.saleUnit.quantity,
+      unitPrice: values.unitPrice,
+      tiers: values.tiers ?? [],
+      principal: true,
+    };
+    const extras = extraPres.map((e) => ({ ...e, principal: false }));
+    await onSubmit(
+      { ...values, presentaciones: [principal, ...extras] },
+      images.map((i) => i.file)
+    );
   };
 
   // Detect format from name (35g, 500ml)
@@ -418,7 +459,7 @@ export function ProductForm({
             {/* Venta */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">💰 Venta y precios</CardTitle>
+                <CardTitle className="text-base">💰 Venta y precios · presentación principal</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Precio + modo en grid */}
@@ -566,6 +607,20 @@ export function ProductForm({
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Otras presentaciones */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">📦 Otras presentaciones</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Si este producto también se vende por display, caja u otra forma, agregalas acá
+                  (cada una con su precio y tramos). El cliente las elige en la ficha.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ExtraPresentationsEditor value={extraPres} onChange={setExtraPres} />
               </CardContent>
             </Card>
 

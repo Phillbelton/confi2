@@ -15,6 +15,14 @@ export interface CreateProductInput {
   unitPrice: number;
   saleUnit: SaleUnit;
   tiers?: ProductTier[];
+  presentaciones?: Array<{
+    type: SaleUnit['type'];
+    quantity: number;
+    unitPrice: number;
+    tiers?: ProductTier[];
+    label?: string;
+    principal?: boolean;
+  }>;
   images?: string[];
   featured?: boolean;
   active?: boolean;

@@ -24,6 +24,7 @@ export default function NuevoProductoPage() {
       unitPrice: data.unitPrice,
       saleUnit: data.saleUnit,
       tiers: data.tiers,
+      presentaciones: data.presentaciones,
       featured: data.featured,
       active: data.active,
       attributes: data.attributes,

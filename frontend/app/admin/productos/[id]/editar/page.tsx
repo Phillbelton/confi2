@@ -54,6 +54,7 @@ export default function EditarProductoPage() {
     unitPrice: product.unitPrice,
     saleUnit: product.saleUnit,
     tiers: product.tiers || [],
+    presentaciones: product.presentaciones,
     featured: product.featured,
     active: product.active,
     // Sin esto el form arranca con attributes: {} y el submit los borra del producto.
