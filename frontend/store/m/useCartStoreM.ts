@@ -3,7 +3,13 @@ import { persist } from 'zustand/middleware';
 import type { Product } from '@/types';
 import { effectiveUnitPrice, getPresentation, getPrincipal } from '@/lib/discountCalculator';
 
+/** Identidad de una línea de carrito: producto + presentación elegida. */
+export const cartLineId = (productId: string, presentationId: string) =>
+  `${productId}__${presentationId}`;
+
 export interface CartItem {
+  /** `${productId}__${presentationId}` — clave única de la línea. */
+  lineId: string;
   productId: string;
   /** Presentación elegida (subdoc `_id`). Por defecto la principal. */
   presentationId: string;
@@ -25,10 +31,10 @@ interface CartState {
 
 interface CartStoreM extends CartState {
   addItem: (product: Product, quantity?: number, presentationId?: string) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (lineId: string) => void;
+  updateQuantity: (lineId: string, quantity: number) => void;
   clearCart: () => void;
-  getItem: (productId: string) => CartItem | undefined;
+  getItem: (lineId: string) => CartItem | undefined;
 }
 
 function recalcItems(items: CartItem[]): {
@@ -67,10 +73,9 @@ export const useCartStoreM = create<CartStoreM>()(
 
       addItem: (product, quantity = 1, presentationId) => {
         const presId = presentationId ?? getPrincipal(product)?._id ?? '';
+        const lineId = cartLineId(product._id, presId);
         const items = get().items;
-        const idx = items.findIndex(
-          (i) => i.productId === product._id && i.presentationId === presId
-        );
+        const idx = items.findIndex((i) => i.lineId === lineId);
         let next: CartItem[];
         if (idx >= 0) {
           next = items.map((i, n) => (n === idx ? { ...i, quantity: i.quantity + quantity } : i));
@@ -78,6 +83,7 @@ export const useCartStoreM = create<CartStoreM>()(
           next = [
             ...items,
             {
+              lineId,
               productId: product._id,
               presentationId: presId,
               product,
@@ -91,22 +97,22 @@ export const useCartStoreM = create<CartStoreM>()(
         set(recalcItems(next));
       },
 
-      removeItem: (productId) => {
-        const next = get().items.filter((i) => i.productId !== productId);
+      removeItem: (lineId) => {
+        const next = get().items.filter((i) => i.lineId !== lineId);
         set(next.length === 0
           ? { items: [], subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 }
           : recalcItems(next));
       },
 
-      updateQuantity: (productId, quantity) => {
-        if (quantity <= 0) return get().removeItem(productId);
-        const next = get().items.map((i) => (i.productId === productId ? { ...i, quantity } : i));
+      updateQuantity: (lineId, quantity) => {
+        if (quantity <= 0) return get().removeItem(lineId);
+        const next = get().items.map((i) => (i.lineId === lineId ? { ...i, quantity } : i));
         set(recalcItems(next));
       },
 
       clearCart: () => set({ items: [], subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 }),
 
-      getItem: (productId) => get().items.find((i) => i.productId === productId),
+      getItem: (lineId) => get().items.find((i) => i.lineId === lineId),
     }),
     {
       name: 'quelita-cart-m',
@@ -123,11 +129,11 @@ export const useCartStoreM = create<CartStoreM>()(
               !!it.product &&
               typeof it.product.unitPrice === 'number'
           )
-          // Carritos viejos pueden no traer presentationId → default a la principal.
-          .map((it) => ({
-            ...it,
-            presentationId: it.presentationId || getPrincipal(it.product)?._id || '',
-          }));
+          // Carritos viejos pueden no traer presentationId/lineId → derivarlos.
+          .map((it) => {
+            const presentationId = it.presentationId || getPrincipal(it.product)?._id || '';
+            return { ...it, presentationId, lineId: cartLineId(it.productId, presentationId) };
+          });
         if (state.items.length > 0) Object.assign(state, recalcItems(state.items));
         else Object.assign(state, { subtotal: 0, totalDiscount: 0, total: 0, itemCount: 0 });
       },

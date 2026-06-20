@@ -54,7 +54,7 @@ export default function MCartPage() {
         {/* Lista de items */}
         <div className="space-y-2 px-4 pt-2 lg:px-0 lg:pt-0">
           {items.map((item) => (
-            <CartItemM key={item.productId} item={item} />
+            <CartItemM key={item.lineId} item={item} />
           ))}
         </div>
 

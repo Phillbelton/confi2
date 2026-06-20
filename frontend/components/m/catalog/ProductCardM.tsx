@@ -4,15 +4,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Plus, Minus } from 'lucide-react';
-import { useCartStoreM } from '@/store/m/useCartStoreM';
+import { useCartStoreM, cartLineId } from '@/store/m/useCartStoreM';
 import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import {
   effectiveUnitPrice,
   getDisplayTiers,
   getFixedDiscountBadge,
+  getPrincipal,
   hasActiveFixedDiscount,
   isPackagedSale,
   minQuantity,
+  priceFrom,
   pricePerAtomicUnit,
   presentationPriceSuffix,
   quantityStep,
@@ -34,7 +36,9 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const updateQuantity = useCartStoreM((s) => s.updateQuantity);
   const items = useCartStoreM((s) => s.items);
 
-  const inCart = items.find((i) => i.productId === product._id)?.quantity || 0;
+  const principalId = getPrincipal(product)?._id ?? '';
+  const cardLineId = cartLineId(product._id, principalId);
+  const inCart = items.find((i) => i.lineId === cardLineId)?.quantity || 0;
   const imgAttrs = buildSrcSet(product.images?.[0], SIZESET.card);
   const minQ = minQuantity(product);
   const step = quantityStep(product);
@@ -42,10 +46,12 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   // Precio mostrado: a la cantidad mínima del producto.
   // ppu = precio efectivo por PRESENTACIÓN (ya no por unidad atómica).
   const ppu = effectiveUnitPrice(product, Math.max(minQ, 1));
-  const shownPrice = ppu;
+  // Con varias presentaciones, el "desde" es el menor precio entre ellas.
+  const multiPres = (product.presentaciones?.length ?? 0) > 1;
+  const shownPrice = multiPres ? priceFrom(product) : ppu;
   const compareAtPrice = product.unitPrice;
   const isPackaged = isPackagedSale(product);
-  const showFromHint = (product.tiers?.length || 0) > 0;
+  const showFromHint = multiPres || (product.tiers?.length || 0) > 0;
   const showFixedBadge = hasActiveFixedDiscount(product);
   const fixedBadgeText = showFixedBadge ? getFixedDiscountBadge(product) : '';
 
@@ -141,7 +147,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
             <span className="text-[15px] font-bold tabular-nums text-foreground">
               ${Math.round(shownPrice).toLocaleString('es-CL')}
             </span>
-            {shownPrice < compareAtPrice && (
+            {!multiPres && shownPrice < compareAtPrice && (
               <span className="text-[11px] text-muted-foreground line-through tabular-nums">
                 ${Math.round(compareAtPrice).toLocaleString('es-CL')}
               </span>
@@ -183,7 +189,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
             <div className="mt-1.5 flex items-center justify-between rounded-full bg-primary/10 p-1">
               <button
                 type="button"
-                onClick={() => updateQuantity(product._id, Math.max(minQ - step, inCart - step) === 0 ? 0 : inCart - step)}
+                onClick={() => updateQuantity(cardLineId, Math.max(minQ - step, inCart - step) === 0 ? 0 : inCart - step)}
                 aria-label="Quitar"
                 className="tappable grid h-8 w-8 place-items-center rounded-full bg-background text-primary shadow-sm hover:bg-muted"
               >
@@ -192,7 +198,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
               <span className="text-sm font-bold tabular-nums text-primary">{inCart}</span>
               <button
                 type="button"
-                onClick={() => updateQuantity(product._id, inCart + step)}
+                onClick={() => updateQuantity(cardLineId, inCart + step)}
                 aria-label="Agregar"
                 className="tappable grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
               >
