@@ -27,11 +27,13 @@ export function ProductLivePreview({
     ? Math.round((1 - cheapest / unitPrice) * 100)
     : 0;
 
-  // Si la presentación es display/embalaje el precio mostrado en card es del paquete completo.
   const isPackaged = saleUnit?.type === 'display' || saleUnit?.type === 'embalaje';
   const pkgQty = isPackaged ? saleUnit.quantity || 1 : 1;
-  const cheapestShown = cheapest * pkgQty;
-  const unitPriceShown = unitPrice * pkgQty;
+  // Post-refactor 2026-05-14: `unitPrice` YA es el precio de la presentación
+  // (la caja entera), no el de la unidad atómica. La card muestra ese precio
+  // sin multiplicar por el factor; el "$/u" se deriva dividiendo.
+  const headlinePrice = unitPrice;
+  const atomicPrice = isPackaged && pkgQty > 0 ? unitPrice / pkgQty : unitPrice;
 
   return (
     <Card className="lg:sticky lg:top-4">
@@ -81,18 +83,13 @@ export function ProductLivePreview({
                     </span>
                   )}
                   <span className="text-base font-bold tabular-nums">
-                    ${Math.round(cheapestShown).toLocaleString('es-CL')}
+                    ${Math.round(headlinePrice).toLocaleString('es-CL')}
                   </span>
-                  {cheapestShown < unitPriceShown && (
-                    <span className="text-[11px] text-muted-foreground line-through tabular-nums">
-                      ${Math.round(unitPriceShown).toLocaleString('es-CL')}
-                    </span>
-                  )}
                 </div>
                 {isPackaged && (
                   <p className="mt-0.5 text-[10px] text-muted-foreground">
                     {saleUnit.type === 'display' ? `display ${pkgQty} u.` : `embalaje ${pkgQty} u.`}
-                    {' · '}${Math.round(cheapest).toLocaleString('es-CL')}/u
+                    {' · '}${Math.round(atomicPrice).toLocaleString('es-CL')}/u
                   </p>
                 )}
               </div>
