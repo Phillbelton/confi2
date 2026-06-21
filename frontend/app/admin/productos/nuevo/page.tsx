@@ -19,7 +19,7 @@ export default function NuevoProductoPage() {
       categories: data.categories,
       brand: data.brand,
       format: data.format,
-      flavor: data.flavor,
+      flavors: data.flavors,
       barcode: data.barcode,
       unitPrice: data.unitPrice,
       saleUnit: data.saleUnit,

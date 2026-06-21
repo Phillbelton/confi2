@@ -122,7 +122,13 @@ export default function ProductDetailPage() {
 
   const brandName = typeof product.brand === 'object' ? (product.brand as Brand)?.name : '';
   const formatLabel = typeof product.format === 'object' ? (product.format as Format)?.label : '';
-  const flavorName = typeof product.flavor === 'object' ? (product.flavor as Flavor)?.name : '';
+  const flavorName = (() => {
+    const list = (product.flavors ?? [])
+      .map((f) => (typeof f === 'object' ? (f as Flavor)?.name : ''))
+      .filter(Boolean);
+    if (list.length > 0) return list.join(', ');
+    return typeof product.flavor === 'object' ? (product.flavor as Flavor)?.name ?? '' : '';
+  })();
   const primaryCat = (product.categories as Category[] | undefined)?.[0];
 
   return (

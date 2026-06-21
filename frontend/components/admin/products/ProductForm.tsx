@@ -27,7 +27,7 @@ import {
 import { CategoryWithSubcategorySelector } from './CategoryWithSubcategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
-import { FormatPicker, FlavorPicker } from './QuickFormatFlavorPicker';
+import { FormatPicker, FlavorMultiPicker } from './QuickFormatFlavorPicker';
 import { ProductLivePreview } from './ProductLivePreview';
 import { ExtraPresentationsEditor, type ExtraPresentation } from './ExtraPresentationsEditor';
 import { usePublicFormats, usePublicFlavors } from '@/hooks/admin/useFormatsFlavors';
@@ -47,7 +47,7 @@ const productSchema = z.object({
   categories: z.array(z.string()).min(1, 'Al menos una categoría'),
   brand: z.string().optional(),
   format: z.string().optional(),
-  flavor: z.string().optional(),
+  flavors: z.array(z.string()).optional(),
   sku: z.string().trim().max(40).optional(),
   barcode: z.string().max(32).optional(),
   unitPrice: z.number().min(0),
@@ -160,6 +160,7 @@ export function ProductForm({
       unitPrice: 0,
       saleUnit: { type: 'unidad', quantity: 1 },
       tiers: [],
+      flavors: [],
       active: true,
       featured: false,
       attributes: {},
@@ -208,9 +209,13 @@ export function ProductForm({
     () => formats?.find((f) => f._id === watch.format)?.label,
     [formats, watch.format]
   );
-  const flavorObj = useMemo(
-    () => flavors?.find((f) => f._id === watch.flavor),
-    [flavors, watch.flavor]
+  const flavorNames = useMemo(
+    () =>
+      (watch.flavors || [])
+        .map((id) => flavors?.find((f) => f._id === id)?.name)
+        .filter(Boolean)
+        .join(', '),
+    [flavors, watch.flavors]
   );
   const previewImage = images[0]?.preview || existingImages[0];
 
@@ -377,9 +382,9 @@ export function ProductForm({
                     onChange={(id) => form.setValue('format', id)}
                     disabled={isSubmitting}
                   />
-                  <FlavorPicker
-                    value={watch.flavor}
-                    onChange={(id) => form.setValue('flavor', id)}
+                  <FlavorMultiPicker
+                    values={watch.flavors || []}
+                    onChange={(ids) => form.setValue('flavors', ids)}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -722,7 +727,7 @@ export function ProductForm({
               tiers={tiers}
               imagePreview={previewImage}
               formatLabel={formatLabel}
-              flavorName={flavorObj?.name}
+              flavorName={flavorNames}
             />
           </div>
         </div>
@@ -752,7 +757,7 @@ export function ProductForm({
                 tiers={tiers}
                 imagePreview={previewImage}
                 formatLabel={formatLabel}
-                flavorName={flavorObj?.name}
+                flavorName={flavorNames}
               />
             </SheetContent>
           </Sheet>

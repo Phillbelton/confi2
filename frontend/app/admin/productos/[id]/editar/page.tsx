@@ -49,7 +49,9 @@ export default function EditarProductoPage() {
     categories: categoryIds,
     brand: idOf(product.brand as RefOrPopulated | Brand),
     format: idOf(product.format as RefOrPopulated | Format),
-    flavor: idOf(product.flavor as RefOrPopulated | Flavor),
+    flavors: (product.flavors || [])
+      .map((f) => idOf(f as RefOrPopulated | Flavor))
+      .filter((x): x is string => Boolean(x)),
     barcode: product.barcode,
     unitPrice: product.unitPrice,
     saleUnit: product.saleUnit,

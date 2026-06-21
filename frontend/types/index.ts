@@ -117,6 +117,7 @@ export interface Product {
   categories: string[] | Category[];
   format?: string | Format;
   flavor?: string | Flavor;
+  flavors?: (string | Flavor)[];
   barcode?: string;
 
   unitPrice: number;

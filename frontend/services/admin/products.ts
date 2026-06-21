@@ -10,7 +10,7 @@ export interface CreateProductInput {
   categories: string[];
   brand?: string;
   format?: string;
-  flavor?: string;
+  flavors?: string[];
   barcode?: string;
   unitPrice: number;
   saleUnit: SaleUnit;
