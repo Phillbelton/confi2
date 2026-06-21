@@ -283,22 +283,11 @@ export async function runQuelitaProductImport(
     durationMs: 0,
   };
 
-  // 1) Wipe opcional
-  if (wipeTaxonomy) {
-    logger.info('[import-quelita] Wipe: Product, Brand, Category, Format, Flavor, Collection');
-    await Product.deleteMany({});
-    await Promise.all([
-      Brand.deleteMany({}),
-      Category.deleteMany({}),
-      Format.deleteMany({}),
-      Flavor.deleteMany({}),
-      Collection.deleteMany({}),
-    ]);
-  }
-
-  // 2) Parsear Excel con headers como objetos
+  // 1) Parsear Excel. Tomamos la hoja "Productos" del template (4 hojas:
+  //    Instrucciones/Productos/Listas/Ejemplos); fallback a la 1ª hoja para
+  //    archivos viejos de una sola hoja.
   const wb = XLSX.read(buffer, { type: 'buffer' });
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  const ws = wb.Sheets['Productos'] || wb.Sheets[wb.SheetNames[0]];
   if (!ws) throw new Error('El Excel no tiene hojas');
   const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: '' });
 
@@ -316,6 +305,20 @@ export async function runQuelitaProductImport(
   if (!hasAny('precio', 'presentacion_precio', 'unitPrice')) missing.push('precio');
   if (missing.length > 0) {
     throw new Error(`Columnas faltantes en el header: ${missing.join(', ')}`);
+  }
+
+  // 2) Wipe opcional — recién DESPUÉS de validar el archivo, para que un Excel
+  //    inválido (hoja equivocada, columnas faltantes) NUNCA borre el catálogo.
+  if (wipeTaxonomy) {
+    logger.info('[import-quelita] Wipe: Product, Brand, Category, Format, Flavor, Collection');
+    await Product.deleteMany({});
+    await Promise.all([
+      Brand.deleteMany({}),
+      Category.deleteMany({}),
+      Format.deleteMany({}),
+      Flavor.deleteMany({}),
+      Collection.deleteMany({}),
+    ]);
   }
 
   // 3) Agrupar filas por sku → un producto con N presentaciones. Los datos de

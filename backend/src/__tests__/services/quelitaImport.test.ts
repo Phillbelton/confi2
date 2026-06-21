@@ -12,9 +12,11 @@ import { Flavor } from '../../models/Flavor';
  */
 
 function buildXlsx(rows: Record<string, unknown>[]): Buffer {
-  const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+  // Hoja extra ANTES de "Productos" (como el template real de 4 hojas): el
+  // importer debe tomar específicamente la hoja "Productos", no la primera.
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Instrucciones']]), 'Instrucciones');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Productos');
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
 }
 
