@@ -17,30 +17,23 @@ import logger from '../config/logger';
  * Lee por NOMBRE de columna (no por índice fijo), permitiendo reordenar o
  * agregar campos sin romper el parser.
  *
- * Columnas reconocidas (TODAS en español):
- *   sku                      (identidad primaria QU-XXXXXX, auto-gen si falta)
- *   codigo_barras            (informativo, puede duplicarse)
- *   nombre                   (obligatorio)
- *   marca                    (obligatorio, auto-crea Brand)
- *   categoria                (path con '>', ej. "Galletas > Dulces > Con relleno")
- *   tamaño                   (peso/volumen de UNA unidad física)
- *   medida                   (g / kg / ml / l / cc / oz, auto-crea Format)
- *   sabor                    (opcional, auto-crea Flavor)
- *   modo_venta               (unidad | cantidad_minima | display | embalaje)
- *   unidades_por_paquete     (1 si unidad, N si display, etc.)
- *   precio                   (CLP, precio de UNA presentación de venta)
- *   mayorista_min            (cantidad mínima para precio mayorista)
- *   mayorista_precio         (CLP por presentación)
- *   caja_min                 (cantidad mínima para precio caja)
- *   caja_precio              (CLP por presentación)
- *   descripcion              (texto comercial)
- *   imagen_url               (1 URL Cloudinary)
- *   etiquetas                (comma-separated, ej. "promo,verano")
- *   colecciones              (comma-separated, auto-crea Collections y asigna)
- *   destacado                (TRUE/FALSE)
- *   activo                   (TRUE/FALSE, default TRUE)
+ * Esquema multi-presentación: UNA FILA POR PRESENTACIÓN, agrupadas por `sku`.
+ * Los datos de producto van en la 1ª fila del grupo; cada fila aporta una
+ * presentación + sus tramos.
  *
- * Backward-compat: si vienen columnas en inglés (legacy), también las acepta.
+ * Columnas (es-CL):
+ *   Producto (1ª fila del sku): sku, nombre, marca, categoria (path con '>'),
+ *     gramaje, medida, sabor (coma-separado → varios sabores), descripcion,
+ *     imagen_url, etiquetas, colecciones, destacado, activo.
+ *   Presentación (cada fila): presentacion_tipo (unidad|display|embalaje|
+ *     cantidad_minima), presentacion_factor, presentacion_precio,
+ *     presentacion_principal, presentacion_barcode, presentacion_etiqueta,
+ *     tramo1_desde/tramo1_precio, tramo2_desde/tramo2_precio.
+ *
+ * Auto-crea Category (3 niveles), Brand, Flavor (1..N) y Format.
+ * Backward-compat: acepta el formato viejo (1 fila/producto: precio,
+ * mayorista y caja como tramos, modo_venta/unidades_por_paquete, tamaño) y
+ * alias en inglés vía los fallbacks de readCol.
  */
 
 export interface QuelitaImportOptions {
@@ -92,10 +85,6 @@ function num(v: unknown): number {
 function boolFlag(v: unknown): boolean {
   const s = String(v ?? '').toLowerCase().trim();
   return s === 'true' || s === '1' || s === 'sí' || s === 'si' || s === 'yes';
-}
-
-function slugifyName(s: string) {
-  return slugify(s, { lower: true, strict: true, locale: 'es' });
 }
 
 async function getOrCreateCategory(
@@ -324,99 +313,130 @@ export async function runQuelitaProductImport(
   if (!hasAny('nombre', 'name')) missing.push('nombre');
   if (!hasAny('categoria', 'category')) missing.push('categoria');
   if (!hasAny('marca', 'brand')) missing.push('marca');
-  if (!hasAny('precio', 'unitPrice')) missing.push('precio');
+  if (!hasAny('precio', 'presentacion_precio', 'unitPrice')) missing.push('precio');
   if (missing.length > 0) {
     throw new Error(`Columnas faltantes en el header: ${missing.join(', ')}`);
   }
 
-  // 3) Importar filas
+  // 3) Agrupar filas por sku → un producto con N presentaciones. Los datos de
+  //    producto se toman de la 1ª fila del grupo; cada fila aporta una
+  //    presentación. Filas sin sku = producto suelto (grupo de 1).
   const toImport = limit > 0 ? rows.slice(0, limit) : rows;
 
-  for (let i = 0; i < toImport.length; i++) {
-    const r = toImport[i];
+  type RowRef = { r: Record<string, any>; rowNumber: number };
+  const groups = new Map<string, RowRef[]>();
+  const order: string[] = [];
+  toImport.forEach((r, i) => {
     const rowNumber = i + 2; // header es fila 1
-    const barcode = norm(readCol(r, 'codigo_barras', 'barcode'));
+    const skuKey = norm(readCol(r, 'sku')).toUpperCase() || `__row_${rowNumber}`;
+    if (!groups.has(skuKey)) {
+      groups.set(skuKey, []);
+      order.push(skuKey);
+    }
+    groups.get(skuKey)!.push({ r, rowNumber });
+  });
+
+  // Construye UNA presentación desde una fila (acepta columnas nuevas y legacy).
+  const buildPresentation = (r: Record<string, any>) => {
+    const typeRaw = norm(readCol(r, 'presentacion_tipo', 'modo_venta', 'saleUnit_type')).toLowerCase();
+    const typeNorm = (typeRaw === 'cantidad_minima' ? 'cantidadMinima' : typeRaw) as SaleUnitType;
+    const type: SaleUnitType = VALID_SALE_UNITS.includes(typeNorm) ? typeNorm : 'unidad';
+    const quantity =
+      type === 'unidad'
+        ? 1
+        : Math.max(1, Math.round(num(readCol(r, 'presentacion_factor', 'unidades_por_paquete', 'saleUnit_quantity')) || 1));
+    const unitPrice = Math.round(num(readCol(r, 'presentacion_precio', 'precio', 'unitPrice')));
+    const tiers: Array<{ minQuantity: number; pricePerUnit: number; label?: string }> = [];
+    const t1Min = Math.round(num(readCol(r, 'tramo1_desde', 'mayorista_min', 'tier1_minQty')));
+    const t1Pre = Math.round(num(readCol(r, 'tramo1_precio', 'mayorista_precio', 'tier1_price')));
+    if (t1Min >= 1 && t1Pre > 0 && t1Pre < unitPrice) {
+      tiers.push({ minQuantity: t1Min, pricePerUnit: t1Pre, label: 'Mayorista' });
+    }
+    const t2Min = Math.round(num(readCol(r, 'tramo2_desde', 'caja_min', 'tier2_minQty')));
+    const t2Pre = Math.round(num(readCol(r, 'tramo2_precio', 'caja_precio', 'tier2_price')));
+    if (t2Min >= 1 && t2Pre > 0 && t2Pre < unitPrice) {
+      tiers.push({ minQuantity: t2Min, pricePerUnit: t2Pre, label: 'Caja' });
+    }
+    return {
+      type,
+      quantity,
+      unitPrice,
+      tiers,
+      label: norm(readCol(r, 'presentacion_etiqueta')) || undefined,
+      barcode: norm(readCol(r, 'presentacion_barcode')) || undefined,
+      principal: boolFlag(readCol(r, 'presentacion_principal')),
+    };
+  };
+
+  for (const key of order) {
+    const groupRows = groups.get(key)!;
+    const first = groupRows[0].r;
+    const rowNumber = groupRows[0].rowNumber;
+    const barcode = norm(readCol(first, 'codigo_barras', 'barcode'));
 
     try {
-      const name = norm(readCol(r, 'nombre', 'name'));
+      const name = norm(readCol(first, 'nombre', 'name'));
       if (!name || name.length < 3) {
         report.errors.push({ row: rowNumber, barcode, message: 'nombre faltante o muy corto' });
         continue;
       }
 
-      const description = norm(readCol(r, 'descripcion', 'description')) || `${name}.`;
+      const description = norm(readCol(first, 'descripcion', 'description')) || `${name}.`;
 
       // Categoría: path con '>' (formato A) o columnas separadas (legacy)
-      const cat = norm(readCol(r, 'categoria', 'category'));
-      const sub = norm(readCol(r, 'subcategory'));
-      const subsub = norm(readCol(r, 'subsubcategory'));
+      const cat = norm(readCol(first, 'categoria', 'category'));
+      const sub = norm(readCol(first, 'subcategory'));
+      const subsub = norm(readCol(first, 'subsubcategory'));
       if (!cat) {
         report.errors.push({ row: rowNumber, barcode, message: 'categoria vacía' });
         continue;
       }
       const categoryId = await resolveCategoryChain(cat, sub, subsub, report);
 
-      const brandId = await getOrCreateBrand(norm(readCol(r, 'marca', 'brand')), report);
-      const flavorId = await getOrCreateFlavor(norm(readCol(r, 'sabor', 'flavor')), report);
+      const brandId = await getOrCreateBrand(norm(readCol(first, 'marca', 'brand')), report);
 
-      const formatValue = num(readCol(r, 'tamaño', 'tamano', 'format_value'));
-      const formatUnit = norm(readCol(r, 'medida', 'format_unit'));
+      // Sabores: coma-separados → flavors[] (multi). El modelo denormaliza flavor=flavors[0].
+      const flavorIds: mongoose.Types.ObjectId[] = [];
+      const seenFlavor = new Set<string>();
+      for (const tok of norm(readCol(first, 'sabor', 'flavor')).split(',').map((s) => s.trim()).filter(Boolean)) {
+        const id = await getOrCreateFlavor(tok, report);
+        if (id && !seenFlavor.has(id.toString())) {
+          seenFlavor.add(id.toString());
+          flavorIds.push(id);
+        }
+      }
+
+      const formatValue = num(readCol(first, 'gramaje', 'tamaño', 'tamano', 'format_value'));
+      const formatUnit = norm(readCol(first, 'medida', 'format_unit'));
       const formatId =
         formatValue > 0 && formatUnit
           ? await getOrCreateFormat(formatValue, formatUnit, report)
           : undefined;
 
-      // Semántica de precios (post-refactor 2026-05-14):
-      // El admin escribe el precio de UNA presentación de venta:
-      //   - modo_venta=unidad: precio de una unidad atómica
-      //   - modo_venta=display: precio del display completo
-      //   - modo_venta=embalaje: precio de la caja completa
-      //   - modo_venta=cantidad_minima: precio de una unidad individual
-      // El backend almacena tal cual (no convierte), el frontend muestra directo.
-      const unitPrice = Math.round(num(readCol(r, 'precio', 'unitPrice')));
-      if (unitPrice <= 0) {
-        report.errors.push({ row: rowNumber, barcode, message: 'precio debe ser > 0' });
+      // Presentaciones: una por fila del grupo (precio per-presentación; post-refactor
+      // 2026-05-14 se guarda tal cual). Se descartan las de precio <= 0.
+      const presentaciones = groupRows.map((gr) => buildPresentation(gr.r)).filter((p) => p.unitPrice > 0);
+      if (presentaciones.length === 0) {
+        report.errors.push({ row: rowNumber, barcode, message: 'sin presentación válida (precio > 0)' });
         continue;
       }
+      // Principal: la marcada en el Excel, o la primera.
+      let principalIdx = presentaciones.findIndex((p) => p.principal);
+      if (principalIdx < 0) principalIdx = 0;
+      presentaciones.forEach((p, i) => {
+        p.principal = i === principalIdx;
+      });
 
-      // Modo de venta: aceptar tanto 'cantidad_minima' (Excel-friendly) como
-      // 'cantidadMinima' (modelo). Normalizar al valor del modelo.
-      const saleUnitTypeRaw = norm(readCol(r, 'modo_venta', 'saleUnit_type')).toLowerCase();
-      const saleUnitTypeNormalized = saleUnitTypeRaw === 'cantidad_minima'
-        ? 'cantidadMinima'
-        : (saleUnitTypeRaw as SaleUnitType);
-      const saleUnitType: SaleUnitType = VALID_SALE_UNITS.includes(saleUnitTypeNormalized as SaleUnitType)
-        ? (saleUnitTypeNormalized as SaleUnitType)
-        : 'unidad';
-      const saleUnitQuantity = Math.max(
-        1,
-        Math.round(num(readCol(r, 'unidades_por_paquete', 'saleUnit_quantity')) || 1)
-      );
-
-      // Tiers: minQuantity en PRESENTACIONES, pricePerUnit por PRESENTACIÓN.
-      // (Ej. para un display: minQuantity=2 significa "2+ displays".)
-      const tiers: Array<{ minQuantity: number; pricePerUnit: number; label?: string }> = [];
-      const mayMin = Math.round(num(readCol(r, 'mayorista_min', 'tier1_minQty')));
-      const mayPrecio = Math.round(num(readCol(r, 'mayorista_precio', 'tier1_price')));
-      if (mayMin >= 1 && mayPrecio > 0 && mayPrecio < unitPrice) {
-        tiers.push({ minQuantity: mayMin, pricePerUnit: mayPrecio, label: 'Mayorista' });
-      }
-      const cajaMin = Math.round(num(readCol(r, 'caja_min', 'tier2_minQty')));
-      const cajaPrecio = Math.round(num(readCol(r, 'caja_precio', 'tier2_price')));
-      if (cajaMin >= 1 && cajaPrecio > 0 && cajaPrecio < unitPrice) {
-        tiers.push({ minQuantity: cajaMin, pricePerUnit: cajaPrecio, label: 'Caja completa' });
-      }
-
-      const featured = boolFlag(readCol(r, 'destacado', 'featured'));
-      const activeRaw = readCol(r, 'activo', 'active');
+      const featured = boolFlag(readCol(first, 'destacado', 'featured'));
+      const activeRaw = readCol(first, 'activo', 'active');
       const active = activeRaw === '' ? true : boolFlag(activeRaw);
-      const imageUrl = norm(readCol(r, 'imagen_url', 'image_url'));
+      const imageUrl = norm(readCol(first, 'imagen_url', 'image_url'));
       // images se hidrata desde ProductImage por SKU más abajo (persistencia ante wipes).
       // Si el Excel trae imagen_url explícita, se usa como adicional.
       const excelImages = imageUrl ? [imageUrl] : [];
 
       // Colecciones (comma-separated, auto-crea por nombre)
-      const collectionNames = norm(readCol(r, 'colecciones'))
+      const collectionNames = norm(readCol(first, 'colecciones'))
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
@@ -426,7 +446,7 @@ export async function runQuelitaProductImport(
         description.length >= 10 ? description : `${name}. ${cat}.`.padEnd(10, ' ');
 
       // Upsert por sku (identidad primaria). Si no viene sku, fallback a name+brand.
-      const sku = norm(readCol(r, 'sku')).toUpperCase();
+      const sku = norm(readCol(first, 'sku')).toUpperCase();
       let product;
       if (sku) {
         product = await Product.findOne({ sku });
@@ -460,12 +480,10 @@ export async function runQuelitaProductImport(
         description: finalDescription,
         categories: [categoryId],
         brand: brandId,
-        flavor: flavorId,
+        flavors: flavorIds,
         format: formatId,
         barcode: barcode || undefined,
-        unitPrice,
-        saleUnit: { type: saleUnitType, quantity: saleUnitQuantity },
-        tiers,
+        presentaciones,
         images: finalImages,
         featured,
         active,
@@ -483,12 +501,12 @@ export async function runQuelitaProductImport(
         // de verdad — aplicar sin condiciones.
         // Featured: el Excel puede no traer la columna; solo updatear si el
         // admin explicitó en Excel "destacado=TRUE/FALSE"
-        if (readCol(r, 'destacado', 'featured') === '') {
+        if (readCol(first, 'destacado', 'featured') === '') {
           delete updateData.featured;
         }
         // Description: solo pisar si Excel trae descripción no auto-generada
         // (la auto-gen termina en ". categoría." — heurística simple)
-        const excelDescRaw = norm(readCol(r, 'descripcion', 'description'));
+        const excelDescRaw = norm(readCol(first, 'descripcion', 'description'));
         if (!excelDescRaw || excelDescRaw.length < 10) {
           delete updateData.description;
         }
