@@ -2,7 +2,6 @@ import { Response, RequestHandler } from 'express';
 import multer from 'multer';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { runProductImport, ImportReport } from '../services/productImportService';
 import {
   runQuelitaProductImport,
   QuelitaImportReport,
@@ -47,44 +46,6 @@ export const uploadExcelMiddleware: RequestHandler = (req, res, next) => {
     next();
   });
 };
-
-/**
- * POST /api/products/import-excel
- * Body multipart: { file: .xlsx, wipeTaxonomy?: 'true'|'false', limit?: '500' }
- * Solo admin.
- */
-export const importProductsFromExcel = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<ImportReport>>) => {
-    const file = req.file;
-    if (!file) {
-      throw new AppError(400, 'Archivo .xlsx requerido en el campo "file"');
-    }
-
-    const wipeTaxonomy = String(req.body.wipeTaxonomy) === 'true';
-    const limitRaw = req.body.limit ? parseInt(String(req.body.limit), 10) : 500;
-    const limit = Number.isFinite(limitRaw) && limitRaw >= 0 ? limitRaw : 500;
-
-    logger.info('[import] Procesando upload', {
-      file: file.originalname,
-      size: file.size,
-      wipeTaxonomy,
-      limit,
-      userId: req.user?.id,
-    });
-
-    const report = await runProductImport(file.buffer, {
-      wipeTaxonomy,
-      limit,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Importación completada',
-      data: report,
-    });
-  }
-);
 
 /**
  * POST /api/products/import-quelita-excel
