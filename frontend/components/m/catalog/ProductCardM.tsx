@@ -17,9 +17,12 @@ import {
   priceFrom,
   pricePerAtomicUnit,
   presentationPriceSuffix,
+  presTypeLabel,
   quantityStep,
 } from '@/lib/discountCalculator';
 import { SaleUnitBadge } from './SaleUnitBadge';
+import { PresentationQuickSheet } from './PresentationQuickSheet';
+import { PresentationInline } from './PresentationInline';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -31,6 +34,11 @@ interface ProductCardMProps {
 
 export function ProductCardM({ product, className, horizontal }: ProductCardMProps) {
   const sp = useSearchParams();
+  // Variante de la card multi-presentación, conmutable por URL (?presvar=B|C|D)
+  // para comparar enfoques en vivo. Default D (vista rápida).
+  const presVarRaw = (sp?.get('presvar') || '').toUpperCase();
+  const presVariant: 'B' | 'C' | 'D' =
+    presVarRaw === 'B' || presVarRaw === 'C' ? presVarRaw : 'D';
   const [isAdding, setIsAdding] = useState(false);
   const addItem = useCartStoreM((s) => s.addItem);
   const updateQuantity = useCartStoreM((s) => s.updateQuantity);
@@ -48,6 +56,12 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const ppu = effectiveUnitPrice(product, Math.max(minQ, 1));
   // Con varias presentaciones, el "desde" es el menor precio entre ellas.
   const multiPres = (product.presentaciones?.length ?? 0) > 1;
+  // Señal de presentaciones disponibles (chips terse, sin factor ni precio).
+  const presSignal = multiPres
+    ? Array.from(
+        new Set((product.presentaciones ?? []).map((p) => presTypeLabel(p.type)))
+      ).join(' · ')
+    : '';
   const shownPrice = multiPres ? priceFrom(product) : ppu;
   const compareAtPrice = product.unitPrice;
   const isPackaged = isPackagedSale(product);
@@ -138,6 +152,10 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
         </Link>
 
         <div className="mt-auto pt-0.5">
+          {multiPres && (presVariant === 'B' || presVariant === 'C') ? (
+            <PresentationInline product={product} withLadder={presVariant === 'C'} />
+          ) : (
+            <>
           <div className="flex items-baseline gap-1.5">
             {showFromHint && (
               <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -154,24 +172,34 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
             )}
           </div>
 
-          {/* Detalle opcional (precio/u de paquete + tier mayorista). Altura
-              reservada fija (min-h) para que el precio y el botón "Agregar"
-              queden alineados en TODAS las cards, tengan 0, 1 o 2 de estas
-              líneas. Las líneas se anclan abajo (justify-end) para quedar
-              pegadas al botón. */}
-          <div className="mt-0.5 flex min-h-[1.85rem] flex-col justify-end gap-0.5">
-            {isPackaged && (
-              <p className="line-clamp-1 text-[10px] text-muted-foreground">
-                {presentationPriceSuffix(product)} · ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
-              </p>
-            )}
+          {/* Multi-presentación (opción D): chips-señal + "Ver presentaciones"
+              que abre el bottom-sheet. Mono-presentación: el detalle clásico
+              (precio/u de paquete + tier mayorista) con altura reservada fija
+              (min-h) para alinear precio y botón en TODAS las cards. */}
+          {multiPres ? (
+            <div className="mt-1 flex flex-col gap-1">
+              {presSignal && (
+                <p className="line-clamp-1 text-center text-[10px] text-muted-foreground">
+                  {presSignal}
+                </p>
+              )}
+              <PresentationQuickSheet product={product} />
+            </div>
+          ) : (
+            <div className="mt-0.5 flex min-h-[1.85rem] flex-col justify-end gap-0.5">
+              {isPackaged && (
+                <p className="line-clamp-1 text-[10px] text-muted-foreground">
+                  {presentationPriceSuffix(product)} · ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
+                </p>
+              )}
 
-            {showFromHint && firstTier && (
-              <p className="line-clamp-1 text-[10px] font-semibold text-primary">
-                🎉 {tierShownQty}+ {tierUnitLabel} a ${Math.round(tierShownPrice).toLocaleString('es-CL')} c/u
-              </p>
-            )}
-          </div>
+              {showFromHint && firstTier && (
+                <p className="line-clamp-1 text-[10px] font-semibold text-primary">
+                  🎉 {tierShownQty}+ {tierUnitLabel} a ${Math.round(tierShownPrice).toLocaleString('es-CL')} c/u
+                </p>
+              )}
+            </div>
+          )}
 
           {inCart === 0 ? (
             <button
@@ -205,6 +233,8 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
                 <Plus className="h-4 w-4" />
               </button>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

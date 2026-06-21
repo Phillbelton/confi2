@@ -18,21 +18,14 @@ import {
   getPrincipal,
   isPackagedSale,
   minQuantity,
+  presLabel,
   presentationPriceSuffix,
   quantityStep,
   getFixedDiscountBadge,
   hasActiveFixedDiscount,
 } from '@/lib/discountCalculator';
 import { cn } from '@/lib/utils';
-import type { Brand, Category, Format, Flavor, Presentation, Product } from '@/types';
-
-function presLabel(p: Presentation): string {
-  if (p.label) return p.label;
-  if (p.type === 'unidad') return 'Por unidad';
-  if (p.type === 'display') return `Caja × ${p.quantity}`;
-  if (p.type === 'embalaje') return `Caja master × ${p.quantity}`;
-  return `Mínimo ${p.quantity}`;
-}
+import type { Brand, Category, Format, Flavor, Product } from '@/types';
 
 export default function ProductDetailPage() {
   const params = useParams();

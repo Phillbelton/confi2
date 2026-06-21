@@ -226,3 +226,29 @@ export function priceFrom(product: Product): number {
   if (list.length === 0) return product.unitPrice;
   return Math.min(...list.map((p) => p.unitPrice));
 }
+
+/**
+ * Etiqueta de una presentación para el cliente (incluye el factor).
+ * Fuente única usada por la ficha, la card y la vista rápida.
+ */
+export function presLabel(p: Presentation): string {
+  if (p.label) return p.label;
+  if (p.type === 'unidad') return 'Por unidad';
+  if (p.type === 'display') return `Display × ${p.quantity}`;
+  if (p.type === 'embalaje') return `Embalaje × ${p.quantity}`;
+  return `Mínimo ${p.quantity}`;
+}
+
+/** Etiqueta corta por tipo (sin factor) — para los chips-señal de la card. */
+export function presTypeLabel(type: Presentation['type']): string {
+  switch (type) {
+    case 'unidad':
+      return 'Unidad';
+    case 'display':
+      return 'Display';
+    case 'embalaje':
+      return 'Embalaje';
+    default:
+      return 'Mínimo';
+  }
+}
