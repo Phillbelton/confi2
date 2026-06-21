@@ -96,8 +96,8 @@ export const getProductFacets = asyncHandler(
             { $sort: { count: -1 } },
           ],
           flavorsAgg: [
-            { $match: { flavor: { $exists: true, $ne: null } } },
-            { $group: { _id: '$flavor', count: { $sum: 1 } } },
+            { $unwind: '$flavors' },
+            { $group: { _id: '$flavors', count: { $sum: 1 } } },
             { $sort: { count: -1 } },
           ],
           presentacionesAgg: [

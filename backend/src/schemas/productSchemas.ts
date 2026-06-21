@@ -55,7 +55,8 @@ export const createProductSchema = z.object({
     categories: z.array(objectIdSchema).min(1, 'Debe seleccionar al menos una categoría'),
     brand: objectIdSchema.optional(),
     format: objectIdSchema.optional(),
-    flavor: objectIdSchema.optional(),
+    flavor: optionalObjectIdSchema,
+    flavors: z.array(objectIdSchema).optional(),
     barcode: z.string().trim().max(32).optional(),
 
     unitPrice: z.number().min(0),
@@ -80,6 +81,7 @@ export const updateProductSchema = z.object({
     brand: optionalObjectIdSchema,
     format: optionalObjectIdSchema,
     flavor: optionalObjectIdSchema,
+    flavors: z.array(objectIdSchema).optional(),
     barcode: z.string().trim().max(32).optional(),
 
     unitPrice: z.number().min(0).optional(),

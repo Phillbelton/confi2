@@ -68,6 +68,8 @@ export interface IProduct extends Document {
   categories: mongoose.Types.ObjectId[];
   format?: mongoose.Types.ObjectId;
   flavor?: mongoose.Types.ObjectId;
+  /** Sabores (1..N). `flavor` queda denormalizado = flavors[0] para índice/filtro/back-compat. */
+  flavors: mongoose.Types.ObjectId[];
   /** Código de barras del fabricante (EAN-13) o código POS. Puede repetirse,
    *  puede estar vacío. NO se usa como identidad primaria. */
   barcode?: string;
@@ -193,6 +195,7 @@ const productSchema = new Schema<IProduct>(
     },
     format: { type: Schema.Types.ObjectId, ref: 'Format' },
     flavor: { type: Schema.Types.ObjectId, ref: 'Flavor' },
+    flavors: { type: [Schema.Types.ObjectId], ref: 'Flavor', default: [] },
     barcode: { type: String, trim: true, maxlength: 32 },
 
     unitPrice: {
@@ -253,6 +256,7 @@ productSchema.index({ categories: 1, active: 1, createdAt: -1 });
 productSchema.index({ brand: 1, active: 1 });
 productSchema.index({ format: 1, active: 1 });
 productSchema.index({ flavor: 1, active: 1 });
+productSchema.index({ flavors: 1, active: 1 });
 productSchema.index({ featured: 1, active: 1 });
 productSchema.index({ unitPrice: 1, active: 1 });
 productSchema.index({ name: 'text', description: 'text' });
@@ -326,6 +330,26 @@ productSchema.pre('validate', function (next) {
       p.tiers.sort((a, b) => a.minQuantity - b.minQuantity);
     }
   }
+
+  // Sincronizar flavors[] ↔ flavor (primario denormalizado para índice/filtro).
+  const flavors = Array.isArray(doc.flavors) ? doc.flavors : [];
+  if (flavors.length > 0) {
+    const seen = new Set<string>();
+    doc.flavors = flavors.filter((f) => {
+      const k = String(f);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    doc.flavor = doc.flavors[0];
+  } else if (doc.isNew && doc.flavor) {
+    // Creación con solo `flavor` (seed/test legacy) → espejar a flavors.
+    doc.flavors = [doc.flavor];
+  } else {
+    // Sin sabores → sin sabor primario (permite limpiar en edición).
+    doc.flavor = undefined;
+  }
+
   next();
 });
 

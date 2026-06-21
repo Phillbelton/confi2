@@ -11,6 +11,7 @@
     "migrate:indexes": "ts-node -r tsconfig-paths/register src/scripts/migrateIndexes_2026_05.ts",
     "migrate:banner-rows": "ts-node -r tsconfig-paths/register src/scripts/migrateBannerRows.ts",
     "migrate:presentations": "ts-node -r tsconfig-paths/register src/scripts/migratePresentations.ts",
+    "migrate:flavors": "ts-node -r tsconfig-paths/register src/scripts/migrateFlavors.ts",
     "cleanup:provider": "ts-node -r tsconfig-paths/register src/scripts/cleanupProviderField.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seedAdmin.ts",
     "convert:bicom": "ts-node -r tsconfig-paths/register src/scripts/convertBicomToQuelita.ts",
