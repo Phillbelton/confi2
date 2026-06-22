@@ -78,7 +78,7 @@ export function CollectionsGrid({
       ) : variant === 'carousel' ? (
         <div
           className={cn(
-            'snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none',
+            'snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:flex-wrap lg:justify-center lg:gap-4 lg:overflow-visible lg:px-8',
             className
           )}
         >
@@ -86,7 +86,7 @@ export function CollectionsGrid({
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-[5/3] w-[18rem] shrink-0 animate-pulse rounded-2xl bg-muted"
+                  className="aspect-[5/3] w-[15rem] lg:w-[18rem] shrink-0 animate-pulse rounded-2xl bg-muted"
                 />
               ))
             : collections.map((c) => (
@@ -94,7 +94,7 @@ export function CollectionsGrid({
                   key={c._id}
                   collection={c}
                   variant="landscape"
-                  className="w-[18rem] shrink-0 snap-start"
+                  className="w-[15rem] lg:w-[18rem] shrink-0 snap-start"
                 />
               ))}
         </div>

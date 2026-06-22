@@ -16,7 +16,7 @@ export function ProductGridM({ products, isLoading, className }: ProductGridMPro
     return (
       <div
         className={cn(
-          'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 lg:px-8 xl:grid-cols-6',
+          'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 lg:px-8 xl:grid-cols-5',
           className
         )}
       >
@@ -41,7 +41,7 @@ export function ProductGridM({ products, isLoading, className }: ProductGridMPro
   return (
     <div
       className={cn(
-        'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 lg:px-8 xl:grid-cols-6',
+        'grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 lg:gap-4 lg:px-8 xl:grid-cols-5',
         className
       )}
     >

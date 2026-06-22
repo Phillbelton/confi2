@@ -7,9 +7,6 @@ import {
   X,
   ChevronRight,
   Package,
-  Tag,
-  Sparkles,
-  Clock,
 } from 'lucide-react';
 import {
   Sheet,
@@ -27,12 +24,6 @@ import type { Category } from '@/types';
 
 /** Limpia prefijos técnicos tipo "Categoria-3-" del nombre visible. */
 const cleanName = (name: string) => name.replace(/^Categoria-\d+-/, '');
-
-const QUICK_LINKS = [
-  { label: 'Ofertas', href: '/productos?onSale=true', icon: Tag },
-  { label: 'Destacados', href: '/productos?featured=true', icon: Sparkles },
-  { label: 'Novedades', href: '/productos?sort=newest', icon: Clock },
-];
 
 /**
  * Drawer del menú mobile — disparado por la hamburguesa del header.
@@ -78,31 +69,6 @@ export function MobileMenuDrawer() {
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain">
-          {/* Accesos rápidos */}
-          <nav className="p-2">
-            {QUICK_LINKS.map((link) => {
-              const Icon = link.icon;
-              return (
-                <SheetClose key={link.href} asChild>
-                  <Link
-                    href={link.href}
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-muted"
-                  >
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="text-sm font-semibold text-foreground">
-                      {link.label}
-                    </span>
-                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
-                  </Link>
-                </SheetClose>
-              );
-            })}
-          </nav>
-
-          <div className="mx-5 h-px bg-border" />
-
           {/* Categorías */}
           <p className="px-5 pb-1 pt-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Todas las categorías
