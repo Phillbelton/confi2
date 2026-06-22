@@ -7,6 +7,17 @@ const objectIdSchema = z
     message: 'ID inválido',
   });
 
+// Imagen: URL absoluta (Cloudinary), path relativo servido por el backend
+// (/uploads/...), o '' (sentinel para borrar). En dev el upload guarda paths
+// relativos, por eso no basta con z.string().url().
+const imageSchema = z
+  .union([
+    z.string().url('URL de imagen inválida').max(500),
+    z.string().startsWith('/', 'Ruta de imagen inválida').max(500),
+    z.literal(''),
+  ])
+  .optional();
+
 // Crear colección
 export const createCollectionSchema = z.object({
   body: z.object({
@@ -16,10 +27,7 @@ export const createCollectionSchema = z.object({
       .max(120, 'El nombre no puede exceder 120 caracteres')
       .trim(),
     description: z.string().max(500).trim().optional(),
-    // Acepta URL válida o string vacío (sentinel para borrar imagen)
-    image: z
-      .union([z.string().url('URL de imagen inválida').max(500), z.literal('')])
-      .optional(),
+    image: imageSchema,
     emoji: z.string().max(8).optional(),
     gradient: z.string().max(120).optional(),
     products: z.array(objectIdSchema).optional(),
@@ -42,10 +50,7 @@ export const updateCollectionSchema = z.object({
       .trim()
       .optional(),
     description: z.string().max(500).trim().optional(),
-    // Acepta URL válida o string vacío (sentinel para borrar imagen)
-    image: z
-      .union([z.string().url('URL de imagen inválida').max(500), z.literal('')])
-      .optional(),
+    image: imageSchema,
     emoji: z.string().max(8).optional(),
     gradient: z.string().max(120).optional(),
     products: z.array(objectIdSchema).optional(),
