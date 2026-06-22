@@ -13,7 +13,6 @@ import { adminApi } from '@/lib/adminApi';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
 /**
@@ -31,8 +30,10 @@ import { Label } from '@/components/ui/label';
  * Body multipart:
  *   - file: el .xlsx
  *   - limit: cantidad máxima de productos (0 = todos los del archivo)
- *   - wipeTaxonomy: si 'true' borra todo antes de importar. PELIGROSO.
+ *   - mode: 'insertNew' | 'upsert' | 'replace'
  */
+
+type ImportMode = 'insertNew' | 'upsert' | 'replace';
 
 interface ImportError {
   row: number;
@@ -47,16 +48,43 @@ interface ImportReport {
   formatsCreated: number;
   productsCreated: number;
   productsUpdated: number;
+  productsSkipped: number;
   errors: ImportError[];
   durationMs: number;
 }
 
 type Phase = 'idle' | 'uploading' | 'done' | 'error';
 
+const MODE_OPTIONS: Array<{
+  value: ImportMode;
+  label: string;
+  desc: string;
+  recommended?: boolean;
+  danger?: boolean;
+}> = [
+  {
+    value: 'insertNew',
+    label: 'Solo nuevos',
+    desc: 'Agrega únicamente los productos que aún no existen (por SKU). No toca los ya cargados.',
+    recommended: true,
+  },
+  {
+    value: 'upsert',
+    label: 'Actualizar y agregar',
+    desc: 'Actualiza los existentes (precios, presentaciones, sabores) y crea los nuevos. Preserva imágenes y descripciones que hayas editado a mano.',
+  },
+  {
+    value: 'replace',
+    label: 'Reemplazar todo',
+    desc: 'Borra TODO el catálogo (productos, categorías, marcas, formatos, sabores y colecciones) y lo recrea desde el Excel. Útil solo para la primera carga.',
+    danger: true,
+  },
+];
+
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [limit, setLimit] = useState<string>('100');
-  const [wipeTaxonomy, setWipeTaxonomy] = useState(false);
+  const [limit, setLimit] = useState<string>('0');
+  const [mode, setMode] = useState<ImportMode>('insertNew');
   const [phase, setPhase] = useState<Phase>('idle');
   const [report, setReport] = useState<ImportReport | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -80,10 +108,10 @@ export default function ImportPage() {
 
   const submit = async () => {
     if (!file) return;
-    if (wipeTaxonomy) {
+    if (mode === 'replace') {
       const ok = window.confirm(
-        '⚠️ MODO LIMPIO activado.\n\n' +
-          'Esto va a BORRAR todos los productos, categorías, marcas, formatos, sabores, tags y colecciones existentes ANTES de importar.\n\n' +
+        '⚠️ MODO REEMPLAZAR TODO activado.\n\n' +
+          'Esto va a BORRAR todos los productos, categorías, marcas, formatos, sabores y colecciones existentes ANTES de importar.\n\n' +
           '¿Estás seguro de continuar?'
       );
       if (!ok) return;
@@ -95,7 +123,7 @@ export default function ImportPage() {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('limit', limit || '0');
-    fd.append('wipeTaxonomy', wipeTaxonomy ? 'true' : 'false');
+    fd.append('mode', mode);
 
     try {
       const res = await adminApi.post<{ data: ImportReport }>(
@@ -103,7 +131,7 @@ export default function ImportPage() {
         fd,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
-          timeout: 600000, // 10 min — Atlas latency × N round-trips por producto
+          timeout: 600000, // 10 min de margen, aunque ahora corre en ~1-3 min
         }
       );
       setReport(res.data.data);
@@ -165,44 +193,48 @@ export default function ImportPage() {
           </div>
 
           {file && (
-            <div className="space-y-4 border rounded-lg p-4 bg-card">
+            <div className="space-y-5 border rounded-lg p-4 bg-card">
               <div className="space-y-2">
-                <Label htmlFor="limit">Límite de productos a importar</Label>
-                <Input
-                  id="limit"
-                  type="number"
-                  value={limit}
-                  onChange={(e) => setLimit(e.target.value)}
-                  placeholder="100"
-                  min="0"
-                  className="max-w-[200px]"
-                />
-                <p className="text-xs text-muted-foreground">
-                  El backend hace muestreo estratificado por grupo (variedad de
-                  categorías). Usá <code>0</code> para importar todos los productos
-                  válidos del Excel.
-                </p>
-              </div>
-
-              <div className="flex items-start justify-between gap-4 pt-2 border-t">
-                <div className="space-y-1">
-                  <Label htmlFor="wipe" className="text-red-600 dark:text-red-400">
-                    Modo limpio (peligroso)
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Borra TODOS los productos, categorías, marcas, formatos,
-                    sabores, tags y colecciones antes de importar. Útil solo
-                    para la primera carga.
-                  </p>
+                <Label>Modo de importación</Label>
+                <div className="grid gap-2">
+                  {MODE_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-start gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${
+                        mode === opt.value
+                          ? opt.danger
+                            ? 'border-red-400 ring-1 ring-red-400 bg-red-50/50 dark:bg-red-950/20'
+                            : 'border-primary ring-1 ring-primary'
+                          : 'hover:bg-muted/40'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="mode"
+                        value={opt.value}
+                        checked={mode === opt.value}
+                        onChange={() => setMode(opt.value)}
+                        className="mt-1 accent-primary"
+                      />
+                      <div className="space-y-0.5">
+                        <p className="font-medium text-sm flex items-center gap-2">
+                          <span className={opt.danger ? 'text-red-600 dark:text-red-400' : ''}>
+                            {opt.label}
+                          </span>
+                          {opt.recommended && (
+                            <span className="text-[10px] uppercase tracking-wide bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                              Recomendado
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                      </div>
+                    </label>
+                  ))}
                 </div>
-                <Switch
-                  id="wipe"
-                  checked={wipeTaxonomy}
-                  onCheckedChange={setWipeTaxonomy}
-                />
               </div>
 
-              {wipeTaxonomy && (
+              {mode === 'replace' && (
                 <div className="flex items-start gap-2 p-3 rounded bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-sm">
                   <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
                   <span className="text-red-900 dark:text-red-200">
@@ -211,12 +243,30 @@ export default function ImportPage() {
                 </div>
               )}
 
+              <div className="space-y-2 pt-2 border-t">
+                <Label htmlFor="limit">Límite de productos a importar</Label>
+                <Input
+                  id="limit"
+                  type="number"
+                  value={limit}
+                  onChange={(e) => setLimit(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  className="max-w-[200px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Usá <code>0</code> para importar todos los productos válidos del
+                  Excel. Un número &gt; 0 procesa solo las primeras N filas (útil
+                  para probar).
+                </p>
+              </div>
+
               <div className="flex gap-3 justify-end pt-2">
                 <Button variant="outline" onClick={reset}>
                   Cancelar
                 </Button>
-                <Button onClick={submit}>
-                  {wipeTaxonomy ? 'Borrar todo e importar' : 'Importar'}
+                <Button onClick={submit} variant={mode === 'replace' ? 'destructive' : 'default'}>
+                  {mode === 'replace' ? 'Borrar todo e importar' : 'Importar'}
                 </Button>
               </div>
             </div>
@@ -229,8 +279,8 @@ export default function ImportPage() {
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
           <p className="mt-3 text-sm">Importando…</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Esto puede tardar 5-10 minutos para Excel grandes (MongoDB Atlas
-            tiene latencia por cada producto). No cierres esta pestaña.
+            Para catálogos grandes puede tardar 1-3 minutos. No cierres esta
+            pestaña.
           </p>
         </div>
       )}
@@ -255,10 +305,11 @@ export default function ImportPage() {
             <h2 className="text-xl font-semibold">Importación completada</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             {[
               { label: 'Productos creados', value: report.productsCreated },
-              { label: 'Productos actualizados', value: report.productsUpdated },
+              { label: 'Actualizados', value: report.productsUpdated },
+              { label: 'Salteados', value: report.productsSkipped },
               { label: 'Categorías', value: report.categoriesCreated },
               { label: 'Marcas', value: report.brandsCreated },
               { label: 'Sabores', value: report.flavorsCreated },
@@ -297,7 +348,9 @@ export default function ImportPage() {
                   <tbody>
                     {report.errors.map((e, i) => (
                       <tr key={i} className="border-t">
-                        <td className="px-3 py-1 text-muted-foreground">{e.row}</td>
+                        <td className="px-3 py-1 text-muted-foreground">
+                          {e.row > 0 ? e.row : '—'}
+                        </td>
                         <td className="px-3 py-1 font-mono">{e.barcode ?? '—'}</td>
                         <td className="px-3 py-1">{e.message}</td>
                       </tr>

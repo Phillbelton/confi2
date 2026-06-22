@@ -110,11 +110,68 @@ describe('runQuelitaProductImport — esquema multi-presentación', () => {
     expect(legacy!.flavors).toHaveLength(1);
   });
 
-  it('re-importar el mismo sku actualiza (idempotente, no duplica)', async () => {
-    await runQuelitaProductImport(buildXlsx(ROWS), {});
-    const report2 = await runQuelitaProductImport(buildXlsx(ROWS), {});
+  it("re-importar el mismo sku en modo 'upsert' actualiza (idempotente, no duplica)", async () => {
+    await runQuelitaProductImport(buildXlsx(ROWS), { mode: 'upsert' });
+    const report2 = await runQuelitaProductImport(buildXlsx(ROWS), { mode: 'upsert' });
     expect(report2.productsCreated).toBe(0);
     expect(report2.productsUpdated).toBe(3);
     expect(await Product.countDocuments({})).toBe(3);
+  });
+
+  it("modo 'insertNew' saltea los productos ya existentes", async () => {
+    await runQuelitaProductImport(buildXlsx(ROWS), { mode: 'upsert' }); // siembra 3
+    const report = await runQuelitaProductImport(buildXlsx(ROWS), { mode: 'insertNew' });
+    expect(report.productsCreated).toBe(0);
+    expect(report.productsUpdated).toBe(0);
+    expect(report.productsSkipped).toBe(3);
+    expect(await Product.countDocuments({})).toBe(3);
+  });
+
+  it("modo 'insertNew' crea solo los SKU nuevos y saltea los existentes", async () => {
+    // Siembra T001 (3 filas) + T002.
+    await runQuelitaProductImport(buildXlsx(ROWS.slice(0, 4)), { mode: 'upsert' });
+    // Reimporta TODO (suma T003 nuevo) en insertNew → solo crea T003.
+    const report = await runQuelitaProductImport(buildXlsx(ROWS), { mode: 'insertNew' });
+    expect(report.productsCreated).toBe(1);
+    expect(report.productsSkipped).toBe(2);
+    expect(await Product.countDocuments({})).toBe(3);
+    expect(await Product.findOne({ sku: 'QU-T003' })).toBeTruthy();
+  });
+
+  it("modo 'replace' borra el catálogo y lo recrea desde el Excel", async () => {
+    await runQuelitaProductImport(buildXlsx(ROWS), { mode: 'upsert' }); // 3 productos
+    const single = [
+      {
+        sku: 'QU-NEW', nombre: 'Producto Unico', marca: 'MarcaX', categoria: 'Otros',
+        descripcion: 'Producto unico de prueba para el modo replace.',
+        presentacion_tipo: 'unidad', presentacion_precio: 500, presentacion_principal: 'TRUE',
+      },
+    ];
+    const report = await runQuelitaProductImport(buildXlsx(single), { mode: 'replace' });
+    expect(report.productsCreated).toBe(1);
+    expect(await Product.countDocuments({})).toBe(1);
+    expect(await Product.findOne({ sku: 'QU-T001' })).toBeNull();
+    expect(await Product.findOne({ sku: 'QU-NEW' })).toBeTruthy();
+  });
+
+  it('genera slug, conserva el SKU del Excel y autogenera SKU si falta', async () => {
+    await runQuelitaProductImport(buildXlsx(ROWS), { mode: 'insertNew' });
+    const cabrita = await Product.findOne({ sku: 'QU-T001' });
+    expect(cabrita!.slug).toBeTruthy();
+    expect(cabrita!.slug).toContain('cabritas-test');
+
+    // Producto sin sku → SKU autogenerado QU-NNNNNN.
+    const noSku = [
+      {
+        nombre: 'Sin Sku Test', marca: 'MarcaY', categoria: 'Otros',
+        descripcion: 'Producto sin sku para probar la autogeneracion.',
+        presentacion_tipo: 'unidad', presentacion_precio: 700, presentacion_principal: 'TRUE',
+      },
+    ];
+    const report = await runQuelitaProductImport(buildXlsx(noSku), { mode: 'insertNew' });
+    expect(report.productsCreated).toBe(1);
+    const created = await Product.findOne({ name: 'Sin Sku Test' });
+    expect(created!.sku).toMatch(/^QU-\d{6}$/);
+    expect(created!.slug).toBeTruthy();
   });
 });
