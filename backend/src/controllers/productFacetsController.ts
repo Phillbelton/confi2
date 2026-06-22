@@ -206,13 +206,13 @@ export const getProductFacets = asyncHandler(
       })
       .filter(Boolean);
 
-    // Presentaciones — tipos disponibles (Unidad/Display/Caja master) con
+    // Presentaciones — tipos disponibles (Unidad/Display/Embalaje) con
     // cuántos productos se venden en cada uno. Reemplaza al filtro de "Formato".
     const PRES_LABELS: Record<string, string> = {
-      unidad: 'Por unidad',
+      unidad: 'Unidad',
       cantidadMinima: 'Cantidad mínima',
-      display: 'Display / caja',
-      embalaje: 'Caja master (mayor)',
+      display: 'Display',
+      embalaje: 'Embalaje',
     };
     const PRES_ORDER: Record<string, number> = { unidad: 0, cantidadMinima: 1, display: 2, embalaje: 3 };
     const presentaciones = (result.presentacionesAgg || [])

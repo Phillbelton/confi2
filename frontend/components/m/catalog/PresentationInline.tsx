@@ -24,17 +24,49 @@ function unitWord(type: Presentation['type'], qty: number): string {
   return qty === 1 ? 'unidad' : 'unidades';
 }
 
+/**
+ * Color del chip por presentación: escala FRÍA incremental dentro de la familia
+ * turquesa→petróleo de la marca. La intensidad sube con el tamaño — Unidad
+ * (turquesa claro) → Display (teal) → Embalaje (petróleo profundo). Inactivo ya
+ * muestra la progresión (tinte sólido claro + texto del tono); activo destaca
+ * con relleno sólido profundo + sombra. Sin saltos a colores cálidos.
+ */
+const PRES_CHIP: Record<string, { on: string; off: string }> = {
+  unidad: {
+    on: 'border-[var(--primary-500)] bg-[var(--primary-500)] text-white shadow-sm',
+    off: 'border-[var(--primary-200)] bg-[var(--primary-100)] text-[var(--primary-700)] hover:bg-[var(--primary-200)]',
+  },
+  cantidadMinima: {
+    on: 'border-[var(--primary-500)] bg-[var(--primary-500)] text-white shadow-sm',
+    off: 'border-[var(--primary-200)] bg-[var(--primary-100)] text-[var(--primary-700)] hover:bg-[var(--primary-200)]',
+  },
+  display: {
+    on: 'border-[var(--secondary-600)] bg-[var(--secondary-600)] text-white shadow-sm',
+    off: 'border-[var(--secondary-300)] bg-[var(--secondary-200)] text-[var(--secondary-700)] hover:bg-[var(--secondary-300)]',
+  },
+  embalaje: {
+    on: 'border-[var(--secondary-800)] bg-[var(--secondary-800)] text-white shadow-sm',
+    off: 'border-[var(--secondary-400)] bg-[var(--secondary-300)] text-[var(--secondary-800)] hover:bg-[var(--secondary-400)]',
+  },
+};
+const chipStyle = (type: string, active: boolean) =>
+  (PRES_CHIP[type] ?? PRES_CHIP.unidad)[active ? 'on' : 'off'];
+
+/** Tono de marca legible sobre blanco para los textos de descuento (tramos). */
+const TIER_INK = 'text-[var(--primary-700)]';
+
 interface PresentationInlineProps {
   product: Product;
-  /** C = true (escalera de tramos desplegable); B = false (una línea de tramo). */
+  /** C = escalera de tramos desplegable; B = solo el mejor tramo en una línea. */
   withLadder?: boolean;
 }
 
 /**
- * Selector de presentación INLINE en la card (opciones B y C). Al elegir un
- * chip, el precio + equivalente + tramo y el botón Agregar reaccionan a esa
- * presentación. Con `withLadder` (opción C) suma una escalera de tramos
- * desplegable. Reusa la matemática de precios vía el patrón `viewProduct`.
+ * Selector de presentación INLINE en la card (variantes B y C). Al elegir un
+ * chip, el precio + equivalente por unidad + el tramo y el botón Agregar
+ * reaccionan a esa presentación. Con `withLadder` (C) suma la escalera de tramos
+ * desplegable; sin él (B) muestra solo el mejor tramo en una línea. Reusa la
+ * matemática de precios vía el patrón `viewProduct`.
  */
 export function PresentationInline({ product, withLadder = false }: PresentationInlineProps) {
   const addItem = useCartStoreM((s) => s.addItem);
@@ -76,8 +108,10 @@ export function PresentationInline({ product, withLadder = false }: Presentation
 
   return (
     <div className="mt-0.5">
-      {/* Selector de presentación */}
-      <div className="flex flex-wrap gap-1">
+      {/* Selector de presentación: una sola fila CENTRADA con scroll horizontal —
+          los chips se reparten parejo y se desbordan por ambos márgenes (izq. y
+          der.) de borde a borde de la card, en vez de envolver. */}
+      <div className="-mx-2 flex justify-center gap-1 overflow-x-auto px-2 scrollbar-hide">
         {presentations.map((p) => {
           const active = (selPres?._id ?? '') === p._id;
           return (
@@ -85,11 +119,10 @@ export function PresentationInline({ product, withLadder = false }: Presentation
               key={p._id}
               type="button"
               onClick={() => setSelPresId(p._id)}
+              aria-pressed={active}
               className={cn(
-                'rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors',
-                active
-                  ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary/30'
-                  : 'border-border text-muted-foreground hover:border-primary/40'
+                'shrink-0 rounded-full border px-2 py-1 text-[11px] font-bold whitespace-nowrap transition-colors',
+                chipStyle(p.type, active)
               )}
             >
               {presTypeLabel(p.type)}
@@ -99,26 +132,27 @@ export function PresentationInline({ product, withLadder = false }: Presentation
       </div>
 
       {/* Precio de la presentación elegida */}
-      <div className="mt-1 flex items-baseline gap-1.5">
+      <div className="mt-1.5 flex items-baseline gap-1.5">
         <span className="text-[15px] font-bold tabular-nums text-foreground">
           ${Math.round(ppu).toLocaleString('es-CL')}
         </span>
         {isPackaged && (
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="text-[11px] text-muted-foreground tabular-nums">
             ${Math.round(ppuAtomic).toLocaleString('es-CL')}/u
           </span>
         )}
       </div>
 
-      {/* B: una línea con el mejor tramo. C: escalera desplegable. */}
+      {/* C: escalera de tramos desplegable. B: solo el mejor tramo en una línea. */}
       {withLadder ? (
-        <div className="mt-0.5 min-h-[1.1rem]">
+        <div className="mt-0.5 min-h-[1.15rem]">
           {firstTier && (
             <>
               <button
                 type="button"
                 onClick={() => setLadderOpen((o) => !o)}
-                className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-primary"
+                aria-expanded={ladderOpen}
+                className={cn('inline-flex items-center gap-0.5 text-[11px] font-semibold', TIER_INK)}
               >
                 ver tramos
                 <ChevronDown
@@ -126,8 +160,8 @@ export function PresentationInline({ product, withLadder = false }: Presentation
                 />
               </button>
               {ladderOpen && (
-                <ul className="mt-0.5 space-y-0.5">
-                  <li className="flex justify-between text-[10px] text-muted-foreground">
+                <ul className="mt-1 space-y-0.5">
+                  <li className="flex justify-between text-[11px] text-muted-foreground">
                     <span>
                       1–{firstTier.minQuantity - 1} {unitWord(presType, 2)}
                     </span>
@@ -138,7 +172,7 @@ export function PresentationInline({ product, withLadder = false }: Presentation
                   {tiers.map((t, i) => (
                     <li
                       key={i}
-                      className="flex justify-between text-[10px] font-semibold text-primary"
+                      className={cn('flex justify-between text-[11px] font-semibold', TIER_INK)}
                     >
                       <span>
                         {t.minQuantity}+ {unitWord(presType, t.minQuantity)}
@@ -154,9 +188,9 @@ export function PresentationInline({ product, withLadder = false }: Presentation
           )}
         </div>
       ) : (
-        <div className="mt-0.5 min-h-[1.1rem]">
+        <div className="mt-0.5 min-h-[1.15rem]">
           {firstTier && (
-            <p className="line-clamp-1 text-[10px] font-semibold text-primary">
+            <p className={cn('line-clamp-1 text-[11px] font-semibold', TIER_INK)}>
               🎉 {firstTier.minQuantity}+ {unitWord(presType, firstTier.minQuantity)} a $
               {Math.round(firstTier.pricePerUnit).toLocaleString('es-CL')} c/u
             </p>

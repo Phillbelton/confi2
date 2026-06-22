@@ -126,7 +126,7 @@ const EJEMPLOS: Record<string, string | number>[] = [
   {
     sku: 'QU-EJ0001', presentacion_tipo: 'embalaje', presentacion_factor: 48,
     presentacion_precio: 40800, presentacion_principal: 'FALSE',
-    presentacion_barcode: '7800000000035', presentacion_etiqueta: 'Caja master',
+    presentacion_barcode: '7800000000035', presentacion_etiqueta: 'Embalaje',
     tramo1_desde: 3, tramo1_precio: 38400,
   },
 
@@ -143,7 +143,7 @@ const EJEMPLOS: Record<string, string | number>[] = [
   {
     sku: 'QU-EJ0002', presentacion_tipo: 'embalaje', presentacion_factor: 144,
     presentacion_precio: 26400, presentacion_principal: 'FALSE',
-    presentacion_barcode: '7800000000233', presentacion_etiqueta: 'Caja master 144 u.',
+    presentacion_barcode: '7800000000233', presentacion_etiqueta: 'Embalaje 144 u.',
     tramo1_desde: 4, tramo1_precio: 25000,
   },
 

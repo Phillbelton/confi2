@@ -12,6 +12,7 @@ import dashboardRoutes from './dashboardRoutes';
 import collectionRoutes from './collectionRoutes';
 import bannerRoutes from './bannerRoutes';
 import homeLayoutRoutes from './homeLayoutRoutes';
+import siteSettingsRoutes from './siteSettingsRoutes';
 import formatRoutes from './formatRoutes';
 import flavorRoutes from './flavorRoutes';
 
@@ -43,6 +44,7 @@ router.use('/flavors', flavorRoutes);
 router.use('/collections', collectionRoutes);
 router.use('/banners', bannerRoutes);
 router.use('/home-layout', homeLayoutRoutes);
+router.use('/site-settings', siteSettingsRoutes);
 router.use('/orders', orderRoutes);
 // IMPORTANT: More specific routes must come BEFORE general routes
 // Otherwise /users middleware (admin-only) will intercept /users/me/addresses

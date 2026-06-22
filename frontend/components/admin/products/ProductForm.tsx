@@ -101,7 +101,7 @@ const SALE_UNIT_DESC: Record<SaleUnitType, string> = {
   unidad: 'Se vende suelto, una a la vez (1 Unid.)',
   cantidadMinima: 'Mínimo X unidades para comprar (Cant. min N Unid.)',
   display: 'Caja con N unidades sellada (Display N Unid.)',
-  embalaje: 'Caja master con N unidades (Embalaje N Unid.)',
+  embalaje: 'Caja grande para venta por mayor, con N unidades (Embalaje N Unid.)',
 };
 
 const SALE_UNIT_ICON: Record<SaleUnitType, React.ComponentType<{ className?: string }>> = {

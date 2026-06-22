@@ -23,6 +23,7 @@ import {
 import { SaleUnitBadge } from './SaleUnitBadge';
 import { PresentationQuickSheet } from './PresentationQuickSheet';
 import { PresentationInline } from './PresentationInline';
+import { useCatalogPresentationVariant } from '@/hooks/useSiteSettings';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -34,11 +35,16 @@ interface ProductCardMProps {
 
 export function ProductCardM({ product, className, horizontal }: ProductCardMProps) {
   const sp = useSearchParams();
-  // Variante de la card multi-presentación, conmutable por URL (?presvar=B|C|D)
-  // para comparar enfoques en vivo. Default D (vista rápida).
+  // Variante de la card multi-presentación: la define el admin (setting del
+  // sitio). B = inline simple; C = inline + escalera de tramos; D = bottom-sheet
+  // "Ver presentaciones". El ?presvar=B|C|D queda como override de dev para
+  // previsualizar sin tocar el setting.
+  const settingVariant = useCatalogPresentationVariant();
   const presVarRaw = (sp?.get('presvar') || '').toUpperCase();
   const presVariant: 'B' | 'C' | 'D' =
-    presVarRaw === 'B' || presVarRaw === 'C' ? presVarRaw : 'D';
+    presVarRaw === 'B' || presVarRaw === 'C' || presVarRaw === 'D'
+      ? presVarRaw
+      : settingVariant;
   const [isAdding, setIsAdding] = useState(false);
   const addItem = useCartStoreM((s) => s.addItem);
   const updateQuantity = useCartStoreM((s) => s.updateQuantity);
@@ -142,7 +148,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
         <SaleUnitBadge saleUnit={product.saleUnit} />
       </Link>
 
-      <div className="flex flex-1 flex-col gap-1 p-2.5">
+      <div className="flex flex-1 flex-col gap-1 p-2">
         <Link href={productHref} className="block">
           {/* min-h reserva 2 líneas siempre → el nombre ocupa el mismo alto
               tenga 1 o 2 líneas, manteniendo el layout idéntico entre cards. */}
