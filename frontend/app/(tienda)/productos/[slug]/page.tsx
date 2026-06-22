@@ -15,14 +15,17 @@ import {
   effectiveUnitPrice,
   discountedUnitPrice,
   getDisplayTiers,
+  getPrincipal,
   isPackagedSale,
   minQuantity,
+  presLabel,
   presentationPriceSuffix,
   quantityStep,
   getFixedDiscountBadge,
   hasActiveFixedDiscount,
 } from '@/lib/discountCalculator';
-import type { Brand, Category, Format, Flavor } from '@/types';
+import { cn } from '@/lib/utils';
+import type { Brand, Category, Format, Flavor, Product } from '@/types';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -53,6 +56,7 @@ export default function ProductDetailPage() {
 
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedImage, setSelectedImage] = useState<number>(0);
+  const [selPresId, setSelPresId] = useState<string>(''); // '' = presentación principal
 
   if (error) {
     return (
@@ -78,25 +82,39 @@ export default function ProductDetailPage() {
     );
   }
 
-  const minQ = minQuantity(product);
-  const step = quantityStep(product);
+  // Presentación elegida (selPresId '' = principal). El `viewProduct` es el
+  // producto con los campos de precio/presentación de la elegida → todas las
+  // funciones de precio existentes lo usan sin cambios.
+  const presentations = product.presentaciones ?? [];
+  const selPres = presentations.find((p) => p._id === selPresId) ?? getPrincipal(product);
+  const viewProduct: Product = selPres
+    ? {
+        ...product,
+        saleUnit: { type: selPres.type, quantity: selPres.quantity },
+        unitPrice: selPres.unitPrice,
+        tiers: selPres.tiers,
+        fixedDiscount: selPres.fixedDiscount,
+      }
+    : product;
+
+  const minQ = minQuantity(viewProduct);
+  const step = quantityStep(viewProduct);
   const realQty = Math.max(quantity, minQ);
   // ppu = precio efectivo por PRESENTACIÓN (ya no por unidad atómica).
-  const ppu = effectiveUnitPrice(product, realQty);
+  const ppu = effectiveUnitPrice(viewProduct, realQty);
   const total = ppu * realQty;
-  const tiers = getDisplayTiers(product);
-  // Precio base por unidad (con la oferta fija ya aplicada). Es el precio del
-  // tramo "1 a N-1" en la tabla de tramos.
-  const basePrice = discountedUnitPrice(product);
-  const showFixedBadge = hasActiveFixedDiscount(product);
-  const fixedBadgeText = showFixedBadge ? getFixedDiscountBadge(product) : '';
-  const isPackaged = isPackagedSale(product);
+  const tiers = getDisplayTiers(viewProduct);
+  // Precio base por presentación (con la oferta fija ya aplicada).
+  const basePrice = discountedUnitPrice(viewProduct);
+  const showFixedBadge = hasActiveFixedDiscount(viewProduct);
+  const fixedBadgeText = showFixedBadge ? getFixedDiscountBadge(viewProduct) : '';
+  const isPackaged = isPackagedSale(viewProduct);
   // Precio principal: ya está en precio de presentación, no se multiplica.
   const headlinePrice = ppu;
-  const headlineCompareAt = product.unitPrice;
+  const headlineCompareAt = viewProduct.unitPrice;
   // Precio por unidad atómica (informativo, solo display/embalaje).
-  const ppuAtomic = isPackaged && product.saleUnit.quantity > 0
-    ? ppu / product.saleUnit.quantity
+  const ppuAtomic = isPackaged && viewProduct.saleUnit.quantity > 0
+    ? ppu / viewProduct.saleUnit.quantity
     : ppu;
 
   // Initialize quantity to minQ
@@ -104,7 +122,13 @@ export default function ProductDetailPage() {
 
   const brandName = typeof product.brand === 'object' ? (product.brand as Brand)?.name : '';
   const formatLabel = typeof product.format === 'object' ? (product.format as Format)?.label : '';
-  const flavorName = typeof product.flavor === 'object' ? (product.flavor as Flavor)?.name : '';
+  const flavorName = (() => {
+    const list = (product.flavors ?? [])
+      .map((f) => (typeof f === 'object' ? (f as Flavor)?.name : ''))
+      .filter(Boolean);
+    if (list.length > 0) return list.join(', ');
+    return typeof product.flavor === 'object' ? (product.flavor as Flavor)?.name ?? '' : '';
+  })();
   const primaryCat = (product.categories as Category[] | undefined)?.[0];
 
   return (
@@ -139,7 +163,7 @@ export default function ProductDetailPage() {
                 {fixedBadgeText}
               </span>
             )}
-            <SaleUnitBadge saleUnit={product.saleUnit} className="bottom-3" />
+            <SaleUnitBadge saleUnit={viewProduct.saleUnit} className="bottom-3" />
           </div>
 
           {/* Miniaturas — solo si hay más de una imagen */}
@@ -193,12 +217,43 @@ export default function ProductDetailPage() {
             </p>
           )}
 
+          {presentations.length > 1 && (
+            <div className="mt-4">
+              <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
+                Elegí presentación
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {presentations.map((p) => {
+                  const active = (selPres?._id ?? '') === p._id;
+                  return (
+                    <button
+                      key={p._id}
+                      type="button"
+                      onClick={() => setSelPresId(p._id)}
+                      className={cn(
+                        'rounded-xl border px-3 py-2 text-left transition-all',
+                        active
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                          : 'border-border hover:border-primary/40'
+                      )}
+                    >
+                      <span className="block text-sm font-semibold">{presLabel(p)}</span>
+                      <span className="block text-xs tabular-nums text-muted-foreground">
+                        ${Math.round(p.unitPrice).toLocaleString('es-CL')}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="mt-3 flex items-baseline gap-2 flex-wrap">
             <span className="text-2xl font-bold tabular-nums lg:text-4xl">
               ${Math.round(headlinePrice).toLocaleString('es-CL')}
             </span>
             <span className="text-xs text-muted-foreground">
-              {presentationPriceSuffix(product)}
+              {presentationPriceSuffix(viewProduct)}
             </span>
             {headlinePrice < headlineCompareAt && (
               <span className="text-sm text-muted-foreground line-through tabular-nums">
@@ -278,7 +333,7 @@ export default function ProductDetailPage() {
             <Button
               size="lg"
               className="mt-4 w-full rounded-full"
-              onClick={() => addItem(product, realQty)}
+              onClick={() => addItem(product, realQty, selPres?._id)}
             >
               Agregar al carrito
             </Button>

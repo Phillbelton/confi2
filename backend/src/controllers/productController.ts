@@ -48,6 +48,7 @@ const hydrateProductsFromCache = async (
     hydrateRef(p, 'brand', brands, fieldsByEntity.brand);
     hydrateRef(p, 'format', formats, fieldsByEntity.format);
     hydrateRef(p, 'flavor', flavors, fieldsByEntity.flavor);
+    hydrateRefArray(p, 'flavors', flavors, fieldsByEntity.flavor);
   }
 };
 
@@ -84,6 +85,7 @@ export const listProducts = asyncHandler(
       brands,
       format,
       flavor,
+      presentacion,
       minPrice,
       maxPrice,
       active = 'true',
@@ -159,13 +161,17 @@ export const listProducts = asyncHandler(
       }
     }
     if (flavor) {
+      // `flavors` es array → el match por igualdad cubre "el producto tiene ese sabor".
       if (mongoose.Types.ObjectId.isValid(flavor)) {
-        filter.flavor = new mongoose.Types.ObjectId(flavor);
+        filter.flavors = new mongoose.Types.ObjectId(flavor);
       } else {
         const f: any = await mongoose.model('Flavor').findOne({ slug: flavor }).select('_id').lean();
-        if (f) filter.flavor = f._id;
+        if (f) filter.flavors = f._id;
       }
     }
+
+    // Presentación — productos que se venden en este tipo de presentación.
+    if (presentacion) filter['presentaciones.type'] = presentacion;
 
     if (featured === 'true') filter.featured = true;
 
@@ -384,8 +390,8 @@ export const updateProduct = asyncHandler(
 
     const body = req.body;
     const fields = [
-      'name', 'description', 'categories', 'brand', 'format', 'flavor',
-      'barcode', 'unitPrice', 'saleUnit', 'tiers',
+      'name', 'description', 'categories', 'brand', 'format', 'flavor', 'flavors',
+      'barcode', 'unitPrice', 'saleUnit', 'tiers', 'presentaciones',
       'fixedDiscount', 'images', 'featured', 'active',
     ];
     for (const field of fields) {

@@ -41,7 +41,11 @@ export function CategoriesDropdown({
     const parentIdOf = (c: Category) =>
       typeof c.parent === 'string' ? c.parent : c.parent?._id;
 
-    const roots = cats.filter((c) => !c.parent && c.active);
+    // "Otros" siempre al final de la lista de categorías raíz.
+    const isOtros = (c: Category) => c.name.trim().toLowerCase() === 'otros';
+    const roots = cats
+      .filter((c) => !c.parent && c.active)
+      .sort((a, b) => Number(isOtros(a)) - Number(isOtros(b)));
     return roots.map((root) => {
       const l2 = cats.filter((c) => c.active && parentIdOf(c) === root._id);
       const l2WithChildren = l2.map((sub) => ({
@@ -87,7 +91,7 @@ export function CategoriesDropdown({
       >
         <div className="grid grid-cols-12 min-h-[420px] max-h-[70vh]">
           {/* SIDEBAR — Categorías L1 */}
-          <div className="col-span-4 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+          <div className="col-span-4 min-h-0 max-h-[70vh] bg-gray-50 border-r border-gray-200 overflow-y-auto">
             <div className="p-3">
               <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 px-3">
                 Todas las categorías
@@ -140,7 +144,7 @@ export function CategoriesDropdown({
           </div>
 
           {/* PANEL DERECHO — L2 + L3 */}
-          <div className="col-span-8 bg-white overflow-y-auto">
+          <div className="col-span-8 min-h-0 max-h-[70vh] bg-white overflow-y-auto">
             <AnimatePresence mode="wait">
               {activeRoot ? (
                 <motion.div

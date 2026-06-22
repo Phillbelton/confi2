@@ -92,8 +92,10 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
         ref={scrollerRef}
         className="snap-x-mandatory flex gap-3 overflow-x-auto px-4 pb-4 scroll-pl-safe scroll-pr-safe scrollbar-none lg:gap-4 lg:px-8 lg:pb-6"
       >
+        {/* Mobile: cada card mide igual que la del catálogo (grilla 2-col,
+            px-4 gap-3 → 50vw - 22px); sm/desktop conservan su ancho fijo. */}
         {products.map((p) => (
-          <div key={p._id} className="shrink-0 w-40 snap-start lg:w-48">
+          <div key={p._id} className="shrink-0 w-[calc(50vw_-_22px)] snap-start sm:w-40 lg:w-48">
             <ProductCardM product={p} />
           </div>
         ))}

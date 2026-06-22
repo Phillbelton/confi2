@@ -2,10 +2,10 @@ import { Response, RequestHandler } from 'express';
 import multer from 'multer';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { runProductImport, ImportReport } from '../services/productImportService';
 import {
   runQuelitaProductImport,
   QuelitaImportReport,
+  QuelitaImportMode,
 } from '../services/quelitaProductImportService';
 import logger from '../config/logger';
 
@@ -49,46 +49,9 @@ export const uploadExcelMiddleware: RequestHandler = (req, res, next) => {
 };
 
 /**
- * POST /api/products/import-excel
- * Body multipart: { file: .xlsx, wipeTaxonomy?: 'true'|'false', limit?: '500' }
- * Solo admin.
- */
-export const importProductsFromExcel = asyncHandler(
-  async (req: AuthRequest, res: Response<ApiResponse<ImportReport>>) => {
-    const file = req.file;
-    if (!file) {
-      throw new AppError(400, 'Archivo .xlsx requerido en el campo "file"');
-    }
-
-    const wipeTaxonomy = String(req.body.wipeTaxonomy) === 'true';
-    const limitRaw = req.body.limit ? parseInt(String(req.body.limit), 10) : 500;
-    const limit = Number.isFinite(limitRaw) && limitRaw >= 0 ? limitRaw : 500;
-
-    logger.info('[import] Procesando upload', {
-      file: file.originalname,
-      size: file.size,
-      wipeTaxonomy,
-      limit,
-      userId: req.user?.id,
-    });
-
-    const report = await runProductImport(file.buffer, {
-      wipeTaxonomy,
-      limit,
-      userId: req.user?.id,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Importación completada',
-      data: report,
-    });
-  }
-);
-
-/**
  * POST /api/products/import-quelita-excel
- * Body multipart: { file: .xlsx, wipeTaxonomy?: 'true'|'false', limit?: '0' }
+ * Body multipart: { file: .xlsx, mode?: 'replace'|'upsert'|'insertNew', limit?: '0' }
+ * (`wipeTaxonomy: 'true'` se sigue aceptando como alias de mode='replace'.)
  *
  * Formato Quelita-nativo (NO Bicom). Lee columnas por NOMBRE:
  *   sku, barcode, name, description, category, subcategory, subsubcategory,
@@ -111,20 +74,26 @@ export const importProductsFromQuelitaExcel = asyncHandler(
       throw new AppError(400, 'Archivo .xlsx requerido en el campo "file"');
     }
 
-    const wipeTaxonomy = String(req.body.wipeTaxonomy) === 'true';
+    const VALID_MODES: QuelitaImportMode[] = ['replace', 'upsert', 'insertNew'];
+    const modeRaw = String(req.body.mode || '');
+    const mode: QuelitaImportMode = (VALID_MODES as string[]).includes(modeRaw)
+      ? (modeRaw as QuelitaImportMode)
+      : String(req.body.wipeTaxonomy) === 'true'
+      ? 'replace'
+      : 'insertNew';
     const limitRaw = req.body.limit ? parseInt(String(req.body.limit), 10) : 0;
     const limit = Number.isFinite(limitRaw) && limitRaw >= 0 ? limitRaw : 0;
 
     logger.info('[import-quelita] Procesando upload', {
       file: file.originalname,
       size: file.size,
-      wipeTaxonomy,
+      mode,
       limit,
       userId: req.user?.id,
     });
 
     const report = await runQuelitaProductImport(file.buffer, {
-      wipeTaxonomy,
+      mode,
       limit,
       userId: req.user?.id,
     });

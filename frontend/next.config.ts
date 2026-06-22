@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // En dev, Next bloquea los recursos internos (/_next/*, HMR) cuando se accede
+  // desde un origen distinto a localhost. Para probar desde el celular/tablet por
+  // la IP de la LAN hay que listarla acá, si no el contenido no hidrata (quedan
+  // solo navbar/footer) y el HMR falla. Solo afecta a desarrollo.
+  allowedDevOrigins: ['192.168.5.2'],
   // Genera un servidor minimo autocontenido para Docker (imagen liviana)
   output: 'standalone',
   images: {

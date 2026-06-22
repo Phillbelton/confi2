@@ -4,9 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   Clock,
-  Facebook,
   Heart,
-  Instagram,
   Mail,
   MapPin,
   Phone,
@@ -16,6 +14,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { businessWhatsappHref, formatBusinessWhatsapp } from '@/lib/whatsapp';
+import { SocialLinks } from '@/components/layout/SocialLinks';
 
 const TRUST_BADGES = [
   { icon: Truck, label: 'Envío rápido', sub: 'Todo Chile' },
@@ -33,8 +32,7 @@ const LINKS = {
   ayuda: [
     { label: 'Cómo comprar', href: '/ayuda/como-comprar' },
     { label: 'Formas de pago', href: '/ayuda/formas-de-pago' },
-    { label: 'Envíos y retiros', href: '/ayuda/envios' },
-    { label: 'Preguntas frecuentes', href: '/ayuda/faq' },
+    { label: 'Envíos y retiros', href: '/ayuda/envios-y-retiros' },
   ],
 };
 
@@ -132,33 +130,20 @@ export function MobileFooter() {
               </div>
 
               {/* Social */}
-              <div className="mt-5 flex gap-2.5">
-                <Link
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Facebook"
-                  className="tappable grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-white transition-all hover:bg-primary hover:scale-105"
-                >
-                  <Facebook className="h-5 w-5" />
-                </Link>
-                <Link
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram"
-                  className="tappable grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-white transition-all hover:bg-accent hover:scale-105"
-                >
-                  <Instagram className="h-5 w-5" />
-                </Link>
-                <Link
-                  href="mailto:info@quelita.com"
-                  aria-label="Email"
-                  className="tappable grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-white transition-all hover:bg-primary hover:scale-105"
-                >
-                  <Mail className="h-5 w-5" />
-                </Link>
-              </div>
+              <SocialLinks
+                className="mt-5"
+                itemClassName="tappable h-11 w-11 rounded-2xl bg-white/10 text-white hover:scale-105"
+                iconClassName="h-5 w-5"
+                extra={
+                  <Link
+                    href="mailto:info@quelita.com"
+                    aria-label="Email"
+                    className="tappable grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-white transition-all hover:bg-primary hover:scale-105"
+                  >
+                    <Mail className="h-5 w-5" />
+                  </Link>
+                }
+              />
             </section>
 
             {/* Links: Comprar + Ayuda (en mobile van en 2 cols juntos) */}

@@ -11,6 +11,7 @@ export interface ProductQueryParams {
   brands?: string;
   format?: string;
   flavor?: string;
+  presentacion?: string;
   minPrice?: number;
   maxPrice?: number;
   active?: 'true' | 'false' | 'all';

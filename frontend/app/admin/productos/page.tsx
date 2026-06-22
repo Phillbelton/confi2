@@ -161,7 +161,7 @@ export default function ProductsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href="/admin/productos/importar">
+            <Link href="/admin/importar">
               <Upload className="mr-2 h-4 w-4" />Importar Excel
             </Link>
           </Button>

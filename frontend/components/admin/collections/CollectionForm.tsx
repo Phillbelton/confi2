@@ -177,9 +177,10 @@ export function CollectionForm({
     };
     if (image === '__REMOVE__') {
       payload.image = '';
-    } else if (image !== undefined) {
-      payload.image = image;
     }
+    // En un guardado normal NO mandamos `image`: ya la guardó el endpoint de
+    // upload. Reenviarla pisaba la recién subida y, como es un path relativo
+    // (/uploads/...), la validación de URL del backend la rechazaba → 400.
     onSubmit(payload);
   };
 

@@ -36,6 +36,27 @@ export interface IFixedDiscount {
   badge?: string;
 }
 
+/**
+ * Presentación de venta (unidad, display, caja master…). Un producto tiene
+ * 1..N, una marcada `principal`. Los campos de precio se nombran IGUAL que los
+ * del producto (`unitPrice/tiers/fixedDiscount`) a propósito: así una
+ * presentación ES un `PriceableProduct` y reutiliza la matemática de precios
+ * (`effectiveUnitPrice`, etc.) sin tocar su lógica.
+ */
+export interface IPresentacion {
+  _id?: mongoose.Types.ObjectId;
+  type: SaleUnitType;
+  /** Factor: unidades base contenidas (1 unidad, 24 display, 144 caja). */
+  quantity: number;
+  /** Precio de ESTA presentación. */
+  unitPrice: number;
+  tiers: ITier[];
+  fixedDiscount?: IFixedDiscount;
+  label?: string;
+  barcode?: string;
+  principal: boolean;
+}
+
 export interface IProduct extends Document {
   _id: mongoose.Types.ObjectId;
   /** SKU interno de Quelita, identidad primaria. Formato QU-XXXXXX. Auto-generado. */
@@ -47,14 +68,19 @@ export interface IProduct extends Document {
   categories: mongoose.Types.ObjectId[];
   format?: mongoose.Types.ObjectId;
   flavor?: mongoose.Types.ObjectId;
+  /** Sabores (1..N). `flavor` queda denormalizado = flavors[0] para índice/filtro/back-compat. */
+  flavors: mongoose.Types.ObjectId[];
   /** Código de barras del fabricante (EAN-13) o código POS. Puede repetirse,
    *  puede estar vacío. NO se usa como identidad primaria. */
   barcode?: string;
 
+  /** Denormalizado = precio de la presentación principal (sort/filtro/índice). */
   unitPrice: number;
   saleUnit: ISaleUnit;
   tiers: ITier[];
   fixedDiscount?: IFixedDiscount;
+  /** Presentaciones de venta (1..N). La principal alimenta los campos legacy de arriba. */
+  presentaciones: IPresentacion[];
 
   images: string[];
   featured: boolean;
@@ -100,6 +126,31 @@ const tierSubSchema = new Schema<ITier>(
   { _id: false }
 );
 
+// _id: true (default) → identidad estable de la presentación, usada por
+// carrito y orden para saber cuál se compró.
+const presentacionSubSchema = new Schema<IPresentacion>({
+  type: {
+    type: String,
+    enum: ['unidad', 'cantidadMinima', 'display', 'embalaje'],
+    required: true,
+    default: 'unidad',
+  },
+  quantity: { type: Number, required: true, min: 1, default: 1 },
+  unitPrice: { type: Number, required: true, min: 0 },
+  tiers: { type: [tierSubSchema], default: [] },
+  fixedDiscount: {
+    enabled: { type: Boolean, default: false },
+    type: { type: String, enum: ['percentage', 'amount'] },
+    value: { type: Number, min: 0 },
+    startDate: Date,
+    endDate: Date,
+    badge: String,
+  },
+  label: { type: String, trim: true, maxlength: 40 },
+  barcode: { type: String, trim: true, maxlength: 32 },
+  principal: { type: Boolean, default: false },
+});
+
 const productSchema = new Schema<IProduct>(
   {
     sku: {
@@ -144,6 +195,7 @@ const productSchema = new Schema<IProduct>(
     },
     format: { type: Schema.Types.ObjectId, ref: 'Format' },
     flavor: { type: Schema.Types.ObjectId, ref: 'Flavor' },
+    flavors: { type: [Schema.Types.ObjectId], ref: 'Flavor', default: [] },
     barcode: { type: String, trim: true, maxlength: 32 },
 
     unitPrice: {
@@ -153,6 +205,7 @@ const productSchema = new Schema<IProduct>(
     },
     saleUnit: { type: saleUnitSubSchema, required: true, default: () => ({ type: 'unidad', quantity: 1 }) },
     tiers: { type: [tierSubSchema], default: [] },
+    presentaciones: { type: [presentacionSubSchema], default: [] },
 
     fixedDiscount: {
       enabled: { type: Boolean, default: false },
@@ -203,6 +256,7 @@ productSchema.index({ categories: 1, active: 1, createdAt: -1 });
 productSchema.index({ brand: 1, active: 1 });
 productSchema.index({ format: 1, active: 1 });
 productSchema.index({ flavor: 1, active: 1 });
+productSchema.index({ flavors: 1, active: 1 });
 productSchema.index({ featured: 1, active: 1 });
 productSchema.index({ unitPrice: 1, active: 1 });
 productSchema.index({ name: 'text', description: 'text' });
@@ -217,6 +271,9 @@ productSchema.index(
 );
 // Wildcard index para soportar filtros sobre claves dinámicas en `attributes`
 productSchema.index({ 'attributes.$**': 1 });
+// Filtro "Presentación" del catálogo (Fase 5): productos que se venden por
+// display/unidad/etc. derivado de los tipos de sus presentaciones.
+productSchema.index({ 'presentaciones.type': 1, active: 1 });
 
 // Virtual: hasActiveDiscount
 productSchema.virtual('hasActiveDiscount').get(function () {
@@ -230,6 +287,70 @@ productSchema.virtual('hasActiveDiscount').get(function () {
 // Virtual: hasActiveTieredDiscount
 productSchema.virtual('hasActiveTieredDiscount').get(function () {
   return Array.isArray(this.tiers) && this.tiers.length > 0;
+});
+
+// Pre-validate: sincronizar presentaciones[] ↔ campos legacy.
+//  - Si llegan `presentaciones`, la principal es la fuente de verdad: se
+//    denormalizan unitPrice/saleUnit/tiers/fixedDiscount (para índices/orden y
+//    back-compat con el código aún no migrado).
+//  - Si NO llegan (form/import legacy), se construye la principal desde los
+//    campos sueltos.
+// Corre en pre('validate') para que los `required` (unitPrice, etc.) pasen.
+productSchema.pre('validate', function (next) {
+  const doc = this as unknown as IProduct;
+  const list: IPresentacion[] = Array.isArray(doc.presentaciones) ? doc.presentaciones : [];
+
+  if (list.length > 0) {
+    let idx = list.findIndex((p) => p.principal);
+    if (idx < 0) idx = 0;
+    list.forEach((p, i) => {
+      p.principal = i === idx;
+    });
+    const pr = list[idx];
+    doc.unitPrice = pr.unitPrice;
+    doc.saleUnit = { type: pr.type, quantity: pr.quantity };
+    doc.tiers = pr.tiers || [];
+    doc.fixedDiscount = pr.fixedDiscount;
+  } else {
+    doc.presentaciones = [
+      {
+        type: doc.saleUnit?.type || 'unidad',
+        quantity: doc.saleUnit?.quantity || 1,
+        unitPrice: doc.unitPrice,
+        tiers: doc.tiers || [],
+        fixedDiscount: doc.fixedDiscount,
+        principal: true,
+      } as IPresentacion,
+    ];
+  }
+
+  // Ordenar tiers de cada presentación por minQuantity asc.
+  for (const p of doc.presentaciones) {
+    if (Array.isArray(p.tiers) && p.tiers.length > 0) {
+      p.tiers.sort((a, b) => a.minQuantity - b.minQuantity);
+    }
+  }
+
+  // Sincronizar flavors[] ↔ flavor (primario denormalizado para índice/filtro).
+  const flavors = Array.isArray(doc.flavors) ? doc.flavors : [];
+  if (flavors.length > 0) {
+    const seen = new Set<string>();
+    doc.flavors = flavors.filter((f) => {
+      const k = String(f);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    doc.flavor = doc.flavors[0];
+  } else if (doc.isNew && doc.flavor) {
+    // Creación con solo `flavor` (seed/test legacy) → espejar a flavors.
+    doc.flavors = [doc.flavor];
+  } else {
+    // Sin sabores → sin sabor primario (permite limpiar en edición).
+    doc.flavor = undefined;
+  }
+
+  next();
 });
 
 // Pre-save: auto-generar SKU si falta (formato QU-XXXXXX).

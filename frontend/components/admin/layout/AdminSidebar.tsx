@@ -16,6 +16,7 @@ import {
   Sparkles,
   Upload,
   ImagePlay,
+  LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,6 +65,12 @@ const menuItems = [
     title: 'Banners y promos',
     href: '/admin/banners',
     icon: ImagePlay,
+    roles: ['admin'] as UserRole[],
+  },
+  {
+    title: 'Apariencia',
+    href: '/admin/apariencia',
+    icon: LayoutGrid,
     roles: ['admin'] as UserRole[],
   },
   {

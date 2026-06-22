@@ -3,19 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Clock, Search, Sparkles, ShoppingBag, Tag, User } from 'lucide-react';
+import { Search, Sparkles, ShoppingBag, User } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { useClientStore } from '@/store/useClientStore';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
-
-const QUICK_LINKS = [
-  { label: 'Ofertas', href: '/productos?onSale=true', icon: Tag },
-  { label: 'Destacados', href: '/productos?featured=true', icon: Sparkles },
-  { label: 'Novedades', href: '/productos?sort=newest', icon: Clock },
-];
 
 export function StickyHeader() {
   const router = useRouter();
@@ -224,28 +218,6 @@ export function StickyHeader() {
               </Link>
             </div>
           </div>
-
-          {/* Fila de accesos rápidos — mismo set que el drawer mobile */}
-          <nav
-            aria-label="Accesos rápidos"
-            className="relative z-10 border-t border-white/10"
-          >
-            <div className="mx-auto flex w-full max-w-[1440px] items-center gap-1 px-8 py-1.5">
-              {QUICK_LINKS.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
         </div>
 
         {/* Remate inferior: hilo candy que ancla el header al fondo crema de

@@ -1,232 +1,385 @@
 /**
- * Genera la plantilla Excel Quelita oficial (vacía + instrucciones + ejemplos).
+ * Genera la plantilla Excel oficial de Quelita (es-CL) para la carga masiva de
+ * productos multi-presentación.
  *
- * El archivo de salida (`quelita_template.xlsx`) tiene 3 hojas:
- *   1. "Productos"     — vacía con headers en español, para que llenes
- *   2. "Instrucciones" — explicación de cada columna con ejemplos
- *   3. "Ejemplos"      — 10 productos reales del Bicom cubriendo todos los casos
+ * DISEÑO: una FILA POR PRESENTACIÓN, agrupadas por `sku` (estilo Shopify).
+ * Los datos del producto van en la 1ª fila de cada `sku`; las filas siguientes
+ * repiten `sku` + las columnas de presentación/tramos.
  *
- * Uso:
- *   npm run gen:template
+ * 4 hojas: Instrucciones · Productos (con dropdowns) · Listas · Ejemplos.
  *
- * Output default: C:/Users/sk/Downloads/quelita_template.xlsx
+ * Los dropdowns usan `exceljs` (SheetJS no escribe data validation):
+ *   - enums cerrados (medida, tipo, TRUE/FALSE) → bloqueantes.
+ *   - taxonomía (categoria, marca, sabor)       → con aviso (permite valores nuevos,
+ *     que el importer crea solo).
+ *
+ * Uso:   npm run gen:template  [carpeta_destino]
+ * Salida: <carpeta>/quelita_template.xlsx   (default C:/Users/sk/Downloads)
+ *
+ * `buildTemplate()` se exporta para reusar desde otros scripts (ej. poblar la
+ * plantilla con un catálogo real, ver fillTemplateFromCurado.ts).
  */
 
-import * as XLSX from 'xlsx';
-import * as fs from 'fs';
+import ExcelJS from 'exceljs';
 import * as path from 'path';
+import * as fs from 'fs';
 
 const args = process.argv.slice(2);
 const DST_DIR = args[0] || 'C:/Users/sk/Downloads';
 const DST_PATH = path.join(DST_DIR, 'quelita_template.xlsx');
 
-const HEADER = [
-  'sku', 'codigo_barras', 'nombre', 'marca', 'categoria',
-  'tamaño', 'medida', 'sabor',
-  'modo_venta', 'unidades_por_paquete', 'precio',
-  'mayorista_min', 'mayorista_precio',
-  'caja_min', 'caja_precio',
-  'descripcion', 'imagen_url', 'etiquetas', 'colecciones',
-  'destacado', 'activo',
-];
+type Grupo = 'producto' | 'presentacion' | 'tramos';
 
-const COL_WIDTHS = [
-  12, 16, 42, 18, 36, 10, 10, 16,
-  14, 14, 12, 14, 16, 12, 14, 60,
-  30, 22, 28, 10, 10,
-];
-
-// ---- 10 ejemplos reales con datos del Bicom 2026-04 ----
-// Cada fila cubre un caso distinto del sistema.
-const EXAMPLES = [
-  // 1. Unidad simple sin descuento — 7UP ZERO 2L (CCU)
-  [
-    'QU-EJ0001', '7801620855161', '7Up Zero 2L', 'CCU', 'Bebidas > Gaseosas',
-    2, 'l', '',
-    'unidad', 1, 1560,
-    6, 1450,
-    '', '',
-    'Bebida gaseosa 7Up Zero, formato 2 litros. Sin azúcar.',
-    '', '', '', 'FALSE', 'TRUE',
-  ],
-  // 2. Unidad con descuento por volumen + sabor — Cachantun Mas Granada
-  [
-    'QU-EJ0002', '7802910001049', 'Cachantun Mas Granada 1.6L', 'CCU', 'Bebidas > Aguas saborizadas',
-    1.6, 'l', 'granada',
-    'unidad', 1, 1390,
-    3, 1290,
-    '', '',
-    'Agua saborizada Cachantun Mas, sabor granada, formato 1.6 litros.',
-    '', 'sin-azucar', 'Aguas Cachantun', 'FALSE', 'TRUE',
-  ],
-  // 3. Display puro con descuento mayorista y caja — Galleta 303 24x14g
-  [
-    'QU-EJ0003', '7802408003446', 'Galleta 303 Bolsa', 'Fruna', 'Galletas > Dulces > Con relleno',
-    14, 'g', '',
-    'display', 24, 2300,
-    3, 2100,
-    14, 2100,
-    'Galletas Fruna 303 con relleno. Bolsa con 24 unidades de 14g.',
-    '', '', '', 'FALSE', 'TRUE',
-  ],
-  // 4. Display grande con descuento caja — Krapulito 50x13g
-  [
-    'QU-EJ0004', '7804688200010', 'Krapulito Bolsa Grande', 'Spak', 'Confitería > Caramelos',
-    13, 'g', '',
-    'display', 50, 7500,
-    2, 6900,
-    2, 6900,
-    'Caramelos Krapulito Spak. Bolsa con 50 unidades de 13g.',
-    '', '', '', 'FALSE', 'TRUE',
-  ],
-  // 5. Unidad con 2 niveles de descuento — Galleta Agua Costa
-  [
-    'QU-EJ0005', '7802215501838', 'Galleta de Agua Costa 175g', 'Costa', 'Galletas > Saladas',
-    175, 'g', '',
-    'unidad', 1, 1050,
-    3, 950,
-    25, 920,
-    'Galletas saladas de agua marca Costa. Paquete de 175g.',
-    '', '', '', 'FALSE', 'TRUE',
-  ],
-  // 6. Unidad con un solo nivel de descuento — Ambrosito 90g
-  [
-    'QU-EJ0006', '7802200134010', 'Ambrosito 90g', 'Ambrosoli', 'Confitería > Caramelos',
-    90, 'g', '',
-    'unidad', 1, 1000,
-    3, 850,
-    '', '',
-    'Bolsa Ambrosito Ambrosoli, surtido de caramelos clásicos.',
-    '', '', '', 'FALSE', 'TRUE',
-  ],
-  // 7. Helado con sabor + descuento por caja — Chomp Frambuesa
-  [
-    'QU-EJ0007', '10000186', 'Helado Chomp Frambuesa 225ml', 'Nestle', 'Heladería > Vasitos',
-    225, 'ml', 'frambuesa',
-    'unidad', 1, 4200,
-    3, 3850,
-    8, 3850,
-    'Helado Chomp sabor frambuesa, presentación 225ml. Nestlé.',
-    '', '', 'Heladería Nestle', 'TRUE', 'TRUE',
-  ],
-  // 8. Snack con caja como único descuento — Cabritas Caramelo Fruna
-  [
-    'QU-EJ0008', '10000002', 'Cabritas Caramelo Fruna 200g', 'Fruna', 'Snacks > Cabritas',
-    200, 'g', 'caramelo',
-    'unidad', 1, 1000,
-    '', '',
-    50, 900,
-    'Cabritas con caramelo Fruna, bolsa de 200g. Snack dulce.',
-    '', '', '', 'FALSE', 'TRUE',
-  ],
-  // 9. Producto temporal (Halloween) display — Bon Bon Bum Surtido
-  [
-    'QU-EJ0009', '7702011024053', 'Bon Bon Bum Surtido', 'Colombina', 'Halloween > Chupetes',
-    19, 'g', '',
-    'display', 24, 1950,
-    3, 1800,
-    15, 1800,
-    'Chupetes Bon Bon Bum surtidos, display Halloween con 24 unidades de 19g.',
-    '', 'halloween,temporada', '', 'TRUE', 'TRUE',
-  ],
-  // 10. Cantidad mínima (invención plausible — caramelos sueltos)
-  [
-    'QU-EJ0010', '', 'Caramelo Halls Mentol Suelto', 'Halls', 'Confitería > Pastillas',
-    5, 'g', 'menta',
-    'cantidad_minima', 5, 100,
-    12, 80,
-    '', '',
-    'Caramelo Halls sabor menta vendido suelto. Pedido mínimo 5 unidades.',
-    '', '', '', 'FALSE', 'TRUE',
-  ],
-];
-
-// ---- Hoja Instrucciones (filas de texto plano) ----
-const INSTRUCTIONS: any[][] = [
-  ['PLANTILLA QUELITA — INSTRUCCIONES DE USO'],
-  [''],
-  ['Cada fila de la hoja "Productos" representa UN producto del catálogo de la tienda.'],
-  ['Las columnas obligatorias son: nombre, marca, categoria, modo_venta, unidades_por_paquete, precio.'],
-  ['El resto es opcional pero recomendado para enriquecer el storefront.'],
-  [''],
-  ['Mirá la hoja "Ejemplos" para ver 10 productos reales formateados correctamente.'],
-  [''],
-  ['---------------------------------------'],
-  ['CAMPO',                  'DESCRIPCIÓN'],
-  ['---------------------------------------'],
-  ['sku',                    'Código interno Quelita (QU-XXXXXX). Si lo dejás vacío, el sistema lo auto-genera.'],
-  ['codigo_barras',          'EAN/código del fabricante. Opcional. Puede duplicarse entre productos.'],
-  ['nombre',                 'OBLIGATORIO. Nombre comercial visible al cliente. Ej: "Galleta Tritón Costa".'],
-  ['marca',                  'OBLIGATORIO. Auto-crea la marca si no existe.'],
-  ['categoria',              'OBLIGATORIO. Path con ">", hasta 3 niveles. Ej: "Galletas > Dulces > Con relleno".'],
-  ['tamaño',                 'Peso o volumen de UNA unidad física (no del pack). Número. Ej: 14, 350, 2, 1.6.'],
-  ['medida',                 'Unidad del tamaño. Valores válidos: g, kg, ml, l, cc, oz.'],
-  ['sabor',                  'Solo cuando aplica (ej. limón, chocolate, frambuesa). Auto-crea el sabor.'],
-  ['modo_venta',             'OBLIGATORIO. Valores: unidad | display | cantidad_minima | embalaje. Ver tabla abajo.'],
-  ['unidades_por_paquete',   'OBLIGATORIO. Si modo_venta=unidad, 1. Si display, N (ej. 24). Si cantidad_minima, N (ej. 5).'],
-  ['precio',                 'OBLIGATORIO. CLP. Precio de UNA presentación que el cliente agrega al carrito.'],
-  ['mayorista_min',          'Cantidad mínima para precio mayorista. Vacío si no aplica.'],
-  ['mayorista_precio',       'Precio por presentación al alcanzar mayorista_min.'],
-  ['caja_min',               'Cantidad mínima para precio caja completa.'],
-  ['caja_precio',            'Precio por presentación al alcanzar caja_min.'],
-  ['descripcion',            'Texto comercial breve. Aparece en la página de detalle del producto.'],
-  ['imagen_url',             'URL Cloudinary de la imagen principal. Opcional.'],
-  ['etiquetas',              'Comma-separated. Ej: "promo,verano,sin-gluten".'],
-  ['colecciones',            'Comma-separated. Ej: "Bebidas Fruna 500ml, Promo Navidad". Auto-crea colecciones.'],
-  ['destacado',              'TRUE/FALSE. Si TRUE aparece en carrusel "Destacados" del home.'],
-  ['activo',                 'TRUE/FALSE. Si FALSE no aparece en el storefront público.'],
-  [''],
-  ['---------------------------------------'],
-  ['TABLA: CÓMO ELEGIR modo_venta'],
-  ['---------------------------------------'],
-  ['Tipo de producto',                       'modo_venta',         'unidades_por_paquete'],
-  ['Bebida individual (botella, lata)',       'unidad',             '1'],
-  ['Producto vendido solo en pack/bolsa',     'display',            'N (= unidades por bolsa)'],
-  ['Producto con pedido mínimo (ej. 5+)',     'cantidad_minima',    'N (= cantidad mínima)'],
-  ['Caja proveedor (rara vez retail)',        'embalaje',           'N (= unidades en caja)'],
-  [''],
-  ['Si querés ofrecer descuento por volumen (mayorista), llená mayorista_min + mayorista_precio.'],
-  ['Si querés un segundo nivel (caja completa), llená caja_min + caja_precio.'],
-  [''],
-  ['---------------------------------------'],
-  ['SOBRE COLECCIONES (familias de pricing)'],
-  ['---------------------------------------'],
-  ['Las colecciones agrupan productos para descuento por volumen mezclado.'],
-  ['Ejemplo: "Bebidas Fruna 500ml" agrupa todos los sabores Fruna. Al comprar 12 unidades en total,'],
-  ['(sumando todos los sabores) cada unidad pasa al precio mayorista de la colección.'],
-  ['La regla de pricing de la colección se configura DESPUÉS en /admin/colecciones, no en este Excel.'],
-  ['Acá solo asignás productos a colecciones por nombre.'],
-];
-
-// ---- Generación ----
-function main(): void {
-  const wb = XLSX.utils.book_new();
-
-  // Hoja 1: Productos (solo header)
-  const wsProductos = XLSX.utils.aoa_to_sheet([HEADER]);
-  wsProductos['!cols'] = COL_WIDTHS.map((w) => ({ wch: w }));
-  // Congelar primera fila
-  wsProductos['!freeze'] = { xSplit: 0, ySplit: 1 };
-  XLSX.utils.book_append_sheet(wb, wsProductos, 'Productos');
-
-  // Hoja 2: Instrucciones
-  const wsInstrucciones = XLSX.utils.aoa_to_sheet(INSTRUCTIONS);
-  wsInstrucciones['!cols'] = [{ wch: 28 }, { wch: 80 }, { wch: 28 }];
-  XLSX.utils.book_append_sheet(wb, wsInstrucciones, 'Instrucciones');
-
-  // Hoja 3: Ejemplos
-  const wsEjemplos = XLSX.utils.aoa_to_sheet([HEADER, ...EXAMPLES]);
-  wsEjemplos['!cols'] = COL_WIDTHS.map((w) => ({ wch: w }));
-  wsEjemplos['!freeze'] = { xSplit: 0, ySplit: 1 };
-  XLSX.utils.book_append_sheet(wb, wsEjemplos, 'Ejemplos');
-
-  if (!fs.existsSync(DST_DIR)) fs.mkdirSync(DST_DIR, { recursive: true });
-  XLSX.writeFile(wb, DST_PATH);
-
-  console.log(`✓ Plantilla generada: ${DST_PATH}`);
-  console.log(`  Hoja 1 "Productos":      vacía, lista para llenar (${HEADER.length} columnas)`);
-  console.log(`  Hoja 2 "Instrucciones":  ${INSTRUCTIONS.length} filas de doc`);
-  console.log(`  Hoja 3 "Ejemplos":       ${EXAMPLES.length} productos reales del Bicom`);
+interface ColDef {
+  key: string;
+  header: string;
+  width: number;
+  grupo: Grupo;
 }
 
-main();
+/** Conjuntos de valores que alimentan los dropdowns y la hoja "Listas". */
+export interface Listas {
+  categorias: string[];
+  marcas: string[];
+  sabores: string[];
+  medidas: string[];
+  tipos: string[];
+}
+
+// Columnas en orden. `key` = nombre técnico que lee el importer.
+const COLS: ColDef[] = [
+  { key: 'sku', header: 'sku', width: 12, grupo: 'producto' },
+  { key: 'nombre', header: 'nombre', width: 34, grupo: 'producto' },
+  { key: 'marca', header: 'marca', width: 16, grupo: 'producto' },
+  { key: 'categoria', header: 'categoria', width: 30, grupo: 'producto' },
+  { key: 'gramaje', header: 'gramaje', width: 9, grupo: 'producto' },
+  { key: 'medida', header: 'medida', width: 9, grupo: 'producto' },
+  { key: 'sabor', header: 'sabor', width: 18, grupo: 'producto' },
+  { key: 'descripcion', header: 'descripcion', width: 40, grupo: 'producto' },
+  { key: 'imagen_url', header: 'imagen_url', width: 24, grupo: 'producto' },
+  { key: 'etiquetas', header: 'etiquetas', width: 18, grupo: 'producto' },
+  { key: 'colecciones', header: 'colecciones', width: 20, grupo: 'producto' },
+  { key: 'destacado', header: 'destacado', width: 10, grupo: 'producto' },
+  { key: 'activo', header: 'activo', width: 8, grupo: 'producto' },
+  { key: 'presentacion_tipo', header: 'presentacion_tipo', width: 17, grupo: 'presentacion' },
+  { key: 'presentacion_factor', header: 'presentacion_factor', width: 12, grupo: 'presentacion' },
+  { key: 'presentacion_precio', header: 'presentacion_precio', width: 14, grupo: 'presentacion' },
+  { key: 'presentacion_principal', header: 'presentacion_principal', width: 14, grupo: 'presentacion' },
+  { key: 'presentacion_barcode', header: 'presentacion_barcode', width: 16, grupo: 'presentacion' },
+  { key: 'presentacion_etiqueta', header: 'presentacion_etiqueta', width: 16, grupo: 'presentacion' },
+  { key: 'tramo1_desde', header: 'tramo1_desde', width: 12, grupo: 'tramos' },
+  { key: 'tramo1_precio', header: 'tramo1_precio', width: 12, grupo: 'tramos' },
+  { key: 'tramo2_desde', header: 'tramo2_desde', width: 12, grupo: 'tramos' },
+  { key: 'tramo2_precio', header: 'tramo2_precio', width: 12, grupo: 'tramos' },
+];
+
+// Relleno de encabezado por grupo (50 de cada ramo).
+const FILL: Record<Grupo, string> = {
+  producto: 'FFF1EFE8', // gris 50
+  presentacion: 'FFE1F5EE', // teal 50
+  tramos: 'FFFAEEDA', // ámbar 50
+};
+
+export const MEDIDAS = ['g', 'kg', 'ml', 'l', 'cc', 'oz'];
+export const TIPOS = ['unidad', 'display', 'embalaje', 'cantidad_minima'];
+
+// Listas iniciales curadas (es-CL), para la plantilla en blanco. Cuando se
+// puebla desde un catálogo real, se reemplazan por la taxonomía de ese catálogo.
+const STARTER_CATEGORIAS = [
+  'Confitería > Caramelos', 'Confitería > Chicles', 'Confitería > Chupetes',
+  'Chocolates > Barras', 'Chocolates > Bombones',
+  'Galletas > Dulces', 'Galletas > Saladas',
+  'Snacks > Cabritas', 'Snacks > Papas fritas', 'Snacks > Maní y frutos secos',
+  'Bebidas > Gaseosas', 'Bebidas > Aguas', 'Bebidas > Jugos',
+  'Heladería > Paletas', 'Heladería > Vasitos',
+  'Despensa > Endulzantes',
+];
+const STARTER_MARCAS = [
+  'Fruna', 'Ambrosoli', 'Costa', 'Nestlé', 'Carozzi', 'Arcor', 'CCU',
+  'Colombina', 'Spak', 'Halls', 'Calaf', 'Serrano', 'Evercrisp', 'Marco Polo',
+];
+const STARTER_SABORES = [
+  'chocolate', 'frutilla', 'frambuesa', 'naranja', 'limón', 'menta', 'piña',
+  'mora', 'manzana', 'tutti frutti', 'vainilla', 'caramelo', 'coco', 'durazno',
+  'uva', 'plátano',
+];
+
+// ===== Ejemplos: 3 productos. Datos de producto solo en la 1ª fila del sku. =====
+const EJEMPLOS: Record<string, string | number>[] = [
+  // 1) Cabrita — 3 presentaciones (con venta unitaria). Los tramos de la fila
+  //    `unidad` espejan el $/u de los packs (12+→900 ≈ display, 48+→850 ≈ caja).
+  {
+    sku: 'QU-EJ0001', nombre: 'Cabritas Caramelo Fruna', marca: 'Fruna',
+    categoria: 'Snacks > Cabritas', gramaje: 200, medida: 'g', sabor: 'caramelo',
+    descripcion: 'Cabritas dulces cubiertas de caramelo Fruna, bolsa de 200 g.',
+    imagen_url: '', etiquetas: '', colecciones: '', destacado: 'FALSE', activo: 'TRUE',
+    presentacion_tipo: 'unidad', presentacion_factor: 1, presentacion_precio: 1000,
+    presentacion_principal: 'TRUE', presentacion_barcode: '7800000000011', presentacion_etiqueta: '',
+    tramo1_desde: 12, tramo1_precio: 900, tramo2_desde: 48, tramo2_precio: 850,
+  },
+  {
+    sku: 'QU-EJ0001', presentacion_tipo: 'display', presentacion_factor: 12,
+    presentacion_precio: 10800, presentacion_principal: 'FALSE',
+    presentacion_barcode: '7800000000028', presentacion_etiqueta: 'Display',
+    tramo1_desde: 5, tramo1_precio: 10200,
+  },
+  {
+    sku: 'QU-EJ0001', presentacion_tipo: 'embalaje', presentacion_factor: 48,
+    presentacion_precio: 40800, presentacion_principal: 'FALSE',
+    presentacion_barcode: '7800000000035', presentacion_etiqueta: 'Embalaje',
+    tramo1_desde: 3, tramo1_precio: 38400,
+  },
+
+  // 2) Chicle — SOLO display + embalaje (sin unidad) y MULTI-SABOR (comas).
+  {
+    sku: 'QU-EJ0002', nombre: 'Chicle Globo Fruna', marca: 'Fruna',
+    categoria: 'Confitería > Chicles', gramaje: 4, medida: 'g', sabor: 'tutti frutti,menta',
+    descripcion: 'Chicle globo Fruna surtido. Venta por mayor: display y caja master.',
+    imagen_url: '', etiquetas: '', colecciones: '', destacado: 'FALSE', activo: 'TRUE',
+    presentacion_tipo: 'display', presentacion_factor: 24, presentacion_precio: 4800,
+    presentacion_principal: 'TRUE', presentacion_barcode: '7800000000226', presentacion_etiqueta: 'Display 24 u.',
+    tramo1_desde: 6, tramo1_precio: 4500,
+  },
+  {
+    sku: 'QU-EJ0002', presentacion_tipo: 'embalaje', presentacion_factor: 144,
+    presentacion_precio: 26400, presentacion_principal: 'FALSE',
+    presentacion_barcode: '7800000000233', presentacion_etiqueta: 'Embalaje 144 u.',
+    tramo1_desde: 4, tramo1_precio: 25000,
+  },
+
+  // 3) Bebida — caso simple: 1 presentación, 1 fila.
+  {
+    sku: 'QU-EJ0003', nombre: 'Bebida 7Up Zero 2L', marca: 'CCU',
+    categoria: 'Bebidas > Gaseosas', gramaje: 2, medida: 'l', sabor: '',
+    descripcion: 'Bebida 7Up Zero sin azúcar, formato 2 litros.',
+    imagen_url: '', etiquetas: '', colecciones: '', destacado: 'FALSE', activo: 'TRUE',
+    presentacion_tipo: 'unidad', presentacion_factor: 1, presentacion_precio: 1560,
+    presentacion_principal: 'TRUE', presentacion_barcode: '7801620855161', presentacion_etiqueta: '',
+    tramo1_desde: 6, tramo1_precio: 1450,
+  },
+];
+
+// ===== Texto de la hoja Instrucciones (es-CL) =====
+const INSTRUCCIONES: { t: string; h?: boolean }[] = [
+  { t: 'PLANTILLA DE PRODUCTOS — QUELITA', h: true },
+  { t: '' },
+  { t: 'Esta planilla carga el catálogo de la tienda. Llená la hoja "Productos" y avisá para importarla.' },
+  { t: 'Mirá la hoja "Ejemplos" para ver 3 productos bien armados, y "Listas" para los valores disponibles.' },
+  { t: '' },
+  { t: 'REGLA DE ORO — una fila por PRESENTACIÓN, agrupadas por sku', h: true },
+  { t: 'Un producto puede venderse de varias formas (unidad, display, caja). Cada forma va en SU PROPIA FILA.' },
+  { t: 'Todas las filas de un mismo producto llevan el MISMO sku. Ej.: una cabrita con unidad + display + caja = 3 filas con el mismo sku.' },
+  { t: 'Los datos del producto (nombre, marca, categoria, gramaje, sabor, descripcion, imagen, etc.) van SOLO en la 1ª fila del sku.' },
+  { t: 'Las filas siguientes del mismo producto repiten el sku y solo llenan las columnas de presentación y tramos.' },
+  { t: 'Un producto que se vende de una sola forma = una sola fila. Lo simple sigue simple.' },
+  { t: '' },
+  { t: 'COLUMNAS DE PRODUCTO (1ª fila del sku)', h: true },
+  { t: 'sku            Obligatorio. Código interno (QU-XXXXXX). Es la clave que agrupa las filas; repetilo en cada fila del producto.' },
+  { t: 'nombre         Obligatorio. Nombre comercial. NO le pongas el gramaje (eso va en su columna).' },
+  { t: 'marca          Obligatorio. Si no existe, se crea sola al importar.' },
+  { t: 'categoria      Obligatorio. Ruta con ">", hasta 3 niveles. Ej: "Snacks > Cabritas".' },
+  { t: 'gramaje        Tamaño de UNA unidad (número). Ej: 200. (Campo propio: ya no se saca del nombre.)' },
+  { t: 'medida         Unidad del gramaje: g, kg, ml, l, cc, oz.' },
+  { t: 'sabor          Opcional. Para VARIOS sabores, separá con comas: "chocolate,frutilla".' },
+  { t: 'descripcion    Texto que ve el cliente en la ficha.' },
+  { t: 'imagen_url     Opcional. URL de la imagen principal.' },
+  { t: 'etiquetas      Opcional. Separadas por comas. Ej: "promo,temporada".' },
+  { t: 'colecciones    Opcional. Separadas por comas. Asigna el producto a colecciones.' },
+  { t: 'destacado      TRUE / FALSE. Si TRUE, aparece en "Destacados" del home.' },
+  { t: 'activo         TRUE / FALSE (por defecto TRUE). Si FALSE, no se muestra en la tienda.' },
+  { t: '' },
+  { t: 'COLUMNAS DE PRESENTACIÓN (una fila por cada forma de venta)', h: true },
+  { t: 'presentacion_tipo       Obligatorio: unidad / display / embalaje / cantidad_minima.' },
+  { t: 'presentacion_factor     Obligatorio. Unidades que contiene: 1 (unidad), 12 (display), 48 (caja). En cantidad_minima = mínimo a comprar.' },
+  { t: 'presentacion_precio     Obligatorio. Precio en pesos de UNA de esta presentación (la caja entera, no la unidad suelta).' },
+  { t: 'presentacion_principal  TRUE en la presentación por defecto. EXACTAMENTE UNA por producto (es el "desde $" de la card).' },
+  { t: 'presentacion_barcode    Opcional. Código de barras de ese pack puntual.' },
+  { t: 'presentacion_etiqueta   Opcional. Nombre visible alternativo. Ej: "Display 24 u.".' },
+  { t: '' },
+  { t: 'COLUMNAS DE TRAMOS POR MAYOR (descuento por cantidad, opcionales)', h: true },
+  { t: 'tramo1_desde / tramo1_precio   A partir de cuántas de ESA presentación baja el precio, y a cuánto. Ej: 12 → 900.' },
+  { t: 'tramo2_desde / tramo2_precio   Segundo escalón. Ej: 48 → 850.' },
+  { t: '(Dos tramos cubren casi todo. Si necesitás un tercero, se ajusta después en el panel de administración.)' },
+  { t: '' },
+  { t: 'LISTAS DESPLEGABLES (los menús de las celdas)', h: true },
+  { t: 'Valores fijos (medida, presentacion_tipo, destacado, activo): SOLO podés elegir de la lista.' },
+  { t: 'Taxonomía (categoria, marca, sabor): el menú sugiere lo que ya existe, PERO podés escribir uno nuevo.' },
+  { t: '   → Si escribís un valor nuevo, Excel avisa "no está en la lista"; aceptá y seguí. Al importar se crea solo.' },
+  { t: 'Después de importar, revisá el resumen: te dice cuántas categorías/marcas/sabores NUEVOS se crearon.' },
+  { t: '   Si esperabas 0 nuevos y aparecen varios, es señal de un error de tipeo. Así los cazás al toque.' },
+];
+
+function styleHeader(ws: ExcelJS.Worksheet): void {
+  const row = ws.getRow(1);
+  row.height = 18;
+  COLS.forEach((c, i) => {
+    const cell = row.getCell(i + 1);
+    cell.font = { bold: true, size: 10 };
+    cell.alignment = { vertical: 'middle' };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: FILL[c.grupo] } };
+    cell.border = { bottom: { style: 'thin', color: { argb: 'FFB4B2A9' } } };
+  });
+}
+
+function addValidations(ws: ExcelJS.Worksheet, listas: Listas, N: number): void {
+  const col = (key: string) => {
+    const idx = COLS.findIndex((c) => c.key === key);
+    return ws.getColumn(idx + 1).letter;
+  };
+  const range = (key: string) => `${col(key)}2:${col(key)}${N}`;
+  const lista = (c: string, n: number) => [`Listas!$${c}$2:$${c}$${n + 1}`];
+  // `dataValidations` existe en runtime pero exceljs no lo expone en sus tipos.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dv = (ws as any).dataValidations;
+
+  // Enums cerrados → bloqueantes
+  dv.add(range('medida'), {
+    type: 'list', allowBlank: true, formulae: lista('D', listas.medidas.length),
+    showErrorMessage: true, errorStyle: 'stop', errorTitle: 'Valor inválido',
+    error: 'Elegí una medida de la lista: g, kg, ml, l, cc, oz.',
+  });
+  dv.add(range('presentacion_tipo'), {
+    type: 'list', allowBlank: true, formulae: lista('E', listas.tipos.length),
+    showErrorMessage: true, errorStyle: 'stop', errorTitle: 'Valor inválido',
+    error: 'Elegí: unidad, display, embalaje o cantidad_minima.',
+  });
+  for (const k of ['destacado', 'activo', 'presentacion_principal']) {
+    dv.add(range(k), {
+      type: 'list', allowBlank: true, formulae: ['"TRUE,FALSE"'],
+      showErrorMessage: true, errorStyle: 'stop', errorTitle: 'Valor inválido',
+      error: 'Solo TRUE o FALSE.',
+    });
+  }
+
+  // Taxonomía → con aviso (errorStyle: 'warning' permite escribir valores nuevos)
+  dv.add(range('categoria'), {
+    type: 'list', allowBlank: true, formulae: lista('A', listas.categorias.length),
+    showErrorMessage: true, errorStyle: 'warning', errorTitle: 'Categoría nueva',
+    error: 'No está en la lista. Si es una categoría nueva, aceptá: se creará al importar. Usá la ruta con ">".',
+  });
+  dv.add(range('marca'), {
+    type: 'list', allowBlank: true, formulae: lista('B', listas.marcas.length),
+    showErrorMessage: true, errorStyle: 'warning', errorTitle: 'Marca nueva',
+    error: 'No está en la lista. Si es una marca nueva, aceptá: se creará al importar.',
+  });
+  dv.add(range('sabor'), {
+    type: 'list', allowBlank: true, formulae: lista('C', listas.sabores.length),
+    showErrorMessage: true, errorStyle: 'warning', errorTitle: 'Sabor nuevo',
+    error: 'No está en la lista. Si es un sabor nuevo, aceptá: se creará al importar. Para varios, separá con comas.',
+  });
+}
+
+function buildProductosSheet(wb: ExcelJS.Workbook, productos: Record<string, unknown>[], listas: Listas): void {
+  const ws = wb.addWorksheet('Productos', {
+    views: [{ state: 'frozen', xSplit: 1, ySplit: 1 }],
+  });
+  ws.columns = COLS.map((c) => ({ header: c.header, key: c.key, width: c.width }));
+  styleHeader(ws);
+  productos.forEach((p) => ws.addRow(p));
+  const N = Math.max(productos.length + 50, 600);
+  addValidations(ws, listas, N);
+}
+
+function buildEjemplosSheet(wb: ExcelJS.Workbook): void {
+  const ws = wb.addWorksheet('Ejemplos', {
+    views: [{ state: 'frozen', xSplit: 1, ySplit: 1 }],
+  });
+  ws.columns = COLS.map((c) => ({ header: c.header, key: c.key, width: c.width }));
+  styleHeader(ws);
+  EJEMPLOS.forEach((e) => ws.addRow(e));
+  let prevSku = '';
+  ws.eachRow((row, n) => {
+    if (n === 1) return;
+    const sku = String(row.getCell(1).value ?? '');
+    if (sku && sku !== prevSku) {
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.border = { top: { style: 'thin', color: { argb: 'FFB4B2A9' } } };
+      });
+      prevSku = sku;
+    }
+  });
+}
+
+function buildListasSheet(wb: ExcelJS.Workbook, listas: Listas): void {
+  const ws = wb.addWorksheet('Listas');
+  ws.columns = [
+    { header: 'Categorías', key: 'cat', width: 32 },
+    { header: 'Marcas', key: 'mar', width: 20 },
+    { header: 'Sabores', key: 'sab', width: 18 },
+    { header: 'Medidas', key: 'med', width: 10 },
+    { header: 'Tipos de presentación', key: 'tip', width: 20 },
+  ];
+  const max = Math.max(
+    listas.categorias.length, listas.marcas.length, listas.sabores.length,
+    listas.medidas.length, listas.tipos.length
+  );
+  for (let i = 0; i < max; i++) {
+    ws.addRow({
+      cat: listas.categorias[i] ?? '', mar: listas.marcas[i] ?? '', sab: listas.sabores[i] ?? '',
+      med: listas.medidas[i] ?? '', tip: listas.tipos[i] ?? '',
+    });
+  }
+  ws.getRow(1).font = { bold: true, size: 10 };
+  ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1EFE8' } };
+}
+
+function buildInstruccionesSheet(wb: ExcelJS.Workbook): void {
+  const ws = wb.addWorksheet('Instrucciones');
+  ws.getColumn(1).width = 120;
+  INSTRUCCIONES.forEach((line) => {
+    const row = ws.addRow([line.t]);
+    const cell = row.getCell(1);
+    cell.alignment = { wrapText: false, vertical: 'middle' };
+    if (line.h) {
+      cell.font = { bold: true, size: 11 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE1F5EE' } };
+    } else {
+      cell.font = { size: 10 };
+    }
+  });
+}
+
+/**
+ * Construye el libro completo (4 hojas) y lo escribe en `dstPath`.
+ * `productos` puede venir vacío (plantilla en blanco) o lleno (catálogo real).
+ */
+export async function buildTemplate(
+  dstPath: string,
+  productos: Record<string, unknown>[],
+  listas: Listas
+): Promise<void> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Quelita';
+  wb.created = new Date();
+
+  buildInstruccionesSheet(wb);
+  buildProductosSheet(wb, productos, listas);
+  buildListasSheet(wb, listas);
+  buildEjemplosSheet(wb);
+
+  const dir = path.dirname(dstPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  await wb.xlsx.writeFile(dstPath);
+}
+
+function main(): void {
+  const listas: Listas = {
+    categorias: STARTER_CATEGORIAS,
+    marcas: STARTER_MARCAS,
+    sabores: STARTER_SABORES,
+    medidas: MEDIDAS,
+    tipos: TIPOS,
+  };
+  buildTemplate(DST_PATH, [], listas)
+    .then(() => {
+      console.log(`✓ Plantilla generada: ${DST_PATH}`);
+      console.log('  Hojas: Instrucciones · Productos (con dropdowns) · Listas · Ejemplos');
+      console.log(`  Columnas: ${COLS.length}  ·  Ejemplos: ${EJEMPLOS.length} filas`);
+    })
+    .catch((err) => {
+      console.error('✗ Error generando la plantilla:', err);
+      process.exit(1);
+    });
+}
+
+if (require.main === module) main();

@@ -27,8 +27,9 @@ import {
 import { CategoryWithSubcategorySelector } from './CategoryWithSubcategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
-import { FormatPicker, FlavorPicker } from './QuickFormatFlavorPicker';
+import { FormatPicker, FlavorMultiPicker } from './QuickFormatFlavorPicker';
 import { ProductLivePreview } from './ProductLivePreview';
+import { ExtraPresentationsEditor, type ExtraPresentation } from './ExtraPresentationsEditor';
 import { usePublicFormats, usePublicFlavors } from '@/hooks/admin/useFormatsFlavors';
 import { categoryService } from '@/services/categories';
 import type { SaleUnitType, FacetableAttribute } from '@/types';
@@ -46,7 +47,7 @@ const productSchema = z.object({
   categories: z.array(z.string()).min(1, 'Al menos una categoría'),
   brand: z.string().optional(),
   format: z.string().optional(),
-  flavor: z.string().optional(),
+  flavors: z.array(z.string()).optional(),
   sku: z.string().trim().max(40).optional(),
   barcode: z.string().max(32).optional(),
   unitPrice: z.number().min(0),
@@ -55,6 +56,20 @@ const productSchema = z.object({
     quantity: z.number().int().min(1),
   }),
   tiers: z.array(tierSchema).optional(),
+  // Presentaciones completas (se arman al guardar: principal + adicionales).
+  presentaciones: z
+    .array(
+      z.object({
+        _id: z.string().optional(),
+        type: z.enum(['unidad', 'cantidadMinima', 'display', 'embalaje']),
+        quantity: z.number().int().min(1),
+        unitPrice: z.number().min(0),
+        tiers: z.array(tierSchema).optional(),
+        label: z.string().max(40).optional(),
+        principal: z.boolean().optional(),
+      })
+    )
+    .optional(),
   featured: z.boolean().optional(),
   active: z.boolean().optional(),
   attributes: z.record(z.string(), z.array(z.string())).optional(),
@@ -86,7 +101,7 @@ const SALE_UNIT_DESC: Record<SaleUnitType, string> = {
   unidad: 'Se vende suelto, una a la vez (1 Unid.)',
   cantidadMinima: 'Mínimo X unidades para comprar (Cant. min N Unid.)',
   display: 'Caja con N unidades sellada (Display N Unid.)',
-  embalaje: 'Caja master con N unidades (Embalaje N Unid.)',
+  embalaje: 'Caja grande para venta por mayor, con N unidades (Embalaje N Unid.)',
 };
 
 const SALE_UNIT_ICON: Record<SaleUnitType, React.ComponentType<{ className?: string }>> = {
@@ -105,6 +120,18 @@ export function ProductForm({
   // removerlas de la UI al borrarlas sin esperar un refetch completo.
   const [existingImages, setExistingImages] = useState<string[]>(defaultImages);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
+  // Presentaciones adicionales (la principal vive en el bloque "Venta y precios").
+  const [extraPres, setExtraPres] = useState<ExtraPresentation[]>(() =>
+    (defaultValues?.presentaciones ?? [])
+      .filter((p) => !p.principal)
+      .map((p) => ({
+        type: p.type,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        tiers: p.tiers ?? [],
+        label: p.label,
+      }))
+  );
 
   const handleDeleteExisting = async (url: string) => {
     if (!onDeleteImage) return;
@@ -133,6 +160,7 @@ export function ProductForm({
       unitPrice: 0,
       saleUnit: { type: 'unidad', quantity: 1 },
       tiers: [],
+      flavors: [],
       active: true,
       featured: false,
       attributes: {},
@@ -181,9 +209,13 @@ export function ProductForm({
     () => formats?.find((f) => f._id === watch.format)?.label,
     [formats, watch.format]
   );
-  const flavorObj = useMemo(
-    () => flavors?.find((f) => f._id === watch.flavor),
-    [flavors, watch.flavor]
+  const flavorNames = useMemo(
+    () =>
+      (watch.flavors || [])
+        .map((id) => flavors?.find((f) => f._id === id)?.name)
+        .filter(Boolean)
+        .join(', '),
+    [flavors, watch.flavors]
   );
   const previewImage = images[0]?.preview || existingImages[0];
 
@@ -207,7 +239,21 @@ export function ProductForm({
     watch.unitPrice > 0 ? Math.round((1 - ppu / watch.unitPrice) * 100) : 0;
 
   const handle = async (values: ProductFormValues) => {
-    await onSubmit(values, images.map((i) => i.file));
+    // Armamos presentaciones[]: la principal (bloque "Venta y precios") + las
+    // adicionales del repetidor. Se mandan junto a los campos legacy (que el
+    // backend sigue aceptando) y el modelo denormaliza desde la principal.
+    const principal = {
+      type: values.saleUnit.type,
+      quantity: values.saleUnit.quantity,
+      unitPrice: values.unitPrice,
+      tiers: values.tiers ?? [],
+      principal: true,
+    };
+    const extras = extraPres.map((e) => ({ ...e, principal: false }));
+    await onSubmit(
+      { ...values, presentaciones: [principal, ...extras] },
+      images.map((i) => i.file)
+    );
   };
 
   // Detect format from name (35g, 500ml)
@@ -336,9 +382,9 @@ export function ProductForm({
                     onChange={(id) => form.setValue('format', id)}
                     disabled={isSubmitting}
                   />
-                  <FlavorPicker
-                    value={watch.flavor}
-                    onChange={(id) => form.setValue('flavor', id)}
+                  <FlavorMultiPicker
+                    values={watch.flavors || []}
+                    onChange={(ids) => form.setValue('flavors', ids)}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -418,7 +464,7 @@ export function ProductForm({
             {/* Venta */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">💰 Venta y precios</CardTitle>
+                <CardTitle className="text-base">💰 Venta y precios · presentación principal</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Precio + modo en grid */}
@@ -569,6 +615,20 @@ export function ProductForm({
               </CardContent>
             </Card>
 
+            {/* Otras presentaciones */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">📦 Otras presentaciones</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Si este producto también se vende por display, caja u otra forma, agregalas acá
+                  (cada una con su precio y tramos). El cliente las elige en la ficha.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ExtraPresentationsEditor value={extraPres} onChange={setExtraPres} />
+              </CardContent>
+            </Card>
+
             {/* Imágenes */}
             <Card>
               <CardHeader className="pb-3">
@@ -667,7 +727,7 @@ export function ProductForm({
               tiers={tiers}
               imagePreview={previewImage}
               formatLabel={formatLabel}
-              flavorName={flavorObj?.name}
+              flavorName={flavorNames}
             />
           </div>
         </div>
@@ -697,7 +757,7 @@ export function ProductForm({
                 tiers={tiers}
                 imagePreview={previewImage}
                 formatLabel={formatLabel}
-                flavorName={flavorObj?.name}
+                flavorName={flavorNames}
               />
             </SheetContent>
           </Sheet>

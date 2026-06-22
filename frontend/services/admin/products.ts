@@ -10,11 +10,19 @@ export interface CreateProductInput {
   categories: string[];
   brand?: string;
   format?: string;
-  flavor?: string;
+  flavors?: string[];
   barcode?: string;
   unitPrice: number;
   saleUnit: SaleUnit;
   tiers?: ProductTier[];
+  presentaciones?: Array<{
+    type: SaleUnit['type'];
+    quantity: number;
+    unitPrice: number;
+    tiers?: ProductTier[];
+    label?: string;
+    principal?: boolean;
+  }>;
   images?: string[];
   featured?: boolean;
   active?: boolean;

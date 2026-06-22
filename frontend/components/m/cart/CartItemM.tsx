@@ -58,7 +58,7 @@ export function CartItemM({ item }: Props) {
           <div className="inline-flex items-center rounded-full bg-muted p-1">
             <button
               type="button"
-              onClick={() => updateQuantity(item.productId, Math.max(minQ, item.quantity - step))}
+              onClick={() => updateQuantity(item.lineId, Math.max(minQ, item.quantity - step))}
               disabled={item.quantity <= minQ}
               aria-label="Quitar"
               className="grid h-7 w-7 place-items-center rounded-full bg-background text-foreground shadow-sm disabled:opacity-40"
@@ -68,7 +68,7 @@ export function CartItemM({ item }: Props) {
             <span className="px-3 text-xs font-bold tabular-nums">{item.quantity}</span>
             <button
               type="button"
-              onClick={() => updateQuantity(item.productId, item.quantity + step)}
+              onClick={() => updateQuantity(item.lineId, item.quantity + step)}
               aria-label="Agregar"
               className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
             >
@@ -82,7 +82,7 @@ export function CartItemM({ item }: Props) {
 
           <button
             type="button"
-            onClick={() => removeItem(item.productId)}
+            onClick={() => removeItem(item.lineId)}
             aria-label="Eliminar"
             className="text-destructive hover:bg-destructive/10 grid h-8 w-8 place-items-center rounded-full"
           >

@@ -303,3 +303,148 @@ export function FlavorPicker({ value, onChange, disabled }: FlavorPickerProps) {
     </div>
   );
 }
+
+interface FlavorMultiPickerProps {
+  values: string[];
+  onChange: (ids: string[]) => void;
+  disabled?: boolean;
+}
+
+/**
+ * Selector de sabores MÚLTIPLE (un producto puede tener varios: surtidos, etc.).
+ * Toggle por sabor (no cierra el popover); crear nuevo inline lo agrega a la selección.
+ */
+export function FlavorMultiPicker({ values, onChange, disabled }: FlavorMultiPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newColor, setNewColor] = useState('');
+  const { data: flavors } = usePublicFlavors();
+  const { create } = useFlavorOps();
+
+  const selectedList = (flavors || []).filter((f) => values.includes(f._id));
+
+  const toggle = (id: string) =>
+    onChange(values.includes(id) ? values.filter((v) => v !== id) : [...values, id]);
+
+  const handleCreate = () => {
+    if (!newName.trim()) return;
+    create.mutate(
+      { name: newName.trim(), color: newColor || undefined, active: true },
+      {
+        onSuccess: (created: Flavor) => {
+          onChange([...values, created._id]);
+          setCreating(false);
+          setNewName('');
+          setNewColor('');
+        },
+      }
+    );
+  };
+
+  return (
+    <div>
+      <Label className="text-xs">Sabores</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            disabled={disabled}
+            className="h-auto min-h-9 w-full justify-between font-normal"
+          >
+            {selectedList.length > 0 ? (
+              <span className="flex flex-wrap items-center gap-1">
+                {selectedList.map((f) => (
+                  <span
+                    key={f._id}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                  >
+                    {f.color && (
+                      <span className="inline-block h-2 w-2 rounded-full" style={{ background: f.color }} />
+                    )}
+                    {f.name}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Sin sabores</span>
+            )}
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[280px] p-0" align="start">
+          {creating ? (
+            <div className="p-3 space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground">Crear nuevo sabor</div>
+              <Input
+                placeholder="Chocolate"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="#8B4513 (opc)"
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  className="flex-1"
+                />
+                {newColor && (
+                  <span className="inline-block h-8 w-8 rounded-md border" style={{ background: newColor }} />
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>Cancelar</Button>
+                <Button size="sm" onClick={handleCreate} disabled={!newName.trim() || create.isPending}>
+                  {create.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                  Crear "{newName}"
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Command>
+              <CommandInput placeholder="Buscar sabor…" />
+              <CommandList>
+                <CommandEmpty>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">No hay coincidencias</p>
+                    <Button size="sm" onClick={() => setCreating(true)}>
+                      <Plus className="mr-1 h-3 w-3" />Crear nuevo
+                    </Button>
+                  </div>
+                </CommandEmpty>
+                <CommandGroup>
+                  {(flavors || []).map((f) => (
+                    <CommandItem key={f._id} onSelect={() => toggle(f._id)}>
+                      <Check
+                        className={cn('mr-2 h-4 w-4', values.includes(f._id) ? 'opacity-100' : 'opacity-0')}
+                      />
+                      {f.color && (
+                        <span className="mr-2 inline-block h-3 w-3 rounded-full" style={{ background: f.color }} />
+                      )}
+                      <span>{f.name}</span>
+                      {f.productCount !== undefined && (
+                        <span className="ml-auto text-xs text-muted-foreground">{f.productCount}</span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <div className="border-t p-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setCreating(true)}
+                    className="w-full justify-start"
+                  >
+                    <Plus className="mr-2 h-3 w-3" />Crear nuevo sabor
+                  </Button>
+                </div>
+              </CommandList>
+            </Command>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}

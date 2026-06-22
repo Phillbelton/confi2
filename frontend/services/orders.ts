@@ -16,6 +16,7 @@ export interface CreateOrderPayload {
   };
   items: {
     productId: string;
+    presentationId?: string;
     quantity: number;
   }[];
   deliveryMethod: 'pickup' | 'delivery';
