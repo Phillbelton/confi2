@@ -1,6 +1,22 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { productService, type ProductQueryParams, type FacetsQueryParams } from '@/services/products';
 
+/**
+ * Autocompletado del buscador. Solo consulta con ≥2 caracteres y conserva el
+ * resultado previo entre teclas (`placeholderData`) para que el dropdown no
+ * parpadee mientras el usuario escribe.
+ */
+export function useSearchSuggestions(q: string) {
+  const term = q.trim();
+  return useQuery({
+    queryKey: ['product-suggestions', term],
+    queryFn: () => productService.getSuggestions(term),
+    enabled: term.length >= 2,
+    staleTime: 60_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
 export function useProducts(params?: ProductQueryParams) {
   return useQuery({
     queryKey: ['products', params],

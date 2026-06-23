@@ -21,6 +21,7 @@ import {
 } from '../services/taxonomyCache';
 import fs from 'fs';
 import logger from '../config/logger';
+import { normalizeForSearch, escapeRegExp } from '../utils/searchNormalize';
 
 /**
  * Hidrata in-place sobre cada producto lean las refs a taxonomías usando
@@ -287,6 +288,77 @@ export const listFeaturedProducts = asyncHandler(
     });
 
     res.status(200).json({ success: true, data: { data: data as any } });
+  }
+);
+
+// =====================================================
+// GET /api/products/suggest  (autocompletado del buscador)
+// =====================================================
+interface SuggestEntity {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  slug: string;
+}
+interface SuggestResponse {
+  products: IProduct[];
+  categories: SuggestEntity[];
+  brands: SuggestEntity[];
+  collections: SuggestEntity[];
+}
+
+export const suggestProducts = asyncHandler(
+  async (req: AuthRequest, res: Response<ApiResponse<SuggestResponse>>) => {
+    const norm = normalizeForSearch((req.query.q as string) || '');
+    const limit = Math.min(parseInt((req.query.limit as string) || '6', 10) || 6, 10);
+
+    // <2 chars no aporta señal útil (ruido). El front igual no consulta antes.
+    if (norm.length < 2) {
+      res.status(200).json({
+        success: true,
+        data: { products: [], categories: [], brands: [], collections: [] },
+      });
+      return;
+    }
+
+    // Cada token debe aparecer como prefijo de palabra en el texto normalizado.
+    // "choco" encuentra "Chocolate…"; "sahne nuss" exige ambos. Sobre el campo
+    // `searchText` (minúsculas, sin acentos) que mantiene el hook del modelo.
+    const tokens = norm.split(' ').filter(Boolean);
+    const productFilter = {
+      active: true,
+      $and: tokens.map((t) => ({
+        searchText: new RegExp(`(^| )${escapeRegExp(t)}`),
+      })),
+    };
+
+    const products = await Product.find(productFilter)
+      .select('name slug images unitPrice saleUnit tiers fixedDiscount presentaciones')
+      .sort({ views: -1, createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    // Entidades (marca/categoría/colección): listas chicas, se filtran en memoria
+    // contra el query normalizado. Funcionan como accesos directos a vistas
+    // filtradas del catálogo (no como productos).
+    const matchEntity = (name: string) => normalizeForSearch(name).includes(norm);
+    const toEntity = (e: { _id: mongoose.Types.ObjectId; name: string; slug: string }) => ({
+      _id: e._id,
+      name: e.name,
+      slug: e.slug,
+    });
+    const [brandsRaw, catsRaw, collsRaw] = await Promise.all([
+      Brand.find({ active: true }).select('name slug').lean(),
+      Category.find({ active: true }).select('name slug').lean(),
+      Collection.find({ active: true }).select('name slug').lean(),
+    ]);
+    const brands = (brandsRaw as any[]).filter((b) => matchEntity(b.name)).slice(0, 4).map(toEntity);
+    const categories = (catsRaw as any[]).filter((c) => matchEntity(c.name)).slice(0, 4).map(toEntity);
+    const collections = (collsRaw as any[]).filter((c) => matchEntity(c.name)).slice(0, 3).map(toEntity);
+
+    res.status(200).json({
+      success: true,
+      data: { products: products as any, categories, brands, collections },
+    });
   }
 );
 

@@ -34,6 +34,21 @@ export interface PaginatedProducts {
 // Los valores siempre son string|number|boolean serializables a query.
 export type FacetsQueryParams = Record<string, string | number | boolean | undefined>;
 
+/** Entidad (marca/categoría/colección) sugerida por el autocompletado. */
+export interface SuggestEntity {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
+/** Respuesta del autocompletado del buscador. */
+export interface SearchSuggestions {
+  products: Product[];
+  categories: SuggestEntity[];
+  brands: SuggestEntity[];
+  collections: SuggestEntity[];
+}
+
 export const productService = {
   getProducts: async (params?: ProductQueryParams): Promise<PaginatedProducts> => {
     const { data } = await api.get<ApiResponse<PaginatedProducts>>(
@@ -59,6 +74,12 @@ export const productService = {
   },
   getFacets: async (params?: FacetsQueryParams): Promise<ProductFacets> => {
     const { data } = await api.get<ApiResponse<ProductFacets>>('/products/facets', { params });
+    return data.data;
+  },
+  getSuggestions: async (q: string): Promise<SearchSuggestions> => {
+    const { data } = await api.get<ApiResponse<SearchSuggestions>>('/products/suggest', {
+      params: { q },
+    });
     return data.data;
   },
 };
