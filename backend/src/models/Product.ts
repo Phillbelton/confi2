@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import slugify from 'slugify';
+import { normalizeForSearch } from '../utils/searchNormalize';
 
 /**
  * Modelo Product (Quelita) — colapsa el split parent+variant.
@@ -73,6 +74,9 @@ export interface IProduct extends Document {
   /** Código de barras del fabricante (EAN-13) o código POS. Puede repetirse,
    *  puede estar vacío. NO se usa como identidad primaria. */
   barcode?: string;
+  /** Texto normalizado (minúsculas, sin acentos) derivado de `name`, para el
+   *  autocompletado por prefijo del buscador. Lo mantiene un hook pre-save. */
+  searchText?: string;
 
   /** Denormalizado = precio de la presentación principal (sort/filtro/índice). */
   unitPrice: number;
@@ -197,6 +201,8 @@ const productSchema = new Schema<IProduct>(
     flavor: { type: Schema.Types.ObjectId, ref: 'Flavor' },
     flavors: { type: [Schema.Types.ObjectId], ref: 'Flavor', default: [] },
     barcode: { type: String, trim: true, maxlength: 32 },
+    // Derivado de `name` (hook pre-save). No lo setea el cliente.
+    searchText: { type: String, default: '', select: false },
 
     unitPrice: {
       type: Number,
@@ -260,6 +266,8 @@ productSchema.index({ flavors: 1, active: 1 });
 productSchema.index({ featured: 1, active: 1 });
 productSchema.index({ unitPrice: 1, active: 1 });
 productSchema.index({ name: 'text', description: 'text' });
+// Autocompletado por prefijo del buscador (regex sobre el texto normalizado).
+productSchema.index({ searchText: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index(
   { barcode: 1 },
@@ -435,6 +443,15 @@ productSchema.pre('save', async function (next) {
   } catch (err) {
     next(err as Error);
   }
+});
+
+// Pre-save: mantener `searchText` (normalizado de name) para el autocompletado.
+// Solo recalcula cuando cambia el nombre o falta, para no trabajar de más.
+productSchema.pre('save', function (next) {
+  if (this.isModified('name') || !this.searchText) {
+    this.searchText = normalizeForSearch(this.name);
+  }
+  next();
 });
 
 export const Product = mongoose.model<IProduct>('Product', productSchema);

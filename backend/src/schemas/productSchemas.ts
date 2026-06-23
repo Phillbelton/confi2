@@ -136,6 +136,13 @@ export const getFeaturedProductsSchema = z.object({
   query: z.object({ limit: z.string().regex(/^\d+$/).optional() }),
 });
 
+export const suggestProductsSchema = z.object({
+  query: z.object({
+    q: z.string().max(100).optional(),
+    limit: z.string().regex(/^\d+$/).optional(),
+  }),
+});
+
 // ============================================================
 // Format
 // ============================================================

@@ -17,6 +17,7 @@ import {
   getProductBySlugSchema,
   deleteProductSchema,
   getFeaturedProductsSchema,
+  suggestProductsSchema,
 } from '../schemas/productSchemas';
 
 const router = Router();
@@ -25,6 +26,9 @@ const router = Router();
 router.get('/', validate(getProductsQuerySchema), productController.listProducts);
 router.get('/featured', validate(getFeaturedProductsSchema), productController.listFeaturedProducts);
 router.get('/facets', productFacetsController.getProductFacets);
+// Autocompletado del buscador. ANTES de '/:id' para no ser capturado por la
+// ruta paramétrica.
+router.get('/suggest', validate(suggestProductsSchema), productController.suggestProducts);
 
 // Admin: stats overview (counters por estado y problemas comunes)
 router.get('/admin-stats', authenticate, authorize('admin'), productController.getAdminStats);

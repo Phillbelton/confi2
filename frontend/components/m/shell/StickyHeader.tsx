@@ -2,19 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Search, Sparkles, ShoppingBag, User } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { Sparkles, ShoppingBag, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { useClientStore } from '@/store/useClientStore';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
+import { NavbarSearch } from '@/components/layout/NavbarSearch';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
 
 export function StickyHeader() {
-  const router = useRouter();
-  const [q, setQ] = useState('');
-  const [focused, setFocused] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const itemCount = useCartStoreM((s) => s.itemCount);
 
@@ -38,24 +35,6 @@ export function StickyHeader() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  const onSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const term = q.trim();
-    // Si ya estamos en el catálogo, preservar los filtros activos de la URL
-    // y solo actualizar `search`; desde cualquier otra página, ir limpio.
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/productos')) {
-      const params = new URLSearchParams(window.location.search);
-      if (term) params.set('search', term);
-      else params.delete('search');
-      const qs = params.toString();
-      router.push(qs ? `/productos?${qs}` : '/productos');
-      return;
-    }
-    router.push(
-      term ? `/productos?search=${encodeURIComponent(term)}` : '/productos'
-    );
-  };
 
   return (
     <header className={cn('sticky top-0 z-30', 'pt-[env(safe-area-inset-top)]')}>
@@ -144,14 +123,9 @@ export function StickyHeader() {
             </div>
           </div>
 
-          <form onSubmit={onSubmit} className="relative z-10 px-4 pb-5 pt-3">
-            <SearchField
-              q={q}
-              setQ={setQ}
-              focused={focused}
-              setFocused={setFocused}
-            />
-          </form>
+          <div className="relative z-10 px-4 pb-5 pt-3">
+            <NavbarSearch idSuffix="m" />
+          </div>
         </div>
 
         {/* ---------------------------- DESKTOP: layout horizontal estilo Jumbo ---------------------------- */}
@@ -177,15 +151,8 @@ export function StickyHeader() {
             {/* Selector de categorías (dropdown con mega-panel hover) */}
             <CategoriesDropdown basePath="/productos" useSlug />
 
-            {/* Search expandido */}
-            <form onSubmit={onSubmit} className="flex-1 max-w-2xl">
-              <SearchField
-                q={q}
-                setQ={setQ}
-                focused={focused}
-                setFocused={setFocused}
-              />
-            </form>
+            {/* Search expandido con autocompletado */}
+            <NavbarSearch idSuffix="d" enableSlashShortcut className="flex-1 max-w-2xl" />
 
             {/* CTAs derecha: Cuenta + Carrito */}
             <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -232,41 +199,3 @@ export function StickyHeader() {
   );
 }
 
-interface SearchFieldProps {
-  q: string;
-  setQ: (v: string) => void;
-  focused: boolean;
-  setFocused: (v: boolean) => void;
-}
-
-function SearchField({ q, setQ, focused, setFocused }: SearchFieldProps) {
-  return (
-    <label
-      className={cn(
-        'group relative block overflow-hidden rounded-full bg-white/95 shadow-lg transition-all',
-        focused && 'ring-4 ring-white/30'
-      )}
-    >
-      <span className="sr-only">Buscar productos</span>
-      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
-      <input
-        type="search"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        placeholder="¿Qué dulce buscas hoy?"
-        className={cn(
-          'w-full bg-transparent py-3 pl-11 pr-24 text-sm text-foreground',
-          'placeholder:text-muted-foreground focus:outline-none'
-        )}
-      />
-      <button
-        type="submit"
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 active:scale-95 transition-transform"
-      >
-        Buscar
-      </button>
-    </label>
-  );
-}

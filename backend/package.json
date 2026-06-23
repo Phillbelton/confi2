@@ -12,6 +12,7 @@
     "migrate:banner-rows": "ts-node -r tsconfig-paths/register src/scripts/migrateBannerRows.ts",
     "migrate:presentations": "ts-node -r tsconfig-paths/register src/scripts/migratePresentations.ts",
     "migrate:flavors": "ts-node -r tsconfig-paths/register src/scripts/migrateFlavors.ts",
+    "backfill:search-text": "ts-node -r tsconfig-paths/register src/scripts/backfillSearchText.ts",
     "import:catalog": "ts-node -r tsconfig-paths/register src/scripts/importCatalogExcel.ts",
     "cleanup:provider": "ts-node -r tsconfig-paths/register src/scripts/cleanupProviderField.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seedAdmin.ts",

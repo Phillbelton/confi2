@@ -6,7 +6,6 @@ import { Check, Search, X, SlidersHorizontal } from 'lucide-react';
 import { ProductGridM } from '@/components/m/catalog/ProductGridM';
 import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
 import { useCatalogBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose,
@@ -15,7 +14,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useInfiniteProducts, useFacets } from '@/hooks/useProducts';
-import { useDebounce } from 'use-debounce';
 import { cn } from '@/lib/utils';
 import type { ProductQueryParams } from '@/services/products';
 
@@ -79,9 +77,6 @@ function CatalogContent() {
     {}
   );
 
-  const [searchInput, setSearchInput] = useState(search);
-  const [debouncedSearch] = useDebounce(searchInput, 350);
-
   const setParam = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(sp.toString());
     for (const [k, v] of Object.entries(updates)) {
@@ -90,15 +85,6 @@ function CatalogContent() {
     }
     router.replace(`/productos?${params.toString()}`);
   };
-
-  // La query/facets ya usan `debouncedSearch`; la URL también se escribe
-  // recién con el valor estable para no hacer router.replace por tecla.
-  useEffect(() => {
-    if (debouncedSearch !== search) {
-      setParam({ search: debouncedSearch || undefined });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
 
   const productQuery: ProductQueryParams = {
     category,
@@ -112,8 +98,8 @@ function CatalogContent() {
     featured: featured || undefined,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
-    // La URL es la fuente de verdad de la búsqueda: el input in-page la
-    // escribe con debounce y el buscador del header la setea directo.
+    // La URL es la fuente de verdad de la búsqueda; la escribe el buscador del
+    // navbar (en vivo dentro del catálogo, o al enviar desde otra página).
     search: search || undefined,
     sort,
     limit: 30,
@@ -149,7 +135,7 @@ function CatalogContent() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const { data: facets } = useFacets({
-    category, search: debouncedSearch, collection,
+    category, search: search || undefined, collection,
     ...attrQueryEntries,
   });
 
@@ -427,30 +413,6 @@ function CatalogContent() {
         <h1 className="text-xl font-extrabold tracking-tight lg:text-2xl">
           Catálogo
         </h1>
-      </div>
-
-      {/* Buscador — en desktop ya existe el buscador prominente del header,
-          así que acá se muestra solo en mobile/tablet para no duplicarlo. */}
-      <div className="px-4 pt-3 lg:hidden">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar productos…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="h-11 rounded-full pl-9 pr-9"
-          />
-          {searchInput && (
-            <button
-              type="button"
-              onClick={() => setSearchInput('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              aria-label="Limpiar búsqueda"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Controles: resultados · orden · filtros */}

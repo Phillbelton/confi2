@@ -209,6 +209,79 @@ describe('GET /api/products', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
+// GET /api/products/suggest (autocompletado del buscador)
+// ────────────────────────────────────────────────────────────────────
+describe('GET /api/products/suggest', () => {
+  let categoryId: mongoose.Types.ObjectId;
+
+  beforeEach(async () => {
+    const cat = await seedCategory();
+    categoryId = cat._id as mongoose.Types.ObjectId;
+  });
+
+  const seedNamed = async (name: string, active = true) => {
+    const suffix = `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+    return Product.create({
+      name,
+      slug: `p-${suffix}`,
+      description: 'Producto seed para el autocompletado.',
+      categories: [categoryId],
+      unitPrice: 1000,
+      saleUnit: { type: 'unidad', quantity: 1 },
+      active,
+    });
+  };
+
+  it('devuelve listas vacías si q tiene menos de 2 caracteres', async () => {
+    await seedNamed('Chocolate Sahne Nuss');
+    const res = await request(app).get('/api/products/suggest?q=c');
+    expect(res.status).toBe(200);
+    expect(res.body.data.products).toEqual([]);
+  });
+
+  it('encuentra productos por prefijo de palabra', async () => {
+    await seedNamed('Chocolate Sahne Nuss');
+    await seedNamed('Galleta de vainilla');
+    const res = await request(app).get('/api/products/suggest?q=choco');
+    expect(res.status).toBe(200);
+    const names = res.body.data.products.map((p: any) => p.name);
+    expect(names).toContain('Chocolate Sahne Nuss');
+    expect(names).not.toContain('Galleta de vainilla');
+  });
+
+  it('es insensible a acentos (limon ↔ limón)', async () => {
+    await seedNamed('Jugo de Limón');
+    const res = await request(app).get('/api/products/suggest?q=limon');
+    const names = res.body.data.products.map((p: any) => p.name);
+    expect(names).toContain('Jugo de Limón');
+  });
+
+  it('exige todos los tokens del query (AND)', async () => {
+    await seedNamed('Chocolate Sahne Nuss');
+    await seedNamed('Chocolate Amargo');
+    const res = await request(app).get('/api/products/suggest?q=choco%20sah');
+    const names = res.body.data.products.map((p: any) => p.name);
+    expect(names).toContain('Chocolate Sahne Nuss');
+    expect(names).not.toContain('Chocolate Amargo');
+  });
+
+  it('sugiere marcas que coinciden con el término', async () => {
+    const suffix = `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+    await Brand.create({ name: 'Ambrosoli', slug: `ambrosoli-${suffix}`, active: true });
+    const res = await request(app).get('/api/products/suggest?q=ambro');
+    const brandNames = res.body.data.brands.map((b: any) => b.name);
+    expect(brandNames).toContain('Ambrosoli');
+  });
+
+  it('no incluye productos inactivos', async () => {
+    await seedNamed('Chocolate Oculto', false);
+    const res = await request(app).get('/api/products/suggest?q=choco');
+    const names = res.body.data.products.map((p: any) => p.name);
+    expect(names).not.toContain('Chocolate Oculto');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
 // GET /api/products/featured
 // ────────────────────────────────────────────────────────────────────
 describe('GET /api/products/featured', () => {
