@@ -41,24 +41,43 @@ const allowedOrigins = [
   ENV.FRONTEND_URL,
 ];
 
-// Sufijos de hostname permitidos en producción (plataformas de despliegue)
-const ALLOWED_HOSTNAME_SUFFIXES = ['.seenode.com'];
+// Sufijos de hostname permitidos en producción: plataformas de despliegue
+// y el túnel de demo de Cloudflare (URL efímera *.trycloudflare.com).
+// Se valida por hostname para evitar bypass tipo "https://seenode.com.evil.com".
+const ALLOWED_HOSTNAME_SUFFIXES = ['.seenode.com', '.trycloudflare.com'];
+
+// IPs privadas RFC 1918 (deploy en LAN detrás de Caddy con IP DHCP).
+// Permitirlas evita reconfigurar FRONTEND_URL cada vez que cambia la IP de la VM.
+const isPrivateLanHost = (hostname: string): boolean => {
+  const m = hostname.match(/^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+  if (!m) return false;
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  if (a === 10) return true; // 10.0.0.0/8
+  if (a === 192 && b === 168) return true; // 192.168.0.0/16
+  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+  return false;
+};
 
 const isOriginAllowed = (origin: string): boolean => {
   // Match exacto contra lista blanca
   if (allowedOrigins.indexOf(origin) !== -1) return true;
 
-  // En producción, permitir subdominios de plataformas confiables.
-  // Validar por hostname para evitar bypass tipo "https://seenode.com.evil.com".
+  let hostname: string;
+  try {
+    ({ hostname } = new URL(origin));
+  } catch {
+    return false;
+  }
+
+  // LAN privada: permite entrar por la IP de la VM sin tocar config al cambiar el DHCP.
+  if (isPrivateLanHost(hostname)) return true;
+
+  // En producción, permitir subdominios de plataformas/túneles confiables.
   if (ENV.NODE_ENV === 'production') {
-    try {
-      const { hostname } = new URL(origin);
-      return ALLOWED_HOSTNAME_SUFFIXES.some(
-        (suffix) => hostname === suffix.slice(1) || hostname.endsWith(suffix)
-      );
-    } catch {
-      return false;
-    }
+    return ALLOWED_HOSTNAME_SUFFIXES.some(
+      (suffix) => hostname === suffix.slice(1) || hostname.endsWith(suffix)
+    );
   }
 
   return false;

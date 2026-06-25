@@ -3,13 +3,28 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Sparkles, ShoppingBag, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { useClientStore } from '@/store/useClientStore';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
 import { NavbarSearch } from '@/components/layout/NavbarSearch';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
+
+/**
+ * Placeholder del buscador mientras se resuelve el límite de Suspense de
+ * `NavbarSearch`. `NavbarSearch` usa `useSearchParams()`, que en App Router
+ * exige un <Suspense> por encima para poder prerenderizar estáticamente las
+ * páginas que montan este header (si no, `next build` falla con
+ * "missing-suspense-with-csr-bailout").
+ */
+function SearchFallback({ className }: { className?: string }) {
+  return (
+    <div className={cn('relative', className)} aria-hidden>
+      <div className="h-[46px] w-full rounded-full bg-white/95 shadow-lg" />
+    </div>
+  );
+}
 
 export function StickyHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -124,7 +139,9 @@ export function StickyHeader() {
           </div>
 
           <div className="relative z-10 px-4 pb-5 pt-3">
-            <NavbarSearch idSuffix="m" />
+            <Suspense fallback={<SearchFallback />}>
+              <NavbarSearch idSuffix="m" />
+            </Suspense>
           </div>
         </div>
 
@@ -152,7 +169,9 @@ export function StickyHeader() {
             <CategoriesDropdown basePath="/productos" useSlug />
 
             {/* Search expandido con autocompletado */}
-            <NavbarSearch idSuffix="d" enableSlashShortcut className="flex-1 max-w-2xl" />
+            <Suspense fallback={<SearchFallback className="flex-1 max-w-2xl" />}>
+              <NavbarSearch idSuffix="d" enableSlashShortcut className="flex-1 max-w-2xl" />
+            </Suspense>
 
             {/* CTAs derecha: Cuenta + Carrito */}
             <div className="ml-auto flex shrink-0 items-center gap-2">
