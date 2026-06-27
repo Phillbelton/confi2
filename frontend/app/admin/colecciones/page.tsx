@@ -139,7 +139,7 @@ export default function ColeccionesPage() {
             </DialogTitle>
             <DialogDescription>
               {selected
-                ? 'Modificá los datos. Los cambios se reflejan en home y catálogo automáticamente.'
+                ? 'Modifica los datos. Los cambios se reflejan en home y catálogo automáticamente.'
                 : 'Una colección agrupa productos curados (como una "categoría blanda" personalizada).'}
             </DialogDescription>
           </DialogHeader>

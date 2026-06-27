@@ -57,9 +57,11 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const minQ = minQuantity(product);
   const step = quantityStep(product);
 
-  // Precio mostrado: a la cantidad mínima del producto.
+  // Precio mostrado: reacciona a la cantidad real en carrito. Al alcanzar un
+  // tramo por volumen, el precio baja al precio mayorista; sin nada en carrito
+  // cae al mínimo → precio base. (Solo cambia algo si el producto tiene tramos.)
   // ppu = precio efectivo por PRESENTACIÓN (ya no por unidad atómica).
-  const ppu = effectiveUnitPrice(product, Math.max(minQ, 1));
+  const ppu = effectiveUnitPrice(product, Math.max(inCart, minQ, 1));
   // Con varias presentaciones, el "desde" es el menor precio entre ellas.
   const multiPres = (product.presentaciones?.length ?? 0) > 1;
   // Señal de presentaciones disponibles (chips terse, sin factor ni precio).

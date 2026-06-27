@@ -98,7 +98,11 @@ export function PresentationInline({ product, withLadder = false }: Presentation
   const lineId = cartLineId(product._id, selPres?._id ?? principalId);
   const inCart = items.find((i) => i.lineId === lineId)?.quantity || 0;
 
-  const ppu = effectiveUnitPrice(viewProduct, minQ);
+  // El precio reacciona a la cantidad real en carrito de ESA presentación: al
+  // alcanzar un tramo por volumen, el precio mostrado baja al precio mayorista
+  // (consistente con el cartel de tramo y con el bottom-sheet). Sin nada en
+  // carrito, cae al mínimo → precio base de la presentación.
+  const ppu = effectiveUnitPrice(viewProduct, Math.max(inCart, minQ));
   const basePrice = discountedUnitPrice(viewProduct);
   const isPackaged = isPackagedSale(viewProduct);
   const ppuAtomic = pricePerAtomicUnit(viewProduct, ppu);

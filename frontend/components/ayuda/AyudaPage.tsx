@@ -35,7 +35,7 @@ export function AyudaPage({
 
       <div className="mt-10 rounded-2xl border border-border bg-muted/40 p-5 text-center">
         <p className="text-sm text-muted-foreground">
-          ¿Te quedan dudas o querés cotizar por mayor?
+          ¿Te quedan dudas o quieres cotizar por mayor?
         </p>
         <Link
           href={businessWhatsappHref()}

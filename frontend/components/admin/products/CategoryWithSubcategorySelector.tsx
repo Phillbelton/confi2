@@ -185,7 +185,7 @@ export function CategoryWithSubcategorySelector({
           </Button>
         </div>
         <p className="text-[11px] text-muted-foreground">
-          💡 Se agrega el nivel más profundo seleccionado. Podés agregar varias categorías al mismo producto.
+          💡 Se agrega el nivel más profundo seleccionado. Puedes agregar varias categorías al mismo producto.
         </p>
       </div>
     </div>

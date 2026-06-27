@@ -125,7 +125,7 @@ function SectionContent({
     case 'static_cta':
       return (
         <StaticBlock
-          title="Comprá por mayor"
+          title="Compra por mayor"
           description="Banner promocional fijo (definido en el código, no editable acá)."
         />
       );
@@ -189,7 +189,7 @@ export function HomeWireframe() {
   };
 
   const removeSection = (id: string) => {
-    if (!confirm('¿Quitar esta sección de la home? (Podés volver a agregar otra cuando quieras)')) return;
+    if (!confirm('¿Quitar esta sección de la home? (Puedes volver a agregar otra cuando quieras)')) return;
     setSections((prev) => prev.filter((s) => s.id !== id));
     setDirty(true);
   };
@@ -673,7 +673,7 @@ function StoreMapEditor({
               </div>
             ) : (
               <p className="text-xs text-amber-600">
-                Completá la búsqueda de Google Maps — sin eso no se puede guardar.
+                Completa la búsqueda de Google Maps — sin eso no se puede guardar.
               </p>
             )}
           </div>

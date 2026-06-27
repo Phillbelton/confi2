@@ -333,7 +333,7 @@ export function BannerForm({
                 </label>
                 <p className="text-xs text-muted-foreground">
                   Si el recorte mobile de la imagen principal corta lo
-                  importante, subí una versión pensada para celular.
+                  importante, sube una versión pensada para celular.
                 </p>
               </div>
             </div>

@@ -255,7 +255,7 @@ export default function ImportPage() {
                   className="max-w-[200px]"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Usá <code>0</code> para importar todos los productos válidos del
+                  Usa <code>0</code> para importar todos los productos válidos del
                   Excel. Un número &gt; 0 procesa solo las primeras N filas (útil
                   para probar).
                 </p>

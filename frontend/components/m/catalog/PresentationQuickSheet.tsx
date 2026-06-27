@@ -112,13 +112,13 @@ export function PresentationQuickSheet({ product, className }: PresentationQuick
             {product.name}
           </SheetTitle>
           <SheetDescription className="sr-only">
-            Elegí presentación y cantidad, y agregá al carrito.
+            Elige presentación y cantidad, y agrega al carrito.
           </SheetDescription>
 
           {/* Selector de presentación */}
           <div className="mt-3">
             <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
-              Elegí presentación
+              Elige presentación
             </p>
             <div className="flex flex-wrap gap-2">
               {presentations.map((p) => {

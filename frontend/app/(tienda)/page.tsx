@@ -34,7 +34,7 @@ function renderSection(section: HomeSection): React.ReactNode {
         <section className="px-4 py-3 lg:px-8 lg:py-6">
           <div className="rounded-3xl bg-gradient-to-r from-accent/15 via-accent/10 to-primary/10 p-4 text-center lg:p-8">
             <p className="text-[11px] font-bold uppercase tracking-widest text-accent lg:text-sm">
-              Comprá por mayor
+              Compra por mayor
             </p>
             <p className="mt-1 font-display text-base font-bold leading-snug lg:text-2xl">
               Más cantidad, mejor precio 🎉
