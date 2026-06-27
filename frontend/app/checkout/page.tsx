@@ -370,7 +370,7 @@ export default function CheckoutPage() {
                               <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                               <div className="flex-1">
                                 <p className="text-foreground">
-                                  Ya tenés una cuenta con este número. Iniciá sesión para ver tu historial de pedidos.
+                                  Ya tienes una cuenta con este número. Inicia sesión para ver tu historial de pedidos.
                                 </p>
                                 <div className="flex gap-2 mt-2">
                                   <Link

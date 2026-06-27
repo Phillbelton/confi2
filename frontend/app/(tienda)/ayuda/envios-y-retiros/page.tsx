@@ -4,7 +4,7 @@ import { AyudaPage } from '@/components/ayuda/AyudaPage';
 
 export const metadata = {
   title: 'Envíos y retiros · Confitería Quelita',
-  description: 'Retirá gratis en nuestras tiendas de Macul y Peñalolén, o recibí tu pedido a domicilio coordinando el despacho por WhatsApp.',
+  description: 'Retira gratis en nuestras tiendas de Macul y Peñalolén, o recibe tu pedido a domicilio coordinando el despacho por WhatsApp.',
 };
 
 const TIENDAS = [
@@ -16,7 +16,7 @@ export default function EnviosYRetirosPage() {
   return (
     <AyudaPage
       title="Envíos y retiros"
-      intro="Podés retirar tu pedido en tienda o recibirlo en tu domicilio."
+      intro="Puedes retirar tu pedido en tienda o recibirlo en tu domicilio."
     >
       {/* Retiro en tienda */}
       <section className="rounded-2xl border border-border p-5">
@@ -27,7 +27,7 @@ export default function EnviosYRetirosPage() {
           <h2 className="font-semibold">Retiro en tienda · gratis</h2>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Retirás sin costo en cualquiera de nuestros locales, de lunes a sábado de 08:30 a 20:30.
+          Retiras sin costo en cualquiera de nuestros locales, de lunes a sábado de 08:30 a 20:30.
         </p>
         <ul className="mt-3 space-y-2">
           {TIENDAS.map((s) => (

@@ -3,19 +3,19 @@ import { AyudaPage } from '@/components/ayuda/AyudaPage';
 
 export const metadata = {
   title: 'Formas de pago · Confitería Quelita',
-  description: 'Pagá en efectivo al recibir tu pedido o por transferencia bancaria (te enviamos los datos por WhatsApp).',
+  description: 'Paga en efectivo al recibir tu pedido o por transferencia bancaria (te enviamos los datos por WhatsApp).',
 };
 
 const METODOS = [
   {
     Icon: Banknote,
     t: 'Efectivo',
-    d: 'Pagás al recibir el pedido o al retirarlo en tienda. Sin recargo.',
+    d: 'Pagas al recibir el pedido o al retirarlo en tienda. Sin recargo.',
   },
   {
     Icon: ArrowLeftRight,
     t: 'Transferencia bancaria',
-    d: 'Al confirmar tu pedido te enviamos los datos de la cuenta por WhatsApp. Nos mandás el comprobante y preparamos tu pedido.',
+    d: 'Al confirmar tu pedido te enviamos los datos de la cuenta por WhatsApp. Nos envías el comprobante y preparamos tu pedido.',
   },
 ];
 
@@ -23,7 +23,7 @@ export default function FormasDePagoPage() {
   return (
     <AyudaPage
       title="Formas de pago"
-      intro="Aceptamos dos formas de pago. Elegís la que prefieras al confirmar tu pedido."
+      intro="Aceptamos dos formas de pago. Eliges la que prefieras al confirmar tu pedido."
     >
       <div className="grid gap-4 sm:grid-cols-2">
         {METODOS.map(({ Icon, t, d }) => (

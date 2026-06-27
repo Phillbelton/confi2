@@ -280,7 +280,7 @@ export function ProductForm({
               {isEditing ? 'Editar producto' : 'Nuevo producto'}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {isEditing ? 'Modificá los datos y guardá' : 'Completá el form — la vista previa se actualiza en vivo'}
+              {isEditing ? 'Modifica los datos y guarda' : 'Completa el formulario — la vista previa se actualiza en vivo'}
             </p>
           </div>
         </div>
@@ -341,7 +341,7 @@ export function ProductForm({
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {isEditing
                         ? 'Identidad del producto — no editable.'
-                        : 'Dejalo vacío para auto-generar, o ingresá uno para sincronizar con el Excel.'}
+                        : 'Déjalo vacío para auto-generar, o ingresa uno para sincronizar con el Excel.'}
                     </p>
                   </div>
                   <div>
@@ -769,7 +769,7 @@ export function ProductForm({
             <div className="text-xs text-muted-foreground hidden md:block">
               {Object.keys(form.formState.errors).length > 0 && (
                 <span className="text-destructive font-semibold">
-                  ⚠ {Object.keys(form.formState.errors).length} error(es) — revisá el form
+                  ⚠ {Object.keys(form.formState.errors).length} error(es) — revisa el formulario
                 </span>
               )}
             </div>

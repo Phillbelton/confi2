@@ -53,7 +53,7 @@ const loginLimiter = createTestAwareRateLimiter({
 
 const registerLimiter = createTestAwareRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hora
-  max: 3, // Máximo 3 registros por hora desde la misma IP
+  max: 8, // Máximo 8 registros por hora desde la misma IP
   message: {
     success: false,
     error: 'Demasiados intentos de registro. Por favor, intenta de nuevo más tarde.',

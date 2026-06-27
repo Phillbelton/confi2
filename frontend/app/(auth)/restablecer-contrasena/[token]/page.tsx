@@ -91,7 +91,7 @@ export default function RestablecerContrasenaPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="flex min-h-[60vh] w-full items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -114,7 +114,7 @@ export default function RestablecerContrasenaPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="flex min-h-[60vh] w-full items-center justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

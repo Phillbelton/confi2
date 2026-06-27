@@ -321,7 +321,7 @@ export function CategoryForm({
             <div className="rounded-lg border bg-muted/30 p-3 flex items-center gap-2 text-sm text-muted-foreground">
               <FolderTree className="h-4 w-4 shrink-0" />
               <span>
-                Categoría raíz. Para agregarle subcategorías usá el botón
+                Categoría raíz. Para agregarle subcategorías usa el botón
                 "+ Subcategoría" en la lista de categorías.
               </span>
             </div>

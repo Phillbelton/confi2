@@ -220,9 +220,9 @@ export default function ProductDetailPage() {
           {presentations.length > 1 && (
             <div className="mt-4">
               <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
-                Elegí presentación
+                Elige presentación
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 lg:flex-wrap">
                 {presentations.map((p) => {
                   const active = (selPres?._id ?? '') === p._id;
                   return (
@@ -231,13 +231,13 @@ export default function ProductDetailPage() {
                       type="button"
                       onClick={() => setSelPresId(p._id)}
                       className={cn(
-                        'rounded-xl border px-3 py-2 text-left transition-all',
+                        'flex-1 min-w-0 lg:flex-none rounded-xl border px-2.5 py-2 text-left transition-all',
                         active
                           ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
                           : 'border-border hover:border-primary/40'
                       )}
                     >
-                      <span className="block text-sm font-semibold">{presLabel(p)}</span>
+                      <span className="block text-sm font-semibold leading-tight">{presLabel(p)}</span>
                       <span className="block text-xs tabular-nums text-muted-foreground">
                         ${Math.round(p.unitPrice).toLocaleString('es-CL')}
                       </span>

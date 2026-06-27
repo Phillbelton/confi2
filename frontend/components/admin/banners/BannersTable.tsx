@@ -35,7 +35,7 @@ export function BannersTable({ banners, onEdit, onDelete, isDeleting }: BannersT
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          No hay banners todavía. Creá el primero.
+          No hay banners todavía. Crea el primero.
         </CardContent>
       </Card>
     );

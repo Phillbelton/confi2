@@ -2,29 +2,33 @@ import { AyudaPage } from '@/components/ayuda/AyudaPage';
 
 export const metadata = {
   title: 'Cómo comprar · Confitería Quelita',
-  description: 'Comprar en Quelita es rápido y sin cuenta: explorá el catálogo, agregá al carrito y confirmamos por WhatsApp.',
+  description: 'Comprar en Quelita es rápido y sin cuenta: explora el catálogo, elige presentación y cantidad, y confirmamos por WhatsApp.',
 };
 
 const PASOS = [
   {
-    t: 'Explorá el catálogo',
-    d: 'Navegá por categorías o usá el buscador. Si comprás por mayor, los precios bajan solos por volumen: vas a ver los tramos de descuento por cantidad en cada producto.',
+    t: 'Explora el catálogo',
+    d: 'Navega por categorías o usa el buscador. Muchos productos se venden en distintas presentaciones (por unidad, display o caja), cada una con su propio precio.',
   },
   {
-    t: 'Agregá al carrito',
-    d: 'Elegí las cantidades que necesitás. El carrito calcula el total aplicando automáticamente los descuentos por cantidad.',
+    t: 'Elige presentación y cantidad',
+    d: 'En cada producto eliges cómo lo quieres llevar (por unidad, display o caja) y la cantidad. Al alcanzar un tramo por volumen, el precio por unidad baja automáticamente: verás los tramos de descuento en cada producto.',
   },
   {
-    t: 'Completá tus datos',
-    d: 'En el checkout cargás tus datos de contacto, elegís retiro en tienda o envío a domicilio, y la forma de pago (efectivo o transferencia). No hace falta crear una cuenta.',
+    t: 'Agrega al carrito',
+    d: 'El carrito calcula el total aplicando de forma automática los descuentos por cantidad de cada presentación.',
   },
   {
-    t: 'Confirmá por WhatsApp',
+    t: 'Completa tus datos',
+    d: 'En el checkout ingresas tus datos de contacto, eliges retiro en tienda o envío a domicilio, y la forma de pago (efectivo o transferencia). No necesitas crear una cuenta.',
+  },
+  {
+    t: 'Confirma por WhatsApp',
     d: 'Al finalizar te conectamos por WhatsApp para coordinar los últimos detalles y confirmar tu pedido. Ahí resolvemos cualquier duda de stock, despacho o pago.',
   },
   {
-    t: 'Pagá y recibí',
-    d: 'Pagás al recibir o retirar (efectivo), o por transferencia con los datos que te enviamos. Luego retirás en tienda o te lo despachamos a domicilio.',
+    t: 'Paga y recibe',
+    d: 'Pagas al recibir o retirar (efectivo), o por transferencia con los datos que te enviamos. Luego retiras en tienda o te lo despachamos a domicilio.',
   },
 ];
 
@@ -32,7 +36,7 @@ export default function ComoComprarPage() {
   return (
     <AyudaPage
       title="Cómo comprar"
-      intro="Comprar en Quelita es rápido y no necesitás cuenta. Estos son los pasos:"
+      intro="Comprar en Quelita es rápido y no necesitas cuenta. Estos son los pasos:"
     >
       <ol className="space-y-4">
         {PASOS.map((p, i) => (

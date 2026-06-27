@@ -19,7 +19,7 @@ import { SocialLinks } from '@/components/layout/SocialLinks';
 const TRUST_BADGES = [
   { icon: Truck, label: 'Envío rápido', sub: 'Todo Chile' },
   { icon: ShieldCheck, label: 'Compra segura', sub: 'Datos protegidos' },
-  { icon: Wallet, label: 'Pagá fácil', sub: 'Efectivo o tarjeta' },
+  { icon: Wallet, label: 'Paga fácil', sub: 'Efectivo o tarjeta' },
 ];
 
 const LINKS = {
@@ -62,7 +62,7 @@ export function MobileFooter() {
                       Hablemos por WhatsApp
                     </h3>
                     <p className="mt-0.5 text-xs text-white/70">
-                      Pedí asesoría, cotizaciones por mayor o reservá tu pedido.
+                      Pide asesoría, cotizaciones por mayor o reserva tu pedido.
                     </p>
                   </div>
                 </div>
