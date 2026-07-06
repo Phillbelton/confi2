@@ -535,7 +535,10 @@ html::-webkit-scrollbar-thumb:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('/brand/backgrounds/candy-pattern.png');
+  /* WebP de 700px (2x del tile de 350px). El master de 2343px/2.4MB se
+     mostraba tileado a 350px y al 17% de opacidad → derroche enorme; esta
+     versión pesa ~11KB y se ve idéntico. */
+  background-image: url('/brand/backgrounds/candy-pattern.webp');
   background-size: 350px;
   background-repeat: repeat;
   opacity: 0.17;
