@@ -6,8 +6,10 @@ import { Sparkles, ShoppingBag, User } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
 import { useClientStore } from '@/store/useClientStore';
+import { CategoriesNavBar } from '@/components/layout/CategoriesNavBar';
 import { CategoriesDropdown } from '@/components/layout/CategoriesDropdown';
 import { NavbarSearch } from '@/components/layout/NavbarSearch';
+import { useCatalogNavStyle } from '@/hooks/useSiteSettings';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +31,9 @@ function SearchFallback({ className }: { className?: string }) {
 export function StickyHeader() {
   const [scrolled, setScrolled] = useState(false);
   const itemCount = useCartStoreM((s) => s.itemCount);
+  // Estilo de navegación de categorías elegido en /admin/apariencia:
+  // 'bar' = fila con raíces visibles; 'dropdown' = botón junto al logo.
+  const navStyle = useCatalogNavStyle();
 
   // Enlace de cuenta consciente de sesión. Se gatea con _hasHydrated para
   // que SSR y primer paint cliente coincidan (evita hydration mismatch).
@@ -53,9 +58,16 @@ export function StickyHeader() {
 
   return (
     <header className={cn('sticky top-0 z-30', 'pt-[env(safe-area-inset-top)]')}>
-      {/* ============================ Marquee superior — promo strip ============================ */}
-      <div className="relative overflow-hidden bg-accent text-accent-foreground">
-        <div className="flex animate-[marquee_28s_linear_infinite] gap-12 whitespace-nowrap py-1.5 text-[11px] font-bold uppercase tracking-widest">
+      {/* ============================ Marquee superior — promo strip ============================
+          Al scrollear se colapsa (max-h → 0) para condensar el header. */}
+      <div
+        className={cn(
+          'relative overflow-hidden bg-accent text-accent-foreground transition-[max-height,opacity] duration-300',
+          scrolled ? 'max-h-0 opacity-0' : 'max-h-8 opacity-100'
+        )}
+        aria-hidden={scrolled}
+      >
+        <div className="marquee-track flex gap-12 whitespace-nowrap py-1.5 text-[11px] font-bold uppercase tracking-widest">
           {Array.from({ length: 4 }).map((_, i) => (
             <span key={i} className="inline-flex items-center gap-2">
               <Sparkles className="h-3 w-3" />
@@ -89,7 +101,12 @@ export function StickyHeader() {
 
         {/* ---------------------------- MOBILE: hamburguesa + logo + cuenta + carrito, búsqueda debajo ---------------------------- */}
         <div className="mx-auto w-full max-w-screen-md lg:hidden">
-          <div className="relative z-10 flex items-center gap-2 px-4 pt-3">
+          <div
+            className={cn(
+              'relative z-10 flex items-center gap-2 px-4 transition-[padding] duration-300',
+              scrolled ? 'pt-2' : 'pt-3'
+            )}
+          >
             <MobileMenuDrawer />
 
             <Link
@@ -138,35 +155,55 @@ export function StickyHeader() {
             </div>
           </div>
 
-          <div className="relative z-10 px-4 pb-5 pt-3">
+          <div
+            className={cn(
+              'relative z-10 px-4 transition-[padding] duration-300',
+              scrolled ? 'pb-3 pt-2' : 'pb-5 pt-3'
+            )}
+          >
             <Suspense fallback={<SearchFallback />}>
               <NavbarSearch idSuffix="m" />
             </Suspense>
           </div>
         </div>
 
-        {/* ---------------------------- DESKTOP: layout horizontal estilo Jumbo ---------------------------- */}
+        {/* ---------------------------- DESKTOP: logo + búsqueda + CTAs (la navegación va en la fila blanca de abajo) ---------------------------- */}
         <div className="hidden lg:block">
-          <div className="relative z-10 mx-auto flex w-full max-w-[1440px] items-center gap-6 px-8 py-4">
+          <div
+            className={cn(
+              'relative z-10 mx-auto flex w-full max-w-[1440px] items-center gap-6 px-8 transition-[padding] duration-300',
+              scrolled ? 'py-2' : 'py-4'
+            )}
+          >
             <Link
               href="/"
               className="flex shrink-0 items-center gap-3"
               aria-label="Inicio Quelita"
             >
-              <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30">
+              <div
+                className={cn(
+                  'relative grid place-items-center rounded-2xl bg-white/15 p-1 backdrop-blur ring-1 ring-white/30 transition-all duration-300',
+                  scrolled ? 'h-11 w-11' : 'h-14 w-14'
+                )}
+              >
                 <Image
                   src="/brand/logo.png"
                   alt="Confitería Quelita"
                   width={64}
                   height={64}
                   priority
-                  className="h-10 w-auto drop-shadow-md"
+                  className={cn(
+                    'w-auto drop-shadow-md transition-all duration-300',
+                    scrolled ? 'h-8' : 'h-10'
+                  )}
                 />
               </div>
             </Link>
 
-            {/* Selector de categorías (dropdown con mega-panel hover) */}
-            <CategoriesDropdown basePath="/productos" useSlug />
+            {/* Modo "dropdown" (clásico): botón Categorías junto al logo */}
+            {navStyle === 'dropdown' && (
+              <CategoriesDropdown basePath="/productos" useSlug />
+            )}
 
             {/* Search expandido con autocompletado */}
             <Suspense fallback={<SearchFallback className="flex-1 max-w-2xl" />}>
@@ -214,7 +251,24 @@ export function StickyHeader() {
           aria-hidden
         />
       </div>
+
+      {/* ============================ Fila de navegación (solo desktop, modo "bar") ============================
+          Categorías raíz con mega-panel al hover + accesos rápidos. Glass sobre
+          el contenido al scrollear. En modo "dropdown" no se renderiza (la
+          navegación vive en el botón junto al logo). */}
+      {navStyle === 'bar' && (
+        <div
+          className={cn(
+            'hidden border-b border-black/5 lg:block',
+            'bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/80',
+            scrolled && 'shadow-sm'
+          )}
+        >
+          <div className="mx-auto w-full max-w-[1440px] px-8">
+            <CategoriesNavBar />
+          </div>
+        </div>
+      )}
     </header>
   );
 }
-

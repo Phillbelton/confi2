@@ -32,6 +32,7 @@
     "seed:collection-packs": "ts-node -r tsconfig-paths/register src/scripts/seedCollectionPacks.ts",
     "seed:banners": "ts-node -r tsconfig-paths/register src/scripts/seedBanners.ts",
     "seed:home-banners": "ts-node -r tsconfig-paths/register src/scripts/seedHomeBanners.ts",
+    "seed:category-banners": "ts-node -r tsconfig-paths/register src/scripts/seedCategoryBanners.ts",
     "seed:all": "npm run seed:categories && npm run seed:brands && npm run seed:tags && npm run seed:products",
     "seed:test-data": "npm run seed:all && npm run seed:discounts && npm run seed:orders && npm run seed:stock-movements",
     "backup": "ts-node -r tsconfig-paths/register src/scripts/backup.ts",

@@ -13,11 +13,16 @@
 
 import { getImageUrl } from './images';
 
-/** Anchos disponibles por tipo de imagen. Debe coincidir con FOLDER_WIDTHS del backend. */
+/** Anchos disponibles por tipo de imagen. Debe coincidir con FOLDER_WIDTHS del
+ *  backend — ⚠️ elegir el set por la CARPETA de la imagen, no por el tamaño al
+ *  que se muestra: pedir un ancho que no existe en disco es un 404 y la imagen
+ *  no carga (sin Cloudinary no hay resize al vuelo). Las imágenes de PRODUCTO
+ *  solo existen en [400, 800, 1200]: usar `card` aunque se rendericen chicas
+ *  (miniaturas del PDP, carrito, buscador). */
 export const SIZESET = {
-  /** Cards de catálogo: productos, colecciones, categorías. */
+  /** Cards de catálogo: productos, colecciones. */
   card:  [400, 800, 1200],
-  /** Logos chicos: marcas, cart items. */
+  /** SOLO logos de marca (folder brands = [200, 400, 600]). */
   thumb: [200, 400, 600],
   /** Hero full-width: banners, backgrounds. */
   hero:  [640, 1280, 1920],

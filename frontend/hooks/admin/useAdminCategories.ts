@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   adminCategoryService,
+  type CategoryImageVariant,
   type CreateCategoryInput,
   type UpdateCategoryInput,
 } from '@/services/admin/categories';
@@ -93,12 +94,25 @@ export function useCategoryOperations() {
   });
 
   const uploadImageMutation = useMutation({
-    mutationFn: ({ id, file }: { id: string; file: File }) =>
-      adminCategoryService.uploadImage(id, file),
-    onSuccess: () => {
-      toast.success('Imagen cargada correctamente');
+    mutationFn: ({
+      id,
+      file,
+      variant = 'thumb',
+    }: {
+      id: string;
+      file: File;
+      variant?: CategoryImageVariant;
+    }) => adminCategoryService.uploadImage(id, file, variant),
+    onSuccess: (_response, { variant }) => {
+      toast.success(
+        variant === 'master'
+          ? 'Imágenes generadas (miniatura + 2 banners)'
+          : 'Imagen cargada correctamente'
+      );
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['main-categories'] });
+      // El storefront también consume estas imágenes (hero + mega-menú).
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
     onError: (error) => {
       toast.error('Error al cargar imagen', { description: getApiErrorMessage(error) });
@@ -113,6 +127,7 @@ export function useCategoryOperations() {
     deleteCategory: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
     uploadImage: uploadImageMutation.mutate,
+    uploadImageAsync: uploadImageMutation.mutateAsync,
     isUploadingImage: uploadImageMutation.isPending,
   };
 }

@@ -20,6 +20,10 @@ export interface ICategory extends Document {
   slug: string;
   description?: string;
   image?: string;
+  /** Banner ancho (16:5) para el hero del catálogo en desktop. */
+  bannerImage?: string;
+  /** Banner 2:1 para el hero del catálogo en mobile. */
+  bannerImageMobile?: string;
   icon?: string;
   color?: string;
   parent?: mongoose.Types.ObjectId;
@@ -78,6 +82,14 @@ const categorySchema = new Schema<ICategory>(
       maxlength: [500, 'La descripción no puede exceder 500 caracteres'],
     },
     image: {
+      type: String,
+      trim: true,
+    },
+    bannerImage: {
+      type: String,
+      trim: true,
+    },
+    bannerImageMobile: {
       type: String,
       trim: true,
     },

@@ -47,8 +47,12 @@ export const HERO_SPEC: ImageSpec = {
 /** Colecciones — card landscape (aspect-[5/3]). */
 export const COLLECTION_SPEC: ImageSpec = { ratioLabel: '5:3', px: '1000 × 600', w: 5, h: 3 };
 
-/** Banner ancho de cabecera (top de categoría/colección). */
-export const WIDE_TOP_SPEC: ImageSpec = { ratioLabel: '16:5', px: '1600 × 500', w: 16, h: 5 };
+/** Banner ancho de cabecera (top de categoría/colección) — huincha del hero
+ *  del catálogo. Espeja el render público (lg:aspect-[20/3] en CategoryHero). */
+export const WIDE_TOP_SPEC: ImageSpec = { ratioLabel: '20:3', px: '2000 × 300', w: 20, h: 3 };
+
+/** Versión mobile del hero de catálogo (aspect-[5/2] en CategoryHero). */
+export const WIDE_TOP_MOBILE_SPEC: ImageSpec = { ratioLabel: '5:2', px: '1000 × 400', w: 5, h: 2 };
 
 /**
  * Tamaño ideal según el placement del banner. Para los placements de franja
@@ -91,7 +95,7 @@ export function mobileSpecForPlacement(
     case 'category_top':
     case 'collection_top':
     default:
-      return WIDE_TOP_SPEC;
+      return WIDE_TOP_MOBILE_SPEC;
   }
 }
 

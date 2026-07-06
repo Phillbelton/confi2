@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, Search, X, SlidersHorizontal } from 'lucide-react';
 import { ProductGridM } from '@/components/m/catalog/ProductGridM';
+import { CategoryHero } from '@/components/m/catalog/CategoryHero';
 import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
 import { useCatalogBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
 import { Button } from '@/components/ui/button';
@@ -354,6 +355,19 @@ function CatalogContent() {
 
   return (
     <>
+      {/* Hero del catálogo: banner de campaña > imagen de categoría > gradiente.
+          Contiene el H1 (nombre de la categoría/colección activa). Con búsqueda
+          activa se oculta para que los resultados queden arriba del fold. */}
+      {!search && (
+        <CategoryHero
+          categorySlug={category}
+          subcategorySlug={subcategory}
+          collectionSlug={collection}
+          total={total}
+          isLoadingTotal={isLoading}
+        />
+      )}
+
       {/* Breadcrumb + subcategorías (pills). En desktop van en una sola fila
           (breadcrumb a la izquierda, chips scrolleables a la derecha); en
           mobile se apilan. Estos chips reemplazan el filtro del sidebar. */}
@@ -408,14 +422,16 @@ function CatalogContent() {
 
         {/* Columna de resultados */}
         <div className="min-w-0 lg:flex-1">
-      {/* Título de página */}
-      <div className="px-4 pt-4 lg:px-0 lg:pt-0">
-        <h1 className="text-xl font-extrabold tracking-tight lg:text-2xl">
-          Catálogo
-        </h1>
-      </div>
+      {/* Con búsqueda activa el hero se oculta; este H1 compacto lo reemplaza. */}
+      {search && (
+        <div className="px-4 pt-4 lg:px-0 lg:pt-0">
+          <h1 className="font-display text-xl font-bold tracking-tight lg:text-2xl">
+            Resultados para “{search}”
+          </h1>
+        </div>
+      )}
 
-      {/* Controles: resultados · orden · filtros */}
+      {/* Controles: resultados · orden · filtros. El H1 vive en el hero. */}
       <div className="flex items-center gap-2 px-4 py-3 lg:px-0">
         <p className="text-xs font-medium text-muted-foreground">
           {isLoading ? 'Cargando…' : `${total} producto${total === 1 ? '' : 's'}`}

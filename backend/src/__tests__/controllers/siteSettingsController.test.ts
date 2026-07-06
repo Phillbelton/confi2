@@ -37,11 +37,12 @@ beforeEach(async () => {
 });
 
 describe('GET /api/site-settings', () => {
-  it('sin doc devuelve el default (D), sin crear doc y sin auth', async () => {
+  it('sin doc devuelve los defaults (D + bar), sin crear doc y sin auth', async () => {
     const res = await request(app).get('/api/site-settings');
 
     expect(res.status).toBe(200);
     expect(res.body.data.catalogPresentationVariant).toBe('D');
+    expect(res.body.data.catalogNavStyle).toBe('bar');
     expect(await SiteSettings.countDocuments()).toBe(0);
   });
 
@@ -91,5 +92,33 @@ describe('PUT /api/site-settings', () => {
     const { token } = await createUserAndToken('admin');
     expect((await putAs(token, { catalogPresentationVariant: 'X' })).status).toBe(400);
     expect((await putAs(token, {})).status).toBe(400);
+  });
+
+  it('admin guarda el estilo de navegación y el GET lo refleja', async () => {
+    const { token } = await createUserAndToken('admin');
+
+    const put = await putAs(token, { catalogNavStyle: 'dropdown' });
+    expect(put.status).toBe(200);
+    expect(put.body.data.catalogNavStyle).toBe('dropdown');
+
+    const get = await request(app).get('/api/site-settings');
+    expect(get.body.data.catalogNavStyle).toBe('dropdown');
+  });
+
+  it('400 con estilo de navegación inválido', async () => {
+    const { token } = await createUserAndToken('admin');
+    expect((await putAs(token, { catalogNavStyle: 'sidebar' })).status).toBe(400);
+  });
+
+  it('update parcial: guardar un campo no pisa el otro', async () => {
+    const { token } = await createUserAndToken('admin');
+
+    await putAs(token, { catalogPresentationVariant: 'C' });
+    await putAs(token, { catalogNavStyle: 'dropdown' });
+
+    const get = await request(app).get('/api/site-settings');
+    expect(get.body.data.catalogPresentationVariant).toBe('C');
+    expect(get.body.data.catalogNavStyle).toBe('dropdown');
+    expect(await SiteSettings.countDocuments()).toBe(1);
   });
 });

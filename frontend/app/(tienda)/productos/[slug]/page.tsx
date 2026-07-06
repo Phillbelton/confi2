@@ -170,7 +170,9 @@ export default function ProductDetailPage() {
           {product.images && product.images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto px-4 py-3 lg:px-0">
               {product.images.map((img, i) => {
-                const thumb = buildSrcSet(img, SIZESET.thumb);
+                // `card`, no `thumb`: las imágenes de producto solo existen en
+                // w400/w800/w1200 — un srcset con w200/w600 es 404 en local.
+                const thumb = buildSrcSet(img, SIZESET.card);
                 const isActive = i === selectedImage;
                 return (
                   <button

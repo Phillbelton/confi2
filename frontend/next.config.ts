@@ -5,7 +5,9 @@ const nextConfig: NextConfig = {
   // desde un origen distinto a localhost. Para probar desde el celular/tablet por
   // la IP de la LAN hay que listarla acá, si no el contenido no hidrata (quedan
   // solo navbar/footer) y el HMR falla. Solo afecta a desarrollo.
-  allowedDevOrigins: ['192.168.5.2'],
+  // La IP de la LAN cambia con el DHCP (ha sido .5.2 y .6.2): listar todas las
+  // usadas; si vuelve a cambiar, agregar la nueva y reiniciar el dev server.
+  allowedDevOrigins: ['192.168.5.2', '192.168.6.2'],
   // Genera un servidor minimo autocontenido para Docker (imagen liviana)
   output: 'standalone',
   images: {
@@ -28,6 +30,11 @@ const nextConfig: NextConfig = {
       {
         protocol: 'http',
         hostname: '192.168.5.2', // Your local network IP
+        port: '5000',
+      },
+      {
+        protocol: 'http',
+        hostname: '192.168.6.2', // IP LAN actual (DHCP)
         port: '5000',
       },
       {

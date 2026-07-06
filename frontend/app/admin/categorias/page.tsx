@@ -27,7 +27,7 @@ export default function CategoriasPage() {
   const [defaultParentId, setDefaultParentId] = useState<string | undefined>(undefined);
 
   const { data, isLoading, error } = useAdminCategories();
-  const { create, update, deleteCategory, uploadImage, isCreating, isUpdating, isDeleting, isUploadingImage } =
+  const { create, update, deleteCategory, isCreating, isUpdating, isDeleting } =
     useCategoryOperations();
 
   // El endpoint devuelve TODAS las categorías planas, cada una con sus hijos
@@ -90,10 +90,6 @@ export default function CategoriasPage() {
 
   const handleDelete = (categoryId: string) => {
     deleteCategory(categoryId);
-  };
-
-  const handleUploadImage = (categoryId: string, file: File) => {
-    uploadImage({ id: categoryId, file });
   };
 
   return (
@@ -172,10 +168,8 @@ export default function CategoriasPage() {
               categories={categories}
               defaultParentId={defaultParentId}
               onSubmit={handleSubmit}
-              onUploadImage={handleUploadImage}
               onCancel={handleCloseDialog}
               isSubmitting={isCreating || isUpdating}
-              isUploadingImage={isUploadingImage}
             />
           )}
         </DialogContent>

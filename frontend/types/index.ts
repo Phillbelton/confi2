@@ -163,6 +163,10 @@ export interface Category {
   slug: string;
   description?: string;
   image?: string;
+  /** Banner 16:5 para el hero del catálogo (desktop). */
+  bannerImage?: string;
+  /** Banner 2:1 para el hero del catálogo (mobile). */
+  bannerImageMobile?: string;
   icon?: string;
   color?: string;
   parent?: string | Category;

@@ -24,7 +24,8 @@ export function CartItemM({ item }: Props) {
       >
         {item.product.images?.[0] ? (
           (() => {
-            const attrs = buildSrcSet(item.product.images[0], SIZESET.thumb);
+            // `card`: las imágenes de producto no tienen variantes w200/w600.
+            const attrs = buildSrcSet(item.product.images[0], SIZESET.card);
             return (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
