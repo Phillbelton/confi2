@@ -1,5 +1,7 @@
 import { adminApi } from '@/lib/adminApi';
-import type { Product, ApiResponse, SaleUnit, ProductTier, PaginationMeta } from '@/types';
+import type {
+  Product, ApiResponse, SaleUnit, ProductTier, PaginationMeta, FixedDiscount,
+} from '@/types';
 import type { ProductQueryParams } from '@/services/products';
 
 export interface CreateProductInput {
@@ -15,12 +17,19 @@ export interface CreateProductInput {
   unitPrice: number;
   saleUnit: SaleUnit;
   tiers?: ProductTier[];
+  /** Oferta fija a nivel producto. El modelo la denormaliza desde la presentación
+   *  principal, pero el backend también la acepta directa. */
+  fixedDiscount?: FixedDiscount;
   presentaciones?: Array<{
     type: SaleUnit['type'];
     quantity: number;
     unitPrice: number;
     tiers?: ProductTier[];
+    /** Oferta fija puntual de ESTA presentación (%/monto + vigencia + badge). */
+    fixedDiscount?: FixedDiscount;
     label?: string;
+    /** EAN propio de la presentación (la caja tiene su código). */
+    barcode?: string;
     principal?: boolean;
   }>;
   images?: string[];
@@ -33,9 +42,12 @@ export type UpdateProductInput = Partial<CreateProductInput>;
 
 export const adminProductService = {
   list: async (params?: ProductQueryParams) => {
+    // Default active:'all' (el admin ve todo), pero el caller puede
+    // sobreescribirlo (filtro Activos/Inactivos). Antes el spread iba al
+    // revés y `active` del caller quedaba SIEMPRE pisado por 'all'.
     const { data } = await adminApi.get<ApiResponse<{ data: Product[]; pagination: PaginationMeta }>>(
       '/products',
-      { params: { ...params, active: 'all' } }
+      { params: { active: 'all', ...params } }
     );
     return data.data;
   },
