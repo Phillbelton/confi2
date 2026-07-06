@@ -80,17 +80,40 @@ export const adminCategoryService = {
   },
 
   /**
-   * Upload category image
+   * Upload category image.
+   *
+   * `variant` controla el encuadre destino:
+   *  - 'thumb'        → miniatura 1:1 (campo `image`)
+   *  - 'banner'       → hero catálogo desktop 20:3 (`bannerImage`)
+   *  - 'bannerMobile' → hero catálogo mobile 5:2 (`bannerImageMobile`)
+   *  - 'master'       → el backend recorta y genera los 3 encuadres
    */
-  async uploadImage(id: string, file: File): Promise<ApiResponse<Category>> {
+  async uploadImage(
+    id: string,
+    file: File,
+    variant: CategoryImageVariant = 'thumb'
+  ): Promise<ApiResponse<CategoryImagesPayload>> {
     const formData = new FormData();
     formData.append('image', file);
 
-    const { data } = await adminApi.post(`/categories/${id}/image`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const { data } = await adminApi.post(
+      `/categories/${id}/image?variant=${variant}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return data;
   },
 };
+
+export type CategoryImageVariant = 'thumb' | 'banner' | 'bannerMobile' | 'master';
+
+/** URLs actualizadas que devuelve el endpoint de upload (los 3 encuadres). */
+export interface CategoryImagesPayload {
+  image?: string;
+  bannerImage?: string;
+  bannerImageMobile?: string;
+}

@@ -226,7 +226,7 @@ export function CategoriesDropdown({
                 <div className="flex items-center justify-center h-full text-gray-400 p-6">
                   <div className="text-center">
                     <Grid3x3 className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p className="text-sm">Pasá el cursor sobre una categoría</p>
+                    <p className="text-sm">Pasa el cursor sobre una categoría</p>
                   </div>
                 </div>
               )}

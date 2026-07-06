@@ -107,6 +107,44 @@ export async function processImageMultiSize(
 }
 
 /**
+ * Como processImageMultiSize, pero recortando a un aspect ratio fijo
+ * (fit:cover con gravedad "attention": sharp centra el recorte en la zona
+ * de mayor detalle). Para derivar encuadres distintos desde una sola imagen
+ * master (ej. banner 16:5 + banner mobile 2:1 + miniatura 1:1).
+ *
+ * Naming: `<baseName>-w<width>.webp` — compatible con buildSrcSet del front.
+ * Devuelve el filename de la variante intermedia (default src).
+ */
+export async function processAspectCropMultiSize(
+  input: string | Buffer,
+  outputDir: string,
+  baseName: string,
+  aspect: { w: number; h: number },
+  widths: number[],
+  quality: number = 85
+): Promise<{ baseFilename: string; paths: string[] }> {
+  if (widths.length === 0) throw new Error('processAspectCropMultiSize: widths vacío');
+  const ext = '.webp';
+  const paths: string[] = [];
+
+  for (const w of widths) {
+    const h = Math.round((w * aspect.h) / aspect.w);
+    const outPath = path.join(outputDir, `${baseName}-w${w}${ext}`);
+    await sharp(input)
+      .resize(w, h, { fit: 'cover', position: sharp.strategy.attention })
+      .webp({ quality })
+      .toFile(outPath);
+    paths.push(outPath);
+  }
+
+  const defaultW = widths[Math.floor(widths.length / 2)];
+  const baseFilename = `${baseName}-w${defaultW}${ext}`;
+
+  logger.debug('Aspect-crop multi-size generado', { baseName, aspect, widths });
+  return { baseFilename, paths };
+}
+
+/**
  * Genera múltiples versiones de una imagen (thumbnail, medium, large)
  *
  * @param inputPath - Ruta del archivo original

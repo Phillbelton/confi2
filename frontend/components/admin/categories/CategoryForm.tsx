@@ -5,7 +5,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  Loader2, Upload, X, Info, Plus, Trash2, ChevronDown, ChevronRight,
+  Loader2, X, Info, Plus, Trash2, ChevronDown, ChevronRight,
   CornerDownRight, FolderTree,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,8 +21,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { CategoryImagesManager } from './CategoryImagesManager';
 import type { Category, FacetableAttribute } from '@/types';
 
 const slugify = (s: string) =>
@@ -77,10 +77,8 @@ interface CategoryFormProps {
   /** Pre-selecciona un padre cuando se crea desde el botón "+ Subcategoría". */
   defaultParentId?: string;
   onSubmit: (data: CategoryFormValues) => void;
-  onUploadImage?: (categoryId: string, file: File) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
-  isUploadingImage?: boolean;
 }
 
 export function CategoryForm({
@@ -88,16 +86,9 @@ export function CategoryForm({
   categories,
   defaultParentId,
   onSubmit,
-  onUploadImage,
   onCancel,
   isSubmitting = false,
-  isUploadingImage = false,
 }: CategoryFormProps) {
-  const [imagePreview, setImagePreview] = useState<string | null>(
-    category?.image || null
-  );
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const isEditing = !!category;
 
   // Resolver el padre (fijo, no editable). Al editar viene de la categoría;
@@ -127,10 +118,7 @@ export function CategoryForm({
     },
   });
 
-  // Subscripciones aisladas para Preview del avatar y el editor de facetas.
-  const watchedColor = useWatch({ control: form.control, name: 'color' });
-  const watchedIcon = useWatch({ control: form.control, name: 'icon' });
-  const watchedName = useWatch({ control: form.control, name: 'name' });
+  // Subscripción aislada para el editor de facetas.
   const watchedFacets = useWatch({ control: form.control, name: 'facetableAttributes' });
 
   // No useEffect para resincronizar form/preview desde props: el callsite
@@ -158,109 +146,11 @@ export function CategoryForm({
     onSubmit(cleanedValues);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUploadImage = () => {
-    if (selectedFile && category && onUploadImage) {
-      onUploadImage(category._id, selectedFile);
-      setSelectedFile(null);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setImagePreview(null);
-    setSelectedFile(null);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Image Upload Section - Only show for editing */}
-      {isEditing && (
-        <div className="border rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="text-sm font-medium">Imagen de la categoría</h3>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="text-xs">
-                  Imagen representativa de la categoría. Se muestra en banners y listados. Tamaños recomendados: mínimo 400x400px. Formatos: JPG, PNG, WEBP.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              {imagePreview ? (
-                <AvatarImage src={imagePreview} alt={category?.name} />
-              ) : (
-                <AvatarFallback
-                  style={{
-                    backgroundColor: watchedColor || '#F97316',
-                    color: '#fff',
-                  }}
-                >
-                  {watchedIcon || watchedName?.charAt(0).toUpperCase() || '?'}
-                </AvatarFallback>
-              )}
-            </Avatar>
-
-            <div className="flex-1 space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  disabled={isUploadingImage}
-                  className="flex-1"
-                />
-                {imagePreview && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleRemoveImage}
-                    disabled={isUploadingImage}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              {selectedFile && (
-                <Button
-                  type="button"
-                  onClick={handleUploadImage}
-                  disabled={isUploadingImage}
-                  size="sm"
-                >
-                  {isUploadingImage ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Subiendo...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Subir imagen
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Imágenes (miniatura + banners de catálogo) — solo al editar:
+          el upload necesita el _id de la categoría ya creada. */}
+      {isEditing && category && <CategoryImagesManager category={category} />}
 
       {/* Main Form */}
       <Form {...form}>

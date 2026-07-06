@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { adminSiteSettingsService } from '@/services/admin/siteSettings';
-import type { CatalogPresentationVariant } from '@/services/siteSettings';
+import {
+  adminSiteSettingsService,
+  type SiteSettingsUpdate,
+} from '@/services/admin/siteSettings';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 export function useAdminSiteSettings() {
@@ -16,8 +18,8 @@ export function useSiteSettingsOperations() {
   const qc = useQueryClient();
 
   const save = useMutation({
-    mutationFn: (variant: CatalogPresentationVariant) =>
-      adminSiteSettingsService.save(variant),
+    // Update parcial: {catalogPresentationVariant} y/o {catalogNavStyle}.
+    mutationFn: (update: SiteSettingsUpdate) => adminSiteSettingsService.save(update),
     onSuccess: () => {
       toast.success('Apariencia guardada');
       qc.invalidateQueries({ queryKey: ['admin-site-settings'] });

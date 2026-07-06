@@ -1,5 +1,7 @@
 import { Response } from 'express';
 import fs from 'fs';
+import fsp from 'fs/promises';
+import path from 'path';
 import Product from '../models/Product';
 import ProductImage from '../models/ProductImage';
 import { Category } from '../models/Category';
@@ -9,6 +11,9 @@ import Banner from '../models/Banner';
 import { AuthRequest, ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { imageService } from '../services/imageService';
+import { processAspectCropMultiSize } from '../utils/imageProcessor';
+import { getFileUrl } from '../middleware/upload';
+import { ENV } from '../config/env';
 import logger from '../config/logger';
 
 /**
@@ -130,20 +135,110 @@ export const deleteProductImage = asyncHandler(
 
 // ============================ Category ============================
 
+/**
+ * Especificación de los 3 encuadres de imagen de una categoría.
+ * Cada variante se recorta (cover, gravedad attention) a su aspect ratio y
+ * se emite multi-size `-w<N>.webp` para `<img srcset>`.
+ *
+ *  - thumb        1:1  → avatar en admin, mega-menú del navbar
+ *  - banner       20:3 → hero del catálogo desktop (~2000×300, tipo huincha)
+ *  - bannerMobile 5:2  → hero del catálogo mobile (~1000×400)
+ */
+const CATEGORY_IMAGE_VARIANTS = {
+  thumb:        { field: 'image' as const,             aspect: { w: 1, h: 1 },  widths: [200, 400, 800] },
+  banner:       { field: 'bannerImage' as const,       aspect: { w: 20, h: 3 }, widths: [1280, 1600, 2000] },
+  bannerMobile: { field: 'bannerImageMobile' as const, aspect: { w: 5, h: 2 },  widths: [640, 1000] },
+};
+
+type CategoryVariantKey = keyof typeof CATEGORY_IMAGE_VARIANTS;
+
+/**
+ * Genera una variante recortada y devuelve su URL pública.
+ *
+ * Storage local: escribe las multi-size directo en UPLOAD_DIR/categories.
+ * Cloudinary: recorta al ancho máximo en un temp y lo sube vía imageService.
+ */
+async function generateCategoryVariant(
+  inputBuffer: Buffer,
+  tempDir: string,
+  baseName: string,
+  variant: CategoryVariantKey
+): Promise<string> {
+  const spec = CATEGORY_IMAGE_VARIANTS[variant];
+  const suffixed = `${baseName}-${variant.toLowerCase()}`;
+
+  if (!ENV.USE_CLOUDINARY) {
+    const targetDir = path.join(ENV.UPLOAD_DIR, 'categories');
+    await fsp.mkdir(targetDir, { recursive: true });
+    const { baseFilename } = await processAspectCropMultiSize(
+      inputBuffer, targetDir, suffixed, spec.aspect, spec.widths
+    );
+    return getFileUrl(baseFilename, 'categories');
+  }
+
+  // Cloudinary: generar el recorte al ancho máximo en un temp y subirlo
+  // (el servicio borra el temp tras subir).
+  const maxW = Math.max(...spec.widths);
+  const { paths } = await processAspectCropMultiSize(
+    inputBuffer, tempDir, suffixed, spec.aspect, [maxW]
+  );
+  const result = await imageService.uploadImage(paths[0], { folder: 'categories' });
+  return result.url;
+}
+
 export const uploadCategoryImage = asyncHandler(
   async (req: AuthRequest, res: Response<ApiResponse>) => {
     const cat = await Category.findById(req.params.id);
     if (!cat) throw new AppError(404, 'Categoría no encontrada');
     const file = req.file;
     if (!file) throw new AppError(400, 'Sin imagen');
-    if (cat.image) {
-      try { await imageService.deleteImage(cat.image); } catch {}
+
+    // ?variant=thumb|banner|bannerMobile actualiza UN encuadre;
+    // ?variant=master genera los 3 desde la misma imagen.
+    // Default 'thumb' (compat con el flujo previo, que seteaba `image`).
+    const variant = (req.query.variant as string) || 'thumb';
+    const isMaster = variant === 'master';
+    if (!isMaster && !(variant in CATEGORY_IMAGE_VARIANTS)) {
+      throw new AppError(400, `variant inválido: ${variant} (thumb | banner | bannerMobile | master)`);
     }
-    const [url] = await uploadFiles([file], 'categories');
-    if (!url) throw new AppError(500, 'Error al subir imagen');
-    cat.image = url;
+
+    const targets: CategoryVariantKey[] = isMaster
+      ? (Object.keys(CATEGORY_IMAGE_VARIANTS) as CategoryVariantKey[])
+      : [variant as CategoryVariantKey];
+
+    try {
+      // Buffer en memoria una sola vez (evita el lock EBUSY de Windows y
+      // permite reusar el original para los 3 encuadres).
+      const inputBuffer = await fsp.readFile(file.path);
+      const baseName = path.basename(file.path, path.extname(file.path));
+      const tempDir = path.dirname(file.path);
+
+      for (const key of targets) {
+        const spec = CATEGORY_IMAGE_VARIANTS[key];
+        const oldUrl = cat[spec.field];
+        const url = await generateCategoryVariant(inputBuffer, tempDir, baseName, key);
+        if (oldUrl) {
+          try { await imageService.deleteImage(oldUrl); } catch {}
+        }
+        cat[spec.field] = url;
+      }
+    } catch (err: any) {
+      logger.error('[upload] category variant failed', { error: err.message });
+      throw new AppError(500, 'Error al procesar imagen de categoría');
+    } finally {
+      fs.unlink(file.path, () => {});
+    }
+
     await cat.save();
-    res.status(200).json({ success: true, message: 'Imagen actualizada', data: { image: url } });
+    res.status(200).json({
+      success: true,
+      message: isMaster ? 'Imágenes generadas (3 tamaños)' : 'Imagen actualizada',
+      data: {
+        image: cat.image,
+        bannerImage: cat.bannerImage,
+        bannerImageMobile: cat.bannerImageMobile,
+      },
+    });
   }
 );
 

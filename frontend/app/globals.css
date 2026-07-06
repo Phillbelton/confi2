@@ -1048,6 +1048,18 @@ html::-webkit-scrollbar-thumb:hover {
   }
 }
 
+/* Pista del marquee del header. Respeta prefers-reduced-motion: si el usuario
+   pide menos movimiento, la cinta queda estática (el primer bloque de texto
+   sigue legible). */
+.marquee-track {
+  animation: marquee 28s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
 @layer utilities {
   /* Full-bleed: rompe el contenedor capeado (max-w-[1440px] del shell) para
      que el fondo de la sección cubra todo el ancho del viewport. El

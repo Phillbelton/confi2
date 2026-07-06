@@ -14,12 +14,12 @@ interface CatalogContext {
 }
 
 /**
- * Devuelve breadcrumbs según los filtros activos del catálogo.
- * Patrón: Inicio › (Colección | Categoría) › Subcategoría
+ * Todas las categorías (planas, incluidas inactivas) para resolver
+ * slug → objeto. Compartida entre breadcrumbs y el hero del catálogo
+ * (misma queryKey → una sola request).
  */
-export function useCatalogBreadcrumbs(ctx: CatalogContext): BreadcrumbItem[] {
-  // Categories (todas, para resolver slugs → name)
-  const { data: cats = [] } = useQuery({
+export function useAllCategories() {
+  return useQuery({
     queryKey: ['categories', 'all'],
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<{ categories: Category[] }>>(
@@ -29,18 +29,32 @@ export function useCatalogBreadcrumbs(ctx: CatalogContext): BreadcrumbItem[] {
     },
     staleTime: 5 * 60_000,
   });
+}
 
-  const { data: collection } = useQuery({
-    queryKey: ['collection', 'slug', ctx.collectionSlug],
+/** Colección resuelta por slug (compartida con el hero del catálogo). */
+export function useCollectionBySlug(slug: string | undefined) {
+  return useQuery({
+    queryKey: ['collection', 'slug', slug],
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<{ collection: Collection }>>(
-        `/collections/slug/${ctx.collectionSlug}`
+        `/collections/slug/${slug}`
       );
       return data.data?.collection;
     },
-    enabled: !!ctx.collectionSlug,
+    enabled: !!slug,
     staleTime: 5 * 60_000,
   });
+}
+
+/**
+ * Devuelve breadcrumbs según los filtros activos del catálogo.
+ * Patrón: Inicio › (Colección | Categoría) › Subcategoría
+ */
+export function useCatalogBreadcrumbs(ctx: CatalogContext): BreadcrumbItem[] {
+  // Categories (todas, para resolver slugs → name)
+  const { data: cats = [] } = useAllCategories();
+
+  const { data: collection } = useCollectionBySlug(ctx.collectionSlug);
 
   return useMemo(() => {
     const items: BreadcrumbItem[] = [];
@@ -124,16 +138,7 @@ export function useProductBreadcrumbs(
   const ctxItems = useCatalogBreadcrumbs(fromCtx || {});
 
   // Cargar todas las categorías para resolver path completo (3 niveles)
-  const { data: allCats = [] } = useQuery({
-    queryKey: ['categories', 'all'],
-    queryFn: async () => {
-      const { data } = await api.get<ApiResponse<{ categories: Category[] }>>(
-        '/categories?includeInactive=true'
-      );
-      return data.data?.categories || [];
-    },
-    staleTime: 5 * 60_000,
-  });
+  const { data: allCats = [] } = useAllCategories();
 
   return useMemo(() => {
     if (!product) return [];
