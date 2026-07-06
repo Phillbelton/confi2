@@ -177,7 +177,8 @@ export function NavbarSearch({ className, idSuffix, enableSlashShortcut }: Navba
             group: 'product',
             label: p.name,
             sublabel: priceLabel(p),
-            img: buildSrcSet(p.images?.[0], SIZESET.thumb),
+            // `card`: las imágenes de producto no tienen variantes w200/w600.
+            img: buildSrcSet(p.images?.[0], SIZESET.card),
           },
           run: () => navigate(`/productos/${p.slug}`),
         });

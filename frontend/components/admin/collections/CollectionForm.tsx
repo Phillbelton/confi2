@@ -644,7 +644,8 @@ function SortableProductRow({
         {index + 1}
       </span>
       {product?.images?.[0] && (() => {
-        const attrs = buildSrcSet(product.images[0], SIZESET.thumb);
+        // `card`: las imágenes de producto no tienen variantes w200/w600.
+        const attrs = buildSrcSet(product.images[0], SIZESET.card);
         return (
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
             {/* eslint-disable-next-line @next/next/no-img-element */}
