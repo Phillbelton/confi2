@@ -12,7 +12,7 @@ test.describe('Product Detail — Navigation', () => {
     await requireProducts(page, hasProducts);
 
     // Click the first product link (the anchor wrapping the card image/name)
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     const href = await firstLink.getAttribute('href');
     expect(href).toContain('/productos/');
 
@@ -28,7 +28,7 @@ test.describe('Product Detail — Navigation', () => {
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
 
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
 
@@ -47,7 +47,7 @@ test.describe('Product Detail — Content', () => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     expect(hasProducts, 'Catalog must have products').toBe(true);
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
@@ -61,8 +61,9 @@ test.describe('Product Detail — Content', () => {
   });
 
   test('displays product price with $ symbol', async ({ page }) => {
-    // Price uses suppressHydrationWarning and font-sans font-bold text-primary classes
-    await expect(page.locator('text=/\\$\\d/')).toBeVisible();
+    // El PDP muestra varios precios ($ headline, tramos, equivalente por
+    // unidad, CTA sticky) → .first() para no violar strict mode.
+    await expect(page.locator('text=/\\$\\d/').first()).toBeVisible();
   });
 
   test.skip('displays product image', async ({ page }) => {
@@ -70,10 +71,12 @@ test.describe('Product Detail — Content', () => {
     await expect(mainImage).toBeVisible();
   });
 
-  test('displays back link to products', async ({ page }) => {
-    // Breadcrumb is a "Volver a productos" link (not a traditional breadcrumb nav)
-    const backLink = page.locator('a').filter({ hasText: 'Volver a productos' });
-    await expect(backLink).toBeVisible();
+  test('displays breadcrumb navigation back to catalog', async ({ page }) => {
+    // El PDP rediseñado navega hacia atrás con breadcrumbs (nav "Ruta de
+    // navegación" + link Inicio), no con el viejo link "Volver a productos".
+    const crumbs = page.getByRole('navigation', { name: 'Ruta de navegación' });
+    await expect(crumbs).toBeVisible();
+    await expect(crumbs.getByRole('link', { name: 'Inicio' })).toBeVisible();
   });
 });
 
@@ -86,7 +89,7 @@ test.describe('Product Detail — Variants', () => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     expect(hasProducts, 'Catalog must have products').toBe(true);
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
@@ -135,7 +138,7 @@ test.describe('Product Detail — Quantity', () => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     expect(hasProducts, 'Catalog must have products').toBe(true);
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
@@ -203,7 +206,7 @@ test.describe('Product Detail — Add to Cart', () => {
     await clearCart(page);
     const hasProducts = await goToCatalog(page);
     expect(hasProducts, 'Catalog must have products').toBe(true);
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
@@ -212,10 +215,15 @@ test.describe('Product Detail — Add to Cart', () => {
   test('add to cart button is visible', async ({ page, isMobile }) => {
     if (isMobile) {
       // Mobile sticky CTA bar has "Agregar" button
-      await expect(page.locator('.fixed.bottom-0').locator('button').filter({ hasText: 'Agregar' })).toBeVisible();
+      await expect(
+        page.locator('.fixed.bottom-0').locator('button').filter({ hasText: 'Agregar' })
+      ).toBeVisible();
     } else {
-      // Desktop button says "Agregar al carrito"
-      await expect(page.locator('button').filter({ hasText: 'Agregar al carrito' })).toBeVisible();
+      // Desktop: el botón principal dice "Agregar al carrito". La CTA sticky
+      // móvil también existe en el DOM (oculta por lg:hidden) → .first().
+      await expect(
+        page.locator('button').filter({ hasText: 'Agregar al carrito' }).first()
+      ).toBeVisible();
     }
   });
 
@@ -226,8 +234,11 @@ test.describe('Product Detail — Add to Cart', () => {
 
     await addBtn.click();
 
-    // Should show success state — button text changes to "Agregado" or toast appears
-    const successIndicator = page.locator('text=Agregado, [data-sonner-toast]').first();
+    // Should show success state — toast "¡Agregado al carrito!" or button "¡Agregado!"
+    const successIndicator = page
+      .locator('[data-sonner-toast]')
+      .or(page.getByText('¡Agregado!'))
+      .first();
     await expect(successIndicator).toBeVisible({ timeout: 5000 });
   });
 });
@@ -241,7 +252,7 @@ test.describe('Product Detail — Related Products', () => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
@@ -265,7 +276,7 @@ test.describe('Product Detail — Mobile Sticky CTA', () => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');

@@ -128,7 +128,7 @@ test.describe('Navigation — Page Transitions', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    const firstProductLink = page.locator('.group.relative a').first();
+    const firstProductLink = page.locator('[data-testid="product-card"] a').first();
     if (await firstProductLink.isVisible({ timeout: 5000 }).catch(() => false)) {
       await firstProductLink.click();
       await page.waitForURL('**/productos/**', { timeout: 10000 });
