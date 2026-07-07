@@ -380,6 +380,17 @@
   animation: stepper-flash 0.4s ease-out;
 }
 
+/* Stepper feedback: pop-in when the stepper replaces the "Agregar" button */
+@keyframes stepper-pop {
+  0%   { transform: scale(0.85); opacity: 0.4; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.stepper-pop {
+  animation: stepper-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Stepper feedback: floating +1/-1 delta indicator */
 @keyframes delta-float-up {
   0%   { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
@@ -748,15 +759,12 @@ html::-webkit-scrollbar-thumb:hover {
   --mobile-offset: 16px;
 }
 
-/* Móvil: centrado en la parte inferior con padding seguro */
+/* Móvil: top-center (lo posiciona sonner según su prop `position`). NO forzar
+   `bottom` acá: el Toaster apila hacia abajo (data-y-position="top") y anclar
+   el contenedor abajo dejaba el toast colgando FUERA del viewport. */
 @media (max-width: 640px) {
   [data-sonner-toaster] {
     --width: calc(100vw - 32px) !important;
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%);
-    bottom: var(--mobile-offset) !important;
-    top: auto !important;
   }
 
   [data-sonner-toaster] [data-sonner-toast] {

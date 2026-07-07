@@ -9,7 +9,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { useCartStoreM } from '@/store/m/useCartStoreM';
+import { useCartStoreM, cartLineId } from '@/store/m/useCartStoreM';
+import { showCartToast } from '@/components/m/shell/cart-toast-m';
 import {
   effectiveUnitPrice,
   discountedUnitPrice,
@@ -38,6 +39,7 @@ interface PresentationQuickSheetProps {
  */
 export function PresentationQuickSheet({ product, className }: PresentationQuickSheetProps) {
   const addItem = useCartStoreM((s) => s.addItem);
+  const items = useCartStoreM((s) => s.items);
   const [open, setOpen] = useState(false);
 
   const presentations = product.presentaciones ?? [];
@@ -72,6 +74,10 @@ export function PresentationQuickSheet({ product, className }: PresentationQuick
       ? ppu / viewProduct.saleUnit.quantity
       : ppu;
 
+  // Cantidad ya en el carrito de ESTA línea (producto + presentación elegida).
+  const inCart =
+    items.find((i) => i.lineId === cartLineId(product._id, selPres?._id ?? ''))?.quantity || 0;
+
   // Cambiar de presentación reinicia la cantidad (realQty la lleva a su mínimo).
   const choosePres = (id: string) => {
     setSelPresId(id);
@@ -80,12 +86,23 @@ export function PresentationQuickSheet({ product, className }: PresentationQuick
 
   const handleAdd = () => {
     addItem(product, realQty, selPres?._id);
+    showCartToast({
+      productName: product.name,
+      variantName: selPres ? presLabel(selPres) : undefined,
+      image: product.images?.[0] ?? '',
+      quantity: realQty,
+      inCartQty: inCart + realQty,
+    });
+    // La próxima apertura parte limpia: la cantidad siempre es "cuánto agregar".
+    setQuantity(1);
     setOpen(false);
   };
 
-  const addLabel = selPres
-    ? `Agregar${realQty > 1 ? ` ${realQty}` : ''} ${presLabel(selPres).toLowerCase()}`
-    : 'Agregar al carrito';
+  const addLabel = inCart > 0
+    ? `Agregar ${realQty} más`
+    : selPres
+      ? `Agregar${realQty > 1 ? ` ${realQty}` : ''} ${presLabel(selPres).toLowerCase()}`
+      : 'Agregar al carrito';
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -190,6 +207,14 @@ export function PresentationQuickSheet({ product, className }: PresentationQuick
                 ))}
               </ul>
             </div>
+          )}
+
+          {/* Ya hay unidades de esta línea → aclarar que lo nuevo se SUMA. */}
+          {inCart > 0 && (
+            <p key={inCart} className="stepper-bump mt-3 text-xs font-semibold text-primary">
+              Ya tienes <span className="tabular-nums">{inCart}</span> en el carrito — lo que
+              agregues se suma.
+            </p>
           )}
 
           {/* Cantidad + total */}

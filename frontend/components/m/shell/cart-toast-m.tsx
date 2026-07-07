@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Check, ShoppingBag, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
+import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 
 interface CartToastMContentProps {
   toastId: string | number;
@@ -12,6 +12,10 @@ interface CartToastMContentProps {
   variantName?: string;
   image: string;
   quantity: number;
+  /** Total de esta línea en el carrito DESPUÉS de agregar. Cuando es mayor a
+   *  `quantity` significa que ya había unidades → se explicita "llevas N" para
+   *  que quede claro que las cantidades se SUMAN (no reemplazan). */
+  inCartQty?: number;
 }
 
 function CartToastMContent({
@@ -20,9 +24,11 @@ function CartToastMContent({
   variantName,
   image,
   quantity,
+  inCartQty,
 }: CartToastMContentProps) {
   const itemCount = useCartStoreM((s) => s.itemCount);
   const total = useCartStoreM((s) => s.total);
+  const imgAttrs = image ? buildSrcSet(image, SIZESET.card) : null;
 
   return (
     <div className="relative flex w-[340px] max-w-[calc(100vw-2rem)] gap-3 rounded-2xl border border-border bg-card p-3 pr-8 shadow-xl border-l-4 border-l-primary">
@@ -37,13 +43,18 @@ function CartToastMContent({
 
       <div className="relative flex-shrink-0">
         <div className="h-16 w-16 overflow-hidden rounded-xl border border-border bg-muted">
-          <Image
-            src={image}
-            alt={productName}
-            width={64}
-            height={64}
-            className="h-full w-full object-cover"
-          />
+          {imgAttrs ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={imgAttrs.src}
+              srcSet={imgAttrs.srcSet}
+              alt={productName}
+              sizes="64px"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="grid h-full place-items-center text-2xl">🍭</div>
+          )}
         </div>
         <span className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-primary text-primary-foreground shadow ring-2 ring-card">
           <Check className="h-3.5 w-3.5" strokeWidth={3} />
@@ -59,8 +70,13 @@ function CartToastMContent({
             {quantity} × {productName}
             {variantName ? ` · ${variantName}` : ''}
           </p>
+          {typeof inCartQty === 'number' && inCartQty > quantity && (
+            <p className="mt-0.5 text-[11px] font-semibold leading-snug text-primary">
+              Ahora llevas {inCartQty} en total
+            </p>
+          )}
           <p className="mt-0.5 text-sm font-bold text-primary tabular-nums">
-            ${Math.round(total).toLocaleString('es-CL')}
+            Total ${Math.round(total).toLocaleString('es-CL')}
           </p>
         </div>
 
@@ -87,11 +103,13 @@ export function showCartToast({
   variantName,
   image,
   quantity = 1,
+  inCartQty,
 }: {
   productName: string;
   variantName?: string;
   image: string;
   quantity?: number;
+  inCartQty?: number;
 }) {
   toast.custom(
     (t) => (
@@ -101,6 +119,7 @@ export function showCartToast({
         variantName={variantName}
         image={image}
         quantity={quantity}
+        inCartQty={inCartQty}
       />
     ),
     { duration: 3500, unstyled: true }
