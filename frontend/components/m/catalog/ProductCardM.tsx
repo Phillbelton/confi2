@@ -45,7 +45,6 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
     presVarRaw === 'B' || presVarRaw === 'C' || presVarRaw === 'D'
       ? presVarRaw
       : settingVariant;
-  const [isAdding, setIsAdding] = useState(false);
   const addItem = useCartStoreM((s) => s.addItem);
   const updateQuantity = useCartStoreM((s) => s.updateQuantity);
   const items = useCartStoreM((s) => s.items);
@@ -53,6 +52,13 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const principalId = getPrincipal(product)?._id ?? '';
   const cardLineId = cartLineId(product._id, principalId);
   const inCart = items.find((i) => i.lineId === cardLineId)?.quantity || 0;
+  // Feedback al agregar: el stepper "popea" al reemplazar el botón (solo por
+  // interacción, no al montar la card con carrito ya cargado) y el número
+  // bumpea en cada cambio (se suprime el bump del primer paint, como el badge
+  // del header).
+  const [popStepper, setPopStepper] = useState(false);
+  const [initialInCart] = useState(inCart);
+  const bumpQty = inCart !== initialInCart;
   const imgAttrs = buildSrcSet(product.images?.[0], SIZESET.card);
   const minQ = minQuantity(product);
   const step = quantityStep(product);
@@ -113,13 +119,15 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   })();
 
   const handleAdd = () => {
-    setIsAdding(true);
+    setPopStepper(true);
     addItem(product, minQ);
-    setTimeout(() => setIsAdding(false), 250);
   };
 
   return (
     <div
+      // Ancla estable para e2e: `.group.relative` a secas ya no identifica la
+      // card (el pill del buscador del navbar también lo usa).
+      data-testid="product-card"
       className={cn(
         'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
         horizontal && 'w-40 shrink-0 snap-start',
@@ -213,8 +221,7 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
             <button
               type="button"
               onClick={handleAdd}
-              disabled={isAdding}
-              className="tappable mt-1.5 w-full rounded-full bg-primary py-1.5 text-[13px] font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 disabled:opacity-60 lg:!min-h-9"
+              className="tappable mt-1.5 w-full rounded-full bg-primary py-1.5 text-[13px] font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 lg:!min-h-9"
             >
               <span className="inline-flex items-center justify-center gap-1.5">
                 <Plus className="h-4 w-4" />
@@ -222,7 +229,12 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
               </span>
             </button>
           ) : (
-            <div className="mt-1.5 flex items-center justify-between rounded-full bg-primary/10 p-1">
+            <div
+              className={cn(
+                'mt-1.5 flex items-center justify-between rounded-full bg-primary/10 p-1',
+                popStepper && 'stepper-pop'
+              )}
+            >
               <button
                 type="button"
                 onClick={() => updateQuantity(cardLineId, Math.max(minQ - step, inCart - step) === 0 ? 0 : inCart - step)}
@@ -231,7 +243,12 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
               >
                 <Minus className="h-4 w-4" />
               </button>
-              <span className="text-sm font-bold tabular-nums text-primary">{inCart}</span>
+              <span
+                key={inCart}
+                className={cn('text-sm font-bold tabular-nums text-primary', bumpQty && 'stepper-bump')}
+              >
+                {inCart}
+              </span>
               <button
                 type="button"
                 onClick={() => updateQuantity(cardLineId, inCart + step)}

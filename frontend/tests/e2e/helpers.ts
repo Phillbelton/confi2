@@ -9,9 +9,12 @@ import { Page, expect } from '@playwright/test';
  * Returns true if products were found, false if catalog is empty.
  */
 export async function waitForProductGrid(page: Page): Promise<boolean> {
-  // Wait for either product cards OR the "no products" message
+  // Wait for either product cards OR the "no products" message.
+  // ⚠️ No usar `.group.relative`: el pill del buscador del navbar también lleva
+  // esas clases y en desktop el primero del DOM está oculto → waitForSelector
+  // (que mira el PRIMER match) se colgaba aunque la grilla estuviera cargada.
   try {
-    await page.waitForSelector('.group.relative, [data-testid="product-card"]', {
+    await page.waitForSelector('[data-testid="product-card"]', {
       state: 'visible',
       timeout: 15000,
     });
@@ -45,45 +48,52 @@ export function getSearchParams(page: Page): URLSearchParams {
  * The button has no aria-label — it's a <Button> with text "Agregar" and a ShoppingCart icon.
  */
 export async function addFirstProductToCart(page: Page) {
-  const addButton = page.locator('.group.relative').first().locator('button').filter({ hasText: 'Agregar' });
+  const addButton = page
+    .locator('[data-testid="product-card"]')
+    .first()
+    .locator('button')
+    .filter({ hasText: 'Agregar' });
   await addButton.waitFor({ state: 'visible', timeout: 10000 });
   await addButton.click();
 }
 
 /**
  * Get the cart item count from the header badge.
- * Badge is a <Badge> component with classes `absolute -top-1 -right-1 h-5 min-w-5`.
+ * El header trae DOS markups del link Carrito (mobile y desktop; uno oculto
+ * por breakpoint) → se busca el span numérico VISIBLE.
  */
 export async function getCartBadgeCount(page: Page): Promise<number> {
-  const badge = page.locator('header').locator('.absolute.-top-1.-right-1').first();
-  try {
-    await badge.waitFor({ state: 'visible', timeout: 3000 });
-    const text = await badge.textContent();
-    return text ? parseInt(text, 10) : 0;
-  } catch {
-    return 0;
+  const badges = page
+    .locator('header a[href="/carrito"] span')
+    .filter({ hasText: /^\d+\+?$/ });
+  const n = await badges.count();
+  for (let i = 0; i < n; i++) {
+    const badge = badges.nth(i);
+    if (await badge.isVisible().catch(() => false)) {
+      const parsed = parseInt((await badge.textContent()) ?? '', 10);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
   }
+  return 0;
 }
 
 /**
- * Open the cart sheet via header button.
- * Desktop: button with text "Carrito"; Mobile: ShoppingCart icon button (no text).
- * Both are inside the header.
+ * Open the cart PAGE via the header link. El "cart sheet" ([role=dialog]) ya
+ * no existe: el carrito del sitio rediseñado es la ruta /carrito.
  */
-export async function openCartSheet(page: Page) {
-  // Try desktop button first (has "Carrito" text), then fall back to mobile icon button
-  const desktopCartBtn = page.locator('header').locator('button').filter({ hasText: 'Carrito' }).first();
-  const mobileCartBtn = page.locator('header').locator('button.relative').filter({ has: page.locator('svg') }).first();
-
-  if (await desktopCartBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await desktopCartBtn.click();
-  } else {
-    // On mobile, the cart button is the one with ShoppingCart icon and relative positioning (for badge)
-    // It's inside the mobile header's button group
-    await mobileCartBtn.click();
+export async function openCartPage(page: Page) {
+  const links = page.locator('header a[href="/carrito"]');
+  const n = await links.count();
+  for (let i = 0; i < n; i++) {
+    const link = links.nth(i);
+    if (await link.isVisible().catch(() => false)) {
+      await link.click();
+      break;
+    }
   }
-
-  await page.waitForSelector('[role="dialog"]', { state: 'visible', timeout: 5000 });
+  // 20s: en dev el primer hit a /carrito compila la ruta (Turbopack) y puede
+  // demorar >10s, sobre todo con los proyectos desktop+mobile en paralelo.
+  await page.waitForURL('**/carrito', { timeout: 20000 });
 }
 
 /**
@@ -91,7 +101,8 @@ export async function openCartSheet(page: Page) {
  */
 export async function clearCart(page: Page) {
   await page.evaluate(() => {
-    localStorage.removeItem('quelita-cart');
+    localStorage.removeItem('quelita-cart'); // key legacy (carrito viejo)
+    localStorage.removeItem('quelita-cart-m'); // key REAL del carrito actual
   });
 }
 
@@ -160,7 +171,7 @@ export async function goToCatalog(page: Page): Promise<boolean> {
  * Count visible product cards on the page.
  */
 export async function countProductCards(page: Page): Promise<number> {
-  return page.locator('.group.relative').count();
+  return page.locator('[data-testid="product-card"]').count();
 }
 
 /**

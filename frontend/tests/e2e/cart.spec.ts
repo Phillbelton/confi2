@@ -1,8 +1,19 @@
 import { test, expect } from '@playwright/test';
-import { goToCatalog, clearCart, openCartSheet, addFirstProductToCart, requireProducts } from './helpers';
+import {
+  goToCatalog,
+  clearCart,
+  openCartPage,
+  addFirstProductToCart,
+  requireProducts,
+  getCartBadgeCount,
+} from './helpers';
 
 // ============================================================================
-// CART — Add items, quantity management, cart sheet UI
+// CART — Add items, quantity management, página /carrito
+//
+// El sitio rediseñado NO tiene "cart sheet" ([role=dialog]): el carrito es la
+// ruta /carrito (lista de [data-testid="cart-item"] + resumen + CTA "Ir a
+// pagar"). El badge del header vive en el link a /carrito.
 // ============================================================================
 
 test.describe('Cart — Adding Products', () => {
@@ -17,10 +28,9 @@ test.describe('Cart — Adding Products', () => {
     await requireProducts(page, hasProducts);
     await addFirstProductToCart(page);
 
-    // Wait for cart badge to appear/update in header
-    // Badge uses absolute positioning with classes like `absolute -top-1 -right-1`
-    const badge = page.locator('header').locator('.absolute.-top-1.-right-1').first();
-    await expect(badge).toBeVisible({ timeout: 5000 });
+    await expect
+      .poll(() => getCartBadgeCount(page), { timeout: 5000 })
+      .toBeGreaterThan(0);
   });
 
   test('adding product from detail page updates cart badge', async ({ page }) => {
@@ -29,19 +39,18 @@ test.describe('Cart — Adding Products', () => {
     await requireProducts(page, hasProducts);
 
     // Navigate to first product detail
-    const firstLink = page.locator('.group.relative a').first();
+    const firstLink = page.locator('[data-testid="product-card"] a').first();
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
 
-    // Add to cart — desktop says "Agregar al carrito", mobile says "Agregar"
+    // El botón principal dice "Agregar al carrito" (o "Agregar N más")
     const addBtn = page.locator('button').filter({ hasText: /Agregar/ }).first();
     await addBtn.click();
-    await page.waitForTimeout(1000);
 
-    // Badge should show
-    const badge = page.locator('header').locator('.absolute.-top-1.-right-1').first();
-    await expect(badge).toBeVisible({ timeout: 5000 });
+    await expect
+      .poll(() => getCartBadgeCount(page), { timeout: 5000 })
+      .toBeGreaterThan(0);
   });
 
   test('adding same product twice increases quantity, not duplicates', async ({ page }) => {
@@ -49,79 +58,76 @@ test.describe('Cart — Adding Products', () => {
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
     await addFirstProductToCart(page);
-    await page.waitForTimeout(500);
-    await addFirstProductToCart(page);
-    await page.waitForTimeout(500);
 
-    // Open cart sheet
-    await openCartSheet(page);
+    // Tras el primer add, la card cambia a stepper: el "+" (aria-label
+    // "Agregar") suma sobre la MISMA línea.
+    const plusBtn = page
+      .locator('[data-testid="product-card"]')
+      .first()
+      .locator('button[aria-label="Agregar"]');
+    await plusBtn.click();
+    await page.waitForTimeout(300);
 
-    // The quantity display in cart sheet uses <span class="w-8 text-center ...">
-    // Should show "2" somewhere in the dialog
-    await expect(page.locator('[role="dialog"]').locator('text=2')).toBeVisible({ timeout: 3000 });
+    await openCartPage(page);
+
+    // Una sola línea, con cantidad acumulada (no dos líneas duplicadas).
+    const items = page.locator('[data-testid="cart-item"]');
+    await expect(items).toHaveCount(1);
+    await expect(
+      items.first().locator('span').filter({ hasText: /^\d+$/ }).first()
+    ).toHaveText('2');
   });
 });
 
 // ============================================================================
-// CART — Cart Sheet UI
+// CART — Página /carrito
 // ============================================================================
 
-test.describe('Cart — Sheet UI', () => {
+test.describe('Cart — Cart Page', () => {
   test('empty cart shows empty state message', async ({ page }) => {
     await page.goto('/');
     await clearCart(page);
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.goto('/carrito');
 
-    await openCartSheet(page);
-
-    // CartSheet empty state says "Tu carrito está vacío"
-    await expect(page.locator('[role="dialog"]').getByText('Tu carrito está vacío')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Tu carrito está vacío')).toBeVisible({ timeout: 5000 });
   });
 
-  test('cart sheet shows product info after adding item', async ({ page }) => {
+  test('cart page shows product info after adding item', async ({ page }) => {
     test.slow();
     await page.goto('/');
     await clearCart(page);
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
     await addFirstProductToCart(page);
-    await page.waitForTimeout(500);
 
-    await openCartSheet(page);
-    const dialog = page.locator('[role="dialog"]');
+    await openCartPage(page);
 
-    // Should show a price with $ sign
-    await expect(dialog.locator('text=/\\$\\d/')).toBeVisible();
-    // Should show "Ir al Checkout" link
-    await expect(dialog.getByText('Ir al Checkout')).toBeVisible();
+    const item = page.locator('[data-testid="cart-item"]').first();
+    await expect(item).toBeVisible();
+    // Muestra un precio con $
+    await expect(item.locator('text=/\\$\\d/').first()).toBeVisible();
+    // CTA a checkout ("Ir a pagar"; inline en desktop, barra sticky en mobile)
+    await expect(page.locator('a[href="/checkout"]:visible').first()).toBeVisible();
   });
 
-  test('quantity controls work inside cart sheet', async ({ page }) => {
+  test('quantity controls work inside cart page', async ({ page }) => {
     test.slow();
     await page.goto('/');
     await clearCart(page);
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
     await addFirstProductToCart(page);
-    await page.waitForTimeout(500);
 
-    await openCartSheet(page);
-    const dialog = page.locator('[role="dialog"]');
+    await openCartPage(page);
 
-    // Cart sheet uses Plus/Minus icon buttons (no text "+" or "-")
-    // The Plus button is the second icon button in the quantity controls area
-    // Find the quantity control area by looking for the bg-gray-100 rounded-lg container
-    const qtyControls = dialog.locator('.bg-gray-100.rounded-lg').first();
-    if (await qtyControls.isVisible({ timeout: 3000 }).catch(() => false)) {
-      // Click the last button in qty controls (the Plus button)
-      const plusBtn = qtyControls.locator('button').last();
-      await plusBtn.click();
-      await page.waitForTimeout(300);
+    const item = page.locator('[data-testid="cart-item"]').first();
+    const qty = item.locator('span').filter({ hasText: /^\d+$/ }).first();
+    const before = (await qty.textContent()) ?? '';
 
-      // Quantity should now be 2 — shown in span.w-8.text-center
-      await expect(dialog.locator('span.w-8.text-center').first()).toHaveText('2');
-    }
+    await item.locator('button[aria-label="Agregar"]').click();
+
+    // La cantidad sube en un paso (step depende del producto → solo != antes)
+    await expect(qty).not.toHaveText(before);
   });
 
   test('remove button removes item from cart', async ({ page }) => {
@@ -131,21 +137,17 @@ test.describe('Cart — Sheet UI', () => {
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
     await addFirstProductToCart(page);
-    await page.waitForTimeout(500);
 
-    await openCartSheet(page);
-    const dialog = page.locator('[role="dialog"]');
+    await openCartPage(page);
 
-    // Delete button contains a Trash2 icon — it's a ghost button with h-6 w-6
-    // Look for button that has the trash SVG inside it
-    const deleteBtn = dialog.locator('button').filter({ has: page.locator('svg.h-4.w-4') }).first();
-    if (await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await deleteBtn.click();
-      await page.waitForTimeout(500);
+    await page
+      .locator('[data-testid="cart-item"]')
+      .first()
+      .locator('button[aria-label="Eliminar"]')
+      .click();
 
-      // Should show empty state
-      await expect(dialog.getByText('Tu carrito está vacío')).toBeVisible({ timeout: 3000 });
-    }
+    // Era la única línea → vuelve el empty state
+    await expect(page.getByText('Tu carrito está vacío')).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -166,11 +168,10 @@ test.describe('Cart — Persistence', () => {
     // Reload the page
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
-    // Cart badge should still show
-    const badge = page.locator('header').locator('.absolute.-top-1.-right-1').first();
-    await expect(badge).toBeVisible({ timeout: 5000 });
+    await expect
+      .poll(() => getCartBadgeCount(page), { timeout: 5000 })
+      .toBeGreaterThan(0);
   });
 
   test('cart persists across navigation', async ({ page }) => {
@@ -185,11 +186,10 @@ test.describe('Cart — Persistence', () => {
     // Navigate to home
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
-    // Badge should still show
-    const badge = page.locator('header').locator('.absolute.-top-1.-right-1').first();
-    await expect(badge).toBeVisible({ timeout: 5000 });
+    await expect
+      .poll(() => getCartBadgeCount(page), { timeout: 5000 })
+      .toBeGreaterThan(0);
   });
 });
 
@@ -207,12 +207,10 @@ test.describe('Cart — Checkout Navigation', () => {
     await addFirstProductToCart(page);
     await page.waitForTimeout(500);
 
-    await openCartSheet(page);
+    await openCartPage(page);
 
-    // CartSheet checkout link says "Ir al Checkout" and links to /checkout
-    const checkoutBtn = page.locator('[role="dialog"]').getByText('Ir al Checkout');
-    await checkoutBtn.click();
-
+    // "Ir a pagar" (el visible según breakpoint) navega a /checkout
+    await page.locator('a[href="/checkout"]:visible').first().click();
     await page.waitForURL('**/checkout', { timeout: 10000 });
     expect(page.url()).toContain('/checkout');
   });

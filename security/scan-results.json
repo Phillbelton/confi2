@@ -1,0 +1,212 @@
+{
+  "base": "http://192.168.6.14",
+  "deep": false,
+  "at": "2026-07-06T22:15:57.519Z",
+  "counts": {
+    "MED": 4,
+    "LOW": 2,
+    "INFO": 2,
+    "OK": 16
+  },
+  "findings": [
+    {
+      "sev": "MED",
+      "title": "Páginas de usuario sin headers de seguridad",
+      "detail": "El HTML servido por el frontend (Next/Caddy) no envía: CSP, X-Frame-Options/frame-ancestors, HSTS, X-Content-Type-Options(nosniff). Habilita clickjacking y reduce defensa XSS en las páginas que más importan.",
+      "evidence": {
+        "url": "http://192.168.6.14/",
+        "status": 200,
+        "headersPresentes": [
+          "cache-control",
+          "content-encoding",
+          "content-type",
+          "date",
+          "etag",
+          "transfer-encoding",
+          "vary",
+          "via",
+          "x-nextjs-cache",
+          "x-nextjs-prerender",
+          "x-nextjs-stale-time",
+          "x-powered-by"
+        ]
+      }
+    },
+    {
+      "sev": "MED",
+      "title": "CORS refleja origen no confiable con credenciales",
+      "detail": "El backend permitió Origin \"https://random-attacker.trycloudflare.com\" con Access-Control-Allow-Credentials: true. Permite requests con credenciales desde ese origen.",
+      "evidence": {
+        "origin": "https://random-attacker.trycloudflare.com",
+        "acao": "https://random-attacker.trycloudflare.com",
+        "acac": "true",
+        "status": 200
+      }
+    },
+    {
+      "sev": "MED",
+      "title": "CORS refleja origen no confiable con credenciales",
+      "detail": "El backend permitió Origin \"http://192.168.6.99\" con Access-Control-Allow-Credentials: true. Permite requests con credenciales desde ese origen.",
+      "evidence": {
+        "origin": "http://192.168.6.99",
+        "acao": "http://192.168.6.99",
+        "acac": "true",
+        "status": 200
+      }
+    },
+    {
+      "sev": "MED",
+      "title": "Bypass de rate-limit con token admin forjado (no verificado)",
+      "detail": "Un token con { role: \"admin\" } y firma inválida eleva el límite de 300 a 1000 req/ventana. El keyGenerator/max del rate limiter usa jwt.decode() sin verificar la firma, así que un anónimo obtiene el cupo privilegiado sin credenciales válidas. Además cada valor de \"role\" distinto crea un bucket independiente (rol aleatorio \"zz60a34f\" → límite 500, remaining 499), permitiendo rotar el claim para multiplicar el cupo.",
+      "evidence": {
+        "limitAnon": "300",
+        "limitAdmin": "1000",
+        "rolAleatorio": "zz60a34f",
+        "limitRnd": "500",
+        "remainingRnd": "499"
+      }
+    },
+    {
+      "sev": "LOW",
+      "title": "Divulgación de tecnología (X-Powered-By)",
+      "detail": "Header X-Powered-By presente: \"Next.js\". Revela el stack/framework.",
+      "evidence": {
+        "xPoweredBy": "Next.js"
+      }
+    },
+    {
+      "sev": "LOW",
+      "title": "check-phone es un oráculo de enumeración",
+      "detail": "POST /api/auth/check-phone devuelve {exists:bool}. Tiene rate-limit (10/15min) pero sigue permitiendo enumerar teléfonos registrados.",
+      "evidence": {
+        "sample": "{\"success\":true,\"data\":{\"exists\":false}}"
+      }
+    },
+    {
+      "sev": "INFO",
+      "title": "Respuesta inesperada en /api/stock-movements",
+      "detail": "status 404",
+      "evidence": {
+        "sample": "{\"success\":false,\"error\":\"Ruta no encontrada: /api/stock-movements\",\"message\":\"Ruta no encontrada: /api/stock-movements\"}"
+      }
+    },
+    {
+      "sev": "INFO",
+      "title": "Comprobación /uploads/",
+      "detail": "GET /uploads/ → status 404 (200 = directory listing habilitado, revisar).",
+      "evidence": {
+        "status": 404
+      }
+    },
+    {
+      "sev": "OK",
+      "title": "API con headers helmet",
+      "detail": "CSP/nosniff/HSTS/XFO presentes en /api.",
+      "evidence": {
+        "csp": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'sel"
+      }
+    },
+    {
+      "sev": "OK",
+      "title": "CORS bloquea https://evil.com",
+      "detail": "ACAO=\"(ausente)\", credenciales=\"(ausente)\"",
+      "evidence": {
+        "origin": "https://evil.com",
+        "acao": null,
+        "acac": null
+      }
+    },
+    {
+      "sev": "OK",
+      "title": "CORS bloquea https://quelita.evil.com",
+      "detail": "ACAO=\"(ausente)\", credenciales=\"(ausente)\"",
+      "evidence": {
+        "origin": "https://quelita.evil.com",
+        "acao": null,
+        "acac": null
+      }
+    },
+    {
+      "sev": "OK",
+      "title": "CORS bloquea https://seenode.com.evil.com",
+      "detail": "ACAO=\"(ausente)\", credenciales=\"(ausente)\"",
+      "evidence": {
+        "origin": "https://seenode.com.evil.com",
+        "acao": null,
+        "acac": null
+      }
+    },
+    {
+      "sev": "OK",
+      "title": "Protegida /api/users exige auth",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Protegida /api/users/funcionarios exige auth",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Protegida /api/audit-logs exige auth",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Protegida /api/admin/dashboard/stats exige auth",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Protegida /api/orders exige auth",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Protegida /api/users/me/addresses exige auth",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "JWT alg:none rechazado",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Token inválido en /auth/me",
+      "detail": "status 401",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Login resiste operador NoSQL",
+      "detail": "{\"email\":{\"$gt\":\"\"},\"password\":{\"$gt\":\"\"}} → status 400",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Login resiste operador NoSQL",
+      "detail": "{\"email\":{\"$ne\":null},\"password\":{\"$ne\":null}} → status 400",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Login resiste operador NoSQL",
+      "detail": "{\"email\":\"admin@x.com\",\"password\":{\"$gt\":\"\"}} → status 400",
+      "evidence": {}
+    },
+    {
+      "sev": "OK",
+      "title": "Errores sin stack trace",
+      "detail": "404 shape: {\"success\":false,\"error\":\"Ruta no encontrada: /api/ruta-inexistente-xyz\",\"message\":\"Ruta no encontrada: /api/ruta-inexistente-xyz\"}",
+      "evidence": {}
+    }
+  ]
+}

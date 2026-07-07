@@ -97,6 +97,11 @@ export function PresentationInline({ product, withLadder = false }: Presentation
   // cuántas de ESA presentación hay en el carrito.
   const lineId = cartLineId(product._id, selPres?._id ?? principalId);
   const inCart = items.find((i) => i.lineId === lineId)?.quantity || 0;
+  // Feedback al agregar: pop del stepper al reemplazar el botón (solo por
+  // interacción) + bump del número en cada cambio (sin bump del primer paint).
+  const [popStepper, setPopStepper] = useState(false);
+  const [initialInCart] = useState(inCart);
+  const bumpQty = inCart !== initialInCart;
 
   // El precio reacciona a la cantidad real en carrito de ESA presentación: al
   // alcanzar un tramo por volumen, el precio mostrado baja al precio mayorista
@@ -206,7 +211,10 @@ export function PresentationInline({ product, withLadder = false }: Presentation
       {inCart === 0 ? (
         <button
           type="button"
-          onClick={() => addItem(product, minQ, selPres?._id)}
+          onClick={() => {
+            setPopStepper(true);
+            addItem(product, minQ, selPres?._id);
+          }}
           className="tappable mt-1.5 w-full rounded-full bg-primary py-1.5 text-[13px] font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 lg:!min-h-9"
         >
           <span className="inline-flex items-center justify-center gap-1.5">
@@ -215,7 +223,12 @@ export function PresentationInline({ product, withLadder = false }: Presentation
           </span>
         </button>
       ) : (
-        <div className="mt-1.5 flex items-center justify-between rounded-full bg-primary/10 p-1">
+        <div
+          className={cn(
+            'mt-1.5 flex items-center justify-between rounded-full bg-primary/10 p-1',
+            popStepper && 'stepper-pop'
+          )}
+        >
           <button
             type="button"
             onClick={() => updateQuantity(lineId, inCart - step <= 0 ? 0 : inCart - step)}
@@ -224,7 +237,12 @@ export function PresentationInline({ product, withLadder = false }: Presentation
           >
             <Minus className="h-4 w-4" />
           </button>
-          <span className="text-sm font-bold tabular-nums text-primary">{inCart}</span>
+          <span
+            key={inCart}
+            className={cn('text-sm font-bold tabular-nums text-primary', bumpQty && 'stepper-bump')}
+          >
+            {inCart}
+          </span>
           <button
             type="button"
             onClick={() => updateQuantity(lineId, inCart + step)}

@@ -16,13 +16,15 @@ test.describe('Catalog — Product Grid', () => {
   test('each product card shows name, price and add-to-cart button', async ({ page }) => {
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
-    const firstCard = page.locator('.group.relative').first();
-    // Product name — h3 with font-display class
-    await expect(firstCard.locator('h3.font-display')).toBeVisible();
-    // Price with $ sign — span with font-bold text-primary
-    await expect(firstCard.locator('text=/\\$/')).toBeVisible();
-    // Add to cart button — Button with text "Agregar" (no aria-label)
-    await expect(firstCard.locator('button').filter({ hasText: 'Agregar' })).toBeVisible();
+    const firstCard = page.locator('[data-testid="product-card"]').first();
+    // Nombre del producto
+    await expect(firstCard.locator('h3')).toBeVisible();
+    // Precio con $ (la card puede tener varios: precio, tramo, $/u → first)
+    await expect(firstCard.locator('text=/\\$\\d/').first()).toBeVisible();
+    // CTA: "Agregar" (mono-presentación / inline) o "Ver presentaciones" (sheet)
+    await expect(
+      firstCard.locator('button').filter({ hasText: /Agregar|Ver presentaciones/ }).first()
+    ).toBeVisible();
   });
 
   test.skip('shows breadcrumb or back link with "Productos" context', async ({ page }) => {
@@ -34,7 +36,8 @@ test.describe('Catalog — Product Grid', () => {
   test('shows result count', async ({ page }) => {
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
-    await expect(page.locator('text=/\\d+ producto/')).toBeVisible();
+    // El conteo aparece en el hero Y en la fila de controles → first
+    await expect(page.locator('text=/\\d+ producto/').first()).toBeVisible();
   });
 });
 
@@ -49,11 +52,11 @@ test.describe('Catalog — Sorting', () => {
 
     // Open sort select — it's a combobox button
     await page.locator('button[role="combobox"]').click();
-    await page.locator('[role="option"]').filter({ hasText: 'Menor precio' }).click();
+    await page.locator('[role="option"]').filter({ hasText: 'Precio: menor' }).click();
 
-    await page.waitForTimeout(500);
-    const params = getSearchParams(page);
-    expect(params.get('sort')).toBe('price_asc');
+    await expect
+      .poll(() => getSearchParams(page).get('sort'), { timeout: 5000 })
+      .toBe('price_asc');
   });
 
   test.skip('sort persists after page reload', async ({ page }) => {
@@ -91,39 +94,25 @@ test.describe('Catalog — Desktop Filters', () => {
     await expect(page.locator('aside').getByText('Categorías')).toBeVisible();
   });
 
-  test('selecting a category updates URL and shows filter pill', async ({ page }) => {
+  // El sidebar ya no tiene sección "Categorías" (la navegación de categorías
+  // vive en el navbar y en los chips de subcategoría). El filtro single-select
+  // representativo hoy es el rango de PRECIO (radio).
+  test('selecting a price range updates URL and shows filter pill', async ({ page }) => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
 
-    // Expand categories — CollapsibleSection button
-    await page.locator('aside').getByText('Categorías').click();
-    await page.waitForTimeout(300);
+    // FilterList "Precio": opciones button[role="radio"], siempre desplegadas
+    await page.locator('aside').getByRole('radio', { name: 'Hasta $1.000' }).click();
 
-    // Recorre buttons del aside (saltando headers de sección) hasta
-    // encontrar uno que sea una categoría real y la clickea.
-    const allButtons = page.locator('aside').locator('button');
-    const buttonCount = await allButtons.count();
-
-    // Find first category button (skip section headers)
-    let categoryClicked = false;
-    for (let i = 0; i < buttonCount && !categoryClicked; i++) {
-      const btn = allButtons.nth(i);
-      const text = await btn.textContent();
-      if (text && !text.includes('Categorías') && !text.includes('Marca') && !text.includes('Precio') && !text.includes('Ofertas') && text.trim().length > 0) {
-        const isVisible = await btn.isVisible().catch(() => false);
-        if (isVisible) {
-          await btn.click();
-          categoryClicked = true;
-        }
-      }
-    }
-
-    if (categoryClicked) {
-      await page.waitForTimeout(500);
-      const params = getSearchParams(page);
-      expect(params.get('categoria')).toBeTruthy();
-    }
+    await expect
+      .poll(() => getSearchParams(page).get('maxPrice'), { timeout: 5000 })
+      .toBe('1000');
+    // Chip de filtro activo (botón removible; el radio del aside no tiene
+    // role button, así que no colisiona)
+    await expect(
+      page.getByRole('button', { name: /Precio: Hasta \$1\.000/ })
+    ).toBeVisible();
   });
 
   test('selecting brand checkbox updates filters', async ({ page }) => {
@@ -131,18 +120,13 @@ test.describe('Catalog — Desktop Filters', () => {
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
 
-    // Expand brands section
-    await page.locator('aside').getByText('Marca').click();
-    await page.waitForTimeout(300);
+    // Opciones de "Marcas": button[role="checkbox"], siempre desplegadas.
+    // La primera checkbox del aside es una marca (Marcas va antes que Promos).
+    await page.locator('aside').getByRole('checkbox').first().click();
 
-    // Click first brand checkbox — uses Checkbox component with role="checkbox"
-    const firstBrand = page.locator('aside').locator('label').filter({ has: page.locator('[role="checkbox"]') }).first();
-    if (await firstBrand.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await firstBrand.click();
-      await page.waitForTimeout(500);
-      const params = getSearchParams(page);
-      expect(params.get('brands')).toBeTruthy();
-    }
+    await expect
+      .poll(() => getSearchParams(page).get('brands'), { timeout: 5000 })
+      .toBeTruthy();
   });
 
   test.skip('clear filters resets all', async ({ page }) => {
@@ -177,12 +161,18 @@ test.describe('Catalog — Mobile Filters', () => {
     await page.waitForSelector('[role="dialog"]', { state: 'visible', timeout: 5000 });
 
     // Sheet should have filter content
-    await expect(page.locator('[role="dialog"]').getByText('Filtros')).toBeVisible();
-    // Apply button visible
-    await expect(page.locator('button').filter({ hasText: 'Aplicar filtros' })).toBeVisible();
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog.getByText('Filtros').first()).toBeVisible();
+    // Los filtros aplican al instante: el footer es "Ver N productos" (cierra
+    // el sheet), ya no existe "Aplicar filtros".
+    await expect(
+      dialog.locator('button').filter({ hasText: /Ver \d+ producto/ })
+    ).toBeVisible();
   });
 
-  test('filters are pending until "Aplicar" is clicked', async ({ page }) => {
+  // El sheet ya NO tiene filtros "pendientes": cada opción aplica al instante
+  // (mismos FilterList del sidebar desktop) y "Ver N productos" solo cierra.
+  test('selecting a filter in the sheet applies immediately', async ({ page }) => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
@@ -190,60 +180,37 @@ test.describe('Catalog — Mobile Filters', () => {
     // Open filters
     await page.locator('button').filter({ hasText: 'Filtros' }).click();
     await page.waitForSelector('[role="dialog"]', { state: 'visible' });
-
-    // Expand categories in sheet
-    await page.locator('[role="dialog"]').getByText('Categorías').click();
-    await page.waitForTimeout(300);
-
-    // Select a category — URL should NOT change yet
-    const urlBefore = page.url();
     const dialog = page.locator('[role="dialog"]');
-    const allButtons = dialog.locator('button');
-    const buttonCount = await allButtons.count();
 
-    for (let i = 0; i < buttonCount; i++) {
-      const btn = allButtons.nth(i);
-      const text = await btn.textContent();
-      if (text && !text.includes('Categorías') && !text.includes('Marca') && !text.includes('Precio') && !text.includes('Filtros') && !text.includes('Aplicar') && !text.includes('Limpiar') && text.trim().length > 0) {
-        const isVisible = await btn.isVisible().catch(() => false);
-        if (isVisible) {
-          await btn.click();
-          break;
-        }
-      }
-    }
-    await page.waitForTimeout(300);
+    // Elegir un rango de precio (radio) → la URL cambia sin botón "Aplicar"
+    await dialog.getByRole('radio', { name: 'Hasta $1.000' }).click();
+    await expect
+      .poll(() => getSearchParams(page).get('maxPrice'), { timeout: 5000 })
+      .toBe('1000');
 
-    expect(page.url()).toBe(urlBefore);
-
-    // Click apply
-    await page.locator('button').filter({ hasText: 'Aplicar filtros' }).click();
-    await page.waitForTimeout(500);
-
-    // Now URL should have updated
-    const params = getSearchParams(page);
-    expect(params.get('categoria')).toBeTruthy();
+    // "Ver N productos" cierra el sheet y la grilla queda filtrada
+    await dialog.locator('button').filter({ hasText: /Ver \d+ producto/ }).click();
+    await expect(dialog).not.toBeVisible();
   });
 
-  test('"Limpiar todo" in sheet clears pending filters', async ({ page }) => {
-    await page.goto('/productos?categoria=abc');
-    await page.waitForTimeout(1000);
+  test('"Limpiar todo" in sheet clears active filters', async ({ page }) => {
+    await page.goto('/productos?maxPrice=1000');
+    const hasProducts = await waitForProductGrid(page);
+    await requireProducts(page, hasProducts);
 
     await page.locator('button').filter({ hasText: 'Filtros' }).click();
     await page.waitForSelector('[role="dialog"]', { state: 'visible' });
 
-    // Click "Limpiar todo"
-    const clearBtn = page.locator('[role="dialog"]').locator('button').filter({ hasText: 'Limpiar todo' });
-    if (await clearBtn.isVisible()) {
-      await clearBtn.click();
+    // "Limpiar todo" (visible porque hay un filtro activo) limpia la URL al tiro
+    await page
+      .locator('[role="dialog"]')
+      .locator('button')
+      .filter({ hasText: 'Limpiar todo' })
+      .click();
 
-      // Apply
-      await page.locator('button').filter({ hasText: 'Aplicar filtros' }).click();
-      await page.waitForTimeout(500);
-
-      const params = getSearchParams(page);
-      expect(params.get('categoria')).toBeNull();
-    }
+    await expect
+      .poll(() => getSearchParams(page).get('maxPrice'), { timeout: 5000 })
+      .toBeNull();
   });
 });
 
@@ -291,35 +258,25 @@ test.describe('Catalog — Subcategory Selection', () => {
 // CATALOG — Pagination
 // ============================================================================
 
-test.describe('Catalog — Pagination', () => {
-  test.skip('pagination updates URL with page param', async ({ page }) => {
+// La paginación numerada no existe: el catálogo usa scroll infinito con un
+// botón "Cargar más productos" de respaldo, y nunca ensucia la URL con ?page.
+test.describe('Catalog — Pagination (scroll infinito)', () => {
+  test('"Cargar más" appends products without a page param in the URL', async ({ page }) => {
+    test.slow();
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
 
-    // Check if pagination exists (needs enough products)
-    const paginationButtons = page.locator('button').filter({ hasText: '2' });
-    if (await paginationButtons.first().isVisible({ timeout: 2000 }).catch(() => false)) {
-      await paginationButtons.first().click();
-      await page.waitForTimeout(500);
-
-      const params = getSearchParams(page);
-      expect(params.get('page')).toBe('2');
+    const before = await countProductCards(page);
+    const loadMore = page.locator('button').filter({ hasText: 'Cargar más productos' });
+    if (!(await loadMore.isVisible({ timeout: 3000 }).catch(() => false))) {
+      test.skip(true, 'Una sola página de resultados — no hay más que cargar');
     }
-  });
 
-  test('page 1 does not show page param in URL', async ({ page }) => {
-    await page.goto('/productos?page=2');
-    await page.waitForTimeout(1000);
-
-    // Navigate to page 1
-    const page1Btn = page.locator('button').filter({ hasText: '1' }).first();
-    if (await page1Btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await page1Btn.click();
-      await page.waitForTimeout(500);
-
-      const params = getSearchParams(page);
-      expect(params.get('page')).toBeNull();
-    }
+    await loadMore.click();
+    await expect
+      .poll(() => countProductCards(page), { timeout: 15000 })
+      .toBeGreaterThan(before);
+    expect(getSearchParams(page).get('page')).toBeNull();
   });
 });
 

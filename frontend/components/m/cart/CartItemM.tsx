@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Plus, Minus, Trash2 } from 'lucide-react';
 import { useCartStoreM, type CartItem } from '@/store/m/useCartStoreM';
 import { quantityStep, minQuantity } from '@/lib/discountCalculator';
 import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
+import { cn } from '@/lib/utils';
 
 interface Props {
   item: CartItem;
@@ -15,9 +17,12 @@ export function CartItemM({ item }: Props) {
   const removeItem = useCartStoreM((s) => s.removeItem);
   const step = quantityStep(item.product);
   const minQ = minQuantity(item.product);
+  // Bump del número al cambiar la cantidad (sin bump del primer paint).
+  const [initialQty] = useState(item.quantity);
+  const bumpQty = item.quantity !== initialQty;
 
   return (
-    <div className="flex gap-3 rounded-2xl border bg-card p-3">
+    <div data-testid="cart-item" className="flex gap-3 rounded-2xl border bg-card p-3">
       <Link
         href={`/productos/${item.product.slug}`}
         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted"
@@ -66,7 +71,12 @@ export function CartItemM({ item }: Props) {
             >
               <Minus className="h-3 w-3" />
             </button>
-            <span className="px-3 text-xs font-bold tabular-nums">{item.quantity}</span>
+            <span
+              key={item.quantity}
+              className={cn('px-3 text-xs font-bold tabular-nums', bumpQty && 'stepper-bump')}
+            >
+              {item.quantity}
+            </span>
             <button
               type="button"
               onClick={() => updateQuantity(item.lineId, item.quantity + step)}

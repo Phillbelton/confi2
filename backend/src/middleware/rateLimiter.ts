@@ -66,8 +66,9 @@ export const apiRateLimiter = rateLimit({
 
     if (!role) {
       // Usuario anónimo (sin token o token inválido)
-      // 300 permite navegar catálogo de productos sin problemas
-      return 300;
+      // 300 (default de RATE_LIMIT_MAX_ANON) permite navegar el catálogo sin
+      // problemas; en local se sube por env para que los e2e no reciban 429.
+      return ENV.RATE_LIMIT_MAX_ANON;
     }
 
     // Usuarios con roles administrativos

@@ -43,6 +43,10 @@ export const ENV = {
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 min
   RATE_LIMIT_MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+  // Techo para ANÓNIMOS del apiRateLimiter. El default (300) es el valor de
+  // producción; solo se sube vía env en entornos locales donde los e2e de
+  // Playwright martillan el catálogo (si no, la suite se cae con 429).
+  RATE_LIMIT_MAX_ANON: parseInt(process.env.RATE_LIMIT_MAX_ANON || '300', 10),
 
   // Order expiration (guest orders auto-cancel)
   ORDER_EXPIRATION_HOURS: parseInt(process.env.ORDER_EXPIRATION_HOURS || '48', 10),

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProductBySlug } from '@/hooks/useProducts';
-import { useCartStoreM } from '@/store/m/useCartStoreM';
+import { useCartStoreM, cartLineId } from '@/store/m/useCartStoreM';
+import { showCartToast } from '@/components/m/shell/cart-toast-m';
 import { SaleUnitBadge } from '@/components/m/catalog/SaleUnitBadge';
 import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
 import { useProductBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
@@ -53,10 +54,20 @@ export default function ProductDetailPage() {
   const breadcrumbs = useProductBreadcrumbs(product, fromCtx);
 
   const addItem = useCartStoreM((s) => s.addItem);
+  const items = useCartStoreM((s) => s.items);
 
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedImage, setSelectedImage] = useState<number>(0);
   const [selPresId, setSelPresId] = useState<string>(''); // '' = presentación principal
+  // Feedback transitorio del botón tras agregar ("¡Agregado!").
+  const [justAdded, setJustAdded] = useState(false);
+  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (addedTimer.current) clearTimeout(addedTimer.current);
+    },
+    []
+  );
 
   if (error) {
     return (
@@ -119,6 +130,40 @@ export default function ProductDetailPage() {
 
   // Initialize quantity to minQ
   if (quantity < minQ) setQuantity(minQ);
+
+  // Cantidad de ESTA línea (producto + presentación elegida) ya en el carrito.
+  // El selector de cantidad expresa "cuánto AGREGAR"; esto muestra lo que ya hay
+  // para que no se lea como "cuánto tendré" (agregar 5 y luego 8 daba 13, no 8).
+  const inCart = items.find((i) => i.lineId === cartLineId(product._id, selPres?._id ?? ''))?.quantity || 0;
+
+  const handleAdd = () => {
+    addItem(product, realQty, selPres?._id);
+    showCartToast({
+      productName: product.name,
+      variantName: presentations.length > 1 && selPres ? presLabel(selPres) : undefined,
+      image: product.images?.[0] ?? '',
+      quantity: realQty,
+      inCartQty: inCart + realQty,
+    });
+    // El selector vuelve al mínimo: siempre significa "cuánto agregar ahora".
+    setQuantity(minQ);
+    setJustAdded(true);
+    if (addedTimer.current) clearTimeout(addedTimer.current);
+    addedTimer.current = setTimeout(() => setJustAdded(false), 1500);
+  };
+
+  // Contenido compartido entre el botón principal y la CTA sticky móvil.
+  const addBtnContent = justAdded ? (
+    <span className="stepper-bump inline-flex items-center gap-1.5">
+      <Check className="h-4 w-4" strokeWidth={3} />
+      ¡Agregado!
+    </span>
+  ) : inCart > 0 ? (
+    // Ya hay unidades en el carrito → explicitar que se SUMAN.
+    `Agregar ${realQty} más`
+  ) : (
+    'Agregar al carrito'
+  );
 
   const brandName = typeof product.brand === 'object' ? (product.brand as Brand)?.name : '';
   const formatLabel = typeof product.format === 'object' ? (product.format as Format)?.label : '';
@@ -231,7 +276,12 @@ export default function ProductDetailPage() {
                     <button
                       key={p._id}
                       type="button"
-                      onClick={() => setSelPresId(p._id)}
+                      onClick={() => {
+                        setSelPresId(p._id);
+                        // La cantidad es POR presentación: cambiar de chip la
+                        // reinicia a su mínimo (igual que el quick-sheet).
+                        setQuantity(1);
+                      }}
                       className={cn(
                         'flex-1 min-w-0 lg:flex-none rounded-xl border px-2.5 py-2 text-left transition-all',
                         active
@@ -303,6 +353,14 @@ export default function ProductDetailPage() {
               <span className="text-xs text-muted-foreground">
                 (mín. {minQ}{step > 1 ? `, de ${step} en ${step}` : ''})
               </span>
+              {inCart > 0 && (
+                <span
+                  key={inCart}
+                  className="stepper-bump ml-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary tabular-nums"
+                >
+                  En el carrito: {inCart}
+                </span>
+              )}
             </p>
             <div className="flex items-center gap-3">
               <div className="inline-flex items-center rounded-full bg-muted p-1">
@@ -332,12 +390,8 @@ export default function ProductDetailPage() {
                 </p>
               </div>
             </div>
-            <Button
-              size="lg"
-              className="mt-4 w-full rounded-full"
-              onClick={() => addItem(product, realQty, selPres?._id)}
-            >
-              Agregar al carrito
+            <Button size="lg" className="mt-4 w-full rounded-full" onClick={handleAdd}>
+              {addBtnContent}
             </Button>
           </div>
 
@@ -348,6 +402,28 @@ export default function ProductDetailPage() {
               {product.description}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* CTA sticky móvil: total de la selección + agregar sin scrollear de
+          vuelta. Solo <lg (en desktop la columna de info queda a la vista).
+          El pb-32 del contenedor de info reserva el espacio que tapa la barra. */}
+      <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 px-4 pt-2.5 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur supports-[backdrop-filter]:bg-card/85 pb-[max(0.625rem,env(safe-area-inset-bottom))] lg:hidden">
+        <div className="mx-auto flex w-full max-w-screen-md items-center gap-3">
+          <div className="min-w-0 shrink-0">
+            <p className="text-[11px] leading-tight text-muted-foreground">
+              {/* selPres puede faltar en productos legacy sin presentaciones[]
+                  → cae al sufijo derivado del saleUnit ("por unidad", …). */}
+              Total · {realQty} ×{' '}
+              {selPres ? presLabel(selPres).toLowerCase() : presentationPriceSuffix(viewProduct)}
+            </p>
+            <p className="text-lg font-bold leading-tight tabular-nums">
+              ${Math.round(total).toLocaleString('es-CL')}
+            </p>
+          </div>
+          <Button size="lg" className="min-w-0 flex-1 rounded-full" onClick={handleAdd}>
+            {addBtnContent}
+          </Button>
         </div>
       </div>
     </>
