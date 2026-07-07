@@ -1,0 +1,244 @@
+{
+  "base": "http://192.168.6.14",
+  "project": "perf-mobile",
+  "at": "2026-07-06T22:18:00.978Z",
+  "results": [
+    {
+      "project": "perf-mobile",
+      "page": "Home",
+      "url": "/",
+      "vitals": {
+        "fcp": 220,
+        "lcp": 536,
+        "cls": 0.007,
+        "ttfb": 16.099999994039536,
+        "domContentLoaded": 135.59999999403954,
+        "load": 424.3999999910593,
+        "domNodes": 1048,
+        "jsHeapMB": 23.4
+      },
+      "network": {
+        "totalRequests": 118,
+        "totalSizeKB": 8230.3,
+        "byType": {
+          "image": {
+            "count": 14,
+            "sizeKB": 3084.2
+          },
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "script": {
+            "count": 53,
+            "sizeKB": 4772.3
+          },
+          "document": {
+            "count": 5,
+            "sizeKB": 44.2
+          },
+          "xhr": {
+            "count": 13,
+            "sizeKB": 64.6
+          },
+          "fetch": {
+            "count": 28,
+            "sizeKB": 34.3
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-mobile",
+      "page": "Catálogo",
+      "url": "/productos",
+      "vitals": {
+        "fcp": 208,
+        "lcp": 376,
+        "cls": 0.004,
+        "ttfb": 12.899999991059303,
+        "domContentLoaded": 105.09999999403954,
+        "load": 321.09999999403954,
+        "domNodes": 1050,
+        "jsHeapMB": 12.1
+      },
+      "network": {
+        "totalRequests": 63,
+        "totalSizeKB": 4231.4,
+        "byType": {
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "script": {
+            "count": 27,
+            "sizeKB": 1458.9
+          },
+          "image": {
+            "count": 3,
+            "sizeKB": 2365.9
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 37.8
+          },
+          "xhr": {
+            "count": 5,
+            "sizeKB": 113.9
+          },
+          "fetch": {
+            "count": 22,
+            "sizeKB": 24.3
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-mobile",
+      "page": "Detalle de producto",
+      "url": "/productos/gummy-mania-osito-bandeja-300gr",
+      "vitals": {
+        "fcp": 268,
+        "lcp": 540,
+        "cls": 0,
+        "ttfb": 69,
+        "domContentLoaded": 196.6000000089407,
+        "load": 498.5,
+        "domNodes": 404,
+        "jsHeapMB": 10.7
+      },
+      "network": {
+        "totalRequests": 60,
+        "totalSizeKB": 4196.8,
+        "byType": {
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "image": {
+            "count": 2,
+            "sizeKB": 2365.9
+          },
+          "script": {
+            "count": 28,
+            "sizeKB": 1472.3
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 41.3
+          },
+          "xhr": {
+            "count": 4,
+            "sizeKB": 57.5
+          },
+          "fetch": {
+            "count": 20,
+            "sizeKB": 29
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-mobile",
+      "page": "Login",
+      "url": "/login",
+      "vitals": {
+        "fcp": 152,
+        "lcp": 452,
+        "cls": 0,
+        "ttfb": 10,
+        "domContentLoaded": 137.90000000596046,
+        "load": 411.1000000089407,
+        "domNodes": 131,
+        "jsHeapMB": 11.3
+      },
+      "network": {
+        "totalRequests": 59,
+        "totalSizeKB": 4176.2,
+        "byType": {
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "script": {
+            "count": 28,
+            "sizeKB": 1520.2
+          },
+          "image": {
+            "count": 2,
+            "sizeKB": 2365.9
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 22.7
+          },
+          "fetch": {
+            "count": 23,
+            "sizeKB": 36.7
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-mobile",
+      "page": "Registro",
+      "url": "/registro",
+      "vitals": {
+        "fcp": 160,
+        "lcp": 412,
+        "cls": 0,
+        "ttfb": 12.399999991059303,
+        "domContentLoaded": 142.29999999701977,
+        "load": 345.90000000596046,
+        "domNodes": 143,
+        "jsHeapMB": 10.7
+      },
+      "network": {
+        "totalRequests": 54,
+        "totalSizeKB": 4136.7,
+        "byType": {
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "script": {
+            "count": 27,
+            "sizeKB": 1484.6
+          },
+          "image": {
+            "count": 2,
+            "sizeKB": 2365.9
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 22.7
+          },
+          "fetch": {
+            "count": 19,
+            "sizeKB": 32.9
+          }
+        }
+      }
+    }
+  ]
+}

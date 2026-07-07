@@ -1,0 +1,244 @@
+{
+  "base": "http://192.168.6.14",
+  "project": "perf-desktop",
+  "at": "2026-07-06T22:52:47.723Z",
+  "results": [
+    {
+      "project": "perf-desktop",
+      "page": "Home",
+      "url": "/",
+      "vitals": {
+        "fcp": 340,
+        "lcp": 904,
+        "cls": 0.594,
+        "ttfb": 41.5,
+        "domContentLoaded": 211.79999999701977,
+        "load": 466.59999999403954,
+        "domNodes": 998,
+        "jsHeapMB": 24.8
+      },
+      "network": {
+        "totalRequests": 135,
+        "totalSizeKB": 6472.4,
+        "byType": {
+          "image": {
+            "count": 18,
+            "sizeKB": 1154.7
+          },
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 6,
+            "sizeKB": 392.7
+          },
+          "script": {
+            "count": 53,
+            "sizeKB": 4772.3
+          },
+          "document": {
+            "count": 5,
+            "sizeKB": 44.6
+          },
+          "xhr": {
+            "count": 13,
+            "sizeKB": 64.6
+          },
+          "fetch": {
+            "count": 37,
+            "sizeKB": 43.6
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-desktop",
+      "page": "Catálogo",
+      "url": "/productos",
+      "vitals": {
+        "fcp": 316,
+        "lcp": 396,
+        "cls": 0.495,
+        "ttfb": 17.700000002980232,
+        "domContentLoaded": 167.09999999403954,
+        "load": 431.70000000298023,
+        "domNodes": 1000,
+        "jsHeapMB": 12.1
+      },
+      "network": {
+        "totalRequests": 78,
+        "totalSizeKB": 1877.8,
+        "byType": {
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "script": {
+            "count": 27,
+            "sizeKB": 1458.9
+          },
+          "image": {
+            "count": 3,
+            "sizeKB": 10.5
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 37.8
+          },
+          "xhr": {
+            "count": 5,
+            "sizeKB": 113.9
+          },
+          "fetch": {
+            "count": 37,
+            "sizeKB": 26
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-desktop",
+      "page": "Detalle de producto",
+      "url": "/productos/gummy-mania-osito-bandeja-300gr",
+      "vitals": {
+        "fcp": 756,
+        "lcp": 864,
+        "cls": 0.108,
+        "ttfb": 533.1000000089407,
+        "domContentLoaded": 662,
+        "load": 824,
+        "domNodes": 354,
+        "jsHeapMB": 10.1
+      },
+      "network": {
+        "totalRequests": 60,
+        "totalSizeKB": 1841.4,
+        "byType": {
+          "image": {
+            "count": 2,
+            "sizeKB": 10.5
+          },
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "script": {
+            "count": 28,
+            "sizeKB": 1472.3
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 41.3
+          },
+          "xhr": {
+            "count": 4,
+            "sizeKB": 57.5
+          },
+          "fetch": {
+            "count": 20,
+            "sizeKB": 29
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-desktop",
+      "page": "Login",
+      "url": "/login",
+      "vitals": {
+        "fcp": 176,
+        "lcp": 280,
+        "cls": 0.003,
+        "ttfb": 18,
+        "domContentLoaded": 152.8999999910593,
+        "load": 270,
+        "domNodes": 131,
+        "jsHeapMB": 10.7
+      },
+      "network": {
+        "totalRequests": 59,
+        "totalSizeKB": 1820.9,
+        "byType": {
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "image": {
+            "count": 2,
+            "sizeKB": 10.5
+          },
+          "script": {
+            "count": 28,
+            "sizeKB": 1520.2
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 22.7
+          },
+          "fetch": {
+            "count": 23,
+            "sizeKB": 36.7
+          }
+        }
+      }
+    },
+    {
+      "project": "perf-desktop",
+      "page": "Registro",
+      "url": "/registro",
+      "vitals": {
+        "fcp": 188,
+        "lcp": 304,
+        "cls": 0.01,
+        "ttfb": 10.599999994039536,
+        "domContentLoaded": 111.79999999701977,
+        "load": 286.3999999910593,
+        "domNodes": 143,
+        "jsHeapMB": 10.7
+      },
+      "network": {
+        "totalRequests": 54,
+        "totalSizeKB": 1781.4,
+        "byType": {
+          "font": {
+            "count": 3,
+            "sizeKB": 0
+          },
+          "stylesheet": {
+            "count": 2,
+            "sizeKB": 230.7
+          },
+          "image": {
+            "count": 2,
+            "sizeKB": 10.5
+          },
+          "script": {
+            "count": 27,
+            "sizeKB": 1484.6
+          },
+          "document": {
+            "count": 1,
+            "sizeKB": 22.7
+          },
+          "fetch": {
+            "count": 19,
+            "sizeKB": 32.9
+          }
+        }
+      }
+    }
+  ]
+}
