@@ -291,18 +291,18 @@ export default function AdminOrderDetailPage({
                     key={index}
                     className="flex items-center gap-3 p-3 rounded-lg border"
                   >
-                    {item.productSnapshot.image && (
+                    {item.productSnapshot?.image && (
                       <Image
-                        src={getImageUrl(item.productSnapshot.image)}
-                        alt={item.productSnapshot.name}
+                        src={getImageUrl(item.productSnapshot?.image)}
+                        alt={item.productSnapshot?.name ?? 'Producto'}
                         width={64}
                         height={64}
                         className="w-16 h-16 rounded-md object-cover"
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium">{item.productSnapshot.name}</p>
-                      {item.productSnapshot.barcode && (
+                      <p className="font-medium">{item.productSnapshot?.name ?? 'Producto'}</p>
+                      {item.productSnapshot?.barcode && (
                         <p className="text-sm text-muted-foreground font-mono">
                           {item.productSnapshot.barcode}
                         </p>

@@ -5,7 +5,7 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   BadgePercent, Boxes, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink,
   EyeOff, ImageOff, LayoutGrid, Loader2, Package, Pencil, Plus, Rows3, Search,
-  Sparkles, Star, Trash2, X,
+  Star, Trash2, X, type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ import {
   discountedUnitPrice, getFixedDiscountBadge, hasActiveFixedDiscount, priceFrom,
 } from '@/lib/discountCalculator';
 import { getImageUrl } from '@/lib/images';
+import { PageHeader, StatCard, EmptyState, type StatTone } from '@/components/admin/kit';
 import { cn } from '@/lib/utils';
 import type { Product, Category, Brand, SaleUnitType } from '@/types';
 import type { ProductQueryParams } from '@/services/products';
@@ -69,12 +70,12 @@ function categoryNames(p: Product): string[] {
 }
 
 /**
- * Gestión de productos v2 — página provisoria de contraste. KPIs clicables,
+ * Gestión de productos. KPIs clicables,
  * filtros server-side reales (incl. activo/inactivo, que en la página actual
  * quedaba pisado por el servicio), tabla densa con acciones en línea y vista
  * de tarjetas. Atajo "/" enfoca el buscador.
  */
-export function ProductsAdminV2() {
+export function ProductsAdmin() {
   const [search, setSearch] = useState('');
   const [debounced] = useDebounce(search, 350);
   const [page, setPage] = useState(1);
@@ -161,12 +162,18 @@ export function ProductsAdminV2() {
     setSort('newest');
   };
 
-  const kpis: { key: StatusFilter; label: string; value?: number; icon: React.ComponentType<{ className?: string }>; tone: string }[] = [
-    { key: 'all', label: 'Total', value: stats?.total, icon: Package, tone: 'text-foreground' },
-    { key: 'active', label: 'Activos', value: stats?.active, icon: CheckCircle2, tone: 'text-emerald-600 dark:text-emerald-400' },
-    { key: 'inactive', label: 'Inactivos', value: stats?.inactive, icon: EyeOff, tone: 'text-muted-foreground' },
-    { key: 'featured', label: 'Destacados', value: stats?.featured, icon: Star, tone: 'text-amber-500' },
-    { key: 'no-image', label: 'Sin imagen', value: stats?.noImage, icon: ImageOff, tone: 'text-destructive' },
+  const kpis: {
+    key: StatusFilter;
+    label: string;
+    value?: number;
+    icon: LucideIcon;
+    tone: StatTone;
+  }[] = [
+    { key: 'all', label: 'Total', value: stats?.total, icon: Package, tone: 'default' },
+    { key: 'active', label: 'Activos', value: stats?.active, icon: CheckCircle2, tone: 'ok' },
+    { key: 'inactive', label: 'Inactivos', value: stats?.inactive, icon: EyeOff, tone: 'neutral' },
+    { key: 'featured', label: 'Destacados', value: stats?.featured, icon: Star, tone: 'warn' },
+    { key: 'no-image', label: 'Sin imagen', value: stats?.noImage, icon: ImageOff, tone: 'crit' },
   ];
 
   const pageList = useMemo(() => {
@@ -185,64 +192,39 @@ export function ProductsAdminV2() {
 
   return (
     <div className="space-y-5">
-      {/* ── Encabezado ── */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-            Admin · Catálogo
-          </p>
-          <div className="mt-0.5 flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Productos</h1>
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-              <Sparkles className="h-2.5 w-2.5" />
-              v2
-            </span>
-            {isFetching && !isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {total.toLocaleString('es-CL')} producto{total !== 1 && 's'} en el catálogo
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
-            <Link href="/admin/productos">Vista actual</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/admin/productos/nuevo-v2">
+      <PageHeader
+        title="Productos"
+        breadcrumbs={[{ label: 'Catálogo', href: '/admin/productos' }, { label: 'Productos' }]}
+        meta={
+          <span className="inline-flex items-center gap-2">
+            {total.toLocaleString('es-CL')} en el catálogo
+            {isFetching && !isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          </span>
+        }
+        actions={
+          <Button asChild data-testid="new-product">
+            <Link href="/admin/productos/nuevo">
               <Plus className="mr-1.5 h-4 w-4" />
               Nuevo producto
             </Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* ── KPIs clicables ── */}
+      {/* ── KPIs clicables: cada uno filtra la tabla ── */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
-        {kpis.map((k) => {
-          const Icon = k.icon;
-          const active = status === k.key;
-          return (
-            <button
-              key={k.key}
-              type="button"
-              onClick={() => setStatus(k.key)}
-              className={cn(
-                'group rounded-2xl border bg-card p-3.5 text-left transition-all hover:shadow-sm',
-                active ? 'border-primary/50 ring-2 ring-primary/15' : 'border-border hover:border-primary/30'
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {k.label}
-                </span>
-                <Icon className={cn('h-4 w-4', k.tone)} />
-              </div>
-              <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
-                {k.value !== undefined ? k.value.toLocaleString('es-CL') : '—'}
-              </p>
-            </button>
-          );
-        })}
+        {kpis.map((k) => (
+          <StatCard
+            key={k.key}
+            label={k.label}
+            value={k.value !== undefined ? k.value : '—'}
+            icon={k.icon}
+            tone={k.tone}
+            selected={status === k.key}
+            onClick={() => setStatus(k.key)}
+            data-testid={`kpi-${k.key}`}
+          />
+        ))}
       </div>
 
       {/* ── Toolbar ── */}
@@ -371,30 +353,28 @@ export function ProductsAdminV2() {
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="grid place-items-center rounded-2xl border border-dashed bg-card/50 py-20 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-muted">
-            <Boxes className="h-7 w-7 text-muted-foreground" />
-          </div>
-          <p className="mt-4 text-sm font-semibold">
-            {hasFilters ? 'Sin resultados con estos filtros' : 'Aún no hay productos'}
-          </p>
-          <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-            {hasFilters
+        <EmptyState
+          icon={Boxes}
+          title={hasFilters ? 'Sin resultados con estos filtros' : 'Aún no hay productos'}
+          description={
+            hasFilters
               ? 'Prueba ajustar la búsqueda o limpiar los filtros.'
-              : 'Crea el primer producto para verlo en el catálogo.'}
-          </p>
-          {hasFilters ? (
-            <Button variant="outline" size="sm" onClick={clearFilters} className="mt-4">
-              Limpiar filtros
-            </Button>
-          ) : (
-            <Button size="sm" asChild className="mt-4">
-              <Link href="/admin/productos/nuevo-v2">
-                <Plus className="mr-1.5 h-4 w-4" />Nuevo producto
-              </Link>
-            </Button>
-          )}
-        </div>
+              : 'Crea el primer producto para verlo en el catálogo.'
+          }
+          action={
+            hasFilters ? (
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+            ) : (
+              <Button size="sm" asChild>
+                <Link href="/admin/productos/nuevo">
+                  <Plus className="mr-1.5 h-4 w-4" />Nuevo producto
+                </Link>
+              </Button>
+            )
+          }
+        />
       ) : view === 'table' ? (
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="overflow-x-auto">
@@ -771,4 +751,4 @@ export function ProductsAdminV2() {
   );
 }
 
-export default ProductsAdminV2;
+export default ProductsAdmin;

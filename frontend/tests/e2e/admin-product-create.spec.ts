@@ -135,8 +135,8 @@ async function loginAsAdmin(page: Page, session: AdminSession) {
 
 /** Selecciona la primera categoría L1 disponible y la agrega como chip. */
 async function pickFirstCategory(page: Page) {
-  const clasif = page.locator('[data-slot="card"]', { hasText: 'Clasificación' });
-  // Primer combobox del card = select L1 de categorías (la marca/formato van después)
+  const clasif = page.getByTestId('section-clasificacion');
+  // Primer combobox de la sección = select L1 de categorías (marca/formato van después)
   await clasif.getByRole('combobox').first().click();
   const firstOption = page.getByRole('option').first();
   const optionName = (await firstOption.textContent())?.trim() || '';
@@ -148,41 +148,35 @@ async function pickFirstCategory(page: Page) {
   await expect(clasif.getByText(optionName).first()).toBeVisible();
 }
 
-/** Configura la presentación PRINCIPAL (bloque "Venta y precios"). */
-async function fillPrincipal(page: Page, pres: PresSpec) {
-  const venta = page.locator('[data-slot="card"]', { hasText: 'Venta y precios' });
-  // Precio por unidad: primer input numérico del card
-  await venta.locator('input[type="number"]').first().fill(String(pres.price));
-  // Tipo de venta
-  await venta.getByRole('button', { name: TYPE_LABELS[pres.type], exact: true }).click();
-  // Cantidad de unidades (aparece solo para tipos distintos de "unidad")
+/**
+ * Completa una tarjeta del editor unificado de presentaciones.
+ * El orden importa: al cambiar el tipo se recalcula la cantidad, así que el
+ * precio se llena al final.
+ */
+async function fillPresentationCard(
+  card: ReturnType<Page['locator']>,
+  pres: PresSpec
+) {
+  await expect(card).toBeVisible();
+  await card.getByTestId(`presentation-type-${pres.type}`).click();
   if (pres.type !== 'unidad') {
-    const qty = venta.locator('input[placeholder="6"]');
-    await expect(qty).toBeVisible();
-    await qty.fill(String(pres.quantity));
+    await card.getByTestId('presentation-quantity').fill(String(pres.quantity));
   }
+  await card.getByTestId('presentation-price').fill(String(pres.price));
 }
 
-/** Agrega una presentación EXTRA en el repetidor "Otras presentaciones". */
+/** Configura la presentación PRINCIPAL (la tarjeta que arranca abierta). */
+async function fillPrincipal(page: Page, pres: PresSpec) {
+  const card = page.locator('[data-testid="presentation-card"][data-principal="true"]');
+  await fillPresentationCard(card, pres);
+}
+
+/** Agrega una presentación EXTRA al editor unificado. */
 async function addExtraPresentation(page: Page, index: number, pres: PresSpec) {
-  await page.getByRole('button', { name: /Agregar presentación/ }).click();
-  // Ojo: el selector incluye `space-y-3` para NO matchear el Card contenedor
-  // (que también tiene rounded-xl + border y contiene el mismo texto).
-  const block = page
-    .locator('div.space-y-3.rounded-xl.border', { hasText: `Presentación ${index + 2}` })
-    .first();
-  await expect(block).toBeVisible();
-
-  // Tipo (select Radix)
-  await block.getByRole('combobox').first().click();
-  await page.getByRole('option', { name: TYPE_LABELS[pres.type], exact: true }).click();
-
-  // Unidades y precio: 1º y 2º input numérico del bloque
-  const numbers = block.locator('input[type="number"]');
-  if (pres.type !== 'unidad') {
-    await numbers.nth(0).fill(String(pres.quantity));
-  }
-  await numbers.nth(1).fill(String(pres.price));
+  await page.getByTestId('add-presentation').click();
+  // La nueva tarjeta se agrega al final y se abre sola; la 0 es la principal.
+  const card = page.locator('[data-testid="presentation-card"]').nth(index + 1);
+  await fillPresentationCard(card, pres);
 }
 
 // ── Suite ───────────────────────────────────────────────────────────────────

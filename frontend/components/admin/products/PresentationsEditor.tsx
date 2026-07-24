@@ -77,13 +77,13 @@ interface Props {
 }
 
 /**
- * Editor UNIFICADO de presentaciones (v2). Todas las formas de venta son la
+ * Editor de presentaciones. Todas las formas de venta son la
  * misma tarjeta: una principal (alimenta los campos legacy del producto) y el
  * resto colapsables con un resumen de una línea — así cargar 5 formatos no es
  * un muro de campos. Cada una: tipo, factor, precio, EAN, etiqueta, oferta
  * (fixedDiscount) y tramos por volumen.
  */
-export function UnifiedPresentationsEditor({ value, onChange, disabled }: Props) {
+export function PresentationsEditor({ value, onChange, disabled }: Props) {
   // Tarjetas expandidas (por id). La principal arranca abierta.
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(value.filter((p) => p.principal).map((p) => p.id))
@@ -174,6 +174,9 @@ export function UnifiedPresentationsEditor({ value, onChange, disabled }: Props)
         return (
           <div
             key={p.id}
+            data-testid="presentation-card"
+            data-principal={p.principal ? 'true' : 'false'}
+            data-type={p.type}
             className={cn(
               'overflow-hidden rounded-2xl border transition-all',
               p.principal
@@ -297,6 +300,7 @@ export function UnifiedPresentationsEditor({ value, onChange, disabled }: Props)
                         type="button"
                         onClick={() => update(i, { type: k, quantity: k === 'unidad' ? 1 : p.quantity || 6 })}
                         disabled={disabled}
+                        data-testid={`presentation-type-${k}`}
                         className={cn(
                           'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
                           p.type === k
@@ -323,6 +327,7 @@ export function UnifiedPresentationsEditor({ value, onChange, disabled }: Props)
                         disabled={disabled || p.type === 'unidad'}
                         onChange={(e) => update(i, { quantity: parseInt(e.target.value, 10) || 1 })}
                         className="h-9 pr-7 tabular-nums"
+                        data-testid="presentation-quantity"
                       />
                       <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">u</span>
                     </div>
@@ -338,6 +343,7 @@ export function UnifiedPresentationsEditor({ value, onChange, disabled }: Props)
                         disabled={disabled}
                         onChange={(e) => update(i, { unitPrice: parseFloat(e.target.value) || 0 })}
                         className="h-9 pl-6 font-semibold tabular-nums"
+                        data-testid="presentation-price"
                       />
                     </div>
                   </div>
@@ -564,6 +570,7 @@ export function UnifiedPresentationsEditor({ value, onChange, disabled }: Props)
         variant="outline"
         onClick={add}
         disabled={disabled}
+        data-testid="add-presentation"
         className="h-11 w-full border-dashed text-muted-foreground hover:text-foreground"
       >
         <Plus className="mr-1.5 h-4 w-4" />
@@ -573,4 +580,4 @@ export function UnifiedPresentationsEditor({ value, onChange, disabled }: Props)
   );
 }
 
-export default UnifiedPresentationsEditor;
+export default PresentationsEditor;

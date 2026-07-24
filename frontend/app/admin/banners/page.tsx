@@ -49,7 +49,7 @@ export default function BannersAdminPage() {
             Banners y promociones
           </h1>
           <p className="text-muted-foreground">
-            Diseñá las franjas de promociones sobre la plantilla de la home
+            Diseña las franjas de promociones sobre la plantilla de la home
           </p>
         </div>
         <Button onClick={() => router.push('/admin/banners/new')}>

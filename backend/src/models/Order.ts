@@ -4,6 +4,13 @@ import { OrderStatus, DeliveryMethod, PaymentMethod } from '../types';
 // Interfaces
 export interface IOrderItem {
   product: mongoose.Types.ObjectId;
+  /**
+   * Presentación comprada (subdoc `_id` dentro del producto). Junto con
+   * `product` forma la identidad de la línea: el mismo producto puede
+   * aparecer dos veces si se compró por unidad y por display.
+   * Opcional: los pedidos anteriores a las presentaciones no lo tienen.
+   */
+  presentationId?: mongoose.Types.ObjectId;
   productSnapshot: {
     name: string;
     slug: string;
@@ -11,6 +18,22 @@ export interface IOrderItem {
     unitPrice: number;
     saleUnit: { type: string; quantity: number };
     image: string;
+    /**
+     * Escalera de precios vigente CUANDO SE HIZO EL PEDIDO. Se congela para
+     * poder reeditar el pedido respetando lo pactado: si después sube el
+     * precio de catálogo, el cliente no paga la diferencia, y si cambia la
+     * cantidad sigue accediendo a los tramos por volumen que le correspondían.
+     * (Si el precio BAJÓ, al recalcular se le pasa la rebaja: nunca se cobra
+     * por encima de lo pactado, pero tampoco de más que el precio actual.)
+     */
+    tiers?: { minQuantity: number; pricePerUnit: number }[];
+    fixedDiscount?: {
+      enabled?: boolean;
+      type?: string;
+      value?: number;
+      startDate?: Date;
+      endDate?: Date;
+    } | null;
   };
   quantity: number;
   pricePerUnit: number;
@@ -95,6 +118,10 @@ const orderItemSchema = new Schema<IOrderItem>(
       ref: 'Product',
       required: true,
     },
+    // Sin `ref`: es el _id de un subdocumento dentro del producto, no una colección.
+    presentationId: {
+      type: Schema.Types.ObjectId,
+    },
     productSnapshot: {
       name: { type: String, required: true },
       slug: { type: String, required: true },
@@ -105,6 +132,27 @@ const orderItemSchema = new Schema<IOrderItem>(
         quantity: { type: Number, required: true },
       },
       image: { type: String, default: '' },
+      // Escalera congelada al momento de la compra (ver IOrderItem).
+      tiers: [
+        {
+          _id: false,
+          minQuantity: { type: Number, required: true, min: 1 },
+          pricePerUnit: { type: Number, required: true, min: 0 },
+        },
+      ],
+      fixedDiscount: {
+        type: new Schema(
+          {
+            enabled: { type: Boolean },
+            type: { type: String },
+            value: { type: Number },
+            startDate: { type: Date },
+            endDate: { type: Date },
+          },
+          { _id: false }
+        ),
+        default: undefined,
+      },
     },
     quantity: {
       type: Number,

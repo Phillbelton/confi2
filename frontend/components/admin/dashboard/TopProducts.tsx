@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { TopProduct } from '@/types/admin';
 import { getImageUrl } from '@/lib/images';
+import { formatCurrency } from '@/lib/utils';
 
 interface TopProductsProps {
   products: TopProduct[];
@@ -60,7 +61,7 @@ export function TopProducts({ products }: TopProductsProps) {
                 {/* Revenue */}
                 <div className="text-right">
                   <p className="font-semibold text-sm">
-                    ${product.revenue.toLocaleString()}
+                    {formatCurrency(product.revenue)}
                   </p>
                 </div>
               </div>

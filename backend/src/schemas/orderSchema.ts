@@ -9,9 +9,26 @@ export const orderItemSchema = z.object({
   productId: z.string()
     .length(24, 'ID de MongoDB debe tener 24 caracteres'),
 
+  // Presentación elegida (unidad / display / embalaje). Si falta se usa la
+  // principal, que es como se comportaban los pedidos antes de multi-presentación.
+  presentationId: z.string()
+    .length(24, 'ID de MongoDB debe tener 24 caracteres')
+    .optional(),
+
   quantity: z.number()
     .int('La cantidad debe ser un número entero')
     .positive('La cantidad debe ser mayor a 0')
+    .max(10000, 'Cantidad máxima: 10000 unidades')
+});
+
+/**
+ * Item al EDITAR un pedido: acepta cantidad 0 para quitar la línea, cosa que
+ * al crear no tendría sentido.
+ */
+export const editableOrderItemSchema = orderItemSchema.extend({
+  quantity: z.number()
+    .int('La cantidad debe ser un número entero')
+    .min(0, 'La cantidad no puede ser negativa')
     .max(10000, 'Cantidad máxima: 10000 unidades')
 });
 
@@ -235,14 +252,27 @@ export const editOrderItemsSchema = z.object({
   }),
 
   body: z.object({
-    items: z.array(orderItemSchema)
-      .min(1, 'La orden debe tener al menos 1 producto')
+    // Se permite mandar la lista vacía (o todo en 0): el controller responde
+    // sugiriendo cancelar el pedido, en vez de un error de validación seco.
+    items: z.array(editableOrderItemSchema)
       .max(50, 'Máximo 50 productos por orden'),
 
     adminNotes: z.string()
       .max(1000, 'Las notas no pueden exceder 1000 caracteres')
       .trim()
       .optional()
+  })
+});
+
+// Previsualización de una edición: mismas líneas, sin guardar nada.
+export const previewOrderItemsSchema = z.object({
+  params: z.object({
+    id: z.string()
+      .length(24, 'ID de MongoDB debe tener 24 caracteres')
+  }),
+  body: z.object({
+    items: z.array(editableOrderItemSchema)
+      .max(50, 'Máximo 50 productos por orden')
   })
 });
 

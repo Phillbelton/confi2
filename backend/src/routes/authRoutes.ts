@@ -24,9 +24,14 @@ const router = Router();
 
 // Rate limiters específicos para auth (protección contra ataques de fuerza bruta)
 // Usando factory test-aware para desactivar automáticamente en tests
+// El tope se puede subir SOLO por env var, para que las suites e2e (que se
+// loguean varias veces seguidas) no se bloqueen en local. Sin la variable
+// —el caso de producción— sigue siendo 5.
+const LOGIN_MAX_ATTEMPTS = Number(process.env.RATE_LIMIT_MAX_LOGIN) || 5;
+
 const loginLimiter = createTestAwareRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // Máximo 5 intentos
+  max: LOGIN_MAX_ATTEMPTS,
   message: {
     success: false,
     error: 'Demasiados intentos de login. Por favor, intenta de nuevo en 15 minutos.',

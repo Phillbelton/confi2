@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/admin/auth/ProtectedRoute';
 import { AdminSidebar } from '@/components/admin/layout/AdminSidebar';
 import { AdminHeader } from '@/components/admin/layout/AdminHeader';
+import { CommandPalette } from '@/components/admin/layout/CommandPalette';
+import { ConfirmProvider } from '@/components/admin/kit';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAdminStore } from '@/store/useAdminStore';
 import { cn } from '@/lib/utils';
@@ -17,7 +19,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const isLoginPage = pathname === '/admin/login';
-  const { sidebarOpen, toggleSidebar } = useAdminStore();
+  const { sidebarOpen, toggleSidebar, theme } = useAdminStore();
 
   // Agrega .theme-admin al <body> para que los portales de Radix UI
   // (Dialog, Popover, Tooltip) hereden las variables CSS del tema admin
@@ -27,6 +29,14 @@ export default function AdminLayout({
       return () => document.body.classList.remove('theme-admin');
     }
   }, [isLoginPage]);
+
+  // El modo oscuro es una clase aparte sobre el mismo nodo, así que los
+  // portales también tienen que recibirla o quedarían en tema claro.
+  useEffect(() => {
+    if (isLoginPage) return;
+    document.body.classList.toggle('admin-dark', theme === 'dark');
+    return () => document.body.classList.remove('admin-dark');
+  }, [isLoginPage, theme]);
 
   // Atajo "[" para colapsar/expandir el sidebar (más espacio de trabajo).
   // Se ignora cuando el foco está en un campo de texto.
@@ -56,24 +66,32 @@ export default function AdminLayout({
   return (
     <ProtectedRoute>
       <TooltipProvider delayDuration={200}>
-        <div className="theme-admin min-h-screen bg-background text-foreground">
-          <AdminSidebar />
-
-          {/* El padding sigue al estado del sidebar: colapsado (rail de iconos,
-              w-16) el contenido recupera el ancho. Antes era md:pl-64 fijo. */}
+        <ConfirmProvider>
           <div
             className={cn(
-              'transition-all duration-300',
-              sidebarOpen ? 'md:pl-64' : 'md:pl-16'
+              'theme-admin min-h-screen bg-background text-foreground',
+              theme === 'dark' && 'admin-dark'
             )}
           >
-            <AdminHeader />
+            <AdminSidebar />
+            <CommandPalette />
 
-            <main className="p-4 md:p-6">
-              {children}
-            </main>
+            {/* El padding sigue al estado del sidebar: colapsado (rail de iconos,
+                w-16) el contenido recupera el ancho. Antes era md:pl-64 fijo. */}
+            <div
+              className={cn(
+                'transition-all duration-300',
+                sidebarOpen ? 'md:pl-64' : 'md:pl-16'
+              )}
+            >
+              <AdminHeader />
+
+              <main className="p-4 md:p-6">
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
+        </ConfirmProvider>
       </TooltipProvider>
     </ProtectedRoute>
   );

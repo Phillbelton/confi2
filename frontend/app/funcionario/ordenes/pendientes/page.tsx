@@ -151,7 +151,7 @@ export default function PendientesPage() {
                   <div className="bg-slate-900 rounded-lg p-2 sm:p-3 space-y-1">
                     {order.items.slice(0, 3).map((item, idx) => (
                       <p key={idx} className="text-sm text-slate-300">
-                        • {item.quantity}x {item.productSnapshot.name}
+                        • {item.quantity}x {item.productSnapshot?.name ?? 'Producto'}
                       </p>
                     ))}
                     {order.items.length > 3 && (

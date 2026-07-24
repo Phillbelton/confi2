@@ -8,6 +8,7 @@ import { ArrowRight } from 'lucide-react';
 import type { RecentOrder } from '@/types/admin';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatCurrency } from '@/lib/utils';
 
 interface RecentOrdersProps {
   orders: RecentOrder[];
@@ -77,7 +78,7 @@ export function RecentOrders({ orders }: RecentOrdersProps) {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold">
-                    ${order.total.toLocaleString()}
+                    {formatCurrency(order.total)}
                   </p>
                 </div>
               </div>

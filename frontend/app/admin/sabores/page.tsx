@@ -11,11 +11,13 @@ import {
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { useFlavors, useFlavorOps } from '@/hooks/admin/useFormatsFlavors';
+import { useConfirm, PageHeader } from '@/components/admin/kit';
 import type { Flavor } from '@/types';
 
 export default function SaboresPage() {
   const { data: flavors, isLoading } = useFlavors();
   const { create, update, remove } = useFlavorOps();
+  const confirm = useConfirm();
 
   const [editing, setEditing] = useState<Flavor | null>(null);
   const [name, setName] = useState('');
@@ -36,10 +38,15 @@ export default function SaboresPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Sabores</h1>
-        <p className="text-muted-foreground">Gestiona sabores para filtrar productos.</p>
-      </div>
+      <PageHeader
+        title="Sabores"
+        description="Los sabores permiten filtrar el catálogo y se asignan a cada producto."
+        breadcrumbs={[
+          { label: 'Catálogo', href: '/admin/productos' },
+          { label: 'Sabores' },
+        ]}
+        meta={flavors ? `${flavors.length} en total` : undefined}
+      />
 
       <Card>
         <CardHeader>
@@ -105,8 +112,16 @@ export default function SaboresPage() {
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost"
-                        onClick={() => confirm(`¿Eliminar ${f.name}?`) && remove.mutate(f._id)}
-                        className="text-red-600">
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: `¿Eliminar el sabor "${f.name}"?`,
+                            description: 'Dejará de estar disponible para filtrar y asignar en productos.',
+                            confirmLabel: 'Eliminar sabor',
+                            destructive: true,
+                          });
+                          if (ok) remove.mutate(f._id);
+                        }}
+                        className="text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>

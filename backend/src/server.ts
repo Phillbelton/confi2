@@ -73,6 +73,12 @@ const isOriginAllowed = (origin: string): boolean => {
   // LAN privada: permite entrar por la IP de la VM sin tocar config al cambiar el DHCP.
   if (isPrivateLanHost(hostname)) return true;
 
+  // En desarrollo el frontend puede caer en un puerto dinámico (autoPort del
+  // launcher cuando el 3000 está ocupado) → cualquier puerto de loopback vale.
+  if (ENV.NODE_ENV !== 'production' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+    return true;
+  }
+
   // En producción, permitir subdominios de plataformas/túneles confiables.
   if (ENV.NODE_ENV === 'production') {
     return ALLOWED_HOSTNAME_SUFFIXES.some(
