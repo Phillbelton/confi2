@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import type { Order } from '@/types/order';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { isOrderUrgent } from '@/lib/orders';
 
 interface OrdersTableProps {
@@ -89,7 +89,7 @@ export function OrdersTable({
               {/* Total + badges */}
               <div className="flex items-center justify-between">
                 <span className="text-lg font-bold">
-                  ${order.total.toLocaleString()}
+                  {formatCurrency(order.total)}
                 </span>
                 <div className="flex gap-1.5">
                   <Badge variant="outline" className="text-xs">
@@ -181,7 +181,7 @@ export function OrdersTable({
                   </div>
                 </TableCell>
                 <TableCell className="font-semibold">
-                  ${order.total.toLocaleString()}
+                  {formatCurrency(order.total)}
                 </TableCell>
                 <TableCell>
                   <OrderStatusBadge status={order.status} />

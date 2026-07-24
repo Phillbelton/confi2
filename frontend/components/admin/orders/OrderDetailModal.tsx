@@ -20,6 +20,7 @@ import { UpdateOrderStatus } from './UpdateOrderStatus';
 import { EditOrderItems } from './EditOrderItems';
 import type { Order, OrderItem } from '@/types/order';
 import { getImageUrl } from '@/lib/images';
+import { formatCurrency } from '@/lib/utils';
 
 interface OrderDetailModalProps {
   order: Order;
@@ -195,16 +196,16 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
                   <div className="text-right">
                     <p className="text-sm font-medium">x{item.quantity}</p>
                     <p className="text-sm text-muted-foreground">
-                      ${item.pricePerUnit.toLocaleString()}
+                      {formatCurrency(item.pricePerUnit)}
                     </p>
                     {item.discount > 0 && (
                       <p className="text-xs text-green-600">
-                        -${item.discount.toLocaleString()}
+                        -{formatCurrency(item.discount)}
                       </p>
                     )}
                   </div>
                   <div className="text-right font-semibold">
-                    ${item.subtotal.toLocaleString()}
+                    {formatCurrency(item.subtotal)}
                   </div>
                 </div>
               ))}
@@ -217,24 +218,24 @@ export function OrderDetailModal({ order, open, onClose }: OrderDetailModalProps
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Subtotal</span>
-              <span>${order.subtotal.toLocaleString()}</span>
+              <span>{formatCurrency(order.subtotal)}</span>
             </div>
             {order.totalDiscount > 0 && (
               <div className="flex justify-between text-sm text-green-600">
                 <span>Descuento</span>
-                <span>-${order.totalDiscount.toLocaleString()}</span>
+                <span>-{formatCurrency(order.totalDiscount)}</span>
               </div>
             )}
             {order.shippingCost > 0 && (
               <div className="flex justify-between text-sm">
                 <span>Envío</span>
-                <span>${order.shippingCost.toLocaleString()}</span>
+                <span>{formatCurrency(order.shippingCost)}</span>
               </div>
             )}
             <Separator />
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
-              <span>${order.total.toLocaleString()}</span>
+              <span>{formatCurrency(order.total)}</span>
             </div>
           </div>
 

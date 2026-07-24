@@ -380,7 +380,7 @@ export function CollectionForm({
 
             {!isEditing ? (
               <div className="rounded-md bg-muted/40 p-3 text-center text-xs text-muted-foreground">
-                Guardá primero la colección y volvé a editarla para subir una imagen.
+                Guarda primero la colección y vuelve a editarla para subir una imagen.
               </div>
             ) : (
               <div className="flex items-start gap-4">

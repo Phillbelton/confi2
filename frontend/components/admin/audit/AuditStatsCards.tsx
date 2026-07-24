@@ -48,7 +48,7 @@ export function AuditStatsCards({ stats, isLoading }: AuditStatsCardsProps) {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalLogs.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.totalLogs.toLocaleString('es-CL')}</div>
             <p className="text-xs text-muted-foreground">Registros de auditoría</p>
           </CardContent>
         </Card>
@@ -63,7 +63,7 @@ export function AuditStatsCards({ stats, isLoading }: AuditStatsCardsProps) {
               <div className="text-muted-foreground">{ACTION_ICONS[action._id]}</div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{action.count.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{action.count.toLocaleString('es-CL')}</div>
               <p className="text-xs text-muted-foreground">
                 {((action.count / stats.totalLogs) * 100).toFixed(1)}% del total
               </p>

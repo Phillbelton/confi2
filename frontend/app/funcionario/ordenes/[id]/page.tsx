@@ -413,11 +413,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <div key={index} className="pb-4 border-b last:border-0">
                     <div className="flex gap-3">
                       {/* Product Image */}
-                      {item.productSnapshot.image && (
+                      {item.productSnapshot?.image && (
                         <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
                           <Image
-                            src={getImageUrl(item.productSnapshot.image)}
-                            alt={item.productSnapshot.name}
+                            src={getImageUrl(item.productSnapshot?.image)}
+                            alt={item.productSnapshot?.name ?? 'Producto'}
                             fill
                             sizes="(max-width: 640px) 48px, 64px"
                             className="object-cover"
@@ -427,8 +427,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{item.productSnapshot.name}</p>
-                        {item.productSnapshot.barcode && (
+                        <p className="font-semibold text-sm truncate">{item.productSnapshot?.name ?? 'Producto'}</p>
+                        {item.productSnapshot?.barcode && (
                           <p className="text-xs text-slate-500 font-mono">
                             {item.productSnapshot.barcode}
                           </p>

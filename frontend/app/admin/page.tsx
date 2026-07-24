@@ -5,6 +5,7 @@ import { DollarSign, ShoppingCart, TrendingUp } from 'lucide-react';
 import { StatsCard } from '@/components/admin/dashboard/StatsCard';
 import { useAdminDashboard } from '@/hooks/admin/useAdminDashboard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/utils';
 
 // Dynamic imports para componentes pesados (con recharts)
 const SalesChart = dynamic(
@@ -56,7 +57,7 @@ export default function AdminDashboardPage() {
           <>
             <StatsCard
               title="Ventas de Hoy"
-              value={`$${stats?.todaySales.toLocaleString() || 0}`}
+              value={formatCurrency(stats?.todaySales ?? 0)}
               description="Total de ventas del día"
               icon={DollarSign}
             />

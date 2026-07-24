@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { SalesData } from '@/types/admin';
+import { formatCurrency } from '@/lib/utils';
 
 interface SalesChartProps {
   data: SalesData[];
@@ -50,7 +51,7 @@ export function SalesChart({ data }: SalesChartProps) {
                   });
                 }}
                 formatter={(value: number) => [
-                  `$${value.toLocaleString()}`,
+                  formatCurrency(value),
                   'Ventas',
                 ]}
               />

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { useFormats, useFormatOps } from '@/hooks/admin/useFormatsFlavors';
+import { useConfirm, PageHeader } from '@/components/admin/kit';
 import type { Format } from '@/types';
 
 const UNITS: Format['unit'][] = ['g', 'kg', 'ml', 'l', 'cc', 'oz'];
@@ -21,6 +22,7 @@ const UNITS: Format['unit'][] = ['g', 'kg', 'ml', 'l', 'cc', 'oz'];
 export default function FormatosPage() {
   const { data: formats, isLoading } = useFormats();
   const { create, update, remove } = useFormatOps();
+  const confirm = useConfirm();
 
   const [editing, setEditing] = useState<Format | null>(null);
   const [value, setValue] = useState<number>(0);
@@ -43,10 +45,15 @@ export default function FormatosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Formatos</h1>
-        <p className="text-muted-foreground">Gestiona presentaciones físicas: gramos, ml, litros…</p>
-      </div>
+      <PageHeader
+        title="Formatos"
+        description="El gramaje o volumen del producto: gramos, mililitros, litros."
+        breadcrumbs={[
+          { label: 'Catálogo', href: '/admin/productos' },
+          { label: 'Formatos' },
+        ]}
+        meta={formats ? `${formats.length} en total` : undefined}
+      />
 
       <Card>
         <CardHeader>
@@ -118,8 +125,16 @@ export default function FormatosPage() {
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost"
-                        onClick={() => confirm(`¿Eliminar ${f.label}?`) && remove.mutate(f._id)}
-                        className="text-red-600">
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: `¿Eliminar el formato "${f.label}"?`,
+                            description: 'Dejará de estar disponible para filtrar y asignar en productos.',
+                            confirmLabel: 'Eliminar formato',
+                            destructive: true,
+                          });
+                          if (ok) remove.mutate(f._id);
+                        }}
+                        className="text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>

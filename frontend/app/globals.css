@@ -40,6 +40,17 @@
   --color-card: var(--card);
   --color-success-foreground: var(--success-foreground);
   --color-success: var(--success);
+  /* Escala semántica del panel admin (estado ≠ acento) */
+  --color-admin-slate: var(--admin-slate);
+  --color-admin-slate-soft: var(--admin-slate-soft);
+  --color-admin-ok: var(--admin-ok);
+  --color-admin-ok-soft: var(--admin-ok-soft);
+  --color-admin-warn: var(--admin-warn);
+  --color-admin-warn-soft: var(--admin-warn-soft);
+  --color-admin-crit: var(--admin-crit);
+  --color-admin-crit-soft: var(--admin-crit-soft);
+  --color-admin-info: var(--admin-info);
+  --color-admin-info-soft: var(--admin-info-soft);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -188,58 +199,163 @@
   Se aplica automáticamente a las secciones /admin y /funcionario
   Sobrescribe las variables CSS de Central Mayorista
 */
-.theme-admin,
+/*
+  TEMA FUNCIONARIO — dark slate.
+  Se mantiene tal cual: sus vistas hardcodean clases `slate-*`, así que se
+  alinea al kit del admin en una tanda posterior (no basta con los tokens).
+*/
 .theme-funcionario {
-  /* Colores de fondo oscuro */
   --background: #0f172a; /* Slate 900 */
   --foreground: #f1f5f9; /* Slate 100 */
-
-  /* Cards oscuras (NO blancas) */
   --card: #1e293b; /* Slate 800 */
-  --card-foreground: #f1f5f9; /* Slate 100 */
-
-  /* Popovers oscuros */
-  --popover: #1e293b; /* Slate 800 */
-  --popover-foreground: #f1f5f9; /* Slate 100 */
-
-  /* Colores muted más claros para contraste */
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
   --muted: #334155; /* Slate 700 */
   --muted-foreground: #94a3b8; /* Slate 400 */
-
-  /* Bordes más visibles */
-  --border: #334155; /* Slate 700 */
-  --input: #334155; /* Slate 700 */
-
-  /* Sidebar oscura */
-  --sidebar: #0f172a; /* Slate 900 */
+  --border: #334155;
+  --input: #334155;
+  --sidebar: #0f172a;
   --sidebar-foreground: #f1f5f9;
-  --sidebar-accent: #1e293b; /* Slate 800 */
+  --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #f1f5f9;
-  --sidebar-border: #334155; /* Slate 700 */
-
-  /* Primary se mantiene rojo pero foreground cambia */
-  --primary: #3b82f6; /* Blue 500 para admin */
+  --sidebar-border: #334155;
+  --primary: #3b82f6; /* Blue 500 */
   --primary-foreground: #ffffff;
-
-  /* Secondary para admin */
-  --secondary: #334155; /* Slate 700 */
+  --sidebar-primary: #3b82f6;
+  --secondary: #334155;
   --secondary-foreground: #f1f5f9;
-
-  /* Accent */
-  --accent: #334155; /* Slate 700 */
+  --accent: #334155;
   --accent-foreground: #f1f5f9;
 }
 
-/* Funcionario usa azul como primario */
-.theme-funcionario {
-  --primary: #3b82f6; /* Blue 500 */
-  --sidebar-primary: #3b82f6;
+/*
+  ============================================================
+  TEMA ADMIN — "consola de operaciones"
+  Neutros pizarra fríos + UN acento (teal petróleo). El rojo queda
+  reservado para lo destructivo, así que los colores de estado
+  (ok / warn / crit / info) viven aparte del acento.
+  Claro por defecto; `.admin-dark` en el mismo nodo activa el oscuro.
+  ============================================================
+*/
+.theme-admin {
+  --background: #f4f6f7;
+  --foreground: #151d20;
+
+  --card: #ffffff;
+  --card-foreground: #151d20;
+
+  --popover: #ffffff;
+  --popover-foreground: #151d20;
+
+  --muted: #eceff1;
+  --muted-foreground: #54616a;
+
+  --border: #e0e5e9;
+  --input: #e0e5e9;
+  --ring: #0e6a62;
+
+  /* Acento único */
+  --primary: #0e6a62;
+  --primary-foreground: #ffffff;
+
+  --secondary: #eceff1;
+  --secondary-foreground: #151d20;
+
+  /* `accent` en shadcn es el fondo de hover/selección, no el color de marca */
+  --accent: #d7e8e5;
+  --accent-foreground: #0a4b45;
+
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --success: #15803d;
+  --success-foreground: #ffffff;
+
+  --sidebar: #eceff1;
+  --sidebar-foreground: #151d20;
+  --sidebar-primary: #0e6a62;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e0e5e9;
+  --sidebar-accent-foreground: #151d20;
+  --sidebar-border: #e0e5e9;
+  --sidebar-ring: #0e6a62;
+
+  --chart-1: #0e6a62;
+  --chart-2: #465a78;
+  --chart-3: #15803d;
+  --chart-4: #b45309;
+  --chart-5: #2b5fbf;
+
+  /* Escala semántica del panel (estado ≠ acento) */
+  --admin-slate: #465a78;
+  --admin-slate-soft: #e2e7ef;
+  --admin-ok: #15803d;
+  --admin-ok-soft: #d9f0e0;
+  --admin-warn: #b45309;
+  --admin-warn-soft: #f7e8d2;
+  --admin-crit: #b3261e;
+  --admin-crit-soft: #f6dcda;
+  --admin-info: #2b5fbf;
+  --admin-info-soft: #dae4f7;
 }
 
-/* Admin usa rojo como primario (consistente con la marca) */
-.theme-admin {
-  --primary: #dc2626; /* Red 600 */
-  --sidebar-primary: #dc2626;
+.theme-admin.admin-dark {
+  --background: #0e1416;
+  --foreground: #e7edee;
+
+  --card: #151d20;
+  --card-foreground: #e7edee;
+
+  --popover: #151d20;
+  --popover-foreground: #e7edee;
+
+  --muted: #1c262a;
+  --muted-foreground: #94a2a8;
+
+  --border: #263237;
+  --input: #263237;
+  --ring: #40b7a8;
+
+  /* Sobre el teal claro del modo oscuro el texto va oscuro, no blanco */
+  --primary: #40b7a8;
+  --primary-foreground: #05211e;
+
+  --secondary: #1c262a;
+  --secondary-foreground: #e7edee;
+
+  --accent: #0f2e2b;
+  --accent-foreground: #86dccf;
+
+  --destructive: #ef6a6a;
+  --destructive-foreground: #2a0b0b;
+  --success: #49c184;
+  --success-foreground: #06210f;
+
+  --sidebar: #121a1d;
+  --sidebar-foreground: #e7edee;
+  --sidebar-primary: #40b7a8;
+  --sidebar-primary-foreground: #05211e;
+  --sidebar-accent: #1c262a;
+  --sidebar-accent-foreground: #e7edee;
+  --sidebar-border: #263237;
+  --sidebar-ring: #40b7a8;
+
+  --chart-1: #40b7a8;
+  --chart-2: #8ea6cf;
+  --chart-3: #49c184;
+  --chart-4: #e0a63c;
+  --chart-5: #85a8ee;
+
+  --admin-slate: #8ea6cf;
+  --admin-slate-soft: #1b2740;
+  --admin-ok: #49c184;
+  --admin-ok-soft: #123420;
+  --admin-warn: #e0a63c;
+  --admin-warn-soft: #362506;
+  --admin-crit: #ef6a6a;
+  --admin-crit-soft: #3a1616;
+  --admin-info: #85a8ee;
+  --admin-info-soft: #16233c;
 }
 
 /*

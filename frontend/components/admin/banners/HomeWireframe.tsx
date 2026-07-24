@@ -242,8 +242,8 @@ export function HomeWireframe() {
     <div className="space-y-1">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Así se arma la home, de arriba hacia abajo. Arrastrá las secciones
-          desde el mango para reordenarlas, o apagalas con el ojito.
+          Así se arma la home, de arriba hacia abajo. Arrastra las secciones
+          desde el mango para reordenarlas, o apágalas con el ojito.
         </p>
         <div className="flex items-center gap-2">
           {dirty && (
@@ -789,7 +789,7 @@ function HeroBlock() {
 
       {items.length > 1 && (
         <p className="text-xs text-muted-foreground">
-          Arrastrá los slides para cambiar el orden del carrusel.
+          Arrastra los slides para cambiar el orden del carrusel.
         </p>
       )}
     </div>
