@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Box, Eye, Loader2, PackageOpen, Plus, Save, Trash2, Hash,
-  Sparkles, TrendingDown, ScanLine, X,
+  ArrowLeft, Check, Circle, Eye, FileText, FolderHeart, Hash, Image as ImageIcon,
+  Layers, Loader2, Save, ScanLine, Settings2, Sparkles, Tag, Coins, X,
 } from 'lucide-react';
 import { getImageUrl } from '@/lib/images';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -20,28 +19,24 @@ import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import {
-  Sheet, SheetContent, SheetTitle, SheetTrigger,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { CategoryWithSubcategorySelector } from './CategoryWithSubcategorySelector';
 import { BrandSelector } from './BrandSelector';
 import { ImageUploaderWithPreview } from './ImageUploaderWithPreview';
 import { FormatPicker, FlavorMultiPicker } from './QuickFormatFlavorPicker';
-import { ProductLivePreview } from './ProductLivePreview';
-import { ExtraPresentationsEditor, type ExtraPresentation } from './ExtraPresentationsEditor';
+import {
+  PresentationsEditor, newPresentation, type PresentationDraft,
+} from './PresentationsEditor';
+import { ProductCardPreview } from './ProductCardPreview';
 import { usePublicFormats, usePublicFlavors } from '@/hooks/admin/useFormatsFlavors';
 import { categoryService } from '@/services/categories';
-import type { SaleUnitType, FacetableAttribute } from '@/types';
+import { brandService } from '@/services/brands';
+import { adminCollectionService } from '@/services/admin/collections';
+import type { CreateProductInput } from '@/services/admin/products';
+import type { FacetableAttribute, Brand, Collection } from '@/types';
 import { cn } from '@/lib/utils';
 
-const tierSchema = z.object({
-  minQuantity: z.number().int().min(2),
-  pricePerUnit: z.number().min(0),
-  label: z.string().max(40).optional(),
-});
-
-const productSchema = z.object({
+const baseSchema = z.object({
   name: z.string().min(3, 'Mínimo 3 caracteres'),
   description: z.string().min(10, 'Mínimo 10 caracteres'),
   categories: z.array(z.string()).min(1, 'Al menos una categoría'),
@@ -50,87 +45,75 @@ const productSchema = z.object({
   flavors: z.array(z.string()).optional(),
   sku: z.string().trim().max(40).optional(),
   barcode: z.string().max(32).optional(),
-  unitPrice: z.number().min(0),
-  saleUnit: z.object({
-    type: z.enum(['unidad', 'cantidadMinima', 'display', 'embalaje']),
-    quantity: z.number().int().min(1),
-  }),
-  tiers: z.array(tierSchema).optional(),
-  // Presentaciones completas (se arman al guardar: principal + adicionales).
-  presentaciones: z
-    .array(
-      z.object({
-        _id: z.string().optional(),
-        type: z.enum(['unidad', 'cantidadMinima', 'display', 'embalaje']),
-        quantity: z.number().int().min(1),
-        unitPrice: z.number().min(0),
-        tiers: z.array(tierSchema).optional(),
-        label: z.string().max(40).optional(),
-        principal: z.boolean().optional(),
-      })
-    )
-    .optional(),
   featured: z.boolean().optional(),
   active: z.boolean().optional(),
   attributes: z.record(z.string(), z.array(z.string())).optional(),
 });
 
-export type ProductFormValues = z.infer<typeof productSchema>;
+type BaseValues = z.infer<typeof baseSchema>;
 
 interface ImageFile { file: File; preview: string; id: string; }
 
-interface ProductFormProps {
-  onSubmit: (data: ProductFormValues, images: File[]) => void | Promise<void>;
+export interface ProductSubmit {
+  payload: CreateProductInput;
+  images: File[];
+  collectionIds: string[];
+}
+
+/** Valores con los que se precarga el form al editar un producto existente. */
+export interface ProductDefaults extends Partial<BaseValues> {
+  presentaciones?: PresentationDraft[];
+  /** URLs ya guardadas (`/uploads/...`). */
+  images?: string[];
+  collectionIds?: string[];
+}
+
+interface Props {
+  onSubmit: (data: ProductSubmit) => void | Promise<void>;
   isSubmitting: boolean;
-  defaultValues?: Partial<ProductFormValues>;
-  defaultImages?: string[];
-  isEditing?: boolean;
-  /** Borra una imagen ya guardada del producto (solo edición). Recibe el
-   *  filename (no la URL completa). Debe resolver cuando el backend confirmó. */
+  /** 'edit' precarga el producto, fija el SKU y cambia los textos. */
+  mode?: 'create' | 'edit';
+  defaults?: ProductDefaults;
+  /** Borra una imagen ya guardada. Recibe el filename, no la URL completa. */
   onDeleteImage?: (filename: string) => Promise<unknown>;
 }
 
-const SALE_UNIT_LABELS: Record<SaleUnitType, string> = {
-  unidad: 'Unidad',
-  cantidadMinima: 'Cantidad mínima',
-  display: 'Display',
-  embalaje: 'Embalaje',
-};
+interface SectionDef {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
 
-const SALE_UNIT_DESC: Record<SaleUnitType, string> = {
-  unidad: 'Se vende suelto, una a la vez (1 Unid.)',
-  cantidadMinima: 'Mínimo X unidades para comprar (Cant. min N Unid.)',
-  display: 'Caja con N unidades sellada (Display N Unid.)',
-  embalaje: 'Caja grande para venta por mayor, con N unidades (Embalaje N Unid.)',
-};
-
-const SALE_UNIT_ICON: Record<SaleUnitType, React.ComponentType<{ className?: string }>> = {
-  unidad: Hash,
-  cantidadMinima: Hash,
-  display: PackageOpen,
-  embalaje: Box,
-};
-
+/**
+ * Formulario de producto (crear y editar) — workspace de 3 zonas:
+ *  - rail izquierdo (xl+): navegación por secciones con scrollspy,
+ *  - centro: las secciones del formulario,
+ *  - derecha (lg+): vista previa con la card REAL del catálogo + publicación
+ *    con checklist de completitud.
+ * Atajo Ctrl/Cmd+S para guardar.
+ */
 export function ProductForm({
-  onSubmit, isSubmitting, defaultValues, defaultImages = [], isEditing, onDeleteImage,
-}: ProductFormProps) {
+  onSubmit,
+  isSubmitting,
+  mode = 'create',
+  defaults,
+  onDeleteImage,
+}: Props) {
+  const isEditing = mode === 'edit';
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [images, setImages] = useState<ImageFile[]>([]);
-  // Imágenes YA guardadas del producto (URLs /uploads). Copia local para poder
-  // removerlas de la UI al borrarlas sin esperar un refetch completo.
-  const [existingImages, setExistingImages] = useState<string[]>(defaultImages);
+  // Imágenes ya guardadas: copia local para poder sacarlas de la UI al
+  // borrarlas sin esperar un refetch completo del producto.
+  const [existingImages, setExistingImages] = useState<string[]>(defaults?.images ?? []);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
-  // Presentaciones adicionales (la principal vive en el bloque "Venta y precios").
-  const [extraPres, setExtraPres] = useState<ExtraPresentation[]>(() =>
-    (defaultValues?.presentaciones ?? [])
-      .filter((p) => !p.principal)
-      .map((p) => ({
-        type: p.type,
-        quantity: p.quantity,
-        unitPrice: p.unitPrice,
-        tiers: p.tiers ?? [],
-        label: p.label,
-      }))
+  const [presentations, setPresentations] = useState<PresentationDraft[]>(() =>
+    defaults?.presentaciones?.length
+      ? defaults.presentaciones
+      : [newPresentation({ type: 'unidad', quantity: 1, principal: true })]
+  );
+  const [selectedCollections, setSelectedCollections] = useState<string[]>(
+    defaults?.collectionIds ?? []
   );
 
   const handleDeleteExisting = async (url: string) => {
@@ -147,44 +130,35 @@ export function ProductForm({
       setDeletingUrl(null);
     }
   };
+  const [presError, setPresError] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState('sec-basico');
+
   const { data: formats } = usePublicFormats();
   const { data: flavors } = usePublicFlavors();
+  const { data: brands } = useQuery<Brand[]>({
+    queryKey: ['brands'],
+    queryFn: brandService.getAll,
+    staleTime: 5 * 60_000,
+  });
+  const { data: collections } = useQuery<Collection[]>({
+    queryKey: ['admin-collections', 'picker'],
+    queryFn: () => adminCollectionService.getAll('all').then((r) => r.data.collections),
+    staleTime: 60_000,
+  });
 
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
+  const form = useForm<BaseValues>({
+    resolver: zodResolver(baseSchema),
     defaultValues: {
-      sku: '',
-      name: '',
-      description: '',
-      categories: [],
-      unitPrice: 0,
-      saleUnit: { type: 'unidad', quantity: 1 },
-      tiers: [],
-      flavors: [],
-      active: true,
-      featured: false,
-      attributes: {},
-      ...defaultValues,
+      name: '', description: '', categories: [], flavors: [],
+      sku: '', barcode: '', active: true, featured: false, attributes: {},
+      ...defaults,
     },
   });
 
-  // useWatch (compatible con React Compiler) en lugar de form.watch() que
-  // rompía la memoización. Sin `name`, devuelve el objeto completo de
-  // valores del form — drop-in replacement para `form.watch()`.
-  //
-  // Cast a ProductFormValues: el tipo de useWatch es DeepPartial<T> porque
-  // RHF no puede saber estáticamente si los defaults están seteados. En
-  // este form todos los defaultValues están definidos en useForm() arriba,
-  // así que en runtime todos los campos están presentes desde el primer
-  // render — el cast es seguro.
-  const watch = useWatch({ control: form.control }) as ProductFormValues;
+  const watch = useWatch({ control: form.control }) as BaseValues;
   const selectedCategories = watch.categories || [];
-
-  // Attributes efectivos según las categorías seleccionadas. useQuery
-  // reemplaza un useEffect + useState + cleanup manual: maneja
-  // cancelación, caché, dedup de requests en vuelo y errores sin tocar
-  // estado dentro del effect (lo que provocaba set-state-in-effect).
   const selectedCategoriesKey = selectedCategories.join(',');
+
   const { data: effectiveAttributes = [] } = useQuery<FacetableAttribute[]>({
     queryKey: ['admin-facetable-attributes', selectedCategoriesKey],
     queryFn: async () => {
@@ -193,70 +167,99 @@ export function ProductForm({
         selectedCategories.map((id) => categoryService.getFacetableAttributes(id))
       );
       const dedup = new Map<string, FacetableAttribute>();
-      for (const list of results) {
-        for (const attr of list) {
-          if (!dedup.has(attr.key)) dedup.set(attr.key, attr);
-        }
-      }
+      for (const list of results) for (const attr of list) if (!dedup.has(attr.key)) dedup.set(attr.key, attr);
       return Array.from(dedup.values()).sort((a, b) => a.order - b.order);
     },
     placeholderData: (prev) => prev,
   });
-  const tiers = watch.tiers || [];
+  const hasAttributes = effectiveAttributes.length > 0;
 
-  // Vista previa: construye datos para el LivePreview
+  // ---- Datos para el preview ----
   const formatLabel = useMemo(
     () => formats?.find((f) => f._id === watch.format)?.label,
     [formats, watch.format]
   );
+  const brandName = useMemo(
+    () => brands?.find((b) => b._id === watch.brand)?.name,
+    [brands, watch.brand]
+  );
   const flavorNames = useMemo(
-    () =>
-      (watch.flavors || [])
-        .map((id) => flavors?.find((f) => f._id === id)?.name)
-        .filter(Boolean)
-        .join(', '),
+    () => (watch.flavors || []).map((id) => flavors?.find((f) => f._id === id)?.name).filter(Boolean).join(', '),
     [flavors, watch.flavors]
   );
-  const previewImage = images[0]?.preview || existingImages[0];
+  // Al editar, la portada es la imagen ya guardada mientras no se suba otra.
+  const previewImage =
+    images[0]?.preview ?? (existingImages[0] ? getImageUrl(existingImages[0]) : undefined);
 
-  // Operaciones de tiers
-  const addTier = () => {
-    const next = tiers.length === 0
-      ? { minQuantity: 12, pricePerUnit: Math.max(1, Math.round(watch.unitPrice * 0.92)), label: 'Display' }
-      : { minQuantity: tiers[tiers.length - 1].minQuantity * 2, pricePerUnit: Math.max(1, Math.round(tiers[tiers.length - 1].pricePerUnit * 0.92)), label: '' };
-    form.setValue('tiers', [...tiers, next]);
-  };
-  const removeTier = (i: number) => form.setValue('tiers', tiers.filter((_, n) => n !== i));
-  const updateTier = <K extends keyof typeof tiers[0]>(
-    i: number,
-    key: K,
-    val: (typeof tiers)[0][K]
-  ) =>
-    form.setValue('tiers', tiers.map((t, n) => (n === i ? { ...t, [key]: val } : t)));
+  // ---- Checklist de publicación ----
+  const principal = presentations.find((p) => p.principal) ?? presentations[0];
+  const checks = useMemo(() => {
+    const required = [
+      { label: 'Nombre (mín. 3)', done: (watch.name || '').trim().length >= 3 },
+      { label: 'Descripción (mín. 10)', done: (watch.description || '').trim().length >= 10 },
+      { label: 'Al menos una categoría', done: selectedCategories.length > 0 },
+      { label: 'Precio principal > $0', done: (principal?.unitPrice ?? 0) > 0 },
+    ];
+    const optional = [
+      { label: 'Imagen de portada', done: images.length > 0 || existingImages.length > 0 },
+      { label: 'Marca', done: !!watch.brand },
+      { label: 'Formato / gramaje', done: !!watch.format },
+    ];
+    return { required, optional };
+  }, [watch.name, watch.description, watch.brand, watch.format, selectedCategories.length, principal?.unitPrice, images.length, existingImages.length]);
+  const requiredDone = checks.required.filter((c) => c.done).length;
+  const progress = Math.round((requiredDone / checks.required.length) * 100);
 
-  // Helper: discount % por tier
-  const tierDiscountPercent = (ppu: number) =>
-    watch.unitPrice > 0 ? Math.round((1 - ppu / watch.unitPrice) * 100) : 0;
-
-  const handle = async (values: ProductFormValues) => {
-    // Armamos presentaciones[]: la principal (bloque "Venta y precios") + las
-    // adicionales del repetidor. Se mandan junto a los campos legacy (que el
-    // backend sigue aceptando) y el modelo denormaliza desde la principal.
-    const principal = {
-      type: values.saleUnit.type,
-      quantity: values.saleUnit.quantity,
-      unitPrice: values.unitPrice,
-      tiers: values.tiers ?? [],
-      principal: true,
-    };
-    const extras = extraPres.map((e) => ({ ...e, principal: false }));
-    await onSubmit(
-      { ...values, presentaciones: [principal, ...extras] },
-      images.map((i) => i.file)
+  // ---- Secciones + scrollspy ----
+  const sections = useMemo<SectionDef[]>(() => {
+    const s: SectionDef[] = [
+      { id: 'sec-basico', label: 'Información básica', icon: FileText },
+      { id: 'sec-clasificacion', label: 'Clasificación', icon: Tag },
+    ];
+    if (hasAttributes) s.push({ id: 'sec-atributos', label: 'Atributos', icon: Settings2 });
+    s.push(
+      { id: 'sec-presentaciones', label: 'Presentaciones y precios', icon: Coins },
+      { id: 'sec-imagenes', label: 'Imágenes', icon: ImageIcon },
+      { id: 'sec-colecciones', label: 'Colecciones', icon: FolderHeart },
     );
+    return s;
+  }, [hasAttributes]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActiveSection(visible[0].target.id);
+      },
+      { rootMargin: '-25% 0px -65% 0px' }
+    );
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [sections]);
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Detect format from name (35g, 500ml)
+  // ---- Ctrl/Cmd+S = guardar ----
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // ---- Detección de formato desde el nombre (35g, 500ml) ----
+  const nameHasFormat = !!watch.name && /\d+\s*(g|gr|kg|ml|l|cc|oz)\b/i.test(watch.name);
   const suggestFormat = () => {
     const m = watch.name.match(/(\d+(?:[.,]\d+)?)\s*(g|gr|kg|ml|l|cc|oz)\b/i);
     if (!m) return;
@@ -267,137 +270,326 @@ export function ProductForm({
     if (found) form.setValue('format', found._id);
   };
 
-  return (
-    <div className="space-y-6 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />Volver
-          </Button>
+  const toggleCollection = (id: string) =>
+    setSelectedCollections((cur) => (cur.includes(id) ? cur.filter((c) => c !== id) : [...cur, id]));
+
+  const handle = async (base: BaseValues) => {
+    const main = presentations.find((p) => p.principal) ?? presentations[0];
+    if (!main || main.unitPrice <= 0) {
+      setPresError('La presentación principal necesita un precio mayor a 0.');
+      scrollToSection('sec-presentaciones');
+      return;
+    }
+    setPresError(null);
+
+    const presentaciones = presentations.map((p) => ({
+      type: p.type,
+      quantity: p.type === 'unidad' ? 1 : p.quantity,
+      unitPrice: p.unitPrice,
+      tiers: p.tiers ?? [],
+      fixedDiscount: p.fixedDiscount?.enabled ? p.fixedDiscount : undefined,
+      label: p.label?.trim() || undefined,
+      barcode: p.barcode?.trim() || undefined,
+      principal: p.principal,
+    }));
+
+    const payload: CreateProductInput = {
+      sku: base.sku?.trim() || undefined,
+      name: base.name,
+      description: base.description,
+      categories: base.categories,
+      brand: base.brand,
+      format: base.format,
+      flavors: base.flavors,
+      barcode: base.barcode?.trim() || undefined,
+      unitPrice: main.unitPrice,
+      saleUnit: { type: main.type, quantity: main.type === 'unidad' ? 1 : main.quantity },
+      tiers: main.tiers ?? [],
+      fixedDiscount: main.fixedDiscount?.enabled ? main.fixedDiscount : undefined,
+      presentaciones,
+      featured: base.featured,
+      active: base.active,
+      attributes: base.attributes,
+    };
+
+    await onSubmit({ payload, images: images.map((i) => i.file), collectionIds: selectedCollections });
+  };
+
+  const errorCount = Object.keys(form.formState.errors).length + (presError ? 1 : 0);
+
+  // ---- Bloques compartidos ----
+  const previewCard = (
+    <div className="rounded-2xl border bg-card p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Eye className="h-3.5 w-3.5" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold leading-none">Vista previa</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">La card real del catálogo</p>
+        </div>
+      </div>
+      <div className="rounded-xl bg-muted/50 p-4">
+        <div className="mx-auto max-w-[210px]">
+          <ProductCardPreview
+            name={watch.name}
+            presentations={presentations}
+            imagePreview={previewImage}
+            brandName={brandName}
+            formatLabel={formatLabel}
+            flavorName={flavorNames}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const publishCard = (
+    <div className="rounded-2xl border bg-card p-4 shadow-sm">
+      <p className="text-sm font-semibold">Publicación</p>
+
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-              {isEditing ? 'Editar producto' : 'Nuevo producto'}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {isEditing ? 'Modifica los datos y guarda' : 'Completa el formulario — la vista previa se actualiza en vivo'}
+            <p className="text-[13px] font-medium">Activo</p>
+            <p className="text-[11px] text-muted-foreground">Visible en el catálogo</p>
+          </div>
+          <Switch checked={!!watch.active} onCheckedChange={(c) => form.setValue('active', c)} />
+        </div>
+        <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5">
+          <div>
+            <p className="text-[13px] font-medium">Destacado</p>
+            <p className="text-[11px] text-muted-foreground">Aparece en el home</p>
+          </div>
+          <Switch checked={!!watch.featured} onCheckedChange={(c) => form.setValue('featured', c)} />
+        </div>
+      </div>
+
+      {/* Checklist */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Listo para publicar
+          </p>
+          <span className={cn(
+            'text-[11px] font-bold tabular-nums',
+            progress === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+          )}>
+            {progress}%
+          </span>
+        </div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className={cn(
+              'h-full rounded-full transition-all duration-500',
+              progress === 100 ? 'bg-emerald-500' : 'bg-primary'
+            )}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <ul className="mt-3 space-y-1.5">
+          {checks.required.map((c) => (
+            <li key={c.label} className="flex items-center gap-2 text-xs">
+              {c.done ? (
+                <span className="grid h-4 w-4 place-items-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <Check className="h-2.5 w-2.5" />
+                </span>
+              ) : (
+                <Circle className="h-4 w-4 text-muted-foreground/40" />
+              )}
+              <span className={cn(c.done ? 'text-foreground' : 'text-muted-foreground')}>{c.label}</span>
+            </li>
+          ))}
+          {checks.optional.map((c) => (
+            <li key={c.label} className="flex items-center gap-2 text-xs">
+              {c.done ? (
+                <span className="grid h-4 w-4 place-items-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <Check className="h-2.5 w-2.5" />
+                </span>
+              ) : (
+                <Circle className="h-4 w-4 text-muted-foreground/30" />
+              )}
+              <span className="text-muted-foreground">{c.label}</span>
+              <span className="ml-auto text-[10px] text-muted-foreground/60">opcional</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <Button type="submit" form="product-form" disabled={isSubmitting} className="mt-4 w-full">
+        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+        {isEditing ? 'Guardar cambios' : 'Crear producto'}
+      </Button>
+      <p className="mt-2 text-center text-[10px] text-muted-foreground">
+        Atajo: <kbd className="rounded border bg-muted px-1 font-mono">Ctrl</kbd>+<kbd className="rounded border bg-muted px-1 font-mono">S</kbd>
+      </p>
+    </div>
+  );
+
+  return (
+    <div className="pb-24 lg:pb-8">
+      {/* ── Top command bar ── */}
+      <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-6 border-b bg-background/85 px-4 py-3 backdrop-blur md:-mx-6 md:-mt-6 md:px-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="shrink-0">
+            <ArrowLeft className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Volver</span>
+          </Button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-lg font-bold tracking-tight md:text-xl">
+                {watch.name?.trim() || (isEditing ? 'Editar producto' : 'Nuevo producto')}
+              </h1>
+            </div>
+            <p className="hidden text-[11px] text-muted-foreground md:block">
+              {isEditing
+                ? `Productos / Editar${defaults?.sku ? ` · ${defaults.sku}` : ''}`
+                : 'Productos / Nuevo · el SKU se genera automáticamente'}
             </p>
+          </div>
+
+          <div className="ml-auto hidden items-center gap-3 md:flex">
+            {errorCount > 0 ? (
+              <span className="text-xs font-semibold text-destructive">
+                {errorCount} error{errorCount > 1 && 'es'}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Layers className="h-3.5 w-3.5" />
+                {presentations.length} presentación{presentations.length > 1 && 'es'}
+              </span>
+            )}
+            <div className="h-5 w-px bg-border" />
+            <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="product-form" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Guardar
+            </Button>
           </div>
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(handle)}>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* COL IZQUIERDA — FORM */}
-          <div className="space-y-5">
-            {/* Identificación */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">📋 Identificación</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+      <form id="product-form" ref={formRef} onSubmit={form.handleSubmit(handle)}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_330px] xl:grid-cols-[190px_minmax(0,1fr)_330px]">
+          {/* ── Rail izquierdo: nav de secciones (xl+) ── */}
+          <nav className="hidden xl:block">
+            <div className="sticky top-[76px] space-y-1">
+              {sections.map((s) => {
+                const Icon = s.icon;
+                const active = activeSection === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => scrollToSection(s.id)}
+                    className={cn(
+                      'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all',
+                      active
+                        ? 'bg-primary/10 text-primary shadow-[inset_2px_0_0] shadow-primary'
+                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{s.label}</span>
+                  </button>
+                );
+              })}
+
+              <div className="mt-4 rounded-xl border border-dashed p-3">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>Completitud</span>
+                  <span className="font-bold tabular-nums">{progress}%</span>
+                </div>
+                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn('h-full rounded-full transition-all duration-500', progress === 100 ? 'bg-emerald-500' : 'bg-primary')}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          {/* ── Centro: secciones ── */}
+          <div className="min-w-0 space-y-8">
+            {/* 1 · Información básica */}
+            <section id="sec-basico" className="scroll-mt-24">
+              <SectionHeader n={1} icon={FileText} title="Información básica" hint="Nombre visible, descripción e identificadores" />
+              <div className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-5">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="mb-1 flex items-center justify-between">
                     <Label htmlFor="name" className="text-sm font-semibold">Nombre *</Label>
-                    {watch.name && /\d+\s*(g|gr|kg|ml|l|cc|oz)\b/i.test(watch.name) && !watch.format && (
-                      <Button type="button" size="sm" variant="ghost" onClick={suggestFormat} className="h-6 text-xs">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        Detectar formato del nombre
+                    {nameHasFormat && !watch.format && (
+                      <Button type="button" size="sm" variant="ghost" onClick={suggestFormat} className="h-6 text-xs text-primary">
+                        <Sparkles className="mr-1 h-3 w-3" />Detectar formato del nombre
                       </Button>
                     )}
                   </div>
-                  <Input
-                    id="name"
-                    {...form.register('name')}
-                    placeholder="Ej: Galleta SELZ Mini Clásica 35g"
-                    className="text-base"
-                  />
+                  <Input id="name" {...form.register('name')} placeholder="Ej: Galleta Triton chocolate 126g" className="h-11 text-base" />
                   {form.formState.errors.name && (
-                    <p className="text-xs text-destructive mt-1">{form.formState.errors.name.message}</p>
+                    <p className="mt-1 text-xs text-destructive">{form.formState.errors.name.message}</p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="description" className="text-sm font-semibold">Descripción *</Label>
                   <Textarea id="description" {...form.register('description')} rows={2} placeholder="Descripción visible al cliente" />
                   {form.formState.errors.description && (
-                    <p className="text-xs text-destructive mt-1">{form.formState.errors.description.message}</p>
+                    <p className="mt-1 text-xs text-destructive">{form.formState.errors.description.message}</p>
                   )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <Label htmlFor="sku" className="text-xs flex items-center gap-1">
-                      <Hash className="h-3 w-3" />SKU
-                    </Label>
+                    <Label htmlFor="sku" className="flex items-center gap-1 text-xs"><Hash className="h-3 w-3" />SKU</Label>
                     <Input
                       id="sku"
                       {...form.register('sku')}
-                      placeholder={isEditing ? '' : 'Auto: QU-XXXXXX'}
+                      placeholder="Auto: QU-XXXXXX"
+                      className="font-mono uppercase"
                       readOnly={isEditing}
-                      className={cn(
-                        'font-mono uppercase',
-                        isEditing && 'bg-muted/50 text-muted-foreground cursor-not-allowed'
-                      )}
+                      disabled={isEditing}
                     />
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {isEditing
-                        ? 'Identidad del producto — no editable.'
-                        : 'Déjalo vacío para auto-generar, o ingresa uno para sincronizar con el Excel.'}
+                        ? 'Identidad del producto — no se puede cambiar.'
+                        : 'Vacío = se genera solo. O ingresa uno para sincronizar con el Excel.'}
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="barcode" className="text-xs flex items-center gap-1">
-                      <ScanLine className="h-3 w-3" />Código de barras
-                    </Label>
+                    <Label htmlFor="barcode" className="flex items-center gap-1 text-xs"><ScanLine className="h-3 w-3" />Código de barras</Label>
                     <Input id="barcode" {...form.register('barcode')} placeholder="7802408003446" inputMode="numeric" className="font-mono" />
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      EAN del fabricante. Opcional.
-                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">EAN del producto. Cada presentación puede tener el suyo.</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
-            {/* Clasificación */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">🏷️ Clasificación</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {/* 2 · Clasificación */}
+            <section id="sec-clasificacion" data-testid="section-clasificacion" className="scroll-mt-24">
+              <SectionHeader n={2} icon={Tag} title="Clasificación" hint="Dónde aparece y cómo se filtra en el catálogo" />
+              <div className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-5">
                 <CategoryWithSubcategorySelector
                   selectedIds={watch.categories || []}
-                  onChange={(ids) => form.setValue('categories', ids)}
+                  onChange={(ids) => form.setValue('categories', ids, { shouldValidate: true })}
                   disabled={isSubmitting}
                 />
                 {form.formState.errors.categories && (
                   <p className="text-xs text-destructive">{form.formState.errors.categories.message}</p>
                 )}
-                <BrandSelector
-                  selectedId={watch.brand}
-                  onChange={(id) => form.setValue('brand', id)}
-                  disabled={isSubmitting}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <FormatPicker
-                    value={watch.format}
-                    onChange={(id) => form.setValue('format', id)}
-                    disabled={isSubmitting}
-                  />
-                  <FlavorMultiPicker
-                    values={watch.flavors || []}
-                    onChange={(ids) => form.setValue('flavors', ids)}
-                    disabled={isSubmitting}
-                  />
+                <BrandSelector selectedId={watch.brand} onChange={(id) => form.setValue('brand', id)} disabled={isSubmitting} />
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <FormatPicker value={watch.format} onChange={(id) => form.setValue('format', id)} disabled={isSubmitting} />
+                  <FlavorMultiPicker values={watch.flavors || []} onChange={(ids) => form.setValue('flavors', ids)} disabled={isSubmitting} />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
-            {/* Atributos dinámicos según categorías */}
-            {effectiveAttributes.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">🎯 Atributos</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            {/* 3 · Atributos dinámicos */}
+            {hasAttributes && (
+              <section id="sec-atributos" className="scroll-mt-24">
+                <SectionHeader n={3} icon={Settings2} title="Atributos" hint="Definidos por las categorías elegidas" />
+                <div className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-5">
                   {effectiveAttributes.map((attr) => {
                     const current = (watch.attributes || {})[attr.key] || [];
                     const setValues = (vals: string[]) => {
@@ -417,18 +609,12 @@ export function ProductForm({
                                 <button
                                   key={opt.value}
                                   type="button"
-                                  onClick={() =>
-                                    setValues(
-                                      active
-                                        ? current.filter((v) => v !== opt.value)
-                                        : [...current, opt.value]
-                                    )
-                                  }
+                                  onClick={() => setValues(active ? current.filter((v) => v !== opt.value) : [...current, opt.value])}
                                   className={cn(
-                                    'rounded-full border px-3 py-1 text-xs transition-colors',
+                                    'rounded-full border px-3 py-1 text-xs transition-all',
                                     active
-                                      ? 'border-primary bg-primary/10 text-primary'
-                                      : 'border-border hover:border-primary/40'
+                                      ? 'border-primary bg-primary/10 font-medium text-primary'
+                                      : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                                   )}
                                 >
                                   {opt.label}
@@ -437,215 +623,47 @@ export function ProductForm({
                             })}
                           </div>
                         ) : (
-                          <Select
-                            value={current[0] || ''}
-                            onValueChange={(v) => setValues(v ? [v] : [])}
-                            disabled={isSubmitting}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder={`Seleccionar ${attr.label}`} />
-                            </SelectTrigger>
+                          <Select value={current[0] || ''} onValueChange={(v) => setValues(v ? [v] : [])} disabled={isSubmitting}>
+                            <SelectTrigger className="mt-1"><SelectValue placeholder={`Seleccionar ${attr.label}`} /></SelectTrigger>
                             <SelectContent>
-                              {attr.options.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
+                              {attr.options.map((opt) => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         )}
                       </div>
                     );
                   })}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             )}
 
-            {/* Venta */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">💰 Venta y precios · presentación principal</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {/* Precio + modo en grid */}
-                <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4">
-                  <div>
-                    <Label className="text-sm font-semibold">Precio por unidad *</Label>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                      <Input
-                        type="number"
-                        min={0}
-                        {...form.register('unitPrice', { valueAsNumber: true })}
-                        className="pl-7 text-lg font-bold tabular-nums"
-                      />
-                    </div>
-                  </div>
+            {/* 4 · Presentaciones y precios */}
+            <section id="sec-presentaciones" data-testid="section-presentaciones" className="scroll-mt-24">
+              <SectionHeader
+                n={hasAttributes ? 4 : 3}
+                icon={Coins}
+                title="Presentaciones y precios"
+                hint="Cada forma de venta con su precio, oferta y tramos. Una es la principal."
+                accent
+              />
+              <PresentationsEditor value={presentations} onChange={setPresentations} disabled={isSubmitting} />
+              {presError && <p className="mt-2 text-xs font-medium text-destructive">{presError}</p>}
+            </section>
 
-                  <div>
-                    <Label className="text-sm font-semibold">¿Cómo se vende?</Label>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Aparece como badge en la imagen del producto
-                    </p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                      {(Object.keys(SALE_UNIT_LABELS) as SaleUnitType[]).map((k) => {
-                        const Icon = SALE_UNIT_ICON[k];
-                        const active = watch.saleUnit.type === k;
-                        return (
-                          <button
-                            key={k}
-                            type="button"
-                            onClick={() => form.setValue('saleUnit', {
-                              type: k,
-                              quantity: k === 'unidad' ? 1 : (watch.saleUnit.quantity || 6),
-                            })}
-                            className={cn(
-                              'rounded-lg border-2 p-2 text-left transition-all',
-                              active
-                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                                : 'border-border hover:border-primary/40'
-                            )}
-                          >
-                            <Icon className={cn('h-4 w-4 mb-1', active && 'text-primary')} />
-                            <p className="text-xs font-bold">{SALE_UNIT_LABELS[k]}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {watch.saleUnit.type !== 'unidad' && (
-                      <div className="mt-2">
-                        <Label className="text-xs">Cantidad de unidades</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={watch.saleUnit.quantity}
-                          onChange={(e) => form.setValue('saleUnit', {
-                            type: watch.saleUnit.type,
-                            quantity: parseInt(e.target.value, 10) || 1,
-                          })}
-                          placeholder="6"
-                        />
-                      </div>
-                    )}
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      💡 {SALE_UNIT_DESC[watch.saleUnit.type]}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Tiers */}
-                <div className="rounded-xl border-2 border-dashed border-border p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <Label className="text-sm font-semibold flex items-center gap-1.5">
-                        <TrendingDown className="h-4 w-4 text-primary" />
-                        Tramos por mayor
-                      </Label>
-                      <p className="text-xs text-muted-foreground">Precios escalonados según cantidad</p>
-                    </div>
-                    <Button type="button" size="sm" variant="outline" onClick={addTier} disabled={watch.unitPrice <= 0}>
-                      <Plus className="h-3 w-3 mr-1" />Agregar tramo
-                    </Button>
-                  </div>
-
-                  {tiers.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-3">
-                      Sin tramos. El cliente paga ${watch.unitPrice || 0} por unidad sin importar cantidad.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {tiers.map((t, i) => {
-                        const dcto = tierDiscountPercent(t.pricePerUnit);
-                        const totalAtTier = t.pricePerUnit * t.minQuantity;
-                        return (
-                          <div key={i} className="rounded-lg bg-muted/40 p-2 grid grid-cols-12 gap-2 items-center">
-                            <div className="col-span-3">
-                              <Label className="text-[10px] uppercase">Desde</Label>
-                              <Input
-                                type="number"
-                                min={2}
-                                value={t.minQuantity}
-                                onChange={(e) => updateTier(i, 'minQuantity', parseInt(e.target.value, 10) || 2)}
-                                className="h-8"
-                              />
-                            </div>
-                            <div className="col-span-3">
-                              <Label className="text-[10px] uppercase">Precio c/u</Label>
-                              <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={t.pricePerUnit}
-                                  onChange={(e) => updateTier(i, 'pricePerUnit', parseFloat(e.target.value) || 0)}
-                                  className="h-8 pl-5 tabular-nums"
-                                />
-                              </div>
-                            </div>
-                            <div className="col-span-3">
-                              <Label className="text-[10px] uppercase">Etiqueta</Label>
-                              <Input
-                                value={t.label || ''}
-                                onChange={(e) => updateTier(i, 'label', e.target.value)}
-                                placeholder="Display, Mayor…"
-                                className="h-8"
-                              />
-                            </div>
-                            <div className="col-span-2 text-right text-xs">
-                              {dcto > 0 && (
-                                <Badge variant="secondary" className="bg-primary/10 text-primary text-[10px]">
-                                  −{dcto}%
-                                </Badge>
-                              )}
-                              <p className="mt-1 text-[10px] text-muted-foreground tabular-nums">
-                                = ${totalAtTier.toLocaleString('es-CL')}
-                              </p>
-                            </div>
-                            <div className="col-span-1 flex justify-end">
-                              <Button type="button" size="sm" variant="ghost" onClick={() => removeTier(i)} className="text-destructive h-8 w-8 p-0">
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Otras presentaciones */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">📦 Otras presentaciones</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Si este producto también se vende por display, caja u otra forma, agregalas acá
-                  (cada una con su precio y tramos). El cliente las elige en la ficha.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <ExtraPresentationsEditor value={extraPres} onChange={setExtraPres} />
-              </CardContent>
-            </Card>
-
-            {/* Imágenes */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">📸 Imágenes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Imágenes ya guardadas del producto (solo en edición). */}
+            {/* 5 · Imágenes */}
+            <section id="sec-imagenes" className="scroll-mt-24">
+              <SectionHeader n={hasAttributes ? 5 : 4} icon={ImageIcon} title="Imágenes" hint="Máx. 5 — la primera es la portada del catálogo" />
+              <div className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-5">
                 {existingImages.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">
-                      Imágenes actuales
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        La primera es la principal
+                  <div>
+                    <p className="mb-2 text-xs font-semibold">
+                      Imágenes guardadas
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        La primera es la portada
                       </span>
                     </p>
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-                      {existingImages.map((url, index) => (
+                    <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+                      {existingImages.map((url) => (
                         <div
                           key={url}
                           className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
@@ -653,28 +671,21 @@ export function ProductForm({
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={getImageUrl(url)}
-                            alt={`Imagen ${index + 1}`}
-                            className="absolute inset-0 h-full w-full object-cover"
-                            loading="lazy"
-                            decoding="async"
+                            alt="Imagen del producto"
+                            className="h-full w-full object-cover"
                           />
-                          {index === 0 && (
-                            <span className="absolute left-1.5 top-1.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                              Principal
-                            </span>
-                          )}
                           {onDeleteImage && (
                             <button
                               type="button"
                               onClick={() => handleDeleteExisting(url)}
-                              disabled={isSubmitting || deletingUrl === url}
+                              disabled={deletingUrl === url}
                               aria-label="Eliminar imagen"
-                              className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-red-600 text-white opacity-0 shadow transition-opacity hover:bg-red-700 group-hover:opacity-100 disabled:opacity-60"
+                              className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-60"
                             >
                               {deletingUrl === url ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : (
-                                <X className="h-4 w-4" />
+                                <X className="h-3.5 w-3.5" />
                               )}
                             </button>
                           )}
@@ -684,104 +695,88 @@ export function ProductForm({
                   </div>
                 )}
 
-                {/* Subir imágenes nuevas (se aplican al guardar). */}
-                <ImageUploaderWithPreview
-                  images={images}
-                  onChange={setImages}
-                  maxImages={Math.max(0, 5 - existingImages.length)}
-                  disabled={isSubmitting}
-                />
-              </CardContent>
-            </Card>
+                <ImageUploaderWithPreview images={images} onChange={setImages} maxImages={5} disabled={isSubmitting} />
+              </div>
+            </section>
 
-            {/* Visibilidad */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">👁️ Visibilidad</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3">
-                  <div>
-                    <Label className="font-semibold">Producto activo</Label>
-                    <p className="text-xs text-muted-foreground">Visible en el catálogo público</p>
+            {/* 6 · Colecciones */}
+            <section id="sec-colecciones" className="scroll-mt-24">
+              <SectionHeader n={hasAttributes ? 6 : 5} icon={FolderHeart} title="Colecciones" hint="Packs y agrupaciones donde aparece (opcional)" />
+              <div className="rounded-2xl border bg-card p-4 shadow-sm md:p-5">
+                {!collections || collections.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No hay colecciones creadas.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {collections.map((c) => {
+                      const active = selectedCollections.includes(c._id);
+                      return (
+                        <button
+                          key={c._id}
+                          type="button"
+                          onClick={() => toggleCollection(c._id)}
+                          className={cn(
+                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-all',
+                            active
+                              ? 'border-primary bg-primary/10 font-medium text-primary'
+                              : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                          )}
+                        >
+                          {c.emoji && <span>{c.emoji}</span>}
+                          {c.name}
+                          {active && <Check className="h-3 w-3" />}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <Switch checked={!!watch.active} onCheckedChange={(c) => form.setValue('active', c)} />
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3">
-                  <div>
-                    <Label className="font-semibold">Destacado ⭐</Label>
-                    <p className="text-xs text-muted-foreground">Aparece en sección destacados del home</p>
-                  </div>
-                  <Switch checked={!!watch.featured} onCheckedChange={(c) => form.setValue('featured', c)} />
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+            </section>
           </div>
 
-          {/* COL DERECHA — PREVIEW (solo desktop; en móvil va en el sheet) */}
-          <div className="hidden lg:block">
-            <ProductLivePreview
-              name={watch.name}
-              unitPrice={watch.unitPrice}
-              saleUnit={watch.saleUnit}
-              tiers={tiers}
-              imagePreview={previewImage}
-              formatLabel={formatLabel}
-              flavorName={flavorNames}
-            />
+          {/* ── Derecha: preview + publicación (lg+) ── */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-[76px] space-y-4">
+              {previewCard}
+              {publishCard}
+            </div>
+          </aside>
+
+          {/* En mobile, preview + publicación al final del flujo */}
+          <div className="space-y-4 lg:hidden">
+            {publishCard}
           </div>
         </div>
 
-        {/* PREVIEW MÓVIL — botón flotante sobre la barra de guardar que abre
-            un sheet inferior. En pantallas chicas la columna derecha quedaba
-            al fondo de la página y dejaba de servir como vista "en vivo". */}
+        {/* Preview móvil (sheet flotante) */}
         <div className="lg:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="fixed bottom-20 right-4 z-30 rounded-full border border-border shadow-lg"
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                Vista previa
+              <Button type="button" variant="secondary" size="sm" className="fixed bottom-20 right-4 z-30 rounded-full border shadow-lg">
+                <Eye className="mr-2 h-4 w-4" />Vista previa
               </Button>
             </SheetTrigger>
             <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto p-4 pt-10">
               <SheetTitle className="sr-only">Vista previa del cliente</SheetTitle>
-              <ProductLivePreview
-                name={watch.name}
-                unitPrice={watch.unitPrice}
-                saleUnit={watch.saleUnit}
-                tiers={tiers}
-                imagePreview={previewImage}
-                formatLabel={formatLabel}
-                flavorName={flavorNames}
-              />
+              {previewCard}
             </SheetContent>
           </Sheet>
         </div>
 
-        {/* STICKY SAVE BAR */}
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur shadow-lg">
-          <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-3 gap-3 lg:px-8">
-            <div className="text-xs text-muted-foreground hidden md:block">
-              {Object.keys(form.formState.errors).length > 0 && (
-                <span className="text-destructive font-semibold">
-                  ⚠ {Object.keys(form.formState.errors).length} error(es) — revisa el formulario
-                </span>
+        {/* Barra inferior (solo mobile) */}
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 shadow-lg backdrop-blur lg:hidden">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <div className="text-xs text-muted-foreground">
+              {errorCount > 0 ? (
+                <span className="font-semibold text-destructive">⚠ {errorCount} error(es)</span>
+              ) : (
+                <span className="tabular-nums">{progress}% listo</span>
               )}
             </div>
-            <div className="flex gap-2 ml-auto">
-              <Button type="button" variant="outline" onClick={() => router.back()}>
-                Cancelar
-              </Button>
-              <Button type="submit" size="lg" disabled={isSubmitting}>
-                {isSubmitting
-                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  : <Save className="mr-2 h-4 w-4" />}
-                {isEditing ? 'Guardar cambios' : 'Crear producto'}
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => router.back()}>Cancelar</Button>
+              <Button type="submit" size="sm" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Crear
               </Button>
             </div>
           </div>
@@ -791,11 +786,36 @@ export function ProductForm({
   );
 }
 
-export function badgeText(type: SaleUnitType, quantity: number): string {
-  switch (type) {
-    case 'unidad': return '1 Unid.';
-    case 'cantidadMinima': return `Cant. min ${quantity} Unid.`;
-    case 'display': return `Display ${quantity} Unid.`;
-    case 'embalaje': return `Embalaje ${quantity} Unid.`;
-  }
+function SectionHeader({
+  n, icon: Icon, title, hint, accent,
+}: {
+  n: number;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  hint: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="mb-3 flex items-center gap-3">
+      <span
+        className={cn(
+          'grid h-9 w-9 shrink-0 place-items-center rounded-xl border text-sm font-bold',
+          accent
+            ? 'border-primary/30 bg-primary/10 text-primary'
+            : 'border-border bg-muted/50 text-muted-foreground'
+        )}
+      >
+        {n}
+      </span>
+      <div className="min-w-0">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold leading-tight">
+          <Icon className={cn('h-4 w-4', accent ? 'text-primary' : 'text-muted-foreground')} />
+          {title}
+        </h2>
+        <p className="truncate text-[11px] text-muted-foreground">{hint}</p>
+      </div>
+    </div>
+  );
 }
+
+export default ProductForm;

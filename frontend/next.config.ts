@@ -7,7 +7,10 @@ const nextConfig: NextConfig = {
   // solo navbar/footer) y el HMR falla. Solo afecta a desarrollo.
   // La IP de la LAN cambia con el DHCP (ha sido .5.2 y .6.2): listar todas las
   // usadas; si vuelve a cambiar, agregar la nueva y reiniciar el dev server.
-  allowedDevOrigins: ['192.168.5.2', '192.168.6.2'],
+  // `127.0.0.1` es distinto de `localhost` para esta comprobación: las suites
+  // e2e entran por 127.0.0.1 y sin listarlo la app no hidrata (se queda en
+  // "Cargando…") aunque el login por API funcione.
+  allowedDevOrigins: ['127.0.0.1', '192.168.5.2', '192.168.6.2'],
   // Genera un servidor minimo autocontenido para Docker (imagen liviana)
   output: 'standalone',
   images: {

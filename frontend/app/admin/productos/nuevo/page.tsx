@@ -2,36 +2,25 @@
 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ProductForm, type ProductFormValues } from '@/components/admin/products/ProductForm';
+import { ProductForm, type ProductSubmit } from '@/components/admin/products/ProductForm';
 import { useProductOperations } from '@/hooks/admin/useAdminProducts';
-import type { CreateProductInput } from '@/services/admin/products';
+import { assignCollections } from '@/lib/admin/productCollections';
 import type { Product } from '@/types';
 
 export default function NuevoProductoPage() {
   const router = useRouter();
   const { create, isCreating, uploadImages } = useProductOperations();
 
-  const handleSubmit = async (data: ProductFormValues, images: File[]) => {
-    const payload: CreateProductInput = {
-      sku: data.sku?.trim() || undefined,
-      name: data.name,
-      description: data.description,
-      categories: data.categories,
-      brand: data.brand,
-      format: data.format,
-      flavors: data.flavors,
-      barcode: data.barcode,
-      unitPrice: data.unitPrice,
-      saleUnit: data.saleUnit,
-      tiers: data.tiers,
-      presentaciones: data.presentaciones,
-      featured: data.featured,
-      active: data.active,
-      attributes: data.attributes,
-    };
+  const handleSubmit = async ({ payload, images, collectionIds }: ProductSubmit) => {
     create(payload, {
-      onSuccess: (result: { product: Product }) => {
+      onSuccess: async (result: { product: Product }) => {
         const id = result.product?._id;
+
+        if (id && collectionIds.length > 0) {
+          const ok = await assignCollections(id, collectionIds);
+          if (!ok) toast.warning('El producto se creó, pero falló asignar alguna colección.');
+        }
+
         if (id && images.length > 0) {
           uploadImages(
             { id, files: images },
@@ -41,7 +30,9 @@ export default function NuevoProductoPage() {
               // lista (donde el fallo pasa desapercibido) vamos a su edición
               // para que el admin reintente la subida desde ahí.
               onError: () => {
-                toast.warning('El producto se creó, pero falló la subida de imágenes. Reintentá desde acá.');
+                toast.warning(
+                  'El producto se creó, pero falló la subida de imágenes. Reintenta desde acá.'
+                );
                 router.push(`/admin/productos/${id}/editar`);
               },
             }

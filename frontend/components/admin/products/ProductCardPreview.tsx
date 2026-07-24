@@ -17,7 +17,7 @@ import {
 } from '@/lib/discountCalculator';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/types';
-import type { PresentationDraft } from './UnifiedPresentationsEditor';
+import type { PresentationDraft } from './PresentationsEditor';
 
 interface Props {
   name: string;
