@@ -7,6 +7,8 @@ import type {
   CancelOrderData,
   UpdateAdminNotesData,
   EditOrderItemsData,
+  EditOrderLine,
+  OrderEditPreview,
 } from '@/types/order';
 
 interface ApiResponse<T> {
@@ -87,5 +89,18 @@ export const adminOrdersService = {
   editOrderItems: async (id: string, itemsData: EditOrderItemsData): Promise<Order> => {
     const { data } = await adminApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/items`, itemsData);
     return data.data.order;
+  },
+
+  /**
+   * Previsualiza cómo quedaría el pedido con estas líneas, SIN guardar.
+   * El backend hace el cálculo real (precios congelados, tramos, delta), así
+   * el panel muestra el impacto exacto sin reimplementar la lógica de precios.
+   */
+  previewOrderItems: async (id: string, items: EditOrderLine[]): Promise<OrderEditPreview> => {
+    const { data } = await adminApi.post<ApiResponse<OrderEditPreview>>(
+      `/orders/${id}/items/preview`,
+      { items }
+    );
+    return data.data;
   },
 };

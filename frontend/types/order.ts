@@ -13,6 +13,8 @@ export type PaymentMethod = 'cash' | 'transfer';
 
 export interface OrderItem {
   product: string;
+  /** Presentación comprada. Con `product` forma la identidad de la línea. */
+  presentationId?: string;
   productSnapshot: {
     name: string;
     slug: string;
@@ -20,6 +22,15 @@ export interface OrderItem {
     unitPrice: number;
     saleUnit: { type: string; quantity: number };
     image: string;
+    /** Escalera de precios congelada al comprar (para reeditar respetando lo pactado). */
+    tiers?: { minQuantity: number; pricePerUnit: number }[];
+    fixedDiscount?: {
+      enabled?: boolean;
+      type?: string;
+      value?: number;
+      startDate?: string;
+      endDate?: string;
+    } | null;
   };
   quantity: number;
   pricePerUnit: number;
@@ -114,10 +125,37 @@ export interface UpdateAdminNotesData {
   adminNotes: string;
 }
 
+export interface EditOrderLine {
+  productId: string;
+  /** Presentación elegida. Ausente = la principal del producto. */
+  presentationId?: string;
+  /** Al editar, 0 quita la línea. */
+  quantity: number;
+}
+
 export interface EditOrderItemsData {
-  items: Array<{
-    productId: string;
-    quantity: number;
-  }>;
+  items: EditOrderLine[];
   adminNotes?: string;
+}
+
+/** Un cambio detectado por el preview, para explicarle al operador qué pasa. */
+export interface OrderEditChange {
+  name: string;
+  kind: 'added' | 'removed' | 'quantity' | 'price';
+  before?: number;
+  after?: number;
+}
+
+/** Respuesta del preview de edición: cómo quedaría el pedido, sin guardar. */
+export interface OrderEditPreview {
+  items: OrderItem[];
+  subtotal: number;
+  totalDiscount: number;
+  shippingCost: number;
+  total: number;
+  previousTotal: number;
+  difference: number;
+  changes: OrderEditChange[];
+  isEmpty: boolean;
+  warnings: string[];
 }

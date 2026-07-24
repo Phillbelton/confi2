@@ -6,6 +6,8 @@ import type {
   UpdateOrderStatusData,
   CancelOrderData,
   EditOrderItemsData,
+  EditOrderLine,
+  OrderEditPreview,
 } from '@/types/order';
 
 interface ApiResponse<T> {
@@ -91,6 +93,15 @@ export const funcionarioOrdersService = {
   editOrderItems: async (id: string, itemsData: EditOrderItemsData): Promise<Order> => {
     const { data } = await funcionarioApi.put<ApiResponse<OrderEnvelope>>(`/orders/${id}/items`, itemsData);
     return data.data.order;
+  },
+
+  /** Previsualiza la edición sin guardar (mismo cálculo que hará el backend). */
+  previewOrderItems: async (id: string, items: EditOrderLine[]): Promise<OrderEditPreview> => {
+    const { data } = await funcionarioApi.post<ApiResponse<OrderEditPreview>>(
+      `/orders/${id}/items/preview`,
+      { items }
+    );
+    return data.data;
   },
 
   /**
