@@ -401,6 +401,53 @@ describe('transiciones de orden (admin/funcionario)', () => {
     expect(res.body.data.order.whatsappSent).toBe(true);
     expect(res.body.data.order.whatsappSentAt).toBeDefined();
   });
+
+  // ── Avisos al cliente por email (silenciosos, solo en hitos clave) ──
+
+  it('PUT /status envía email en "shipped" y en "completed"', async () => {
+    const sendStatus = emailService.sendOrderStatusUpdateEmail as jest.Mock;
+    sendStatus.mockClear();
+
+    await request(app)
+      .put(`/api/orders/${orderId}/status`)
+      .set('Authorization', `Bearer ${funcionarioToken}`)
+      .send({ status: 'shipped' });
+    await request(app)
+      .put(`/api/orders/${orderId}/status`)
+      .set('Authorization', `Bearer ${funcionarioToken}`)
+      .send({ status: 'completed' });
+
+    expect(sendStatus).toHaveBeenCalledTimes(2);
+    // firma: (order, email, name, newStatus)
+    expect(sendStatus.mock.calls[0][3]).toBe('shipped');
+    expect(sendStatus.mock.calls[1][3]).toBe('completed');
+  });
+
+  it('PUT /status NO envía email en estados internos (preparing)', async () => {
+    const sendStatus = emailService.sendOrderStatusUpdateEmail as jest.Mock;
+    sendStatus.mockClear();
+
+    await request(app)
+      .put(`/api/orders/${orderId}/status`)
+      .set('Authorization', `Bearer ${funcionarioToken}`)
+      .send({ status: 'preparing' });
+
+    expect(sendStatus).not.toHaveBeenCalled();
+  });
+
+  it('PUT /cancel envía el email de cancelación', async () => {
+    const sendCancel = emailService.sendOrderCancellationEmail as jest.Mock;
+    sendCancel.mockClear();
+
+    const res = await request(app)
+      .put(`/api/orders/${orderId}/cancel`)
+      .set('Authorization', `Bearer ${funcionarioToken}`)
+      .send({ cancellationReason: 'El cliente se arrepintió del pedido.' });
+
+    expect(res.status).toBe(200);
+    expect(sendCancel).toHaveBeenCalledTimes(1);
+    expect(sendCancel.mock.calls[0][1]).toBe('juana@test.com');
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────

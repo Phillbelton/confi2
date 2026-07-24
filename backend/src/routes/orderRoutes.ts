@@ -14,8 +14,8 @@ import {
   getOrderByNumberSchema,
   getMyOrdersQuerySchema,
   markWhatsAppSentSchema,
-  getOrderStatsQuerySchema,
   editOrderItemsSchema,
+  previewOrderItemsSchema,
 } from '../schemas/orderSchema';
 
 const router = Router();
@@ -36,6 +36,9 @@ router.get('/my-orders', authenticate, authorize('cliente'), validate(getMyOrder
 router.get('/:id', authenticate, validate(getOrderByIdSchema), orderController.getOrderById);
 router.put('/:id/confirm', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(confirmOrderSchema), auditLog('order', 'update'), orderController.confirmOrder);
 router.put('/:id/status', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(updateOrderStatusSchema), auditLog('order', 'update'), orderController.updateOrderStatus);
+// Previsualiza el cambio (no guarda): el panel muestra el impacto en plata
+// con el cálculo del servidor antes de que el operador confirme.
+router.post('/:id/items/preview', authenticate, authorize('admin', 'funcionario'), validate(previewOrderItemsSchema), orderController.previewOrderItems);
 router.put('/:id/items', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(editOrderItemsSchema), auditLog('order', 'update'), orderController.editOrderItems);
 router.put('/:id/shipping', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), auditLog('order', 'update'), orderController.updateShippingCost);
 router.put('/:id/whatsapp-sent', authenticate, authorize('admin', 'funcionario'), captureBeforeState(Order), validate(markWhatsAppSentSchema), auditLog('order', 'update'), orderController.markWhatsAppSent);

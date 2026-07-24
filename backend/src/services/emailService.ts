@@ -490,7 +490,7 @@ class EmailService {
     newStatus: string
   ): Promise<boolean> {
     const orderUrl = `${ENV.FRONTEND_URL}/mis-ordenes/${order.orderNumber}`;
-    const statusInfo = this.getStatusInfo(newStatus);
+    const statusInfo = this.getStatusInfo(newStatus, order.deliveryMethod);
 
     const html = `
 <!DOCTYPE html>
@@ -595,76 +595,90 @@ class EmailService {
    * Helper: Obtiene etiqueta de estado en español
    */
   private getStatusLabel(status: string): string {
+    // Claves = enum real del modelo Order (pending_whatsapp/confirmed/preparing/
+    // shipped/completed/cancelled). Antes usaba estados inventados
+    // (pending/ready/delivering/delivered) que nunca matcheaban.
     const labels: Record<string, string> = {
-      pending: 'Pendiente',
+      pending_whatsapp: 'Pendiente de confirmación',
       confirmed: 'Confirmado',
-      preparing: 'En Preparación',
-      ready: 'Listo para Entrega',
-      delivering: 'En Camino',
-      delivered: 'Entregado',
+      preparing: 'En preparación',
+      shipped: 'Listo / En camino',
+      completed: 'Completado',
       cancelled: 'Cancelado',
     };
     return labels[status] || status;
   }
 
   /**
-   * Helper: Obtiene etiqueta de método de pago en español
+   * Helper: Obtiene etiqueta de método de pago en español.
+   * El enum real es cash/transfer (no cash-on-delivery/card).
    */
   private getPaymentMethodLabel(method: string): string {
     const labels: Record<string, string> = {
-      'cash-on-delivery': 'Efectivo contra entrega',
+      cash: 'Efectivo',
       transfer: 'Transferencia bancaria',
-      card: 'Tarjeta de crédito/débito',
     };
     return labels[method] || method;
   }
 
   /**
-   * Helper: Obtiene información detallada del estado
+   * Helper: información detallada del estado para el email al cliente.
+   *
+   * Claves = enum real (pending_whatsapp/confirmed/preparing/shipped/completed/
+   * cancelled). `shipped` y `completed` cambian de texto según sea retiro en
+   * tienda o envío a domicilio, que es la diferencia que le importa al cliente.
    */
-  private getStatusInfo(status: string): { label: string; color: string; icon: string; message: string } {
+  private getStatusInfo(
+    status: string,
+    deliveryMethod?: string
+  ): { label: string; color: string; icon: string; message: string } {
+    const isPickup = deliveryMethod === 'pickup';
+
     const statusMap: Record<string, { label: string; color: string; icon: string; message: string }> = {
-      pending: {
-        label: 'Pendiente',
+      pending_whatsapp: {
+        label: 'Pendiente de confirmación',
         color: '#ff9800',
         icon: '⏳',
-        message: 'Tu pedido está siendo revisado. Te confirmaremos pronto.',
+        message: 'Recibimos tu pedido. Te contactaremos por WhatsApp para confirmarlo.',
       },
       confirmed: {
         label: 'Confirmado',
         color: '#2196f3',
         icon: '✓',
-        message: 'Tu pedido ha sido confirmado y pronto comenzaremos a prepararlo.',
+        message: 'Tu pedido fue confirmado y pronto comenzaremos a prepararlo.',
       },
       preparing: {
-        label: 'En Preparación',
+        label: 'En preparación',
         color: '#9c27b0',
         icon: '👨‍🍳',
         message: 'Estamos preparando tu pedido con mucho cariño.',
       },
-      ready: {
-        label: 'Listo para Entrega',
-        color: '#4caf50',
-        icon: '📦',
-        message: 'Tu pedido está listo y pronto saldrá para entrega.',
-      },
-      delivering: {
-        label: 'En Camino',
-        color: '#00bcd4',
-        icon: '🚚',
-        message: 'Tu pedido va en camino. ¡Llegaremos pronto!',
-      },
-      delivered: {
-        label: 'Entregado',
+      shipped: isPickup
+        ? {
+            label: 'Listo para retiro',
+            color: '#4caf50',
+            icon: '📦',
+            message: 'Tu pedido está listo para retirar en la tienda.',
+          }
+        : {
+            label: 'En camino',
+            color: '#00bcd4',
+            icon: '🚚',
+            message: 'Tu pedido va en camino. ¡Llegaremos pronto!',
+          },
+      completed: {
+        label: 'Completado',
         color: '#4caf50',
         icon: '🎉',
-        message: '¡Tu pedido ha sido entregado! Esperamos que lo disfrutes.',
+        message: isPickup
+          ? '¡Tu pedido fue retirado! Gracias por tu compra.'
+          : '¡Tu pedido fue entregado! Esperamos que lo disfrutes.',
       },
       cancelled: {
         label: 'Cancelado',
         color: '#f44336',
         icon: '✗',
-        message: 'Tu pedido ha sido cancelado. Si tienes dudas, contáctanos.',
+        message: 'Tu pedido fue cancelado. Si tienes dudas, contáctanos.',
       },
     };
 
@@ -673,7 +687,7 @@ class EmailService {
         label: status,
         color: '#757575',
         icon: '•',
-        message: 'El estado de tu pedido ha cambiado.',
+        message: 'El estado de tu pedido cambió.',
       }
     );
   }
