@@ -402,9 +402,9 @@ function CatalogContent() {
 
       {/* Layout: en desktop, sidebar de filtros sticky + columna de resultados;
           en mobile, todo apilado y los filtros viven en el sheet. */}
-      <div className="lg:flex lg:gap-6 lg:px-8 lg:pt-4">
+      <div className="lg:flex lg:gap-4 lg:pt-4">
         {/* Sidebar de filtros — solo desktop */}
-        <aside className="hidden lg:sticky lg:top-4 lg:block lg:max-h-[calc(100vh-2rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
+        <aside className="hidden lg:sticky lg:top-4 lg:block lg:max-h-[calc(100vh-2rem)] lg:w-[180px] lg:shrink-0 lg:self-start lg:overflow-y-auto">
           <div className="sticky top-0 z-10 mb-1 flex items-center justify-between border-b border-border/60 bg-background py-2">
             <h2 className="text-sm font-bold uppercase tracking-wide">Filtros</h2>
             {activeFilterCount > 0 && (

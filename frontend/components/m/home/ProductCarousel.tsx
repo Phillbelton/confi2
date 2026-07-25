@@ -71,7 +71,7 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
         {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}
-            className="h-[248px] w-40 shrink-0 animate-pulse rounded-2xl bg-muted lg:h-[300px] lg:w-48"
+            className="h-[248px] w-[max(176px,calc(50vw_-_22px))] shrink-0 animate-pulse rounded-2xl bg-muted sm:w-52 lg:h-[300px] lg:w-52"
           />
         ))}
       </div>
@@ -95,25 +95,31 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
         {/* Mobile: cada card mide igual que la del catálogo (grilla 2-col,
             px-4 gap-3 → 50vw - 22px); sm/desktop conservan su ancho fijo. */}
         {products.map((p) => (
-          <div key={p._id} className="shrink-0 w-[calc(50vw_-_22px)] snap-start sm:w-40 lg:w-48">
+          <div key={p._id} className="shrink-0 w-[max(176px,calc(50vw_-_22px))] snap-start sm:w-52 lg:w-52">
             <ProductCardM product={p} />
           </div>
         ))}
       </div>
 
-      {/* Flechas (solo desktop) — opcionales, no requeridas para usar el carrusel */}
+      {/* Flechas (solo desktop) — opcionales, no requeridas para usar el carrusel.
+          Centradas sobre la IMAGEN del producto (card lg = w-52 = 208px →
+          aspect-square → centro a 6.5rem del borde superior del scroller), con
+          estética "glass": blur, aro fino y sombra suave; hover eleva y tiñe la
+          flecha con el acento de marca. */}
       <button
         type="button"
         aria-label="Anterior"
         onClick={() => scrollByDir(-1)}
         disabled={!canPrev}
         className={cn(
-          'hidden lg:grid absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 place-items-center',
-          'rounded-full bg-background/90 shadow-md backdrop-blur-sm transition-opacity',
-          'hover:bg-background disabled:opacity-0 disabled:pointer-events-none'
+          'hidden lg:grid absolute left-2 top-[6.5rem] z-10 h-11 w-11 -translate-y-1/2 place-items-center',
+          'rounded-full bg-background/80 text-foreground/70 ring-1 ring-border backdrop-blur-md',
+          'shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out',
+          'hover:scale-110 hover:bg-background hover:text-primary hover:shadow-[0_8px_22px_rgba(0,0,0,0.18)]',
+          'active:scale-95 disabled:opacity-0 disabled:pointer-events-none'
         )}
       >
-        <ChevronLeft className="h-5 w-5" />
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
       </button>
       <button
         type="button"
@@ -121,12 +127,14 @@ export function ProductCarousel({ products, isLoading }: ProductCarouselProps) {
         onClick={() => scrollByDir(1)}
         disabled={!canNext}
         className={cn(
-          'hidden lg:grid absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 place-items-center',
-          'rounded-full bg-background/90 shadow-md backdrop-blur-sm transition-opacity',
-          'hover:bg-background disabled:opacity-0 disabled:pointer-events-none'
+          'hidden lg:grid absolute right-2 top-[6.5rem] z-10 h-11 w-11 -translate-y-1/2 place-items-center',
+          'rounded-full bg-background/80 text-foreground/70 ring-1 ring-border backdrop-blur-md',
+          'shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out',
+          'hover:scale-110 hover:bg-background hover:text-primary hover:shadow-[0_8px_22px_rgba(0,0,0,0.18)]',
+          'active:scale-95 disabled:opacity-0 disabled:pointer-events-none'
         )}
       >
-        <ChevronRight className="h-5 w-5" />
+        <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
       </button>
     </div>
   );

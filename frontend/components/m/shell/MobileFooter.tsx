@@ -46,8 +46,11 @@ export function MobileFooter() {
         <div className="pointer-events-none absolute -right-12 top-12 h-48 w-48 rounded-full bg-primary/30 blur-3xl" aria-hidden />
         <div className="pointer-events-none absolute -left-16 bottom-24 h-56 w-56 rounded-full bg-accent/20 blur-3xl" aria-hidden />
 
-        {/* Contenido capeado — full-bleed background, contenido a 1440px */}
-        <div className="relative mx-auto w-full max-w-[1440px]">
+        {/* Contenido capeado — full-bleed background, contenido a 1440px.
+            El gutter lateral (xl/2xl) acompaña al del cuerpo al ~40% para que
+            las columnas del footer se alineen sin indentarse tanto como el
+            contenido. */}
+        <div className="relative mx-auto w-full max-w-[max(1440px,70vw)] lg:px-4 xl:px-5 2xl:px-8">
           {/* Fila superior: CTA WhatsApp + Trust badges */}
           <div className="px-4 pt-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-6 lg:px-8">
             {/* CTA WhatsApp */}

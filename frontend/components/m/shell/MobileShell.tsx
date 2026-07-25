@@ -34,7 +34,13 @@ export function MobileShell({
       {!hideHeader && <StickyHeader />}
 
       <main className="flex-1 pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto w-full max-w-screen-md lg:max-w-[1440px]">
+        {/*
+         * Gutter lateral del contenido. Header y footer siguen full-bleed; solo
+         * el cuerpo gana márgenes que crecen con el ancho para que en los anchos
+         * de laptop más comunes (1366/1440/1536) el contenido deje de llegar
+         * borde a borde. Las secciones full-bleed (100vw) ignoran este padding.
+         */}
+        <div className="mx-auto w-full max-w-screen-md md:max-w-[max(1440px,70vw)] md:px-6 lg:px-10 xl:px-12 2xl:px-20">
           {children}
         </div>
         {!hideFooter && <MobileFooter />}

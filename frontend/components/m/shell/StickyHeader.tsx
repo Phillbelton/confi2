@@ -171,7 +171,7 @@ export function StickyHeader() {
         <div className="hidden lg:block">
           <div
             className={cn(
-              'relative z-10 mx-auto flex w-full max-w-[1440px] items-center gap-6 px-8 transition-[padding] duration-300',
+              'relative z-10 mx-auto flex w-full max-w-[max(1440px,70vw)] items-center gap-6 px-8 lg:px-12 xl:px-[52px] 2xl:px-16 transition-[padding] duration-300',
               scrolled ? 'py-2' : 'py-4'
             )}
           >
@@ -264,7 +264,7 @@ export function StickyHeader() {
             scrolled && 'shadow-sm'
           )}
         >
-          <div className="mx-auto w-full max-w-[1440px] px-8">
+          <div className="mx-auto w-full max-w-[max(1440px,70vw)] px-8 lg:px-12 xl:px-[52px] 2xl:px-16">
             <CategoriesNavBar />
           </div>
         </div>

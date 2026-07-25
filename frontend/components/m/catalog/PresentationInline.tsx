@@ -117,10 +117,11 @@ export function PresentationInline({ product, withLadder = false }: Presentation
 
   return (
     <div className="mt-0.5">
-      {/* Selector de presentación: una sola fila CENTRADA con scroll horizontal —
-          los chips se reparten parejo y se desbordan por ambos márgenes (izq. y
-          der.) de borde a borde de la card, en vez de envolver. */}
-      <div className="-mx-2 flex justify-center gap-1 overflow-x-auto px-2 scrollbar-hide">
+      {/* Selector de presentación: una sola fila que SIEMPRE cabe. Con espacio,
+          los chips quedan a su tamaño natural y centrados (igual que en desktop);
+          cuando el card es angosto (ej. el carrusel de 160px), se encogen parejo
+          para entrar en una línea en vez de desbordarse y cortarse. */}
+      <div className="flex justify-center gap-1">
         {presentations.map((p) => {
           const active = (selPres?._id ?? '') === p._id;
           return (
@@ -130,7 +131,7 @@ export function PresentationInline({ product, withLadder = false }: Presentation
               onClick={() => setSelPresId(p._id)}
               aria-pressed={active}
               className={cn(
-                'shrink-0 rounded-full border px-2 py-1 text-[11px] font-bold whitespace-nowrap transition-colors',
+                'shrink-0 whitespace-nowrap rounded-full border px-0.5 py-1 text-center text-[11px] font-bold transition-colors sm:px-1.5',
                 chipStyle(p.type, active)
               )}
             >
