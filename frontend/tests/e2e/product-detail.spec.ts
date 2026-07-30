@@ -244,23 +244,161 @@ test.describe('Product Detail — Add to Cart', () => {
 });
 
 // ============================================================================
+// PRODUCT DETAIL — Scroll al entrar
+// ============================================================================
+
+test.describe('Product Detail — Scroll al entrar', () => {
+  test('entrar a la ficha desde el catálogo scrolleado parte desde arriba', async ({ page }) => {
+    test.slow();
+    const hasProducts = await goToCatalog(page);
+    await requireProducts(page, hasProducts);
+
+    // Bajar hasta una card lejos del tope y entrar desde ahí.
+    const link = page.locator('[data-testid="product-card"] a').last();
+    await link.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    const yEnCatalogo = await page.evaluate(() => Math.round(window.scrollY));
+    expect(yEnCatalogo, 'el catálogo tiene que quedar scrolleado para que el test valga').toBeGreaterThan(500);
+
+    await link.click();
+    await page.waitForURL('**/productos/**');
+
+    // La ficha se renderiza en el cliente y crece en varios pasos (skeleton →
+    // contenido → carruseles de relacionados). El scroll tiene que quedar en el
+    // tope DESPUÉS de todos esos cambios de alto, no solo al principio: con
+    // `scroll-behavior: smooth` en html, el reset de Next quedaba a mitad de
+    // animación y la vista se clavaba lejos del tope (medido: y=119).
+    await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1200);
+
+    expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+  });
+});
+
+// ============================================================================
+// PRODUCT DETAIL — Orden de presentaciones
+// ============================================================================
+
+/**
+ * Orden canónico: de la presentación más chica a la más grande. Los
+ * subconjuntos son válidos (unidad+display, display+caja), lo que nunca puede
+ * pasar es un salto atrás — "Display · Unidad · Embalaje".
+ *
+ * Importa porque ~1/3 del catálogo está guardado en la DB como
+ * `display > unidad > embalaje` (ahí el display es la presentación principal),
+ * así que el orden de lectura lo tiene que imponer la UI, no el array.
+ */
+const PRES_ORDER = ['unidad', 'cantidadMinima', 'display', 'embalaje'];
+
+function expectCanonicalOrder(types: string[]) {
+  const ranks = types.map((t) => PRES_ORDER.indexOf(t));
+  expect(ranks, `tipos sin rango conocido: ${types.join(',')}`).not.toContain(-1);
+  const sorted = [...ranks].sort((a, b) => a - b);
+  expect(ranks, `orden no canónico: ${types.join(' > ')}`).toEqual(sorted);
+}
+
+test.describe('Product Detail — Orden de presentaciones', () => {
+  test('los chips de la ficha van de la presentación más chica a la más grande', async ({
+    page,
+  }) => {
+    test.slow();
+    const hasProducts = await goToCatalog(page);
+    await requireProducts(page, hasProducts);
+
+    // Se recorren varias fichas: solo las multi-presentación tienen chips, y el
+    // orden guardado en la DB varía producto a producto.
+    const hrefs = await page
+      .locator('[data-testid="product-card"] a')
+      .evaluateAll((els) =>
+        Array.from(
+          new Set(els.map((e) => (e as HTMLAnchorElement).getAttribute('href') || ''))
+        ).slice(0, 6)
+      );
+    expect(hrefs.length).toBeGreaterThan(0);
+
+    let conChips = 0;
+    for (const href of hrefs) {
+      await page.goto(href);
+      await page.waitForLoadState('networkidle');
+      // Scopeado al selector de LA ficha: los carruseles de relacionados traen
+      // sus propios chips y aplanarlos mezcla las presentaciones de N productos.
+      const types = await page
+        .locator('[data-testid="pdp-presentations"] button[data-pres-type]')
+        .evaluateAll((els) => els.map((e) => e.getAttribute('data-pres-type') || ''));
+      if (types.length < 2) continue;
+      conChips++;
+      expectCanonicalOrder(types);
+    }
+    expect(conChips, 'ninguna ficha visitada tenía varias presentaciones').toBeGreaterThan(0);
+  });
+
+  test('los chips de cada tarjeta del catálogo también respetan el orden', async ({ page }) => {
+    test.slow();
+    // La card inline (variantes B/C del setting) es la que muestra chips; con la
+    // variante D la señal es texto y el detalle vive en el bottom-sheet.
+    await page.goto('/productos?presvar=B');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible({
+      timeout: 15000,
+    });
+
+    const cards = page.locator('[data-testid="product-card"]');
+    const n = Math.min(await cards.count(), 12);
+    let conChips = 0;
+    for (let i = 0; i < n; i++) {
+      const types = await cards
+        .nth(i)
+        .locator('button[data-pres-type]')
+        .evaluateAll((els) => els.map((e) => e.getAttribute('data-pres-type') || ''));
+      if (types.length < 2) continue;
+      conChips++;
+      expectCanonicalOrder(types);
+    }
+    expect(conChips, 'ninguna tarjeta visible tenía varias presentaciones').toBeGreaterThan(0);
+  });
+});
+
+// ============================================================================
 // PRODUCT DETAIL — Related Products
 // ============================================================================
 
 test.describe('Product Detail — Related Products', () => {
-  test.skip('shows related products section', async ({ page }) => {
+  test('shows related carousels with clickable cards', async ({ page }) => {
     test.slow();
     const hasProducts = await goToCatalog(page);
     await requireProducts(page, hasProducts);
     const firstLink = page.locator('[data-testid="product-card"] a').first();
+    const currentHref = await firstLink.getAttribute('href');
     await firstLink.click();
     await page.waitForURL('**/productos/**', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
 
-    // Section heading says "Productos relacionados"
-    const relatedSection = page.getByText('Productos relacionados');
-    if (await relatedSection.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await expect(relatedSection).toBeVisible();
+    // Los títulos son contextuales ("Más de Gomitas", "Más de Mabu") con
+    // "Lo más visto" como respaldo, así que se afirma sobre el patrón.
+    const relatedHeading = page
+      .getByRole('heading', { level: 2 })
+      .filter({ hasText: /Más de |Lo más visto/ })
+      .first();
+    await expect(relatedHeading).toBeVisible({ timeout: 10000 });
+
+    // Y trae tarjetas reales, no un carrusel en skeleton. Assertion web-first
+    // (reintenta): los relacionados se piden en el cliente después de hidratar,
+    // así que `networkidle` no garantiza que ya estén.
+    const relatedCards = page.locator('[data-testid="product-card"]');
+    await expect(relatedCards.first()).toBeVisible({ timeout: 15000 });
+
+    // El producto que se está viendo no se recomienda a sí mismo. Se compara el
+    // pathname exacto: con `href^=` un slug que es prefijo de otro
+    // ("busters-arandano" vs "busters-arandano-frutilla") daba falso positivo.
+    if (currentHref) {
+      const ownPath = currentHref.split('?')[0];
+      const relatedPaths = await relatedCards
+        .locator('a')
+        .evaluateAll((els) =>
+          els.map((e) => ((e as HTMLAnchorElement).getAttribute('href') || '').split('?')[0])
+        );
+      expect(relatedPaths).not.toContain(ownPath);
     }
   });
 });

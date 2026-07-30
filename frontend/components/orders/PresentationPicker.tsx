@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { productService } from '@/services/products';
+import { orderedPresentations } from '@/lib/discountCalculator';
 import type { Presentation, SaleUnitType } from '@/types';
 
 const TYPE_LABEL: Record<SaleUnitType, string> = {
@@ -57,7 +58,11 @@ export function PresentationPicker({
     staleTime: 60_000,
   });
 
-  const presentations: Presentation[] = product?.product?.presentaciones ?? [];
+  // Mismo orden canónico que el storefront (unidad → display → embalaje), para
+  // que quien atiende lea la lista igual que la ve el cliente.
+  const presentations: Presentation[] = product?.product
+    ? orderedPresentations(product.product)
+    : [];
 
   // Una sola (o el producto no migró): no hay nada que elegir.
   if (!isLoading && presentations.length <= 1) {

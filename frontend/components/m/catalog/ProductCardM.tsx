@@ -14,11 +14,13 @@ import {
   hasActiveFixedDiscount,
   isPackagedSale,
   minQuantity,
+  orderedPresentations,
   priceFrom,
   pricePerAtomicUnit,
   presentationPriceSuffix,
   presTypeLabel,
   quantityStep,
+  saleUnitNoun,
 } from '@/lib/discountCalculator';
 import { SaleUnitBadge } from './SaleUnitBadge';
 import { PresentationQuickSheet } from './PresentationQuickSheet';
@@ -70,10 +72,11 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const ppu = effectiveUnitPrice(product, Math.max(inCart, minQ, 1));
   // Con varias presentaciones, el "desde" es el menor precio entre ellas.
   const multiPres = (product.presentaciones?.length ?? 0) > 1;
-  // Señal de presentaciones disponibles (chips terse, sin factor ni precio).
+  // Señal de presentaciones disponibles (chips terse, sin factor ni precio),
+  // siempre de la más chica a la más grande.
   const presSignal = multiPres
     ? Array.from(
-        new Set((product.presentaciones ?? []).map((p) => presTypeLabel(p.type)))
+        new Set(orderedPresentations(product).map((p) => presTypeLabel(p.type)))
       ).join(' · ')
     : '';
   const shownPrice = multiPres ? priceFrom(product) : ppu;
@@ -91,17 +94,8 @@ export function ProductCardM({ product, className, horizontal }: ProductCardMPro
   const firstTier = getDisplayTiers(product)[0];
   const tierShownPrice = firstTier?.pricePerUnit ?? 0;
   const tierShownQty = firstTier?.minQuantity ?? 0;
-  const tierUnitLabel = (() => {
-    if (!firstTier) return '';
-    switch (product.saleUnit.type) {
-      case 'display':
-        return tierShownQty === 1 ? 'display' : 'displays';
-      case 'embalaje':
-        return tierShownQty === 1 ? 'caja' : 'cajas';
-      default:
-        return tierShownQty === 1 ? 'unidad' : 'unidades';
-    }
-  })();
+  // `saleUnitNoun` es la fuente única compartida con la ficha de producto.
+  const tierUnitLabel = firstTier ? saleUnitNoun(product, tierShownQty) : '';
 
   // Pasar el contexto del catálogo origen al detalle como ?from=
   // (preserva categoría / subcategoría / colección para los breadcrumbs).

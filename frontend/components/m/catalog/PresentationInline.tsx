@@ -10,6 +10,7 @@ import {
   getPrincipal,
   isPackagedSale,
   minQuantity,
+  orderedPresentations,
   presTypeLabel,
   pricePerAtomicUnit,
   quantityStep,
@@ -73,7 +74,9 @@ export function PresentationInline({ product, withLadder = false }: Presentation
   const updateQuantity = useCartStoreM((s) => s.updateQuantity);
   const items = useCartStoreM((s) => s.items);
 
-  const presentations = product.presentaciones ?? [];
+  // Orden canónico (unidad → display → embalaje). El chip preseleccionado sigue
+  // siendo el principal del producto, que no depende de la posición.
+  const presentations = orderedPresentations(product);
   const principalId = getPrincipal(product)?._id ?? '';
   const [selPresId, setSelPresId] = useState<string>(principalId);
   const [ladderOpen, setLadderOpen] = useState(false);
@@ -130,6 +133,8 @@ export function PresentationInline({ product, withLadder = false }: Presentation
               type="button"
               onClick={() => setSelPresId(p._id)}
               aria-pressed={active}
+              // Ancla del orden canónico para e2e (el tipo, no el label libre).
+              data-pres-type={p.type}
               className={cn(
                 'shrink-0 whitespace-nowrap rounded-full border px-0.5 py-1 text-center text-[11px] font-bold transition-colors sm:px-1.5',
                 chipStyle(p.type, active)

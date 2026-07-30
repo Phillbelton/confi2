@@ -1,9 +1,11 @@
 'use client';
 
 import { type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { StickyHeader } from './StickyHeader';
 import { CartFab } from './CartFab';
 import { MobileFooter } from './MobileFooter';
+import { isProductDetailPath } from '@/lib/utils';
 
 interface MobileShellProps {
   children: ReactNode;
@@ -29,6 +31,7 @@ export function MobileShell({
   hideFab,
   hideFooter,
 }: MobileShellProps) {
+  const pathname = usePathname();
   return (
     <div className="theme-catalog flex min-h-dvh flex-col overflow-x-clip bg-background">
       {!hideHeader && <StickyHeader />}
@@ -43,7 +46,9 @@ export function MobileShell({
         <div className="mx-auto w-full max-w-screen-md md:max-w-[max(1440px,70vw)] md:px-6 lg:px-10 xl:px-12 2xl:px-20">
           {children}
         </div>
-        {!hideFooter && <MobileFooter />}
+        {!hideFooter && (
+          <MobileFooter stickyBarClearance={isProductDetailPath(pathname)} />
+        )}
       </main>
 
       {!hideFab && <CartFab />}
