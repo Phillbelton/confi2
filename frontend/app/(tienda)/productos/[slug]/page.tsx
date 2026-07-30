@@ -2,15 +2,16 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { buildSrcSet, SIZESET } from '@/lib/imageSrcset';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Minus, Check } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, Check, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProductBySlug } from '@/hooks/useProducts';
 import { useCartStoreM, cartLineId } from '@/store/m/useCartStoreM';
 import { showCartToast } from '@/components/m/shell/cart-toast-m';
 import { SaleUnitBadge } from '@/components/m/catalog/SaleUnitBadge';
 import { Breadcrumbs } from '@/components/m/detail/Breadcrumbs';
+import { ProductGalleryM } from '@/components/m/detail/ProductGalleryM';
+import { RelatedProducts } from '@/components/m/detail/RelatedProducts';
 import { useProductBreadcrumbs } from '@/hooks/useCatalogBreadcrumbs';
 import {
   effectiveUnitPrice,
@@ -19,12 +20,16 @@ import {
   getPrincipal,
   isPackagedSale,
   minQuantity,
+  orderedPresentations,
   presLabel,
   presentationPriceSuffix,
+  pricePerSaleUnitSuffix,
   quantityStep,
+  saleUnitNoun,
   getFixedDiscountBadge,
   hasActiveFixedDiscount,
 } from '@/lib/discountCalculator';
+import { businessWhatsappHref } from '@/lib/whatsapp';
 import { cn } from '@/lib/utils';
 import type { Brand, Category, Format, Flavor, Product } from '@/types';
 
@@ -57,7 +62,6 @@ export default function ProductDetailPage() {
   const items = useCartStoreM((s) => s.items);
 
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedImage, setSelectedImage] = useState<number>(0);
   const [selPresId, setSelPresId] = useState<string>(''); // '' = presentación principal
   // Feedback transitorio del botón tras agregar ("¡Agregado!").
   const [justAdded, setJustAdded] = useState(false);
@@ -96,7 +100,9 @@ export default function ProductDetailPage() {
   // Presentación elegida (selPresId '' = principal). El `viewProduct` es el
   // producto con los campos de precio/presentación de la elegida → todas las
   // funciones de precio existentes lo usan sin cambios.
-  const presentations = product.presentaciones ?? [];
+  // Mismo orden canónico que la card del catálogo (unidad → display → embalaje):
+  // el chip preseleccionado lo sigue definiendo `getPrincipal`, no la posición.
+  const presentations = orderedPresentations(product);
   const selPres = presentations.find((p) => p._id === selPresId) ?? getPrincipal(product);
   const viewProduct: Product = selPres
     ? {
@@ -120,6 +126,16 @@ export default function ProductDetailPage() {
   const showFixedBadge = hasActiveFixedDiscount(viewProduct);
   const fixedBadgeText = showFixedBadge ? getFixedDiscountBadge(viewProduct) : '';
   const isPackaged = isPackagedSale(viewProduct);
+  // Sufijo y sustantivo de la unidad de venta ("c/display", "3 displays"):
+  // los montos son por presentación, no por unidad atómica.
+  const perUnitSuffix = pricePerSaleUnitSuffix(viewProduct);
+  // Fila base de la tabla de tramos. Con el primer tramo en 2 no corresponde
+  // "1 a 1": queda en singular.
+  const baseRangeCount = tiers.length > 0 ? tiers[0].minQuantity - 1 : 1;
+  const baseRangeLabel =
+    baseRangeCount <= 1
+      ? `1 ${saleUnitNoun(viewProduct, 1)}`
+      : `1 a ${baseRangeCount} ${saleUnitNoun(viewProduct, baseRangeCount)}`;
   // Precio principal: ya está en precio de presentación, no se multiplica.
   const headlinePrice = ppu;
   const headlineCompareAt = viewProduct.unitPrice;
@@ -165,6 +181,19 @@ export default function ProductDetailPage() {
     'Agregar al carrito'
   );
 
+  // Mensaje pre-cargado del botón de WhatsApp. La URL se arma con la env
+  // (horneada en el build) y no con `window.location`, para que el href sea
+  // idéntico en el HTML del servidor y en la hidratación.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+  const waMessage = [
+    `¡Hola! Quiero consultar por ${product.name}`,
+    product.sku ? `Código: ${product.sku}` : '',
+    presentations.length > 1 && selPres ? `Presentación: ${presLabel(selPres)}` : '',
+    siteUrl ? `${siteUrl}/productos/${product.slug}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   const brandName = typeof product.brand === 'object' ? (product.brand as Brand)?.name : '';
   const formatLabel = typeof product.format === 'object' ? (product.format as Format)?.label : '';
   const flavorName = (() => {
@@ -182,78 +211,37 @@ export default function ProductDetailPage() {
         <Breadcrumbs items={breadcrumbs} className="border-b border-border/60 bg-muted/30 lg:px-4" />
       )}
 
-      <div className="lg:grid lg:grid-cols-[55%_1fr] lg:gap-8 lg:px-8 lg:pt-6">
+      {/* Galería acotada a 480px: antes la columna era 55% del ancho y con
+          `aspect-square` daba una imagen de 699×699 en 1440×900 (78% del alto
+          de pantalla), que empujaba precio y CTA fuera de la primera vista. */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:items-start lg:gap-10 lg:px-8 lg:pt-6">
         {/* Galería */}
-        <div className="lg:sticky lg:top-32 lg:self-start">
-          <div className="relative aspect-square overflow-hidden bg-muted lg:rounded-2xl">
-            {product.images?.[selectedImage] ? (() => {
-              const attrs = buildSrcSet(product.images[selectedImage], SIZESET.card);
-              return (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={attrs.src}
-                  srcSet={attrs.srcSet}
-                  alt={product.name}
-                  sizes="(max-width: 1024px) 100vw, 55vw"
-                  className="absolute inset-0 h-full w-full object-cover"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-              );
-            })() : (
-              <div className="grid h-full place-items-center text-6xl">🍭</div>
-            )}
+        <div className="lg:sticky lg:top-32">
+          <ProductGalleryM images={product.images ?? []} alt={product.name}>
             {showFixedBadge && (
               <span className="absolute left-3 top-3 rounded-md bg-orange-500 px-2.5 py-1 text-sm font-bold uppercase text-white shadow">
                 {fixedBadgeText}
               </span>
             )}
             <SaleUnitBadge saleUnit={viewProduct.saleUnit} className="bottom-3" />
-          </div>
-
-          {/* Miniaturas — solo si hay más de una imagen */}
-          {product.images && product.images.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto px-4 py-3 lg:px-0">
-              {product.images.map((img, i) => {
-                // `card`, no `thumb`: las imágenes de producto solo existen en
-                // w400/w800/w1200 — un srcset con w200/w600 es 404 en local.
-                const thumb = buildSrcSet(img, SIZESET.card);
-                const isActive = i === selectedImage;
-                return (
-                  <button
-                    key={img}
-                    type="button"
-                    onClick={() => setSelectedImage(i)}
-                    aria-label={`Ver imagen ${i + 1}`}
-                    aria-current={isActive}
-                    className={`relative aspect-square h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
-                      isActive ? 'border-primary' : 'border-transparent hover:border-border'
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={thumb.src}
-                      srcSet={thumb.srcSet}
-                      alt={`${product.name} ${i + 1}`}
-                      sizes="64px"
-                      className="absolute inset-0 h-full w-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          </ProductGalleryM>
         </div>
 
         {/* Info */}
-        <div className="px-4 pb-32 pt-4 lg:px-0 lg:pb-12 lg:pt-0">
-          {brandName && (
-            <p className="text-[11px] font-bold uppercase tracking-widest text-primary lg:text-sm">
-              {brandName}
-            </p>
-          )}
+        <div className="px-4 pb-8 pt-4 lg:px-0 lg:pb-12 lg:pt-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {brandName && (
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary lg:text-sm">
+                {brandName}
+              </p>
+            )}
+            {/* El SKU es la identidad que usa el cliente mayorista al pedir. */}
+            {product.sku && (
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground lg:text-[11px]">
+                {product.sku}
+              </span>
+            )}
+          </div>
           <h1 className="mt-1 font-display text-xl font-bold leading-tight lg:text-3xl">
             {product.name}
           </h1>
@@ -269,13 +257,17 @@ export default function ProductDetailPage() {
               <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
                 Elige presentación
               </p>
-              <div className="flex gap-2 lg:flex-wrap">
+              <div className="flex gap-2 lg:flex-wrap" data-testid="pdp-presentations">
                 {presentations.map((p) => {
                   const active = (selPres?._id ?? '') === p._id;
                   return (
                     <button
                       key={p._id}
                       type="button"
+                      aria-pressed={active}
+                      // Ancla del orden canónico para e2e: el label visible es
+                      // libre ("Caja de 72 un."), el tipo no.
+                      data-pres-type={p.type}
                       onClick={() => {
                         setSelPresId(p._id);
                         // La cantidad es POR presentación: cambiar de chip la
@@ -319,26 +311,30 @@ export default function ProductDetailPage() {
             </p>
           )}
 
-          {/* Tabla de tramos */}
+          {/* Tabla de tramos. ⚠️ Las cantidades y los precios son POR
+              PRESENTACIÓN: en un display de 12, "3" son 3 displays y el precio
+              es por display. Decía "unidades" y "/u" fijo, o sea mostraba el
+              precio del display como si fuera el de la unidad suelta. */}
           {tiers.length > 0 && (
             <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-primary">
                 Mejor precio por mayor 🎉
               </p>
               <ul className="mt-2 space-y-1 text-xs">
-                <li className="flex justify-between">
-                  <span>1 a {tiers[0].minQuantity - 1} unidades</span>
-                  <span className="font-bold tabular-nums">
-                    ${Math.round(basePrice).toLocaleString('es-CL')}/u
+                <li className="flex justify-between gap-2">
+                  <span>{baseRangeLabel}</span>
+                  <span className="shrink-0 font-bold tabular-nums">
+                    ${Math.round(basePrice).toLocaleString('es-CL')} {perUnitSuffix}
                   </span>
                 </li>
                 {tiers.map((t, i) => (
-                  <li key={i} className="flex justify-between">
+                  <li key={i} className="flex justify-between gap-2">
                     <span>
-                      Desde {t.minQuantity} u{t.label ? ` (${t.label})` : ''}
+                      Desde {t.minQuantity} {saleUnitNoun(viewProduct, t.minQuantity)}
+                      {t.label ? ` (${t.label})` : ''}
                     </span>
-                    <span className="font-bold text-primary tabular-nums">
-                      ${Math.round(t.pricePerUnit).toLocaleString('es-CL')}/u
+                    <span className="shrink-0 font-bold text-primary tabular-nums">
+                      ${Math.round(t.pricePerUnit).toLocaleString('es-CL')} {perUnitSuffix}
                     </span>
                   </li>
                 ))}
@@ -350,9 +346,14 @@ export default function ProductDetailPage() {
           <div className="mt-5">
             <p className="text-sm font-semibold mb-2">
               Cantidad{' '}
-              <span className="text-xs text-muted-foreground">
-                (mín. {minQ}{step > 1 ? `, de ${step} en ${step}` : ''})
-              </span>
+              {/* Solo cuando dice algo: con mín. 1 y paso 1 (el caso normal) el
+                  paréntesis era ruido en todas las fichas. */}
+              {(minQ > 1 || step > 1) && (
+                <span className="text-xs text-muted-foreground">
+                  (mín. {minQ}
+                  {step > 1 ? `, de ${step} en ${step}` : ''})
+                </span>
+              )}
               {inCart > 0 && (
                 <span
                   key={inCart}
@@ -393,21 +394,38 @@ export default function ProductDetailPage() {
             <Button size="lg" className="mt-4 w-full rounded-full" onClick={handleAdd}>
               {addBtnContent}
             </Button>
+
+            {/* WhatsApp es el canal real del negocio: dudas de stock, precios
+                por volumen mayores al último tramo, despacho. El mensaje lleva
+                producto, SKU y presentación elegida para no empezar de cero. */}
+            <a
+              href={businessWhatsappHref(waMessage)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Consultar por WhatsApp
+            </a>
           </div>
 
           {/* Descripción */}
-          <div className="mt-6 prose-sm">
-            <h2 className="text-sm font-semibold mb-1">Descripción</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {product.description}
-            </p>
-          </div>
+          {product.description?.trim() && (
+            <div className="mt-6">
+              <h2 className="mb-1 text-sm font-semibold">Descripción</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {product.description}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
+      <RelatedProducts product={product} />
+
       {/* CTA sticky móvil: total de la selección + agregar sin scrollear de
           vuelta. Solo <lg (en desktop la columna de info queda a la vista).
-          El pb-32 del contenedor de info reserva el espacio que tapa la barra. */}
+          El colchón de cierre lo pone el footer vía `stickyBarClearance`. */}
       <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 px-4 pt-2.5 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur supports-[backdrop-filter]:bg-card/85 pb-[max(0.625rem,env(safe-area-inset-bottom))] lg:hidden">
         <div className="mx-auto flex w-full max-w-screen-md items-center gap-3">
           <div className="min-w-0 shrink-0">

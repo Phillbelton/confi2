@@ -401,10 +401,15 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
-  }
+  /* ⚠️ NO poner `scroll-behavior: smooth` en html.
+     El App Router resetea el scroll al navegar, y con smooth ese reset pasa a
+     ser una animación: como la ficha de producto se renderiza en el cliente, el
+     alto del documento cambia varias veces mientras la animación corre (skeleton
+     → contenido → carruseles de relacionados), la animación se aborta a mitad y
+     la vista queda clavada lejos del tope (medido: entrar desde y=5271 dejaba la
+     ficha en y=119 para siempre). Donde SÍ se quiere scroll suave, se pasa
+     `behavior: 'smooth'` explícito en el scrollTo/scrollIntoView de ese lugar
+     (galería del PDP, rail del form de productos). */
 
   /* Better focus visibility */
   *:focus-visible {

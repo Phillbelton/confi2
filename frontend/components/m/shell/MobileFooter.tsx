@@ -14,6 +14,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { businessWhatsappHref, formatBusinessWhatsapp } from '@/lib/whatsapp';
+import { cn } from '@/lib/utils';
 import { SocialLinks } from '@/components/layout/SocialLinks';
 
 const TRUST_BADGES = [
@@ -36,7 +37,16 @@ const LINKS = {
   ],
 };
 
-export function MobileFooter() {
+interface MobileFooterProps {
+  /**
+   * Suma colchón al cierre del footer para páginas con barra fija al borde
+   * inferior en móvil (la CTA de la ficha de producto). Va dentro de la banda
+   * de color, no debajo, para no abrir una franja de fondo al final.
+   */
+  stickyBarClearance?: boolean;
+}
+
+export function MobileFooter({ stickyBarClearance }: MobileFooterProps = {}) {
   const whatsappHref = businessWhatsappHref();
   const whatsappDisplay = formatBusinessWhatsapp();
   return (
@@ -46,8 +56,11 @@ export function MobileFooter() {
         <div className="pointer-events-none absolute -right-12 top-12 h-48 w-48 rounded-full bg-primary/30 blur-3xl" aria-hidden />
         <div className="pointer-events-none absolute -left-16 bottom-24 h-56 w-56 rounded-full bg-accent/20 blur-3xl" aria-hidden />
 
-        {/* Contenido capeado — full-bleed background, contenido a 1440px */}
-        <div className="relative mx-auto w-full max-w-[1440px]">
+        {/* Contenido capeado — full-bleed background, contenido a 1440px.
+            El gutter lateral (xl/2xl) acompaña al del cuerpo al ~40% para que
+            las columnas del footer se alineen sin indentarse tanto como el
+            contenido. */}
+        <div className="relative mx-auto w-full max-w-[max(1440px,70vw)] lg:px-4 xl:px-5 2xl:px-8">
           {/* Fila superior: CTA WhatsApp + Trust badges */}
           <div className="px-4 pt-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-6 lg:px-8">
             {/* CTA WhatsApp */}
@@ -209,7 +222,12 @@ export function MobileFooter() {
           </div>
 
           {/* Bottom bar */}
-          <div className="relative mt-8 flex flex-col items-center gap-1 border-t border-white/10 px-4 py-5 text-center lg:flex-row lg:justify-between lg:gap-4 lg:px-8 lg:text-left">
+          <div
+            className={cn(
+              'relative mt-8 flex flex-col items-center gap-1 border-t border-white/10 px-4 py-5 text-center lg:flex-row lg:justify-between lg:gap-4 lg:px-8 lg:text-left',
+              stickyBarClearance && 'pb-24 lg:pb-5'
+            )}
+          >
             <p className="inline-flex items-center justify-center gap-1.5 text-[11px] text-white/60">
               Hecho con
               <Heart className="h-3 w-3 fill-accent text-accent" />

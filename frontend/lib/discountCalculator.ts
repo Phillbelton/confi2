@@ -210,6 +210,39 @@ export function getPrincipal(product: Product): Presentation | undefined {
 }
 
 /**
+ * Orden en que se le muestran las presentaciones al cliente: de la más chica a
+ * la más grande. Los subconjuntos salen solos (unidad+display, display+caja…),
+ * lo que nunca puede pasar es leer "Display · Unidad · Embalaje".
+ */
+const PRES_TYPE_RANK: Record<Presentation['type'], number> = {
+  unidad: 0,
+  cantidadMinima: 1,
+  display: 2,
+  embalaje: 3,
+};
+
+/**
+ * Presentaciones en orden canónico (unidad → display → embalaje).
+ *
+ * El array de la DB viene en el orden con que se cargó el producto, donde el
+ * índice 0 es la presentación principal: un tercio del catálogo está guardado
+ * como `display > unidad > embalaje` porque su principal es el display. Ese es
+ * un dato de negocio válido, así que **no** se reordena la data: se ordena una
+ * COPIA al renderizar. La presentación por defecto sigue saliendo de
+ * `getPrincipal` (lee el flag `principal`, no la posición), así que el chip
+ * preseleccionado no cambia — solo cambia cómo se leen de izquierda a derecha.
+ */
+export function orderedPresentations(product: Product): Presentation[] {
+  const list = product.presentaciones ?? [];
+  return [...list].sort((a, b) => {
+    const byType = (PRES_TYPE_RANK[a.type] ?? 99) - (PRES_TYPE_RANK[b.type] ?? 99);
+    // Dos del mismo tipo (ej. dos displays de distinto factor): la más chica
+    // primero, para que la progresión de tamaño se mantenga.
+    return byType !== 0 ? byType : (a.quantity ?? 0) - (b.quantity ?? 0);
+  });
+}
+
+/**
  * Resuelve la presentación a usar para precios: la de `presentationId`, o la
  * principal, o —productos sin `presentaciones`— el propio producto, que es
  * `Priceable` por sus campos legacy denormalizados.
@@ -250,5 +283,39 @@ export function presTypeLabel(type: Presentation['type']): string {
       return 'Embalaje';
     default:
       return 'Mínimo';
+  }
+}
+
+/**
+ * Sustantivo de la unidad de venta para textos con cantidad ("3 displays",
+ * "1 a 2 cajas").
+ *
+ * ⚠️ Los precios (base y tramos) son POR PRESENTACIÓN, no por unidad atómica:
+ * decir "unidades" cuando la presentación es un display o una caja miente el
+ * precio (un display de 12 a $23.074 no son $23.074 la galleta). Fuente única
+ * de la ficha y de la card del catálogo.
+ */
+export function saleUnitNoun(product: Product, count = 1): string {
+  const plural = count !== 1;
+  switch (product.saleUnit?.type) {
+    case 'display':
+      return plural ? 'displays' : 'display';
+    case 'embalaje':
+      return plural ? 'cajas' : 'caja';
+    default:
+      // `cantidadMinima` también vende unidades atómicas (con mínimo).
+      return plural ? 'unidades' : 'unidad';
+  }
+}
+
+/** Sufijo del precio por presentación: "c/u", "c/display", "c/caja". */
+export function pricePerSaleUnitSuffix(product: Product): string {
+  switch (product.saleUnit?.type) {
+    case 'display':
+      return 'c/display';
+    case 'embalaje':
+      return 'c/caja';
+    default:
+      return 'c/u';
   }
 }

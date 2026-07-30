@@ -351,17 +351,17 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
         type="button"
         onClick={() => goTo(active - 1)}
         aria-label="Anterior"
-        className="absolute left-2 top-1/2 z-20 hidden -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-gray-900 shadow-md backdrop-blur transition hover:scale-105 lg:flex"
+        className="absolute left-2 top-1/2 z-20 hidden lg:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-background/85 text-foreground/70 ring-1 ring-border backdrop-blur-md shadow-[0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-200 ease-out hover:scale-110 hover:bg-background hover:text-primary hover:shadow-[0_8px_22px_rgba(0,0,0,0.2)] active:scale-95"
       >
-        <ChevronLeft className="h-5 w-5" />
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
       </button>
       <button
         type="button"
         onClick={() => goTo(active + 1)}
         aria-label="Siguiente"
-        className="absolute right-2 top-1/2 z-20 hidden -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-gray-900 shadow-md backdrop-blur transition hover:scale-105 lg:flex"
+        className="absolute right-2 top-1/2 z-20 hidden lg:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-background/85 text-foreground/70 ring-1 ring-border backdrop-blur-md shadow-[0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-200 ease-out hover:scale-110 hover:bg-background hover:text-primary hover:shadow-[0_8px_22px_rgba(0,0,0,0.2)] active:scale-95"
       >
-        <ChevronRight className="h-5 w-5" />
+        <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
       </button>
 
       {/* Dots */}

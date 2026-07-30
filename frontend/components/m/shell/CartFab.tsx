@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ShoppingBag } from 'lucide-react';
 import { useCartStoreM } from '@/store/m/useCartStoreM';
-import { cn } from '@/lib/utils';
+import { cn, isProductDetailPath } from '@/lib/utils';
 
 export function CartFab() {
   const itemCount = useCartStoreM((s) => s.itemCount);
@@ -13,7 +13,7 @@ export function CartFab() {
   const pathname = usePathname();
   // En la ficha de producto móvil la CTA sticky ocupa el borde inferior →
   // el FAB se oculta en <lg para no taparla (en desktop no hay barra).
-  const isPdp = /^\/productos\/[^/]+$/.test(pathname ?? '');
+  const isPdp = isProductDetailPath(pathname);
   // Igual que el badge del header: el conteo ya persistido no bumpea al primer
   // paint; sí bumpea ante cambios reales (feedback de "se agregó al carro").
   const [initialItemCount] = useState(itemCount);

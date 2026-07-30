@@ -44,6 +44,21 @@ export function useInfiniteProducts(params?: Omit<ProductQueryParams, 'page'>) {
   });
 }
 
+/**
+ * Igual que `useProducts` pero desactivable. Los carruseles de relacionados
+ * arman la query desde la categoría/marca del producto y esos campos pueden
+ * faltar: con `params` en undefined, axios los omitiría y la request traería
+ * el catálogo completo en vez de no correr.
+ */
+export function useRelatedProducts(params?: ProductQueryParams) {
+  return useQuery({
+    queryKey: ['products', 'related', params],
+    queryFn: () => productService.getProducts(params!),
+    enabled: !!params,
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useFeaturedProducts(limit = 8) {
   return useQuery({
     queryKey: ['products', 'featured', limit],

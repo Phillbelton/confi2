@@ -18,6 +18,7 @@ import {
   getPrincipal,
   isPackagedSale,
   minQuantity,
+  orderedPresentations,
   presLabel,
   presentationPriceSuffix,
   quantityStep,
@@ -42,7 +43,9 @@ export function PresentationQuickSheet({ product, className }: PresentationQuick
   const items = useCartStoreM((s) => s.items);
   const [open, setOpen] = useState(false);
 
-  const presentations = product.presentaciones ?? [];
+  // Orden canónico (unidad → display → embalaje); el preseleccionado sigue
+  // siendo el principal, que no depende de la posición en el array.
+  const presentations = orderedPresentations(product);
   const principalId = getPrincipal(product)?._id ?? '';
   const [selPresId, setSelPresId] = useState<string>(principalId);
   const [quantity, setQuantity] = useState<number>(1);
@@ -145,6 +148,8 @@ export function PresentationQuickSheet({ product, className }: PresentationQuick
                     key={p._id}
                     type="button"
                     onClick={() => choosePres(p._id)}
+                    // Ancla del orden canónico para e2e (el tipo, no el label).
+                    data-pres-type={p.type}
                     className={cn(
                       'rounded-xl border px-3 py-2 text-left transition-all',
                       active
