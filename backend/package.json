@@ -19,6 +19,7 @@
     "convert:bicom": "ts-node -r tsconfig-paths/register src/scripts/convertBicomToQuelita.ts",
     "gen:template": "ts-node -r tsconfig-paths/register src/scripts/generateQuelitaTemplate.ts",
     "fill:template": "ts-node -r tsconfig-paths/register src/scripts/fillTemplateFromCurado.ts",
+    "complete:presentations": "ts-node -r tsconfig-paths/register src/scripts/completePresentations.ts",
     "seed:users": "ts-node -r tsconfig-paths/register src/scripts/seedUsers.ts",
     "seed:categories": "ts-node -r tsconfig-paths/register src/scripts/seedCategories.ts",
     "seed:brands": "ts-node -r tsconfig-paths/register src/scripts/seedBrands.ts",
