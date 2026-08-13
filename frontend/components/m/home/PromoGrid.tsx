@@ -418,7 +418,10 @@ export function PromoGrid({
                 banner={b}
                 priority={i === 0}
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="aspect-[16/9] lg:aspect-[16/8]"
+                // En celular/tablet los dos heroes se apilan: con 16:9 cada uno
+                // se comía casi toda la pantalla antes del primer contenido.
+                // 700/330 es la proporción real del asset mobile del hero.
+                className="aspect-[700/330] lg:aspect-[16/8]"
               />
             ))}
           </div>

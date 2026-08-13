@@ -71,8 +71,8 @@ export function CategoryGrid({ config }: { config?: HomeSectionConfig }) {
             <div
               key={i}
               className={cn(
-                'aspect-[5/2] animate-pulse rounded-2xl bg-muted lg:aspect-[20/7]',
-                i < 2 && 'lg:col-span-2'
+                'aspect-[4/3] animate-pulse rounded-2xl bg-muted sm:aspect-[5/2] lg:aspect-[20/7]',
+                i < 2 && 'lg:col-span-2 lg:aspect-[40/7]'
               )}
             />
           ))}
@@ -133,7 +133,9 @@ function CategoryTile({
       className={cn(
         'group relative overflow-hidden rounded-2xl shadow-md ring-1 ring-black/5',
         // Alturas reservadas → sin CLS mientras carga la imagen.
-        'aspect-[5/2] lg:aspect-[20/7]',
+        // En celular la tarjeta mide ~170px de ancho: con 5:2 quedaba de 68px
+        // de alto y el título se montaba sobre el contador. 4:3 le da aire.
+        'aspect-[4/3] sm:aspect-[5/2] lg:aspect-[20/7]',
         'bg-gradient-to-br',
         cfg.gradient,
         wide && 'lg:col-span-2 lg:aspect-[40/7]'
@@ -182,12 +184,14 @@ function CategoryTile({
         {cat.count}
       </span>
 
-      <span className="absolute inset-x-3 bottom-3 text-white lg:inset-x-4 lg:bottom-4">
-        <span className="block font-display text-base font-bold leading-tight drop-shadow-sm lg:text-xl">
+      <span className="absolute inset-x-3 bottom-2.5 text-white lg:inset-x-4 lg:bottom-4">
+        <span className="block font-display text-sm font-bold leading-tight drop-shadow-sm sm:text-base lg:text-xl">
           {cat.name}
         </span>
-        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold opacity-90">
-          <span className="line-clamp-1">{cfg.description}</span>
+        {/* En celular solo va el nombre: la descripción no cabe y la flecha
+            suelta quedaba huérfana (la tarjeta entera ya es tocable). */}
+        <span className="mt-0.5 hidden max-w-full items-center gap-1 text-[11px] font-semibold opacity-90 sm:inline-flex">
+          <span className="truncate">{cfg.description}</span>
           <ArrowRight className="h-3 w-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
         </span>
       </span>

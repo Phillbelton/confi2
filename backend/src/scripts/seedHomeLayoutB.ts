@@ -11,12 +11,11 @@ dotenv.config();
  *
  * Orden resultante:
  *   1. hero (partido: mayorista / detalle)
- *   2. wholesale_ladder — la escalera de precios con datos reales
- *   3. category_grid — puerta de entrada al catálogo
- *   4. editorial_block — banner de una categoría + sus productos
- *   5. product_carousel "Lo más pedido" — reemplaza los 3 duplicados
- *   6. collections
- *   7. location_map
+ *   2. category_grid — puerta de entrada al catálogo
+ *   3. editorial_block — banner de una categoría + sus productos
+ *   4. product_carousel "Lo más pedido" — reemplaza los 3 duplicados
+ *   5. collections
+ *   6. location_map
  *
  * Las secciones que la propuesta no usa (los carruseles duplicados, el CTA
  * estático y las dos banner_zone) NO se borran: quedan `active: false`, así
@@ -40,7 +39,6 @@ const BACKUP_COLLECTION = 'homelayouts_backup';
 
 /** Secciones que la propuesta B mantiene visibles, en orden. */
 function buildActiveSections(opts: {
-  ladderSku?: string;
   editorialSlug?: string;
   editorialName?: string;
 }): HomeSection[] {
@@ -51,15 +49,11 @@ function buildActiveSections(opts: {
       active: true,
       config: { heroLayout: 'split' },
     },
-    {
-      id: 'wholesale_ladder',
-      type: 'wholesale_ladder',
-      active: true,
-      config: {
-        title: 'Tu precio baja solo',
-        ...(opts.ladderSku ? { productSku: opts.ladderSku } : {}),
-      },
-    },
+    // La escalera de precios (wholesale_ladder) queda DISPONIBLE como tipo de
+    // sección pero fuera del layout: mostrar la tabla de tramos en la home
+    // resultó fría y disuasoria. El diferencial mayorista se comunica en el
+    // hero partido y en cada ficha de producto, donde el precio ya tiene
+    // contexto de compra.
     {
       id: 'category_grid',
       type: 'category_grid',
@@ -136,21 +130,6 @@ async function run() {
   const current = await HomeLayout.findOne({ key: 'home' }).lean();
   const previous: HomeSection[] = (current?.sections as HomeSection[]) ?? [];
 
-  // ── Elegir el producto de la escalera: el más popular CON tramos ──
-  const candidates = await Product.find({ active: true, 'presentaciones.0': { $exists: true } })
-    .sort({ views: -1 })
-    .select('sku name presentaciones')
-    .limit(60)
-    .lean();
-  const ladder = candidates.find((p: any) =>
-    (p.presentaciones ?? []).some((pr: any) => (pr.tiers ?? []).length > 0)
-  ) as any;
-  if (ladder) {
-    console.log(`📊 Escalera de precios → ${ladder.name} (${ladder.sku})`);
-  } else {
-    console.log('⚠️  Ningún producto con tramos: la escalera usará su fallback automático.');
-  }
-
   // ── Elegir la categoría del bloque editorial: raíz con más productos ──
   const roots = await Category.find({ parent: null, active: true }).select('name slug').lean();
   let editorial: { slug: string; name: string } | undefined;
@@ -169,7 +148,6 @@ async function run() {
 
   // ── Armar el layout final ──
   const activeSections = buildActiveSections({
-    ladderSku: ladder?.sku,
     editorialSlug: editorial?.slug,
     editorialName: editorial?.name,
   });
