@@ -341,3 +341,40 @@ export const getFacetableAttributes = asyncHandler(
     });
   }
 );
+
+// @desc    Conteo de productos activos por categoría RAÍZ (incluye descendientes)
+// @route   GET /api/categories/counts
+// @access  Public
+//
+// Alimenta la grilla de categorías de la home: una sola request en vez de
+// N consultas desde el cliente. Cuenta productos DISTINTOS por raíz (un
+// producto en dos subcategorías del mismo árbol se cuenta una vez).
+export const getCategoryCounts = asyncHandler(
+  async (_req: AuthRequest, res: Response<ApiResponse>) => {
+    const roots = await Category.find({ parent: null, active: true })
+      .sort({ order: 1, name: 1 })
+      .select('_id name slug image bannerImage bannerImageMobile')
+      .lean();
+
+    const counts = await Promise.all(
+      roots.map(async (root) => {
+        const ids = await (Category as any).getDescendantIds(root._id);
+        const count = await Product.countDocuments({
+          categories: { $in: ids },
+          active: true,
+        });
+        return {
+          _id: String(root._id),
+          name: root.name,
+          slug: root.slug,
+          image: root.image,
+          bannerImage: root.bannerImage,
+          bannerImageMobile: root.bannerImageMobile,
+          count,
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data: { categories: counts } });
+  }
+);

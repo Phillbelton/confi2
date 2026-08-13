@@ -11,6 +11,9 @@ import type { Banner, BannerPlacement } from '@/types';
 interface PromoGridProps {
   placement?: BannerPlacement;
   className?: string;
+  /** Solo para home_hero: en vez del carrusel, muestra los 2 primeros banners
+   *  lado a lado (mayorista / detalle). En mobile se apilan. */
+  heroSplit?: boolean;
 }
 
 /**
@@ -383,7 +386,11 @@ function HeroCarousel({ banners }: { banners: Banner[] }) {
   );
 }
 
-export function PromoGrid({ placement = 'home_promo', className }: PromoGridProps) {
+export function PromoGrid({
+  placement = 'home_promo',
+  className,
+  heroSplit,
+}: PromoGridProps) {
   const { data, isLoading } = useBanners(placement);
 
   // Defensa: un banner a medio crear queda con imagen placeholder — jamás
@@ -399,6 +406,25 @@ export function PromoGrid({ placement = 'home_promo', className }: PromoGridProp
   // Hero carrousel: placement=home_hero rota uno a la vez, full-bleed (sin
   // margen horizontal ni esquinas redondeadas — pegado al borde superior).
   if (placement === 'home_hero') {
+    // Modo partido: dos puertas (mayorista / detalle) en vez de un carrusel
+    // que le habla a un solo público. Con menos de 2 banners no aplica.
+    if (heroSplit && !isLoading && banners.length >= 2) {
+      return (
+        <section className={cn('px-4 pt-3 lg:px-8 lg:pt-4', className)}>
+          <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+            {banners.slice(0, 2).map((b, i) => (
+              <BannerTile
+                key={b._id}
+                banner={b}
+                priority={i === 0}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="aspect-[16/9] lg:aspect-[16/8]"
+              />
+            ))}
+          </div>
+        </section>
+      );
+    }
     return (
       <section className={className}>
         {isLoading ? (

@@ -429,7 +429,14 @@ export type HomeSectionType =
   | 'static_cta'
   | 'product_carousel'
   | 'product_grid'
-  | 'location_map';
+  | 'location_map'
+  // ── Secciones de la arquitectura "mayorista primero" ──
+  | 'wholesale_ladder'
+  | 'category_grid'
+  | 'editorial_block';
+
+/** hero: carrusel clásico o dos puertas lado a lado (mayorista / detalle). */
+export type HeroLayout = 'carousel' | 'split';
 
 /** Un local físico para la sección location_map. */
 export interface StoreLocation {
@@ -457,6 +464,22 @@ export interface HomeSectionConfig {
   limit?: number;
   /** location_map: los locales a mostrar (1..4). */
   stores?: StoreLocation[];
+
+  // ── Config de las secciones "mayorista primero" ──
+  /** hero: 'carousel' (default) o 'split'. */
+  heroLayout?: HeroLayout;
+  /** Bajada bajo el título. */
+  subtitle?: string;
+  /** wholesale_ladder: SKU del producto de ejemplo. */
+  productSku?: string;
+  /** category_grid: qué categorías raíz y en qué orden (vacío = por volumen). */
+  categorySlugs?: string[];
+  /** editorial_block: categoría cuyo arte y productos se muestran. */
+  categorySlug?: string;
+  /** editorial_block: texto chico sobre el título. */
+  kicker?: string;
+  /** Texto del enlace principal. */
+  ctaText?: string;
 }
 
 export interface HomeSection {
