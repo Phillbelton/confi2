@@ -438,6 +438,9 @@ export type HomeSectionType =
 /** hero: carrusel clásico o dos puertas lado a lado (mayorista / detalle). */
 export type HeroLayout = 'carousel' | 'split';
 
+/** editorial_block: cómo elige su categoría en cada carga de la portada. */
+export type EditorialMode = 'fixed' | 'random' | 'daily';
+
 /** Un local físico para la sección location_map. */
 export interface StoreLocation {
   name: string;
@@ -474,7 +477,10 @@ export interface HomeSectionConfig {
   productSku?: string;
   /** category_grid: qué categorías raíz y en qué orden (vacío = por volumen). */
   categorySlugs?: string[];
-  /** editorial_block: categoría cuyo arte y productos se muestran. */
+  /** editorial_block: cómo se elige la categoría. Default: 'fixed'. */
+  editorialMode?: EditorialMode;
+  /** editorial_block: categoría fija; también es el respaldo mientras se
+   *  resuelven las candidatas en los modos rotativos. */
   categorySlug?: string;
   /** editorial_block: texto chico sobre el título. */
   kicker?: string;

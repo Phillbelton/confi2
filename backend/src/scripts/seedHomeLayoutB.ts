@@ -71,10 +71,12 @@ function buildActiveSections(opts: {
             type: 'editorial_block' as const,
             active: true,
             config: {
+              // Rota entre las categorías que califican (con arte y surtido).
+              // El título y el enlace NO se fijan: se derivan de la categoría
+              // sorteada en cada visita. categorySlug queda como respaldo.
+              editorialMode: 'random' as const,
               categorySlug: opts.editorialSlug,
-              title: opts.editorialName ?? 'Destacado',
-              kicker: 'Temporada',
-              ctaText: `Ver todo ${opts.editorialName ?? ''}`.trim(),
+              kicker: 'Te puede interesar',
               limit: 4,
             },
           },

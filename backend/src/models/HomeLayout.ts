@@ -59,6 +59,10 @@ export interface StoreLocation {
 }
 
 export const HERO_LAYOUTS = ['carousel', 'split'] as const;
+
+/** Cómo elige su categoría el editorial_block. */
+export const EDITORIAL_MODES = ['fixed', 'random', 'daily'] as const;
+export type EditorialMode = (typeof EDITORIAL_MODES)[number];
 export type HeroLayout = (typeof HERO_LAYOUTS)[number];
 
 export interface HomeSectionConfig {
@@ -85,6 +89,10 @@ export interface HomeSectionConfig {
   /** category_grid: slugs de las categorías raíz a mostrar y en qué orden.
    *  Vacío = todas las raíces activas con productos. */
   categorySlugs?: string[];
+  /** editorial_block: cómo se elige la categoría — 'fixed' (la de
+   *  categorySlug), 'random' (una distinta en cada visita) o 'daily'
+   *  (rota una por día). Default: fixed. */
+  editorialMode?: EditorialMode;
   /** editorial_block: categoría cuyo banner y productos se muestran. */
   categorySlug?: string;
   /** editorial_block: texto chico sobre el título (ej. "Temporada · fiestas"). */
@@ -230,6 +238,7 @@ const homeLayoutSchema = new Schema<IHomeLayout>(
               default: undefined,
             },
             heroLayout: { type: String, enum: HERO_LAYOUTS },
+            editorialMode: { type: String, enum: EDITORIAL_MODES },
             subtitle: String,
             productSku: String,
             categorySlugs: { type: [String], default: undefined },

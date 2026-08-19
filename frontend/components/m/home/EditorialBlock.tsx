@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
@@ -16,8 +17,16 @@ import type { ApiResponse, HomeSectionConfig, Product } from '@/types';
  * misma unidad visual, en vez de una franja de banner y otra de productos sin
  * relación. Da contexto ("arma la piñata por menos") y al lado, con qué hacerlo.
  *
- * El arte sale de la categoría configurada (bannerImage / bannerImageMobile);
+ * El arte sale de la categoría elegida (bannerImage / bannerImageMobile);
  * si no tiene, cae al gradiente + emoji de categoryVisualConfig.
+ *
+ * La categoría se elige según config.editorialMode:
+ *   'fixed'  (default) — siempre la de config.categorySlug
+ *   'random'           — una distinta en cada visita
+ *   'daily'            — rota una por día (estable dentro del día)
+ *
+ * En los modos rotativos solo participan categorías que CALIFICAN (con arte
+ * y con suficientes productos), o las que liste config.categorySlugs.
  */
 
 const BANNER_WIDTHS = [1280, 1600, 2000] as const;
@@ -25,11 +34,71 @@ const BANNER_MOBILE_WIDTHS = [640, 1000] as const;
 /** Miniatura 1:1 de categoría (variant=thumb del backend). */
 const THUMB_WIDTHS = [200, 400, 800] as const;
 
+/** Categoría con su conteo de productos (endpoint /categories/counts). */
+interface CategoriaConteo {
+  _id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  bannerImage?: string;
+  bannerImageMobile?: string;
+  count: number;
+}
+
+/** Mínimo de productos para que una categoría merezca portada. */
+const MIN_PRODUCTOS = 8;
+
 export function EditorialBlock({ config }: { config?: HomeSectionConfig }) {
-  const slug = config?.categorySlug;
+  const modo = config?.editorialMode ?? 'fixed';
   const limit = config?.limit ?? 4;
 
   const { data: cats = [] } = useAllCategories();
+
+  // Conteos por categoría raíz: se usan para descartar categorías flacas en
+  // los modos rotativos. En modo fijo la consulta no se dispara.
+  const { data: conteos = [] } = useQuery({
+    queryKey: ['categories', 'counts'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<{ categories: CategoriaConteo[] }>>(
+        '/categories/counts'
+      );
+      return data.data?.categories ?? [];
+    },
+    enabled: modo !== 'fixed',
+    staleTime: 5 * 60_000,
+  });
+
+  // Semilla estable durante TODA la visita. Se calcula una sola vez al montar
+  // (useState con inicializador perezoso), no en cada render: si se sorteara
+  // dentro del cuerpo del componente, la categoría cambiaría sola ante
+  // cualquier re-render mientras el cliente la está mirando.
+  const [semilla] = useState(() => {
+    if (modo === 'daily') {
+      // Mismo número durante todo el día → rotación diaria y caché aprovechable.
+      return Math.floor(Date.now() / 86_400_000);
+    }
+    return Math.floor(Math.random() * 100_000);
+  });
+
+  // Candidatas: las que liste el admin, o las que califiquen por sí solas
+  // (con arte propio y con suficiente surtido).
+  const candidatas = (() => {
+    if (modo === 'fixed') return [];
+    if (config?.categorySlugs?.length) {
+      return config.categorySlugs.filter((sl) => conteos.some((c) => c.slug === sl));
+    }
+    return conteos
+      .filter((c) => c.count >= MIN_PRODUCTOS && (c.bannerImage || c.image))
+      .map((c) => c.slug);
+  })();
+
+  // La categoría de esta visita. Si el sorteo aún no tiene candidatas
+  // (conteos en vuelo), cae a la configurada para no dejar hueco.
+  const slug =
+    modo === 'fixed' || candidatas.length === 0
+      ? config?.categorySlug
+      : candidatas[semilla % candidatas.length];
+
   const category = slug ? cats.find((c) => c.slug === slug) : undefined;
 
   const { data: products = [], isLoading } = useQuery({
@@ -62,8 +131,13 @@ export function EditorialBlock({ config }: { config?: HomeSectionConfig }) {
     : desktop;
 
   const href = `/productos?categoria=${slug}`;
-  const title = config?.title || category?.name || 'Destacado';
-  const ctaText = config?.ctaText || `Ver todo ${category?.name ?? ''}`.trim();
+  // En los modos rotativos el título y el enlace se derivan SIEMPRE de la
+  // categoría sorteada: un texto fijo en la configuración nombraría a otra
+  // categoría distinta de la que se está mostrando.
+  const rotando = modo !== 'fixed';
+  const title = (rotando ? undefined : config?.title) || category?.name || 'Destacado';
+  const ctaText =
+    (rotando ? undefined : config?.ctaText) || `Ver todo ${category?.name ?? ''}`.trim();
 
   return (
     <section className="px-4 pt-6 lg:px-8">
