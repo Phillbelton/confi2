@@ -58,12 +58,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
-    {
-      url: `${baseUrl}/contacto`,
+    // Ayuda y legales: son las páginas que Google espera encontrar en una
+    // tienda y las que dan señal de sitio serio. `/contacto` estaba listada acá
+    // pero esa ruta no existe (404 en el sitemap) — se quitó.
+    ...[
+      '/ayuda/como-comprar',
+      '/ayuda/formas-de-pago',
+      '/ayuda/envios-y-retiros',
+      '/ayuda/terminos',
+      '/ayuda/privacidad',
+    ].map((path) => ({
+      url: `${baseUrl}${path}`,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: 'monthly' as const,
       priority: 0.6,
-    },
+    })),
     {
       url: `${baseUrl}/login`,
       lastModified: new Date(),

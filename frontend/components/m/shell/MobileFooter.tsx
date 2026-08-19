@@ -20,7 +20,10 @@ import { SocialLinks } from '@/components/layout/SocialLinks';
 const TRUST_BADGES = [
   { icon: Truck, label: 'Envío rápido', sub: 'Todo Chile' },
   { icon: ShieldCheck, label: 'Compra segura', sub: 'Datos protegidos' },
-  { icon: Wallet, label: 'Paga fácil', sub: 'Efectivo o tarjeta' },
+  // No hay pago con tarjeta en el sitio: es efectivo al recibir o transferencia
+  // (ver /ayuda/formas-de-pago y los términos). Decía "tarjeta" y contradecía
+  // ambas páginas.
+  { icon: Wallet, label: 'Paga fácil', sub: 'Efectivo o transferencia' },
 ];
 
 const LINKS = {
@@ -34,6 +37,12 @@ const LINKS = {
     { label: 'Cómo comprar', href: '/ayuda/como-comprar' },
     { label: 'Formas de pago', href: '/ayuda/formas-de-pago' },
     { label: 'Envíos y retiros', href: '/ayuda/envios-y-retiros' },
+  ],
+  // En la barra inferior, no en la columna "Ayuda": es donde el cliente las
+  // busca y así no compiten con los links comerciales.
+  legal: [
+    { label: 'Términos y condiciones', href: '/ayuda/terminos' },
+    { label: 'Política de privacidad', href: '/ayuda/privacidad' },
   ],
 };
 
@@ -235,6 +244,17 @@ export function MobileFooter({ stickyBarClearance }: MobileFooterProps = {}) {
               <span className="text-white/30">·</span>
               © {new Date().getFullYear()} Confitería Quelita
             </p>
+            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-white/60">
+              {LINKS.legal.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="hover:text-white transition-colors"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import { Footer } from '@/components/layout/Footer';
+import { LegalNotice } from '@/components/legal/LegalNotice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -675,6 +676,13 @@ export default function CheckoutPage() {
                           <span>{error}</span>
                         </div>
                       )}
+
+                      {/*
+                        Aceptación de términos. Va acá, antes del botón, para que
+                        se vea tanto en desktop como en móvil (donde el CTA es la
+                        barra sticky de abajo y no tiene espacio para texto).
+                      */}
+                      <LegalNotice />
 
                       {/* Submit Button — desktop */}
                       <div className="hidden lg:block space-y-3">
