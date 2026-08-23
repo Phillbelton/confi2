@@ -22,6 +22,13 @@ export const HOME_SECTION_TYPES = [
   'product_carousel',
   'product_grid',
   'location_map',
+  // ── Secciones de la arquitectura "mayorista primero" ──
+  /** Escalera de precios por volumen de un producto real (prueba del diferencial). */
+  'wholesale_ladder',
+  /** Grilla de categorías raíz con su arte de banner (puerta de entrada al catálogo). */
+  'category_grid',
+  /** Banner de una categoría + N productos de esa misma categoría, en una unidad. */
+  'editorial_block',
 ] as const;
 
 export type HomeSectionType = (typeof HOME_SECTION_TYPES)[number];
@@ -51,6 +58,13 @@ export interface StoreLocation {
   hours?: string;
 }
 
+export const HERO_LAYOUTS = ['carousel', 'split'] as const;
+
+/** Cómo elige su categoría el editorial_block. */
+export const EDITORIAL_MODES = ['fixed', 'random', 'daily'] as const;
+export type EditorialMode = (typeof EDITORIAL_MODES)[number];
+export type HeroLayout = (typeof HERO_LAYOUTS)[number];
+
 export interface HomeSectionConfig {
   /** banner_zone: qué zona de banners renderiza. */
   placement?: (typeof BANNER_ZONE_PLACEMENTS)[number];
@@ -63,6 +77,28 @@ export interface HomeSectionConfig {
   limit?: number;
   /** location_map: los locales a mostrar (1..4). */
   stores?: StoreLocation[];
+
+  // ── Config de las secciones "mayorista primero" ──
+  /** hero: 'carousel' (default, histórico) o 'split' (2 banners lado a lado). */
+  heroLayout?: HeroLayout;
+  /** Bajada opcional bajo el título (wholesale_ladder, category_grid, editorial_block). */
+  subtitle?: string;
+  /** wholesale_ladder: SKU del producto cuyos tramos se muestran. Si no está,
+   *  el backend elige el primer producto activo con tramos. */
+  productSku?: string;
+  /** category_grid: slugs de las categorías raíz a mostrar y en qué orden.
+   *  Vacío = todas las raíces activas con productos. */
+  categorySlugs?: string[];
+  /** editorial_block: cómo se elige la categoría — 'fixed' (la de
+   *  categorySlug), 'random' (una distinta en cada visita) o 'daily'
+   *  (rota una por día). Default: fixed. */
+  editorialMode?: EditorialMode;
+  /** editorial_block: categoría cuyo banner y productos se muestran. */
+  categorySlug?: string;
+  /** editorial_block: texto chico sobre el título (ej. "Temporada · fiestas"). */
+  kicker?: string;
+  /** editorial_block / category_grid: texto del enlace principal. */
+  ctaText?: string;
 }
 
 export interface HomeSection {
@@ -201,6 +237,14 @@ const homeLayoutSchema = new Schema<IHomeLayout>(
               ],
               default: undefined,
             },
+            heroLayout: { type: String, enum: HERO_LAYOUTS },
+            editorialMode: { type: String, enum: EDITORIAL_MODES },
+            subtitle: String,
+            productSku: String,
+            categorySlugs: { type: [String], default: undefined },
+            categorySlug: String,
+            kicker: String,
+            ctaText: String,
           },
           default: undefined,
           _id: false,

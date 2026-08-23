@@ -4,6 +4,8 @@ import {
   SINGLETON_SECTION_TYPES,
   PRODUCT_SOURCES,
   BANNER_ZONE_PLACEMENTS,
+  HERO_LAYOUTS,
+  EDITORIAL_MODES,
 } from '../models/HomeLayout';
 
 /**
@@ -36,6 +38,15 @@ const configSchema = z
     collectionSlug: z.string().trim().min(1).max(120).optional(),
     limit: z.number().int().min(2).max(20).optional(),
     stores: z.array(storeSchema).min(1).max(4).optional(),
+    // ── Secciones "mayorista primero" ──
+    heroLayout: z.enum(HERO_LAYOUTS).optional(),
+    editorialMode: z.enum(EDITORIAL_MODES).optional(),
+    subtitle: z.string().trim().max(120).optional(),
+    productSku: z.string().trim().max(40).optional(),
+    categorySlugs: z.array(z.string().trim().min(1).max(120)).max(8).optional(),
+    categorySlug: z.string().trim().min(1).max(120).optional(),
+    kicker: z.string().trim().max(60).optional(),
+    ctaText: z.string().trim().max(40).optional(),
   })
   .strict();
 
@@ -59,6 +70,17 @@ const sectionSchema = z
         code: z.ZodIssueCode.custom,
         message: 'location_map requiere config.stores con al menos un local',
       });
+    }
+    if (section.type === 'editorial_block') {
+      // Solo el modo 'fixed' (default) exige una categoría concreta; en
+      // 'random' y 'daily' la elige el frontend entre las que califican.
+      const modo = section.config?.editorialMode ?? 'fixed';
+      if (modo === 'fixed' && !section.config?.categorySlug) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "editorial_block en modo 'fixed' requiere config.categorySlug",
+        });
+      }
     }
     if (section.type === 'product_carousel' || section.type === 'product_grid') {
       if (!section.config?.title) {

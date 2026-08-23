@@ -3,6 +3,9 @@
 import { Fragment } from 'react';
 import { CollectionsGrid } from '@/components/m/home/CollectionsGrid';
 import { PromoGrid } from '@/components/m/home/PromoGrid';
+import { CategoryGrid } from '@/components/m/home/CategoryGrid';
+import { WholesaleLadder } from '@/components/m/home/WholesaleLadder';
+import { EditorialBlock } from '@/components/m/home/EditorialBlock';
 import {
   ProductCarouselSection,
   ProductGridSection,
@@ -23,8 +26,20 @@ function renderSection(section: HomeSection): React.ReactNode {
   switch (section.type) {
     case 'hero':
       return (
-        <PromoGrid placement="home_hero" className="px-4 pt-3 lg:px-0 lg:pt-0" />
+        <PromoGrid
+          placement="home_hero"
+          heroSplit={config.heroLayout === 'split'}
+          className={
+            config.heroLayout === 'split' ? undefined : 'px-4 pt-3 lg:px-0 lg:pt-0'
+          }
+        />
       );
+    case 'category_grid':
+      return <CategoryGrid config={config} />;
+    case 'wholesale_ladder':
+      return <WholesaleLadder config={config} />;
+    case 'editorial_block':
+      return <EditorialBlock config={config} />;
     case 'banner_zone':
       return config.placement ? <PromoGrid placement={config.placement} /> : null;
     case 'collections':

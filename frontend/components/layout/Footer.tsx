@@ -21,6 +21,12 @@ const footerLinks = {
     { name: 'Formas de pago', href: '/ayuda/formas-de-pago' },
     { name: 'Envíos y retiros', href: '/ayuda/envios-y-retiros' },
   ],
+  // Van en la barra inferior, no en la columna "Ayuda": es donde el cliente las
+  // busca y así no compiten con los links comerciales.
+  legal: [
+    { name: 'Términos y condiciones', href: '/ayuda/terminos' },
+    { name: 'Política de privacidad', href: '/ayuda/privacidad' },
+  ],
 };
 
 export function Footer() {
@@ -130,6 +136,17 @@ export function Footer() {
           <div className="w-full px-4 sm:px-6 lg:px-8 py-4 md:py-5">
             <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-3 md:gap-4 text-[11px] md:text-xs text-white/40 text-center md:text-left">
               <p>© {new Date().getFullYear()} Confitería Quelita. Todos los derechos reservados.</p>
+              <nav className="flex items-center gap-x-4 gap-y-1 flex-wrap justify-center">
+                {footerLinks.legal.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="hover:text-white/70 transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </nav>
             </div>
           </div>
         </div>

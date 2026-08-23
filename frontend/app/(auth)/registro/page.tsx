@@ -14,6 +14,7 @@ import { AnimatedButton } from '@/components/ui/animated-button';
 import { AnimatedInput } from '@/components/ui/animated-input';
 import { Input } from '@/components/ui/input';
 import { PasswordStrength } from '@/components/ui/password-strength';
+import { LegalNotice } from '@/components/legal/LegalNotice';
 import { Label } from '@/components/ui/label';
 import {
   Card,
@@ -247,7 +248,8 @@ function RegisterContent() {
               />
             </motion.div>
 
-            <motion.div variants={itemVariants}>
+            <motion.div variants={itemVariants} className="space-y-3">
+              <LegalNotice action="crear tu cuenta" />
               <AnimatedButton
                 type="submit"
                 className="w-full h-12 text-base font-semibold"

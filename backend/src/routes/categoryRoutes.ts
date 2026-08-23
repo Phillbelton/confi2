@@ -13,6 +13,8 @@ const router = Router();
 // Public routes
 router.get('/', validate(categorySchemas.getCategoriesQuerySchema), categoryController.getCategories);
 router.get('/main', categoryController.getMainCategories);
+// Antes de '/:id' — si no, "counts" se interpreta como un ObjectId inválido.
+router.get('/counts', categoryController.getCategoryCounts);
 router.get('/:id', validate(categorySchemas.getCategoryByIdSchema), categoryController.getCategoryById);
 router.get('/slug/:slug', validate(categorySchemas.getCategoryBySlugSchema), categoryController.getCategoryBySlug);
 router.get('/:id/subcategories', validate(categorySchemas.getSubcategoriesSchema), categoryController.getSubcategories);
